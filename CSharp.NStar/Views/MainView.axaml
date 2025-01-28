@@ -3,14 +3,120 @@
 						 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 						 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 						 xmlns:vm="clr-namespace:CSharp.NStar.ViewModels"
-						 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+						 xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+						 mc:Ignorable="d" d:DesignWidth="1024" d:DesignHeight="768"
 						 x:Class="CSharp.NStar.Views.MainView"
-						 x:DataType="vm:MainViewModel">
+						 x:DataType="vm:MainViewModel"
+						 SizeChanged="UserControl_SizeChanged"
+						 KeyDown="TextBoxInput_KeyDown">
 	<Design.DataContext>
 		<!-- This only sets the DataContext for the previewer in an IDE,
 				 to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
 		<vm:MainViewModel />
 	</Design.DataContext>
 
-	<TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+	<ScrollViewer>
+		<Grid
+			VerticalAlignment="Stretch">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="5*"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="2*"/>
+				<RowDefinition Height="3*"/>
+				<RowDefinition Height="*"/>
+			</Grid.RowDefinitions>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+			<ae:TextEditor
+				x:Name="TextBoxInput"
+				Text='return "Hello, world!";&#x0a;'
+				FontSize="16"
+				HorizontalAlignment="Stretch"
+				ShowLineNumbers="True"
+				TabIndex="0"
+				KeyDown="TextBoxInput_KeyDown"
+				TextChanged="TextBoxInput_TextChanged"/>
+			<Grid
+				Grid.Row="1">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="*"/>
+				</Grid.RowDefinitions>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+				<Button
+					x:Name="ButtonExecute"
+					HorizontalAlignment="Stretch"
+					TabIndex="1"
+					VerticalAlignment="Stretch"
+					Click="ButtonExecute_Click">
+					<TextBlock
+						Text="Выполнить"
+						TextAlignment="Center"
+						FontFamily="Arial Narrow"
+						FontSize="36"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"/>
+				</Button>
+				<Button
+					x:Name="ButtonSaveExe"
+					Grid.Column="1"
+					HorizontalAlignment="Stretch"
+					TabIndex="2"
+					VerticalAlignment="Stretch"
+					Click="ButtonSaveExe_Click">
+					<TextBlock
+						Text="Сохранить EXE (в разраб.)"
+						TextAlignment="Center"
+						FontFamily="Arial Narrow"
+						FontSize="36"
+						HorizontalAlignment="Center"
+						VerticalAlignment="Center"/>
+				</Button>
+			</Grid>
+			<TextBox
+				x:Name="TextBoxOutput"
+				Text='Введите код на C#.NStar в текстовое поле вверху и нажмите кнопку "Выполнить", чтобы увидеть результат.'
+				AcceptsReturn="True"
+				AcceptsTab="True"
+				FontFamily="Arial Narrow"
+				FontSize="16"
+				Grid.Row="2"
+				HorizontalAlignment="Stretch"
+				MaxLength="0"
+				IsReadOnly="True"
+				TabIndex="3"
+				TextWrapping="NoWrap"/>
+			<TextBox
+				x:Name="TextBoxErrors"
+				Text='Здесь будут отображаться ошибки.'
+				AcceptsReturn="True"
+				AcceptsTab="True"
+				FontFamily="Arial Narrow"
+				FontSize="16"
+				Grid.Row="3"
+				HorizontalAlignment="Stretch"
+				IsReadOnly="True"
+				MaxLength="0"
+				TabIndex="4"/>
+			<StackPanel
+				Orientation="Horizontal"
+				Grid.Row="4">
+				<TextBlock
+					x:Name="TextBlockLine"
+					Text="Line 1"
+					FontFamily="Arial Narrow"
+					FontSize="16"
+					Width="128"/>
+				<TextBlock
+					x:Name="TextBlockPos"
+					Text="Pos 1"
+					FontFamily="Arial Narrow"
+					FontSize="16"
+					Width="128"/>
+			</StackPanel>
+		</Grid>
+	</ScrollViewer>
 </UserControl>

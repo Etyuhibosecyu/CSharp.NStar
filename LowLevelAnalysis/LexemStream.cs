@@ -1,5 +1,4 @@
 ﻿using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace CSharp.NStar;
 public class LexemStream
@@ -20,18 +19,18 @@ public class LexemStream
 	private int unknownIndex = 1;
 	private int figureBk;
 
-	private protected LexemStream(List<Lexem> lexems, String input, List<String>? errorsList, BlockStack? rootContainer = null)
+	private protected LexemStream(List<Lexem> lexems, String input, List<String>? errorsList, bool wreckOccurred, BlockStack? rootContainer = null)
 	{
 		this.lexems = lexems;
 		this.input = input;
 		this.errorsList = errorsList;
 		this.rootContainer = rootContainer;
-		wreckOccurred = false;
+		this.wreckOccurred = wreckOccurred;
 		pos = 0;
 		pos2 = 0;
 	}
 
-	private protected LexemStream(LexemStream lexemStream) : this(lexemStream.lexems, lexemStream.input, lexemStream.errorsList, lexemStream.rootContainer)
+	private protected LexemStream(LexemStream lexemStream) : this(lexemStream.lexems, lexemStream.input, lexemStream.errorsList, lexemStream.wreckOccurred, lexemStream.rootContainer)
 	{
 		pos = lexemStream.pos;
 		blocksToJump = lexemStream.blocksToJump;
@@ -118,7 +117,7 @@ public class LexemStream
 		if (IsEnd()) return;
 		if (lexems[pos].Type == LexemType.Identifier)
 		{
-			name = String.Join(".", [.. nameList, .. lexems[pos].String]);
+			name = String.Join(".", [.. nameList, lexems[pos].String]);
 			pos++;
 		}
 		else
@@ -128,7 +127,7 @@ public class LexemStream
 		}
 		GetFigureBracketAndSetBlock(BlockType.Namespace, name, () =>
 		{
-			UserDefinedNamespacesList.Add(name);
+			UserDefinedNamespacesList.Add((container.Length != 0 ? ((String)container.ToShortString()).Add('.') : "").AddRange(name));
 			blocksToJump.Add((container, "Namespace", name, blockStart, pos));
 		});
 	}
@@ -156,7 +155,7 @@ public class LexemStream
 		{
 			var s = lexems[pos].String;
 			if (PrimitiveTypesList.Contains(s) || ExtraTypesList.Contains(("", s)) || CompositeTypesList.ContainsKey(("", s)) || GeneralTypesList.ContainsKey((new(), s)))
-				ChangeNameAndGenerateError(out name, "class \"" + s + "\" is standard root C# .NStar type and cannot be redefined");
+				ChangeNameAndGenerateError(out name, "class \"" + s + "\" is standard root C#.NStar type and cannot be redefined");
 			else if (UserDefinedTypesList.ContainsKey((container, s)))
 				ChangeNameAndGenerateError(out name, "class \"" + s + "\" is already defined in this region");
 			else
@@ -225,7 +224,7 @@ public class LexemStream
 		{
 			var s = lexems[pos].String;
 			if (PublicFunctionsList.ContainsKey(s))
-				ChangeNameAndGenerateError(out name, "function\"" + s + "\" is standard root C# .NStar function and cannot be redefined");
+				ChangeNameAndGenerateError(out name, "function\"" + s + "\" is standard root C#.NStar function and cannot be redefined");
 			else if (UserDefinedFunctionsList.TryGetValue(container, out var methods) && methods.ContainsKey(s))
 				ChangeNameAndGenerateError(out name, "function\"" + s + "\" is already defined in this region; overloaded functions are under development");
 			else
@@ -328,7 +327,7 @@ public class LexemStream
 		if (nestedBlocksChain.Length >= 1 && nestedBlocksChain.Peek().Name == s)
 			ChangeNameAndGenerateError(out name, error);
 		else if (IsReservedNamespaceOrType(s, out var errorPrefix))
-			ChangeNameAndGenerateError(out name, errorPrefix + "\" is reserved for next versions of C# .NStar and cannot be used");
+			ChangeNameAndGenerateError(out name, errorPrefix + "\" is reserved for next versions of C#.NStar and cannot be used");
 		else
 			name = s;
 	}
@@ -549,11 +548,11 @@ public class LexemStream
 
 	private bool IsPos2LexemKeyword(String string_) => IsLexemKeyword(lexems[pos2], string_);
 
-	public static implicit operator LexemStream((List<Lexem> Lexems, String String, List<String> ErrorsList) x) => new(x.Lexems, x.String, x.ErrorsList);
+	public static implicit operator LexemStream((List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred) x) => new(x.Lexems, x.String, x.ErrorsList, x.WreckOccurred);
 
-	public static implicit operator LexemStream(((List<Lexem> Lexems, String String, List<String> ErrorsList) Main, BlockStack? RootContainer) x) => new(x.Main.Lexems, x.Main.String, x.Main.ErrorsList, x.RootContainer);
+	public static implicit operator LexemStream(((List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred) Main, BlockStack? RootContainer) x) => new(x.Main.Lexems, x.Main.String, x.Main.ErrorsList, x.Main.WreckOccurred, x.RootContainer);
 
-	public static implicit operator LexemStream(CodeSample x) => ((List<Lexem> Lexems, String String, List<String> ErrorsList))x;
+	public static implicit operator LexemStream(CodeSample x) => ((List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred))x;
 
 	public static implicit operator (List<Lexem> Lexems, String String, TreeBranch TopBranch, List<String>? ErrorsList, bool WreckOccurred)(LexemStream x) => x.Parse();
 }
@@ -1188,6 +1187,8 @@ public partial class MainParsing : LexemStream
 
 	private bool Parameter2()
 	{
+		if (_TBStack[_Stackpos] != null && _ExtraStack[_Stackpos - 1] is List<object> list && list[0] is ParameterAttributes attributes)
+			_TBStack[_Stackpos]!.Extra = attributes;
 		if (!AddExtraAndIdentifier())
 		{
 			_ErLStack[_Stackpos]?.AddRange(errorsList ?? []);
@@ -1296,13 +1297,6 @@ public partial class MainParsing : LexemStream
 			_ErLStack[_Stackpos]?.AddRange(errorsList ?? []);
 			_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
 		}
-		//else
-		//{
-		//	if (!IsLexemOther(lexems[pos], new List<String>{ "}" }))
-		//	{
-		//		GenerateError(pos, "expected: properties or methods or }", true);
-		//	}
-		//}
 		SkipSemicolonsAndNewLines();
 		return IncreaseStack("Methods", currentTask: "ClassMain4", applyCurrentTask: true);
 	}
@@ -1591,7 +1585,7 @@ public partial class MainParsing : LexemStream
 			var pos2 = pos + 1;
 			if (lexems[pos2].Type == LexemType.Identifier)
 			{
-				GenerateError(pos, "goto is a bad operator, it worsens the organization of the code; C# .NStar refused from its using intentionally", true);
+				GenerateError(pos, "goto is a bad operator, it worsens the organization of the code; C#.NStar refused from its using intentionally", true);
 				return EndActionChain();
 			}
 		}
@@ -2210,7 +2204,11 @@ public partial class MainParsing : LexemStream
 				_TBStack[_Stackpos]?.Add(new(lexems[pos - 1].String, pos - 1, pos, container));
 			}
 			else
+			{
+				if (treeBranch != null && treeBranch.Info.ToString() is "0i" or "0u" or "0L" or "0uL" or "\"0\"" && _TBStack[_Stackpos] != null && _TBStack[_Stackpos]!.Length != 0 && _TBStack[_Stackpos]![^1].Info.ToString() is "/" or "%")
+					GenerateMessage("Error", pos, "integer division by zero is forbidden", true);
 				return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
+			}
 			return IncreaseStack(newTask, pos_: pos, applyPos: true, applyCurrentErl: true);
 		}
 		else
@@ -2602,7 +2600,7 @@ public partial class MainParsing : LexemStream
 		else if (lexems[pos].Type == LexemType.Other && s == "(")
 			return IncreaseStack("Expr", currentTask: "BasicExpr2", pos_: pos + 1, applyPos: true, applyCurrentTask: true, currentBranch: new("Expr", pos, container), assignCurrentBranch: true);
 		else
-			return (_SuccessStack[_Stackpos] = false);
+			return _SuccessStack[_Stackpos] = false;
 	}
 
 	private bool BasicExpr2()
@@ -2949,7 +2947,7 @@ public partial class MainParsing : LexemStream
 			UnvType = (new([new(BlockType.Primitive, "list", 1)]), typeParts);
 			return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 		}
-		else if (NamespacesList.Contains(namespace_ == "" ? s : namespace_ + "." + s))
+		else if (NamespacesList.Contains(namespace_ == "" ? s : namespace_ + "." + s) || UserDefinedNamespacesList.Contains(namespace_ == "" ? s : namespace_ + "." + s))
 		{
 			pos++;
 			if (pos >= end)
@@ -3143,12 +3141,12 @@ public partial class MainParsing : LexemStream
 		else if (IsReservedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), .. s])) || IsReservedType(String.Join(".", [.. container.ToList().Convert(X => X.Name)]), s))
 		{
 			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateError(pos, "identifier \"" + s + "\" is reserved for next versions of C# .NStar and cannot be used");
+			GenerateError(pos, "identifier \"" + s + "\" is reserved for next versions of C#.NStar and cannot be used");
 		}
 		else if (IsReservedEndOfIdentifier(s, out s2))
 		{
 			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateError(pos, "end of identifier \"" + s2 + "\" is reserved for next versions of C# .NStar and cannot be used");
+			GenerateError(pos, "end of identifier \"" + s2 + "\" is reserved for next versions of C#.NStar and cannot be used");
 		}
 		else
 		{
@@ -3266,7 +3264,7 @@ public partial class MainParsing : LexemStream
 			types = NoGeneralExtraTypes;
 			return false;
 		}
-		while (1 == 1)
+		while (true)
 		{
 			if (ParseTypeChainIteration(ref pos, end, mainContainer, template, ref types, ref errorsList, collectionType, tempTrees, tempTypes, ref tpos) is bool b)
 				return b;

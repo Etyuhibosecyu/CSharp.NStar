@@ -12,7 +12,6 @@ global using static CSharp.NStar.Executions;
 global using static System.Math;
 global using String = Corlib.NStar.String;
 using System.Diagnostics;
-using System.Text;
 
 namespace CSharp.NStar;
 
@@ -51,6 +50,7 @@ public class CodeSample(String newString)
 	private readonly String input = newString == "" ? "return null;" : newString;
 	private int pos = 0, lineStart = 0;
 	private int lineN = 1;
+	private bool wreckOccurred = false;
 	private readonly List<String> errorsList = [];
 	private readonly List<LexemTree> lexemTree = [DoubleEqualLexemTree('^'), DoubleEqualLexemTree('|'), DoubleEqualLexemTree('&'), TripleEqualLexemTree('>'), TripleEqualLexemTree('<'), DoubleEqualLexemTree('!'), new LexemTree('?', [new LexemTree('!', ['='], allowNone: false), EqualLexemTree('>'), EqualLexemTree('<'), '=', '?', '.', '[']), ',', ':', '@', '#', '$', '~', DoubleEqualLexemTree('+'), DoubleEqualLexemTree('-'), EqualLexemTree('*'), EqualLexemTree('/'), EqualLexemTree('%'), new LexemTree('=', ['=', '>']), TripleLexemTree('.')];
 
@@ -230,7 +230,7 @@ public class CodeSample(String newString)
 			if (condition)
 				return "";
 			else if (!IsNotEnd())
-				return GenerateQuoteError(out s2);
+				return GenerateQuoteWreck(out s2);
 			else if (flag)
 			{
 				if (!CheckChar('\''))
@@ -238,7 +238,7 @@ public class CodeSample(String newString)
 				return "";
 			}
 			{
-				return GenerateQuoteError(out s2, "there must be a single character or a single escape-sequence in the single quotes");
+				return GenerateQuoteWreck(out s2, "there must be a single character or a single escape-sequence in the single quotes");
 			}
 		}
 		bool ValidateCharOrEscapeSequence()
@@ -276,12 +276,13 @@ public class CodeSample(String newString)
 				}
 			}
 		}
-		String GenerateQuoteError(out String s2, string text = "unexpected end of code reached; expected: single quote", bool double_ = false)
+		String GenerateQuoteWreck(out String s2, string text = "unexpected end of code reached; expected: single quote", bool double_ = false)
 		{
-			GenerateError(pos, text);
+			GenerateMessage("Wreck", pos, text);
+			wreckOccurred = true;
 			return AddAndReturn(out s2, double_ ? '\"' : '\'');
 		}
-		String GenerateDoubleQuoteError(out String s2) => GenerateQuoteError(out s2, "unexpected end of code reached; expected: double quote", true);
+		String GenerateDoubleQuoteWreck(out String s2) => GenerateQuoteWreck(out s2, "unexpected end of code reached; expected: double quote", true);
 		if (ValidateAndAdd('\"'))
 		{
 			while (IsNotEnd() && !IsCharAfterBackslash('\"', false))
@@ -290,7 +291,7 @@ public class CodeSample(String newString)
 					AddChar(result);
 			}
 			if (!IsCharAfterBackslash('\"'))
-				return GenerateDoubleQuoteError(out s2);
+				return GenerateDoubleQuoteWreck(out s2);
 		}
 		else if (ValidateAndAdd('\''))
 		{
@@ -306,12 +307,12 @@ public class CodeSample(String newString)
 				return s2 = "";
 			}
 			result.Add('\"');
-			while (1 == 1)
+			while (true)
 			{
 				if (ValidateAndAdd('\"'))
 					goto l0;
 				else if (!IsNotEnd())
-					return GenerateDoubleQuoteError(out s2);
+					return GenerateDoubleQuoteWreck(out s2);
 				else
 				{
 					result.Add(input[pos]);
@@ -324,7 +325,69 @@ public class CodeSample(String newString)
 			}
 		}
 		s2 = input[start..pos];
-		return new(32, [.. result]);
+		return new(32, result);
+	}
+
+	private String GetRawString(out String s2)
+	{
+		var start = pos;
+		String result = [];
+		if (!ValidateAndAdd('/'))
+			return s2 = [];
+		if (!ValidateAndAdd('\"'))
+		{
+			pos = start;
+			return s2 = [];
+		}
+		int depth = 0, state = 0;
+		while (true)
+		{
+			if (pos >= input.Length)
+			{
+				GenerateMessage("Wreck", pos, "unexpected end of code reached; expected: matching number of pairs \"double quote - forward slash\" (starting with quote)");
+				wreckOccurred = true;
+				s2 = input[start..pos];
+				return result.AddRange(((String)"\"/").Repeat(depth + 1));
+			}
+			else if (ValidateAndAdd('/'))
+			{
+				if (state != 2)
+					state = 1;
+				else if (depth == 0)
+					break;
+				else
+				{
+					depth--;
+					state = 0;
+				}
+			}
+			else if (ValidateAndAdd('\"'))
+			{
+				if (state == 1)
+				{
+					depth++;
+					state = 0;
+				}
+				else
+					state = 2;
+			}
+			else
+			{
+				result.Add(input[pos]);
+				pos++;
+			}
+		}
+		s2 = input[start..pos];
+		return new(32, result);
+		bool ValidateAndAdd(char c)
+		{
+			if (ValidateChar(c))
+			{
+				result.Add(c);
+				return true;
+			}
+			return false;
+		}
 	}
 
 	private String GetUnformatted()
@@ -337,7 +400,7 @@ public class CodeSample(String newString)
 
 	private void SkipSpaces()
 	{
-		while (IsNotEnd() && (input[pos] == ' ' || input[pos] == '\t' || input[pos] == (char)13 || input[pos] == (char)10 || input[pos] == (char)160))
+		while (IsNotEnd() && (input[pos] == ' ' || input[pos] == '\t' || input[pos] == (char)160))
 			pos++;
 	}
 
@@ -347,11 +410,19 @@ public class CodeSample(String newString)
 			s.Add('=');
 	}
 
-	public (List<Lexem> Lexems, String String, List<String> ErrorsList) Disassemble()
+	public (List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred) Disassemble()
 	{
 		while (IsNotEnd())
 		{
 		l0:
+			if (wreckOccurred)
+			{
+				if (success)
+					lexems.AddRange(tempLexems);
+				tempLexems = [];
+				success = false;
+				return (lexems, input, errorsList, true);
+			}
 			SkipSpaces();
 			if (!IsNotEnd())
 			{
@@ -360,7 +431,6 @@ public class CodeSample(String newString)
 			}
 			if (ValidateChar('\r') | ValidateChar('\n'))
 			{
-				//AddOtherLexem("\r\n");
 				lineN++;
 				lineStart = pos;
 				success = true;
@@ -378,6 +448,11 @@ public class CodeSample(String newString)
 					AddLexem(s, LexemType.String, s2.Length);
 					goto l0;
 				}
+			}
+			else if ((s = GetRawString(out var s3)) != "")
+			{
+				AddLexem(s, LexemType.String, s3.Length);
+				goto l0;
 			}
 			else if (CheckDigit())
 			{
@@ -445,7 +520,7 @@ public class CodeSample(String newString)
 			tempLexems = [];
 			success = false;
 		}
-		return (lexems, input, errorsList);
+		return (lexems, input, errorsList, wreckOccurred);
 		String ValidateLexemTree(LexemTree lexemTree, out bool success)
 		{
 			success = false;
@@ -481,5 +556,5 @@ public class CodeSample(String newString)
 
 	private void GenerateMessage(String type, int pos, String text) => errorsList.Add(type + " in line " + lineN.ToString() + " at position " + (pos - lineStart).ToString() + ": " + text);
 
-	public static implicit operator (List<Lexem> Lexems, String String, List<String> ErrorsList)(CodeSample x) => x.Disassemble();
+	public static implicit operator (List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred)(CodeSample x) => x.Disassemble();
 }

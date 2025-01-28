@@ -1,7 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CSharp.NStar;
 [DebuggerDisplay("{IsNull ? \"null\" : ToString(true)}")]
@@ -12,7 +10,6 @@ public sealed class Universal
 	private readonly String String;
 	private readonly List<Universal>? NextList;
 	private readonly object? Object;
-	//private static readonly Dictionary<string, Universal> format_mapping = new(8, new Constructions.StringComparer()) { { "null", Universal.Null }, { "true", true }, { "false", false }, { "Infty", Infinity }, { "-Infty", MinusInfinity }, { "Uncty", Uncertainty }, { "Pi", Math.PI }, { "E", Math.E } };
 
 	public bool IsNull { get; set; }
 	public UniversalType InnerType { get; set; }
@@ -322,7 +319,7 @@ public sealed class Universal
 			return PI;
 		else if (s == "E")
 			return E;
-		else if ((uint)(s[0] - '0') > 9 && s[^1] != '\"' && s[^1] != '\'')
+		else if ((uint)(s[0] - '0') > 9 && s[^1] is not ('\"' or '\'' or '/'))
 			throw new FormatException();
 		else if (s[^1] == 'i')
 			return int.Parse(s[..^1], EnUsCulture);
@@ -360,6 +357,8 @@ public sealed class Universal
 		}
 		else if (s.Length >= 3 && s[0] == '@' && s[1] == '\"' && s[^1] == '\"')
 			return ((String)s)[2..^1].Replace("\"\"", "\"");
+		else if (Constructions.IsRawString(s, out var output))
+			return output;
 		else
 		{
 			if (int.TryParse(s, NumberStyles.Integer, EnUsCulture, out var i))
@@ -429,6 +428,26 @@ public sealed class Universal
 
 	public static Universal Xor(Universal x, Universal y) => x is null || y is null || x.IsNull || y.IsNull ? Null : (Universal)(x.ToBool() != y.ToBool());
 
+	public static Universal Xor(params List<Universal> list)
+	{
+		if (list is null)
+			return Null;
+		var trueOccurred = false;
+		for (var i = 0; i < list.Length; i++)
+		{
+			if (list[i]?.IsNull ?? true)
+				return Null;
+			else if (list[i].ToBool())
+			{
+				if (trueOccurred)
+					return false;
+				else
+					trueOccurred = true;
+			}
+		}
+		return true;
+	}
+
 	public static Universal Eq(Universal x, Universal y)
 	{
 		if (x is null || y is null || x.IsNull || y.IsNull)
@@ -459,7 +478,7 @@ public sealed class Universal
 
 	public static Universal Lt(Universal x, Universal y) => x is null || y is null || x.IsNull || y.IsNull ? Null : (Universal)(x.ToReal() < y.ToReal());
 
-	//Set flag to true if you want to try to apply this function.
+	// Set flag to true if you want to try to apply this function.
 	public static Universal ValidateFixing(Universal value, UniversalType type, bool flag = false)
 	{
 		Universal a = new(value);
@@ -469,109 +488,6 @@ public sealed class Universal
 			a.Fixed = true;
 		}
 		return a;
-	}
-
-	private static String Escape(String input)
-	{
-		String list = new((int)Ceiling(input.Length * 1.1), '\"');
-		for (var i = 0; i < input.Length; i++)
-		{
-			list.AddRange(input[i] switch
-			{
-				'\0' => new String('\\', '0'),
-				'\a' => new String('\\', 'a'),
-				'\b' => new String('\\', 'b'),
-				'\f' => new String('\\', 'f'),
-				'\n' => new String('\\', 'n'),
-				'\r' => new String('\\', 'r'),
-				'\t' => new String('\\', 't'),
-				'\v' => new String('\\', 'v'),
-				'\'' => new String('\\', '\''),
-				'\"' => new String('\\', 'q'),
-				'\\' => new String('\\', '!'),
-				_ => new String(input[i]),
-			});
-		}
-		list.Add('\"');
-		return list;
-	}
-
-	private static String Unescape(String input)
-	{
-		if (!(input.Length >= 2 && input[0] == '\"' && input[^1] == '\"'))
-			return input;
-		String list = new(input.Length);
-		var state = 0;
-		var hex_left = 0;
-		var n = 0;
-		for (var i = 1; i < input.Length - 1; i++)
-		{
-			var c = input[i];
-			if (c == '\\')
-			{
-				if (state == 1)
-				{
-					list.Add('\\');
-					state = 0;
-				}
-				else
-					state = 1;
-			}
-			else if (state == 2)
-				State2(c);
-			else if (state == 1)
-			{
-				if (c == 'x')
-				{
-					state = 2;
-					hex_left = 2;
-				}
-				else if (c == 'u')
-				{
-					state = 2;
-					hex_left = 4;
-				}
-				else
-					State1(c);
-			}
-			else
-				list.Add(c);
-		}
-		return list;
-		void State1(char c) => list.Add(c switch
-		{
-			'0' => '\0',
-			'a' => '\a',
-			'b' => '\b',
-			'f' => '\f',
-			'n' => '\n',
-			'q' => '\"',
-			'r' => '\r',
-			't' => '\t',
-			'v' => '\v',
-			'\'' => '\'',
-			'\"' => '\"',
-			'!' => '\\',
-			_ => c,
-		});
-		void State2(char c)
-		{
-			if (c is >= '0' and <= '9' or >= 'A' and <= 'F' or >= 'a' and <= 'f')
-			{
-				n = n * 16 + ((c is >= '0' and <= '9') ? c - '0' : (c is >= 'A' and <= 'F') ? c - 'A' + 10 : c - 'a' + 10);
-				if (hex_left == 1)
-				{
-					list.Add((char)n);
-					state = 0;
-				}
-				hex_left--;
-			}
-			else
-			{
-				state = c == '\\' ? 1 : 0;
-				hex_left = 0;
-			}
-		}
 	}
 
 	public Universal GetElement(int index)
@@ -1057,7 +973,7 @@ public sealed class Universal
 		{
 			var basic_type = InnerType.MainType.Peek().Name;
 			if (basic_type == "null" || IsNull)
-				return "null";
+				return addCasting ? "default!" : "null";
 			else if (basic_type == "bool")
 				return (Bool == false) ? "false" : "true";
 			else if (basic_type == "byte")
@@ -1121,7 +1037,7 @@ public sealed class Universal
 				else if (!takeIntoQuotes)
 					return String;
 				else if (addCasting)
-					return ((String)"((").AddRange(nameof(String)).Add(')').AddRange(String.TakeIntoQuotes()).Add(')');
+					return ((String)"((").AddRange(nameof(String)).Add(')').AddRange(String.TakeIntoQuotes(true)).Add(')');
 				else
 					return String.TakeIntoQuotes();
 			}

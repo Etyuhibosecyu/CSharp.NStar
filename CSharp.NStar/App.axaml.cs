@@ -12,18 +12,16 @@ global using System.Threading;
 global using System.Threading.Tasks;
 global using G = System.Collections.Generic;
 global using static CSharp.NStar.Constructions;
+global using static System.Math;
 global using String = Corlib.NStar.String;
 
 namespace CSharp.NStar;
 
 public partial class App : Application
 {
-    public override void Initialize()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
+	public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
-    public override void OnFrameworkInitializationCompleted()
+	public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
