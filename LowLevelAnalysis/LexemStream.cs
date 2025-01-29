@@ -1595,6 +1595,7 @@ public partial class MainParsing : LexemStream
 			"loop" or "repeat" or "while" or "for" => "Cycle",
 			"continue" or "break" => "SpecialAction",
 			"return" => "Return",
+			"null" when (pos + 1 < end && IsLexemKeyword(lexems[pos + 1], ["Function", "Operator", "Extent"])) => "Main",
 			_ => "Expr",
 		} : "Expr", out var newTask), currentTask: newTask == "Expr" ? "ActionChain6" : "ActionChain5", applyCurrentTask: true);
 	}

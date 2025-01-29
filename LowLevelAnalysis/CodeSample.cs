@@ -58,11 +58,13 @@ public class CodeSample(String newString)
 
 	private static LexemTree DoubleEqualLexemTree(char c) => new(c, [c, '=']);
 
-	private static List<LexemTree> DoubleLexemTreeList(char c) => [new LexemTree(c, [c])];
+	private static List<LexemTree> DoubleEqualLexemTreeList(char c) => [DoubleEqualLexemTree(c)];
+
+	private static List<LexemTree> DoubleLexemTreeList(char c) => [new(c, [c])];
 
 	private static LexemTree TripleLexemTree(char c) => new(c, DoubleLexemTreeList(c));
 
-	private static LexemTree TripleEqualLexemTree(char c) => new(c, DoubleLexemTreeList(c).Append('='), true);
+	private static LexemTree TripleEqualLexemTree(char c) => new(c, DoubleEqualLexemTreeList(c).Append('='), true);
 
 	private bool IsNotEnd() => pos < input.Length;
 

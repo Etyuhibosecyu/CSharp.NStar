@@ -1020,9 +1020,9 @@ public sealed class Universal
 			{
 				return Number switch
 				{
-					(double)1 / 0 => addCasting ? "(double)1 / 0" : "Infty",
-					(double)-1 / 0 => addCasting ? "(double)-1 / 0" : "-Infty",
-					(double)0 / 0 => addCasting ? "(double)0 / 0" : "Uncty",
+					(double)1 / 0 => addCasting ? "((double)1 / 0)" : "Infty",
+					(double)-1 / 0 => addCasting ? "((double)-1 / 0)" : "-Infty",
+					(double)0 / 0 => addCasting ? "((double)0 / 0)" : "Uncty",
 					_ => Number.ToString(EnUsCulture)
 				};
 			}
