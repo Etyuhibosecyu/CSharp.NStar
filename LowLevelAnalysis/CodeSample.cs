@@ -225,7 +225,7 @@ public class CodeSample(String newString)
 		{
 			result.Add(toAdd);
 			s2 = input[start..pos];
-			return new([.. result]);
+			return new(result);
 		}
 		String TriStateCondition(ref String s2, bool condition, bool flag)
 		{

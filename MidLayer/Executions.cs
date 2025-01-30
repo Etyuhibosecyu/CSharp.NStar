@@ -2,6 +2,7 @@
 global using System;
 global using System.Drawing;
 global using G = System.Collections.Generic;
+global using static Corlib.NStar.Extents;
 global using static CSharp.NStar.Constructions;
 global using static CSharp.NStar.Executions;
 global using static System.Math;
@@ -11,6 +12,7 @@ using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Diagnostics;
 
 namespace CSharp.NStar;
 public struct DelegateParameters
@@ -45,6 +47,29 @@ public static partial class Executions
 
 	public static JsonSerializerSettings SerializerSettings { get; } = new() { Converters = [new StringConverter(), new IEnumerableConverter(), new TupleConverter(), new UniversalConverter(), new IClassConverter(), new DoubleConverter()] };
 
+	public static String TypeMapping(String type)
+	{
+		var after = type.GetAfter(((String)"System.Collections.").AddRange(nameof(G.LinkedList<bool>)));
+		if (after != "")
+			return "G.LinkedList" + after;
+		after = type.GetAfter("System.Collections.");
+		if (after != "")
+			return after;
+		return type;
+	}
+
+	public static String TypeMappingBack(Type type)
+	{
+		if (CreateVar(PrimitiveTypesList.Find(x => x.Value == type).Key, out var typename) != null)
+			return typename;
+		else if (CreateVar(ExtraTypesList.Find(x => x.Value == type).Key, out var type2) != default)
+			return type2.Namespace.Copy().Add('.').AddRange(type2.Type);
+		else if (type == typeof(string))
+			return "string";
+		else
+			throw new InvalidOperationException();
+	}
+
 	public static String FunctionMapping(String function) => function.ToString() switch
 	{
 		"Add" => nameof(function.AddRange),
@@ -76,49 +101,6 @@ public static partial class Executions
 		nameof(DateTime.UtcNow) => throw new NotSupportedException(),
 		_ => property.Copy(),
 	};
-
-	public static Universal ExecuteTypicalConstructor(UniversalType constructingType, List<Universal> parameters, (ConstructorAttributes Attributes, GeneralMethodParameters Parameters, TreeBranch Location) realization)
-	{
-		Universal parameters2 = parameters;
-		var index = ConstructorsList.IndexOfKey(constructingType.MainType);
-		if (index == -1)
-		{
-			return Universal.Null;
-		}
-		var constructors = ConstructorsList.Values[index];
-		var constructor_index = constructors.IndexOf(realization);
-		if (constructor_index == -1)
-		{
-			return Universal.Null;
-		}
-		if (TypeIsPrimitive(constructingType.MainType))
-		{
-			if (constructingType.ExtraTypes.Length == 0)
-			{
-				var basic_type = constructingType.MainType.Peek().Name;
-				if (basic_type == "DateTime")
-				{
-					return ExecuteDateTimeConstructor(parameters, parameters2, constructor_index);
-				}
-				else if (basic_type == "string")
-				{
-					return ExecuteStringConstructor(parameters, parameters2, constructor_index);
-				}
-				else
-				{
-					return Universal.Null;
-				}
-			}
-			else
-			{
-				return Universal.Null;
-			}
-		}
-		else
-		{
-			return Universal.Null;
-		}
-	}
 
 	private static Universal ExecuteDateTimeConstructor(List<Universal> parameters, Universal parameters2, int constructor_index) => constructor_index switch
 	{
@@ -497,24 +479,30 @@ public static partial class Executions
 		return false;
 	}
 
-	public static bool MethodExists(String container, String name, out (List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters)? function)
+	public static bool MethodExists(BlockStack container, String name, out (List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters)? function)
 	{
-		var index = MethodsList.IndexOfKey(container);
-		if (index != -1)
+		var containerType = SplitType(container);
+		if (!(PrimitiveTypesList.TryGetValue(containerType.Type, out var type) || ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out type)))
 		{
-			var list = MethodsList.Values[index];
-			var index2 = list.IndexOfKey(name);
-			if (index2 != -1)
-			{
-				function = list.Values[index2];
-				return true;
-			}
+			function = null;
+			return false;
 		}
-		function = null;
-		return false;
+		if (!type.TryWrap(x => x.GetMethod(name.ToString()), out var method))
+			method = type.GetMethods().Find(x => x.Name == name.ToString());
+		if (method == null)
+		{
+			function = null;
+			return false;
+		}
+		function = (type.GenericTypeArguments.ToList(TypeMappingBack), TypeMappingBack(method.ReturnType),
+			method.ReturnType.GenericTypeArguments.ToList(TypeMappingBack), (method.IsAbstract
+			? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
+			new(method.GetParameters().ToList(x => new MethodParameter(TypeMappingBack(x.ParameterType), x.Name ?? "x",
+			x.ParameterType.GenericTypeArguments.ToList(TypeMappingBack), (x.IsOptional ? ParameterAttributes.Optional : 0)
+			| (x.ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
+			| (x.IsOut ? ParameterAttributes.Out : 0), x.DefaultValue?.ToString() ?? "null"))));
+		return true;
 	}
-
-	public static bool MethodExists(BlockStack container, String name, out (List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters)? function) => MethodExists(String.Join(".", [.. container.ToList().Convert(x => x.Name)]), name, out function);
 
 	public static bool GeneralMethodExists(BlockStack container, String name, out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters, TreeBranch? Location)? function, out bool user)
 	{
@@ -624,22 +612,30 @@ public static partial class Executions
 		return new("Function", pos, endPos, container) { Elements = { new("_", pos, endPos, container), new("type", pos, endPos, container) { Extra = extra }, branch, branch4 } };
 	}
 
-	public static bool ConstructorsExist(BlockStack type, out ConstructorOverloads? constructors)
+	public static bool ConstructorsExist(BlockStack container, out ConstructorOverloads? constructors)
 	{
-		var index = ConstructorsList.IndexOfKey(type);
-		if (index != -1)
+		var containerType = SplitType(container);
+		if (!ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out var type))
 		{
-			constructors = [.. ConstructorsList.Values[index]];
-			if (constructors.Length != 0)
-			{
-				return true;
-			}
+			constructors = null;
+			return false;
 		}
-		constructors = null;
-		return false;
+		var typeConstructors = type.GetConstructors();
+		if (typeConstructors == null)
+		{
+			constructors = null;
+			return false;
+		}
+		constructors = new(typeConstructors.ToList(x => ((x.IsAbstract ? ConstructorAttributes.Abstract : 0)
+		| (x.IsStatic ? ConstructorAttributes.Static : 0), new MethodParameters(x.GetParameters().ToList(y =>
+			new MethodParameter(y.ParameterType.Name, y.Name ?? "x",
+			y.ParameterType.GenericTypeArguments.ToList(TypeMappingBack), (y.IsOptional ? ParameterAttributes.Optional : 0)
+			| (y.ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
+			| (y.IsOut ? ParameterAttributes.Out : 0), y.DefaultValue?.ToString() ?? "null"))))));
+		return true;
 	}
 
-	public static bool UserDefinedConstructorsExist(BlockStack type, out ConstructorOverloads? constructors)
+	public static bool UserDefinedConstructorsExist(BlockStack type, out GeneralConstructorOverloads? constructors)
 	{
 		if (UserDefinedConstructorsList.TryGetValue(type, out var temp_constructors))
 		{
@@ -1369,34 +1365,72 @@ public static partial class Executions
 		return true;
 	}
 
-	public static (BlockStack Container, String Type) SplitType(BlockStack blockStack) => (new(blockStack.ToList().SkipLast(1)), blockStack.Peek().Name);
+	public static (BlockStack Container, String Type) SplitType(BlockStack blockStack) => (new(blockStack.ToList().SkipLast(1)), blockStack.TryPeek(out var block) ? block.Name : "");
 
-	public static bool TypesAreCompatible(UniversalType sourceType, UniversalType destinationType, out bool warning)
+	public static bool TypesAreCompatible(UniversalType sourceType, UniversalType destinationType, out bool warning, String? srcExpr, out String? destExpr)
 	{
 		warning = false;
 		if (TypesAreEqual(sourceType, destinationType))
+		{
+			destExpr = srcExpr;
 			return true;
+		}
 		if (TypeEqualsToPrimitive(sourceType, "null", false))
+		{
+			destExpr = "default!";
 			return true;
+		}
 		if (ImplicitConversionsFromAnythingList.Contains(destinationType, new FullTypeEComparer()))
+		{
+			destExpr = srcExpr;
 			return true;
+		}
 		if (TypeEqualsToPrimitive(destinationType, "list", false))
 		{
+			if (TypeEqualsToPrimitive(sourceType, "tuple", false))
+			{
+				var subtype = GetSubtype(destinationType);
+				if (sourceType.ExtraTypes.All(x => TypesAreCompatible((x.Value.MainType.Type, x.Value.ExtraTypes), subtype, out var warning2, null, out _) && !warning2))
+				{
+					destExpr = srcExpr;
+					return true;
+				}
+				else
+				{
+					destExpr = "default!";
+					return false;
+				}
+			}
 			var (SourceDepth, SourceLeafType) = GetTypeDepthAndLeafType(sourceType);
 			var (DestinationDepth, DestinationLeafType) = GetTypeDepthAndLeafType(destinationType);
-			return SourceDepth >= DestinationDepth && TypeEqualsToPrimitive(DestinationLeafType, "string") || SourceDepth <= DestinationDepth && TypesAreCompatible(SourceLeafType, DestinationLeafType, out warning);
+			if (SourceDepth >= DestinationDepth && TypeEqualsToPrimitive(DestinationLeafType, "string"))
+			{
+				destExpr = srcExpr == null ? null : DestinationDepth == 0 ? ((String)"(").AddRange(srcExpr).AddRange(").ToString()") : srcExpr;
+				return true;
+			}
+			else if (SourceDepth <= DestinationDepth && TypesAreCompatible(SourceLeafType, DestinationLeafType, out warning, null, out _) && !warning)
+			{
+				destExpr = srcExpr ?? null;
+				return true;
+			}
+			else
+			{
+				destExpr = "default!";
+				return false;
+			}
 		}
 		if (new BlockStackEComparer().Equals(sourceType.MainType, FuncBlockStack) && new BlockStackEComparer().Equals(destinationType.MainType, FuncBlockStack))
 		{
+			destExpr = srcExpr;
 			try
 			{
 				var warning2 = false;
-				if (!(sourceType.ExtraTypes.Length >= destinationType.ExtraTypes.Length && destinationType.ExtraTypes.Length >= 1 && !sourceType.ExtraTypes[0].MainType.IsValue && !destinationType.ExtraTypes[0].MainType.IsValue && TypesAreCompatible((sourceType.ExtraTypes[0].MainType.Type, sourceType.ExtraTypes[0].ExtraTypes), (destinationType.ExtraTypes[0].MainType.Type, destinationType.ExtraTypes[0].ExtraTypes), out warning)))
+				if (!(sourceType.ExtraTypes.Length >= destinationType.ExtraTypes.Length && destinationType.ExtraTypes.Length >= 1 && !sourceType.ExtraTypes[0].MainType.IsValue && !destinationType.ExtraTypes[0].MainType.IsValue && TypesAreCompatible((sourceType.ExtraTypes[0].MainType.Type, sourceType.ExtraTypes[0].ExtraTypes), (destinationType.ExtraTypes[0].MainType.Type, destinationType.ExtraTypes[0].ExtraTypes), out warning, null, out _)))
 					return false;
 				if (destinationType.ExtraTypes.Skip(1).Combine(sourceType.ExtraTypes.Skip(1), (x, y) =>
 				{
 					var warning3 = false;
-					var b = !x.Value.MainType.IsValue && !y.Value.MainType.IsValue && TypesAreCompatible((x.Value.MainType.Type, x.Value.ExtraTypes), (y.Value.MainType.Type, y.Value.ExtraTypes), out warning3);
+					var b = !x.Value.MainType.IsValue && !y.Value.MainType.IsValue && TypesAreCompatible((x.Value.MainType.Type, x.Value.ExtraTypes), (y.Value.MainType.Type, y.Value.ExtraTypes), out warning3, null, out _);
 					warning2 |= warning3;
 					return b;
 				}).All(x => x))
@@ -1417,17 +1451,19 @@ public static partial class Executions
 		var index = ImplicitConversionsList.IndexOfKey(sourceType.MainType);
 		if (index == -1)
 		{
+			destExpr = "default!";
 			return false;
 		}
-		var list = ImplicitConversionsList.Values[index];
-		if (!list.TryGetValue(sourceType.ExtraTypes, out var list2))
+		if (!ImplicitConversionsList.Values[index].TryGetValue(sourceType.ExtraTypes, out var list2))
 		{
+			destExpr = "default!";
 			return false;
 		}
 		var index2 = list2.FindIndex(x => TypesAreEqual(x.DestType, destinationType));
 		if (index2 != -1)
 		{
 			warning = list2[index2].Warning;
+			destExpr = srcExpr == null ? null : !warning ? srcExpr : AdaptTerminalType(srcExpr, sourceType, destinationType);
 			return true;
 		}
 		List<(UniversalType Type, bool Warning)> types_list = [(sourceType, false)];
@@ -1442,6 +1478,7 @@ public static partial class Executions
 				if (index2 != -1)
 				{
 					warning = new_types3_list[index2].Warning;
+					destExpr = srcExpr == null ? null : !warning ? srcExpr : AdaptTerminalType(srcExpr, sourceType, destinationType);
 					return true;
 				}
 				new_types2_list.AddRange(new_types3_list);
@@ -1453,7 +1490,59 @@ public static partial class Executions
 				break;
 			}
 		}
+		destExpr = null;
 		return false;
+	}
+
+	private static String AdaptTerminalType(String source, UniversalType srcType, UniversalType destType)
+	{
+		Debug.Assert(TypeIsPrimitive(srcType.MainType));
+		Debug.Assert(TypeIsPrimitive(destType.MainType));
+		var srcType2 = srcType.MainType.Peek().Name.ToString();
+		var destType2 = destType.MainType.Peek().Name.ToString();
+		Debug.Assert(destType2 != "string");
+		var destTypeconverter = destType2 switch
+		{
+			"null" => "void",
+			"short char" => "byte",
+			"short int" => "short",
+			"unsigned short int" => "ushort",
+			"unsigned int" => "uint",
+			"long char" => "(char, char)",
+			"long int" => "long",
+			"unsigned long int" => "ulong",
+			"real" => "double",
+			"string" => nameof(String),
+			"typename" => "Type",
+			"universal" => "object",
+			_ => destType2,
+		};
+		if (srcType2 == "string")
+		{
+			Debug.Assert(destType2 != "string");
+			if (destType2 is "bool" or "byte" or "char" or "short" or "ushort" or "int" or "uint" or "long" or "ulong" or "double")
+			{
+				var result = ((String)"(").AddRange(destTypeconverter).Add('.').AddRange(nameof(int.TryParse)).Add('(');
+				var varName = RedStarLinq.NFill(32, _ =>
+					(char)(globalRandom.Next(2) == 1 ? globalRandom.Next('A', 'Z' + 1) : globalRandom.Next('a', 'z' + 1)));
+				result.AddRange(source).AddRange(", out var ").AddRange(varName).AddRange(") ? ").AddRange(varName);
+				return result.AddRange(" : ").AddRange(destType2 == "bool" ? "false)" : "0)");
+			}
+			else
+			return ((String)"(").AddRange(destTypeconverter).AddRange(")(").AddRange(source).Add(')');
+		}
+		else if (destType2 == "bool")
+		{
+			Debug.Assert(srcType2 != "bool");
+			return ((String)"(").AddRange(source).AddRange(") >= 1");
+		}
+		else if (srcType2 == "real")
+		{
+			Debug.Assert(destType2 != "real");
+			return ((String)"(").AddRange(destTypeconverter).Add(')').AddRange(nameof(Truncate)).Add('(').AddRange(source).Add(')');
+		}
+		else
+			return ((String)"unchecked((").AddRange(destTypeconverter).AddRange(")(").AddRange(source).AddRange("))");
 	}
 
 	public static List<(UniversalType Type, bool Warning)> GetCompatibleTypes((UniversalType Type, bool Warning) source, List<(UniversalType Type, bool Warning)> blackList)

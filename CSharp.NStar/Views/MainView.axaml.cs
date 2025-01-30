@@ -1,4 +1,5 @@
-﻿using Avalonia.Controls;
+﻿#define RELEASE
+using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using System.Globalization;
@@ -133,6 +134,27 @@ return a;
 || (result = ExecuteProgram(program = @"list(3) int a = (((1, 2, 3), (4, 5, 6), (7, 8, 9)), ((10, 11, 12), (13, 14, 15), (16, 17, 18)), ((19, 20, 21), (22, 23, 24), (25, 26, 27)));
 return a[1, 2, 3];
 ", out errors)) != (targetResult = "6") || errors != (targetErrors = "Ошибок нет") || (result = ExecuteProgram(program = @"bool bool=bool;
+", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Error in line 1 at position 10: one cannot use the local variable ""bool"" before it is declared or inside such declaration in line 1 at position 0
+") || (result = ExecuteProgram(program = @"bool Function One()
+{
+	int Function Two()
+	{
+		return -1;
+	}
+	return Two();
+}
+return One();
+", out errors)) != (targetResult = "false") || errors != (targetErrors = @"Warning in line 7 at position 8: type of the returning value ""int"" and the function return type ""bool"" are badly compatible, you may lost data
+") || (result = ExecuteProgram(program = @"System.Func[int] Function F()
+{
+	int Function F2()
+	{
+		return 100;
+	}
+	return F2;
+}
+return F()();
+", out errors)) != (targetResult = "100") || errors != (targetErrors = "Ошибок нет") || (result = ExecuteProgram(program = @"bool bool=bool;
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Error in line 1 at position 10: one cannot use the local variable ""bool"" before it is declared or inside such declaration in line 1 at position 0
 ") || (result = ExecuteProgram(program = @"return 100000000000000000*100000000000000000000;
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Error in line 1 at position 26: too large number; long long type is under development
