@@ -72,7 +72,9 @@ public class LexemStream
 
 	private void PreParseIteration()
 	{
-		if (IsCurrentLexemKeyword("Namespace"))
+		if (IsCurrentLexemKeyword("using"))
+			PreParseUsing();
+		else if (IsCurrentLexemKeyword("Namespace"))
 			PreParseNamespace();
 		else if (IsCurrentLexemKeyword("Class"))
 			PreParseClass();
@@ -104,6 +106,75 @@ public class LexemStream
 			pos++;
 	}
 
+	private void PreParseUsing()
+	{
+		if (pos != 0)
+		{
+			GenerateMessage("Wreck", pos, "using namespace is declared not at the beginning of the code");
+			wreckOccurred = true;
+			return;
+		}
+		pos++;
+		String name;
+		var nameList = new List<String>();
+		while (pos < lexems.Length - 1 && lexems[pos].Type == LexemType.Identifier && lexems[pos + 1].Type == LexemType.Operator && lexems[pos + 1].String == ".")
+		{
+			nameList.Add(lexems[pos].String);
+			pos += 2;
+		}
+		if (IsEnd()) return;
+		if (lexems[pos].Type == LexemType.Identifier)
+		{
+			name = String.Join(".", [.. nameList, lexems[pos].String]);
+			pos++;
+		}
+		else
+		{
+			GenerateMessage("Wreck", pos, "expected: identifier");
+			wreckOccurred = true;
+			return;
+		}
+		if (NotImplementedNamespacesList.Contains(name))
+		{
+			GenerateMessage("Wreck", pos, "namespace \"" + name + "\" is still not implemented, wait for next versions");
+			wreckOccurred = true;
+			return;
+		}
+		else if (OutdatedNamespacesList.TryGetValue(name, out var useInstead))
+		{
+			GenerateMessage("Wreck", pos, "namespace \"" + name + "\" is outdated, consider using " + useInstead + " instead");
+			wreckOccurred = true;
+			return;
+		}
+		else if (ReservedNamespacesList.Contains(name))
+		{
+			GenerateMessage("Wreck", pos, "namespace \"" + name + "\" is reserved for next versions of C#.NStar and cannot be used");
+			wreckOccurred = true;
+			return;
+		}
+		else if (!NamespacesList.Contains(name))
+		{
+			GenerateMessage("Wreck", pos, "\"" + name + "\" is not a valid namespace");
+			wreckOccurred = true;
+			return;
+		}
+		else if (!ExplicitlyConnectedNamespacesList.Add(name))
+		{
+			GenerateMessage("Wreck", pos, "using \"" + name + "\" is already declared");
+			wreckOccurred = true;
+			return;
+		}
+		else if (!IsCurrentLexemOther(";"))
+		{
+			GenerateMessage("Wreck", pos, "expected: \";\"");
+			wreckOccurred = true;
+			return;
+		}
+		pos++;
+		lexems.Remove(..pos);
+		pos = 0;
+	}
+
 	private void PreParseNamespace()
 	{
 		pos++;
@@ -111,7 +182,7 @@ public class LexemStream
 		BlockStack container = new(nestedBlocksChain.ToList());
 		var blockStart = pos - 1;
 		var nameList = new List<String>();
-		while (pos < lexems.Length - 1 && lexems[pos].Type == LexemType.Identifier && lexems[pos + 1].Type == LexemType.Other && lexems[pos + 1].String == ".")
+		while (pos < lexems.Length - 1 && lexems[pos].Type == LexemType.Identifier && lexems[pos + 1].Type == LexemType.Operator && lexems[pos + 1].String == ".")
 		{
 			nameList.Add(lexems[pos].String);
 			pos += 2;
@@ -3032,7 +3103,8 @@ public partial class MainParsing : LexemStream
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 			}
 		}
-		else if (ExtraTypesList.TryGetValue((namespace_, s), out var type))
+		else if (ExtraTypesList.TryGetValue((namespace_, s), out var type) || namespace_ == ""
+			&& ExplicitlyConnectedNamespacesList.FindIndex(x => ExtraTypesList.TryGetValue((x, s), out type)) >= 0)
 		{
 			if (constraints != TypeConstraints.None && (!type.IsClass || type.IsSealed))
 			{
@@ -3042,7 +3114,7 @@ public partial class MainParsing : LexemStream
 			}
 			var pos2 = pos;
 			pos++;
-			if (type.GenericTypeArguments.Length == 0)
+			if (type.GetGenericArguments().Length == 0)
 			{
 				UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
@@ -3062,7 +3134,7 @@ public partial class MainParsing : LexemStream
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 			}
 			GeneralArrayParameters template = [];
-			for (var i = 0; i < type.GenericTypeArguments.Length; i++)
+			for (var i = 0; i < type.GetGenericArguments().Length; i++)
 				template.Add((false, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), ""));
 			ParseTypeChain(ref pos, end, mainContainer, template, out var innerArrayParameters, ref errorsList, "associativeArray");
 			UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), innerArrayParameters);

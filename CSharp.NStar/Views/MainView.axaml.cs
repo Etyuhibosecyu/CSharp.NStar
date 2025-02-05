@@ -24,7 +24,8 @@ public partial class MainView : UserControl
 		if ((result = ExecuteProgram(program = """
 			return ("7" * "2", "7" * 2, 7 * "2", "7" / "2", "7" / 2, 7 / "2", "7" % "2", "7" % 2, 7 % "2", "7" - "2", "7" - 2, 7 - "2");
 
-			""", out var errors)) != (targetResult = """("77", "77", "2222222", 3, 3, 3, 1, 1, 1, 5, 5, 5)""") || errors != (targetErrors = @"Warning in line 1 at position 12: the string cannot be multiplied by string; one of them can be converted to number but this is not recommended and can cause data loss
+			""", out var errors)) != (targetResult = """("77", "77", "2222222", 3, 3, 3, 1, 1, 1, 5, 5, 5)""")
+			|| errors != (targetErrors = @"Warning in line 1 at position 12: the string cannot be multiplied by string; one of them can be converted to number but this is not recommended and can cause data loss
 Warning in line 1 at position 41: the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss
 Warning in line 1 at position 52: the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss
 Warning in line 1 at position 59: the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss
@@ -61,7 +62,8 @@ MyClass a2 = new MyClass(8, 2.71828, ""$"");
 MyClass a3 = new MyClass(8, 2.71828);
 MyClass a4 = new MyClass(true);
 return (a1, a2, a3, a4);
-", out errors)) != (targetResult = "(new MyClass(5, 3.14159, \"A\"), new MyClass(8, 2.71828, \"$\"), new MyClass(8, 2.71828, \"A\"), new MyClass(12, 3.14159, \"A\"))") || errors != (targetErrors = "Ошибок нет") || (result = ExecuteProgram(program = @"Namespace MyNamespace
+", out errors)) != (targetResult = "(new MyClass(5, 3.14159, \"A\"), new MyClass(8, 2.71828, \"$\"), new MyClass(8, 2.71828, \"A\"), new MyClass(12, 3.14159, \"A\"))") || errors != (targetErrors = "Ошибок нет")
+|| (result = ExecuteProgram(program = @"Namespace MyNamespace
 {
 	Namespace MyNamespace
 	{
@@ -174,7 +176,32 @@ return F()();
    }
 }
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Wreck in line 13 at position 0: unclosed 2 nested comments in the end of code
-") || (result = ExecuteProgram(program = @"bool bool=bool;
+") || (result = ExecuteProgram(program = @"using System.Collections;
+NList[int] bitList = new NList[int](10, 123, 456, 789, 111, 222, 333, 444, 555, 777);
+return bitList;
+", out errors)) != (targetResult = @"(123, 456, 789, 111, 222, 333, 444, 555, 777)") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"list() int list = (1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list;
+", out errors)) != (targetResult = @"(1, 2, 3, 4, 5, 6, 7)") || (result = ExecuteProgram(program = @"using System.Collections;
+NList[int] list = new NList[int](3, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list;
+", out errors)) != (targetResult = @"(1, 2, 3, 4, 5, 6, 7)") || (result = ExecuteProgram(program = @"using System.Collections;
+var hs = new ListHashSet[string]();
+hs.Add(""1"");
+hs.Add(""2"");
+hs.Add(""3"");
+hs.Add(""2"");
+return hs;
+", out errors)) != (targetResult = """("1", "2", "3")""") || (result = ExecuteProgram(program = @"using System.Collections;
+var dic = new Dictionary[string, int]();
+dic.TryAdd(""1"", 1);
+dic.TryAdd(""2"", 2);
+dic.TryAdd(""3"", 3);
+return dic;
+", out errors)) != (targetResult = """(("1", 1), ("2", 2), ("3", 3))""") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"bool bool=bool;
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Error in line 1 at position 10: one cannot use the local variable ""bool"" before it is declared or inside such declaration in line 1 at position 0
 ") || (result = ExecuteProgram(program = @"return 100000000000000000*100000000000000000000;
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Error in line 1 at position 26: too large number; long long type is under development
@@ -232,7 +259,11 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 ", out errors)) != (targetResult = @"(""3(x + 5)(x - 2)"", ""(x + 8)²"", ""Неразложимо"", ""Это не квадратный трехчлен"", ""-x²"", ""2x(x - 5.5)"")")
 || errors != (targetErrors = @"Ошибок нет"))
 		{
-			throw new Exception("Error: @\"" + program.Replace("\"", "\"\"") + "\"" + (result == targetResult ? "" : " returned @\"" + result.Replace("\"", "\"\"") + "\" instead of @\"" + targetResult.Replace("\"", "\"\"") + "\"" + (errors == targetErrors ? "" : " and")) + (errors == targetErrors ? "" : " produced errors @\"" + errors.Replace("\"", "\"\"") + "\" instead of @\"" + targetErrors.Replace("\"", "\"\"") + "\"") + "!");
+			throw new Exception("Error: @\"" + program.Replace("\"", "\"\"") + "\"" + (result == targetResult ? ""
+				: " returned @\"" + result.Replace("\"", "\"\"") + "\" instead of @\""
+				+ targetResult.Replace("\"", "\"\"") + "\"" + (errors == targetErrors ? "" : " and"))
+				+ (errors == targetErrors ? "" : " produced errors @\"" + errors.Replace("\"", "\"\"")
+				+ "\" instead of @\"" + targetErrors.Replace("\"", "\"\"") + "\"") + "!");
 		}
 #endif
 	}

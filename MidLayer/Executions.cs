@@ -44,8 +44,24 @@ public static partial class Executions
 
 	private static int random_calls;
 	private static readonly double random_initializer = DateTime.Now.ToBinary() / 1E+9;
+	private static readonly Dictionary<Type, bool> memoizedTypes = [];
 
-	public static JsonSerializerSettings SerializerSettings { get; } = new() { Converters = [new StringConverter(), new IEnumerableConverter(), new TupleConverter(), new UniversalConverter(), new IClassConverter(), new DoubleConverter()] };
+	public static JsonSerializerSettings SerializerSettings { get; } = new() { Converters = [new StringConverter(), new IEnumerableConverter(), new TupleConverter(), new UniversalConverter(), new ValueTypeConverter(), new IClassConverter(), new DoubleConverter()] };
+
+	public static bool IsUnmanaged(this Type type)
+	{
+		if (!memoizedTypes.TryGetValue(type, out var answer))
+		{
+			if (!type.IsValueType)
+				answer = false;
+			else if (type.IsPrimitive || type.IsPointer || type.IsEnum)
+				answer = true;
+			else
+				answer = type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).All(f => IsUnmanaged(f.FieldType));
+			memoizedTypes[type] = answer;
+		}
+		return answer;
+	}
 
 	public static String TypeMapping(String type)
 	{
@@ -58,12 +74,36 @@ public static partial class Executions
 		return type;
 	}
 
-	public static String TypeMappingBack(Type type)
+	public static Type TypeMapping(UniversalTypeOrValue UnvType) =>
+		!UnvType.MainType.IsValue && (PrimitiveTypesList.TryGetValue(UnvType.MainType.Type.ToShortString(), out var innerType)
+		|| ExtraTypesList.TryGetValue((CreateVar(SplitType(UnvType.MainType.Type), out var split).Container.ToShortString(),
+		split.Type), out innerType) || UnvType.MainType.Type.Length == 1
+		&& ExplicitlyConnectedNamespacesList.FindIndex(y => ExtraTypesList.TryGetValue((y,
+		UnvType.MainType.Type.ToShortString()), out innerType)) >= 0) ? innerType : throw new InvalidOperationException();
+
+	public static String TypeMappingBack(Type type, Type[] genericArguments, GeneralExtraTypes extraTypes)
 	{
-		if (type.IsSZArray)
+		if (type.IsSZArray || type.IsPointer)
 			type = typeof(List<>);
+		else if (type == typeof(BitArray))
+			type = typeof(BitList);
+		else if (type == typeof(Index))
+			type = typeof(int);
+		else if (type.Name.Contains("Func"))
+			return "Func";
+		int foundIndex;
+		if ((foundIndex = genericArguments.IndexOf(type)) >= 0)
+			type = TypeMapping(extraTypes[foundIndex]);
+		List<Type> innerTypes = [];
+		foreach (var genericArgument in type.GenericTypeArguments)
+		{
+			if ((foundIndex = genericArguments.IndexOf(genericArgument)) < 0)
+				continue;
+			innerTypes.Add(TypeMapping(extraTypes[foundIndex]));
+		}
 		if (type.IsGenericType)
 			type = type.GetGenericTypeDefinition();
+	l1:
 		if (CreateVar(PrimitiveTypesList.Find(x => x.Value == type).Key, out var typename) != null)
 			return typename;
 		else if (CreateVar(ExtraTypesList.Find(x => x.Value == type).Key, out var type2) != default)
@@ -72,6 +112,17 @@ public static partial class Executions
 			return type3.Key.Namespace.Copy().Add('.').AddRange(type3.Key.Interface);
 		else if (type == typeof(string))
 			return "string";
+		else if (innerTypes.Length != 0)
+		{
+			type = type.MakeGenericType([.. innerTypes]);
+			if (type.Name.Contains("Tuple") || type.Name.Contains("KeyValuePair"))
+			{
+				return ((String)"(").AddRange(String.Join(", ", type.GenericTypeArguments.ToList(x =>
+				TypeMappingBack(x, genericArguments, extraTypes)))).Add(')');
+			}
+			innerTypes.Clear();
+			goto l1;
+		}
 		else
 			throw new InvalidOperationException();
 	}
@@ -432,7 +483,10 @@ public static partial class Executions
 	public static bool MethodExists(UniversalType container, String name, out (List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters)? function)
 	{
 		var containerType = SplitType(container.MainType);
-		if (!(PrimitiveTypesList.TryGetValue(containerType.Type, out var type) || ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out type)))
+		if (!(PrimitiveTypesList.TryGetValue(containerType.Type, out var type)
+			|| ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out type)
+			|| containerType.Container.Length == 0
+			&& ExplicitlyConnectedNamespacesList.FindIndex(x => ExtraTypesList.TryGetValue((x, containerType.Type), out type)) >= 0))
 		{
 			function = null;
 			return false;
@@ -444,11 +498,14 @@ public static partial class Executions
 			function = null;
 			return false;
 		}
-		function = (type.GetGenericArguments().ToList(TypeMappingBack), TypeMappingBack(method.ReturnType),
-			method.ReturnType.GetGenericArguments().ToList(TypeMappingBack), (method.IsAbstract
+		function = (type.GetGenericArguments().ToList(x =>
+			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes)), TypeMappingBack(method.ReturnType, type.GetGenericArguments(), container.ExtraTypes),
+			method.ReturnType.GenericTypeArguments.ToList(x =>
+			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes)), (method.IsAbstract
 			? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
-			new(method.GetParameters().ToList(x => new MethodParameter(TypeMappingBack(x.ParameterType), x.Name ?? "x",
-			x.ParameterType.GetGenericArguments().ToList(TypeMappingBack), (x.IsOptional ? ParameterAttributes.Optional : 0)
+			new(method.GetParameters().ToList(x => new MethodParameter(TypeMappingBack(x.ParameterType, type.GetGenericArguments(), container.ExtraTypes),
+			x.Name ?? "x", x.ParameterType.GenericTypeArguments.ToList(x =>
+			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes)), (x.IsOptional ? ParameterAttributes.Optional : 0)
 			| (x.ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
 			| (x.IsOut ? ParameterAttributes.Out : 0), x.DefaultValue?.ToString() ?? "null"))));
 		return true;
@@ -565,7 +622,10 @@ public static partial class Executions
 	public static bool ConstructorsExist(UniversalType container, out GeneralConstructorOverloads? constructors)
 	{
 		var containerType = SplitType(container.MainType);
-		if (!(PrimitiveTypesList.TryGetValue(containerType.Type, out var type) || ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out type)))
+		if (!(PrimitiveTypesList.TryGetValue(containerType.Type, out var type)
+			|| ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out type)
+			|| containerType.Container.Length == 0
+			&& ExplicitlyConnectedNamespacesList.FindIndex(x => ExtraTypesList.TryGetValue((x, containerType.Type), out type)) >= 0))
 		{
 			constructors = null;
 			return false;
@@ -578,8 +638,9 @@ public static partial class Executions
 		}
 		constructors = new(typeConstructors.ToList(x => ((x.IsAbstract ? ConstructorAttributes.Abstract : 0)
 		| (x.IsStatic ? ConstructorAttributes.Static : 0), new GeneralMethodParameters(x.GetParameters().ToList(y =>
-			new GeneralMethodParameter(CreateVar(PartialTypeToGeneralType(TypeMappingBack(y.ParameterType),
-			y.ParameterType.GetGenericArguments().ToList(TypeMappingBack)), out var UnvType).MainType, y.Name ?? "x",
+			new GeneralMethodParameter(CreateVar(PartialTypeToGeneralType(TypeMappingBack(y.ParameterType,
+			type.GetGenericArguments(), container.ExtraTypes), y.ParameterType.GenericTypeArguments.ToList(x =>
+			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes))), out var UnvType).MainType, y.Name ?? "x",
 			UnvType.ExtraTypes, (y.IsOptional ? ParameterAttributes.Optional : 0)
 			| (y.ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
 			| (y.IsOut ? ParameterAttributes.Out : 0), y.DefaultValue?.ToString() ?? "null"))))));
@@ -1602,4 +1663,22 @@ public class UniversalConverter : JsonConverter<Universal>
 {
 	public override Universal ReadJson(JsonReader reader, Type objectType, Universal existingValue, bool hasExistingValue, JsonSerializer serializer) => throw new NotSupportedException();
 	public override void WriteJson(JsonWriter writer, Universal value, JsonSerializer serializer) => writer.WriteRaw(value.ToString(true).ToString());
+}
+
+public class ValueTypeConverter : JsonConverter<ValueType>
+{
+	public override ValueType? ReadJson(JsonReader reader, Type objectType, ValueType? existingValue, bool hasExistingValue, JsonSerializer serializer) => throw new NotSupportedException();
+
+	public override void WriteJson(JsonWriter writer, ValueType? value, JsonSerializer serializer)
+	{
+		if (value is null)
+		{
+			writer.WriteNull();
+			return;
+		}
+		var type = value.GetType();
+		var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+		var joined = string.Join(", ", fields.ToArray(x => x.DeclaringType == typeof(bool) ? value.ToString()?.ToLower() : x.FieldType == type ? value.ToString() : JsonConvert.SerializeObject(x.GetValue(value), SerializerSettings)));
+		writer.WriteRaw(fields.Length == 1 ? joined : "(" + joined + ")");
+	}
 }

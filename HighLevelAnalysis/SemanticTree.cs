@@ -490,6 +490,7 @@ public sealed class SemanticTree
 					UnvType = NullType;
 				extra = new List<object> { (String)"Static", UnvType };
 				result.AddRange(Type(UnvType));
+				branch.Extra = branch[0].Extra;
 			}
 			else if (info == "new type")
 			{
@@ -1879,9 +1880,22 @@ public sealed class SemanticTree
 		if (TypeEqualsToPrimitive(type, "list", false))
 		{
 			var levelsCount = type.ExtraTypes.Length == 1 ? 1 : int.TryParse(type.ExtraTypes[0].ToString(), out var n) ? n : 0;
-			result.AddRange(((String)"List<").Repeat(levelsCount));
-			result.AddRange(Type(new(type.ExtraTypes[^1].MainType.Type, type.ExtraTypes[^1].ExtraTypes)));
-			result.AddRange(((String)">").Repeat(levelsCount));
+			if (levelsCount == 0)
+				result.AddRange(Type((type.ExtraTypes[^1].MainType.Type, type.ExtraTypes[^1].ExtraTypes)));
+			else
+			{
+				result.AddRange(((String)"List<").Repeat(levelsCount - 1));
+				var DotNetType = TypeMapping(type.ExtraTypes[^1]);
+				if (DotNetType == typeof(bool))
+					result.AddRange(nameof(BitList));
+				else
+				{
+					result.AddRange(DotNetType.IsUnmanaged() ? nameof(NList<bool>) : nameof(List<bool>)).Add('<');
+					result.AddRange(Type((type.ExtraTypes[^1].MainType.Type, type.ExtraTypes[^1].ExtraTypes)));
+					result.Add('>');
+				}
+				result.AddRange(((String)">").Repeat(levelsCount - 1));
+			}
 		}
 		else if (TypeEqualsToPrimitive(type, "tuple", false))
 		{
@@ -2274,6 +2288,7 @@ public sealed class SemanticTree
 
 	private static void ClearUserDefinedLists()
 	{
+		ExplicitlyConnectedNamespacesList.Clear();
 		UserDefinedConstantsList.Clear();
 		UserDefinedConstructorsList.Clear();
 		UserDefinedConstructorIndexesList.Clear();
