@@ -2,21 +2,17 @@
 using System.Globalization;
 
 namespace CSharp.NStar;
-[DebuggerDisplay("{IsNull ? \"null\" : ToString(true)}")]
-public sealed class Universal
+[DebuggerDisplay("{ToString(true)}")]
+public struct Universal
 {
 	private readonly bool Bool;
 	private readonly double Number;
 	private readonly String String;
 	private readonly List<Universal>? NextList;
 	private readonly object? Object;
-
-	public bool IsNull { get; set; }
 	public UniversalType InnerType { get; set; }
 	public UniversalType? OuterType { get; set; }
 	public bool Fixed { get; set; }
-
-	public static Universal Null => new();
 	public static Universal Infinity => (double)1 / 0;
 	public static Universal MinusInfinity => (double)-1 / 0;
 	public static Universal Uncertainty => (double)0 / 0;
@@ -25,11 +21,10 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = null;
-		IsNull = true;
-		InnerType = (new BlockStack([new Block(BlockType.Primitive, "null", 1)]), NoGeneralExtraTypes);
+		InnerType = NullType;
 		OuterType = null;
 		Fixed = false;
 	}
@@ -44,7 +39,6 @@ public sealed class Universal
 			String = a.String;
 			NextList = a.NextList;
 			Object = a.Object;
-			IsNull = a.IsNull;
 		}
 		else
 		{
@@ -53,7 +47,6 @@ public sealed class Universal
 			String = other.String;
 			NextList = other.NextList;
 			Object = other.Object;
-			IsNull = other.IsNull;
 			InnerType = other.InnerType;
 		}
 	}
@@ -62,10 +55,9 @@ public sealed class Universal
 	{
 		Bool = @bool;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = null;
-		IsNull = false;
 		InnerType = BoolType;
 		OuterType = null;
 		Fixed = false;
@@ -75,10 +67,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = @char;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = null;
-		IsNull = false;
 		InnerType = CharType;
 		OuterType = null;
 		Fixed = false;
@@ -88,10 +79,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = number;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = null;
-		IsNull = false;
 		if (number >= 0 && number <= 255 && Truncate(number) == number)
 			InnerType = ByteType;
 		else if (Number >= -32768 && number <= 32767 && Truncate(number) == number)
@@ -113,7 +103,6 @@ public sealed class Universal
 		String = @string;
 		NextList = null;
 		Object = null;
-		IsNull = false;
 		InnerType = StringType;
 		OuterType = null;
 		Fixed = false;
@@ -123,10 +112,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = nextList;
 		Object = null;
-		IsNull = false;
 		InnerType = nextList.Length == 0 ? GetListType(NullType) : GetListType(nextList.Skip(1).Progression(nextList[0].InnerType, (x, y) => GetResultType(x, y.InnerType)));
 		OuterType = null;
 		Fixed = false;
@@ -136,10 +124,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = list;
-		IsNull = false;
 		InnerType = BoolListType;
 		OuterType = null;
 		Fixed = false;
@@ -149,10 +136,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = list;
-		IsNull = false;
 		InnerType = ByteListType;
 		OuterType = null;
 		Fixed = false;
@@ -162,10 +148,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = list;
-		IsNull = false;
 		InnerType = ShortIntListType;
 		OuterType = null;
 		Fixed = false;
@@ -175,10 +160,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = list;
-		IsNull = false;
 		InnerType = UnsignedShortIntListType;
 		OuterType = null;
 		Fixed = false;
@@ -188,10 +172,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = list;
-		IsNull = false;
 		InnerType = CharListType;
 		OuterType = null;
 		Fixed = false;
@@ -201,10 +184,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = list;
-		IsNull = false;
 		InnerType = IntListType;
 		OuterType = null;
 		Fixed = false;
@@ -214,10 +196,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = list;
-		IsNull = false;
 		InnerType = UnsignedIntListType;
 		OuterType = null;
 		Fixed = false;
@@ -227,10 +208,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = list;
-		IsNull = false;
 		InnerType = LongIntListType;
 		OuterType = null;
 		Fixed = false;
@@ -240,10 +220,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = list;
-		IsNull = false;
 		InnerType = UnsignedLongIntListType;
 		OuterType = null;
 		Fixed = false;
@@ -253,10 +232,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = list;
-		IsNull = false;
 		InnerType = RealListType;
 		OuterType = null;
 		Fixed = false;
@@ -266,10 +244,9 @@ public sealed class Universal
 	{
 		Bool = false;
 		Number = 0;
-		String = "";
+		String = [];
 		NextList = null;
 		Object = list;
-		IsNull = false;
 		InnerType = StringListType;
 		OuterType = null;
 		Fixed = false;
@@ -284,16 +261,14 @@ public sealed class Universal
 			String = unv.String;
 			NextList = unv.NextList;
 			Object = unv.Object;
-			IsNull = unv.IsNull;
 		}
 		else
 		{
 			Bool = false;
 			Number = 0;
-			String = "";
+			String = [];
 			NextList = null;
 			Object = @object;
-			IsNull = @object == null;
 		}
 		InnerType = type;
 		OuterType = null;
@@ -306,7 +281,7 @@ public sealed class Universal
 		if (s.Length == 0)
 			throw new FormatException();
 		else if (s == "null")
-			return Null;
+			return new();
 		else if (s is "true" or "false")
 			return bool.Parse(s);
 		else if (s == "Infty")
@@ -379,14 +354,14 @@ public sealed class Universal
 		}
 		catch
 		{
-			result = Null;
+			result = new();
 			return false;
 		}
 	}
 
 	public static Universal TryConstruct(object? element) => element switch
 	{
-		null => Null,
+		null => new(),
 		bool b => b,
 		byte y => y,
 		short si => si,
@@ -419,25 +394,23 @@ public sealed class Universal
 		IList<long> LongIntList2 => (new BitList(LongIntList2.Length, false), LongIntList2),
 		IList<ulong> UnsignedLongIntList2 => (new BitList(UnsignedLongIntList2.Length, false), UnsignedLongIntList2),
 		IList<double> RealList2 => (Universal)(new BitList(RealList2.Length, false), RealList2),
-		_ => element is IList<String> StringList2 ? (Universal)(new BitList(StringList2.Length, false), StringList2) : Null
+		_ => element is IList<String> StringList2 ? (Universal)(new BitList(StringList2.Length, false), StringList2) : new()
 	};
 
-	public static Universal And(Universal x, Universal y) => x is null || y is null || x.IsNull || y.IsNull ? Null : (Universal)(x.ToBool() && y.ToBool());
+	public static Universal And(Universal x, Universal y) => (Universal)(x.ToBool() && y.ToBool());
 
-	public static Universal Or(Universal x, Universal y) => x is null || y is null || x.IsNull || y.IsNull ? Null : (Universal)(x.ToBool() || y.ToBool());
+	public static Universal Or(Universal x, Universal y) => (Universal)(x.ToBool() || y.ToBool());
 
-	public static Universal Xor(Universal x, Universal y) => x is null || y is null || x.IsNull || y.IsNull ? Null : (Universal)(x.ToBool() != y.ToBool());
+	public static Universal Xor(Universal x, Universal y) => (Universal)(x.ToBool() != y.ToBool());
 
 	public static Universal Xor(params List<Universal> list)
 	{
 		if (list is null)
-			return Null;
+			return new();
 		var trueOccurred = false;
 		for (var i = 0; i < list.Length; i++)
 		{
-			if (list[i]?.IsNull ?? true)
-				return Null;
-			else if (list[i].ToBool())
+			if (list[i].ToBool())
 			{
 				if (trueOccurred)
 					return false;
@@ -450,33 +423,23 @@ public sealed class Universal
 
 	public static Universal Eq(Universal x, Universal y)
 	{
-		if (x is null || y is null || x.IsNull || y.IsNull)
-			return Null;
-		else
-		{
-			var result_type = GetResultType(x.InnerType, y.InnerType);
-			return x.ToType(result_type, x.Fixed) == y.ToType(result_type, y.Fixed);
-		}
+		var result_type = GetResultType(x.InnerType, y.InnerType);
+		return x.ToType(result_type, x.Fixed) == y.ToType(result_type, y.Fixed);
 	}
 
 	public static Universal Neq(Universal x, Universal y)
 	{
-		if (x is null || y is null || x.IsNull || y.IsNull)
-			return Null;
-		else
-		{
-			var result_type = GetResultType(x.InnerType, y.InnerType);
-			return x.ToType(result_type, x.Fixed) != y.ToType(result_type, y.Fixed);
-		}
+		var result_type = GetResultType(x.InnerType, y.InnerType);
+		return x.ToType(result_type, x.Fixed) != y.ToType(result_type, y.Fixed);
 	}
 
-	public static Universal Goe(Universal x, Universal y) => x is null || y is null || x.IsNull || y.IsNull ? Null : (Universal)(x.ToReal() >= y.ToReal());
+	public static Universal Goe(Universal x, Universal y) => (Universal)(x.ToReal() >= y.ToReal());
 
-	public static Universal Loe(Universal x, Universal y) => x is null || y is null || x.IsNull || y.IsNull ? Null : (Universal)(x.ToReal() <= y.ToReal());
+	public static Universal Loe(Universal x, Universal y) => (Universal)(x.ToReal() <= y.ToReal());
 
-	public static Universal Gt(Universal x, Universal y) => x is null || y is null || x.IsNull || y.IsNull ? Null : (Universal)(x.ToReal() > y.ToReal());
+	public static Universal Gt(Universal x, Universal y) => (Universal)(x.ToReal() > y.ToReal());
 
-	public static Universal Lt(Universal x, Universal y) => x is null || y is null || x.IsNull || y.IsNull ? Null : (Universal)(x.ToReal() < y.ToReal());
+	public static Universal Lt(Universal x, Universal y) => (Universal)(x.ToReal() < y.ToReal());
 
 	// Set flag to true if you want to try to apply this function.
 	public static Universal ValidateFixing(Universal value, UniversalType type, bool flag = false)
@@ -517,41 +480,41 @@ public sealed class Universal
 		else if (TypeEqualsToPrimitive(InnerType, "string"))
 		{
 			var string_ = ToString();
-			return index <= 0 || index > string_.Length ? Null : (Universal)string_[index - 1];
+			return index <= 0 || index > string_.Length ? new() : (Universal)string_[index - 1];
 		}
 		else
 		{
 			var list = ToList();
-			return index <= 0 || index > list.Length ? Null : list[index - 1];
+			return index <= 0 || index > list.Length ? new() : list[index - 1];
 		}
 	}
 
-	private static Universal GetElement2<T>(int index, IList<bool> IsNullList, IList<T> MainList) => index <= 0 || index > MainList.Length ? Null : IsNullList[index - 1] ? Null : TryConstruct(MainList[index - 1]);
+	private static Universal GetElement2<T>(int index, IList<bool> IsNullList, IList<T> MainList) => index <= 0 || index > MainList.Length ? new() : IsNullList[index - 1] ? new() : TryConstruct(MainList[index - 1]);
 
 	public void SetElement(int index, Universal value)
 	{
 		if (Object is (IList<bool> BoolIsNullList, IList<bool> BoolList))
-			SetElement2(index, BoolIsNullList, BoolList, value.IsNull, value.ToBool());
+			SetElement2(index, BoolIsNullList, BoolList, value.ToBool());
 		else if (Object is (IList<bool> ByteIsNullList, IList<byte> ByteList))
-			SetElement2(index, ByteIsNullList, ByteList, value.IsNull, value.ToByte());
+			SetElement2(index, ByteIsNullList, ByteList, value.ToByte());
 		else if (Object is (IList<bool> ShortIntIsNullList, IList<short> ShortIntList))
-			SetElement2(index, ShortIntIsNullList, ShortIntList, value.IsNull, value.ToShortInt());
+			SetElement2(index, ShortIntIsNullList, ShortIntList, value.ToShortInt());
 		else if (Object is (IList<bool> UnsignedShortIntIsNullList, IList<ushort> UnsignedShortIntList))
-			SetElement2(index, UnsignedShortIntIsNullList, UnsignedShortIntList, value.IsNull, value.ToUnsignedShortInt());
+			SetElement2(index, UnsignedShortIntIsNullList, UnsignedShortIntList, value.ToUnsignedShortInt());
 		else if (Object is (IList<bool> CharIsNullList, IList<char> CharList))
-			SetElement2(index, CharIsNullList, CharList, value.IsNull, value.ToChar());
+			SetElement2(index, CharIsNullList, CharList, value.ToChar());
 		else if (Object is (IList<bool> IntIsNullList, IList<int> IntList))
-			SetElement2(index, IntIsNullList, IntList, value.IsNull, value.ToInt());
+			SetElement2(index, IntIsNullList, IntList, value.ToInt());
 		else if (Object is (IList<bool> UnsignedIntIsNullList, IList<uint> UnsignedIntList))
-			SetElement2(index, UnsignedIntIsNullList, UnsignedIntList, value.IsNull, value.ToUnsignedInt());
+			SetElement2(index, UnsignedIntIsNullList, UnsignedIntList, value.ToUnsignedInt());
 		else if (Object is (IList<bool> LongIntIsNullList, IList<long> LongIntList))
-			SetElement2(index, LongIntIsNullList, LongIntList, value.IsNull, value.ToLongInt());
+			SetElement2(index, LongIntIsNullList, LongIntList, value.ToLongInt());
 		else if (Object is (IList<bool> UnsignedLongIntIsNullList, IList<ulong> UnsignedLongIntList))
-			SetElement2(index, UnsignedLongIntIsNullList, UnsignedLongIntList, value.IsNull, value.ToUnsignedLongInt());
+			SetElement2(index, UnsignedLongIntIsNullList, UnsignedLongIntList, value.ToUnsignedLongInt());
 		else if (Object is (IList<bool> RealIsNullList, IList<double> RealList))
-			SetElement2(index, RealIsNullList, RealList, value.IsNull, value.ToReal());
+			SetElement2(index, RealIsNullList, RealList, value.ToReal());
 		else if (Object is (IList<bool> StringIsNullList, IList<String> StringList))
-			SetElement2(index, StringIsNullList, StringList, value.IsNull, value.ToString());
+			SetElement2(index, StringIsNullList, StringList, value.ToString());
 		else if (TypeEqualsToPrimitive(InnerType, "string"))
 			throw new NotSupportedException("Separate characters in the string cannot be set!");
 		else
@@ -564,13 +527,13 @@ public sealed class Universal
 		}
 	}
 
-	private static void SetElement2<T>(int index, IList<bool> IsNullList, IList<T> MainList, bool is_null, T value)
+	private static void SetElement2<T>(int index, IList<bool> IsNullList, IList<T> MainList, T value)
 	{
 		if (index <= 0 || index > MainList.Length)
 			return;
 		else
 		{
-			IsNullList[index - 1] = is_null;
+			IsNullList[index - 1] = false;
 			MainList[index - 1] = value;
 		}
 	}
@@ -593,41 +556,39 @@ public sealed class Universal
 
 	private static int GetLength2<T>(IList<bool> IsNullList, IList<T> MainList) => IsNullList.Length != MainList.Length ? 0 : MainList.Length;
 
-	public object? GetCustomObject() => IsNull ? null : Object;
-
 	public bool ToBool()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basic_type = InnerType.MainType.Peek().Name;
+			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
 			if (basic_type == "null")
 				return false;
 			else if (basic_type == "bool")
-				return !(IsNull || !Bool);
+				return Bool;
 			else if (basic_type == "byte")
-				return !(IsNull || Number < 1);
+				return !(Number < 1);
 			else if (basic_type == "short int")
-				return !(IsNull || Number < 1);
+				return !(Number < 1);
 			else if (basic_type == "unsigned short int")
-				return !(IsNull || Number < 1);
+				return !(Number < 1);
 			else if (basic_type == "char")
-				return !(IsNull || Number < 1);
+				return !(Number < 1);
 			else if (basic_type == "int")
-				return !(IsNull || Number < 1);
+				return !(Number < 1);
 			else if (basic_type == "unsigned int")
-				return !(IsNull || Number < 1);
+				return !(Number < 1);
 			else if (basic_type == "long int")
-				return !(IsNull || Object is not long li || li < 1);
+				return !(Object is not long li || li < 1);
 			else if (basic_type == "DateTime")
-				return !(IsNull || Object is not DateTime dt || dt.Ticks < 1);
+				return !(Object is not DateTime dt || dt.Ticks < 1);
 			else if (basic_type == "unsigned long int")
-				return !(IsNull || Object is not ulong uli || uli < 1);
+				return !(Object is not ulong uli || uli < 1);
 			else if (basic_type == "real")
-				return !(IsNull || Number < 1);
+				return !(Number < 1);
 			else if (basic_type == "string")
-				return !(IsNull || String == "");
+				return !(String == "");
 			else if (basic_type == "list")
-				return !(IsNull || NextList == null || NextList.Length == 0) && NextList[0].ToBool();
+				return !(NextList == null || NextList.Length == 0) && NextList[0].ToBool();
 		}
 		return false;
 	}
@@ -636,35 +597,35 @@ public sealed class Universal
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basic_type = InnerType.MainType.Peek().Name;
+			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
 			if (basic_type == "null")
 				return 0;
 			else if (basic_type == "bool")
-				return (byte)(IsNull ? 0 : (Bool == false) ? 0 : 1);
+				return (byte)((Bool == false) ? 0 : 1);
 			else if (basic_type == "byte")
-				return (byte)(IsNull ? 0 : Number);
+				return (byte)Number;
 			else if (basic_type == "short int")
-				return (byte)(IsNull ? 0 : (Number is < (-255) or > 255) ? 0 : Abs(Number));
+				return (byte)((Number is < (-255) or > 255) ? 0 : Abs(Number));
 			else if (basic_type == "unsigned short int")
-				return (byte)(IsNull ? 0 : (Number is < (-255) or > 255) ? 0 : Number);
+				return (byte)((Number is < (-255) or > 255) ? 0 : Number);
 			else if (basic_type == "char")
-				return (byte)(IsNull ? 0 : (Number is < (-255) or > 255) ? 0 : Number);
+				return (byte)((Number is < (-255) or > 255) ? 0 : Number);
 			else if (basic_type == "int")
-				return (byte)(IsNull ? 0 : (Number is < (-255) or > 255) ? 0 : Abs(Number));
+				return (byte)((Number is < (-255) or > 255) ? 0 : Abs(Number));
 			else if (basic_type == "unsigned int")
-				return (byte)(IsNull ? 0 : (Number is < (-255) or > 255) ? 0 : Number);
+				return (byte)((Number is < (-255) or > 255) ? 0 : Number);
 			else if (basic_type == "long int")
-				return (byte)((IsNull || Object is not long li) ? 0 : (li is < (-255) or > 255) ? 0 : Abs(li));
+				return (byte)((Object is not long li) ? 0 : (li is < (-255) or > 255) ? 0 : Abs(li));
 			else if (basic_type == "DateTime")
-				return (byte)((IsNull || Object is not DateTime dt) ? 0 : (dt.Ticks > 255) ? 0 : dt.Ticks);
+				return (byte)((Object is not DateTime dt) ? 0 : (dt.Ticks > 255) ? 0 : dt.Ticks);
 			else if (basic_type == "unsigned long int")
-				return (byte)((IsNull || Object is not ulong uli) ? 0 : (uli > 255) ? 0 : uli);
+				return (byte)((Object is not ulong uli) ? 0 : (uli > 255) ? 0 : uli);
 			else if (basic_type == "real")
-				return (byte)(IsNull ? 0 : (Number is < (-255) or > 255) ? 0 : Floor(Abs(Number)));
+				return (byte)((Number is < (-255) or > 255) ? 0 : Floor(Abs(Number)));
 			else if (basic_type == "string")
-				return (byte)((IsNull || String == "") ? 0 : byte.TryParse(String.ToString(), out var a) ? a : 0);
+				return (byte)((String == "") ? 0 : byte.TryParse(String.ToString(), out var a) ? a : 0);
 			else if (basic_type == "list")
-				return (byte)((IsNull || NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToByte());
+				return (byte)((NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToByte());
 		}
 		return 0;
 	}
@@ -673,35 +634,35 @@ public sealed class Universal
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basic_type = InnerType.MainType.Peek().Name;
+			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
 			if (basic_type == "null")
 				return 0;
 			else if (basic_type == "bool")
-				return (short)(IsNull ? 0 : (Bool == false) ? 0 : 1);
+				return (short)((Bool == false) ? 0 : 1);
 			else if (basic_type == "byte")
-				return (short)(IsNull ? 0 : Number);
+				return (short)Number;
 			else if (basic_type == "short int")
-				return (short)(IsNull ? 0 : Number);
+				return (short)Number;
 			else if (basic_type == "unsigned short int")
-				return (short)(IsNull ? 0 : Number);
+				return (short)Number;
 			else if (basic_type == "char")
-				return (short)(IsNull ? 0 : Number);
+				return (short)Number;
 			else if (basic_type == "int")
-				return (short)(IsNull ? 0 : (Number is < (-32768) or > 32767) ? 0 : Number);
+				return (short)((Number is < (-32768) or > 32767) ? 0 : Number);
 			else if (basic_type == "unsigned int")
-				return (short)(IsNull ? 0 : (Number > 32767) ? 0 : Number);
+				return (short)((Number > 32767) ? 0 : Number);
 			else if (basic_type == "long int")
-				return (short)((IsNull || Object is not long li) ? 0 : (li is < (-32768) or > 32767) ? 0 : li);
+				return (short)((Object is not long li) ? 0 : (li is < (-32768) or > 32767) ? 0 : li);
 			else if (basic_type == "DateTime")
-				return (short)((IsNull || Object is not DateTime dt) ? 0 : (dt.Ticks > 32767) ? 0 : dt.Ticks);
+				return (short)((Object is not DateTime dt) ? 0 : (dt.Ticks > 32767) ? 0 : dt.Ticks);
 			else if (basic_type == "unsigned long int")
-				return (short)((IsNull || Object is not ulong uli) ? 0 : (uli > 32767) ? 0 : uli);
+				return (short)((Object is not ulong uli) ? 0 : (uli > 32767) ? 0 : uli);
 			else if (basic_type == "real")
-				return (short)(IsNull ? 0 : (Number is < (-32768) or > 32767) ? 0 : Floor(Number));
+				return (short)((Number is < (-32768) or > 32767) ? 0 : Floor(Number));
 			else if (basic_type == "string")
-				return (short)((IsNull || String == "") ? 0 : short.TryParse(String.ToString(), out var a) ? a : 0);
+				return (short)((String == "") ? 0 : short.TryParse(String.ToString(), out var a) ? a : 0);
 			else if (basic_type == "list")
-				return (short)((IsNull || NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToShortInt());
+				return (short)((NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToShortInt());
 		}
 		return 0;
 	}
@@ -710,35 +671,35 @@ public sealed class Universal
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basic_type = InnerType.MainType.Peek().Name;
+			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
 			if (basic_type == "null")
 				return 0;
 			else if (basic_type == "bool")
-				return (ushort)(IsNull ? 0 : (Bool == false) ? 0 : 1);
+				return (ushort)((Bool == false) ? 0 : 1);
 			else if (basic_type == "byte")
-				return (ushort)(IsNull ? 0 : Number);
+				return (ushort)Number;
 			else if (basic_type == "short int")
-				return (ushort)(IsNull ? 0 : Number);
+				return (ushort)Number;
 			else if (basic_type == "unsigned short int")
-				return (ushort)(IsNull ? 0 : Number);
+				return (ushort)Number;
 			else if (basic_type == "char")
-				return (ushort)(IsNull ? 0 : Number);
+				return (ushort)Number;
 			else if (basic_type == "int")
-				return (ushort)(IsNull ? 0 : (Number is < (-65535) or > 65535) ? 0 : Abs(Number));
+				return (ushort)((Number is < (-65535) or > 65535) ? 0 : Abs(Number));
 			else if (basic_type == "unsigned int")
-				return (ushort)(IsNull ? 0 : (Number is < (-65535) or > 65535) ? 0 : Number);
+				return (ushort)((Number is < (-65535) or > 65535) ? 0 : Number);
 			else if (basic_type == "long int")
-				return (ushort)((IsNull || Object is not long li) ? 0 : (li is < (-65535) or > 65535) ? 0 : Abs(li));
+				return (ushort)((Object is not long li) ? 0 : (li is < (-65535) or > 65535) ? 0 : Abs(li));
 			else if (basic_type == "DateTime")
-				return (ushort)((IsNull || Object is not DateTime dt) ? 0 : (dt.Ticks > 65535) ? 0 : dt.Ticks);
+				return (ushort)((Object is not DateTime dt) ? 0 : (dt.Ticks > 65535) ? 0 : dt.Ticks);
 			else if (basic_type == "unsigned long int")
-				return (ushort)((IsNull || Object is not ulong uli) ? 0 : (uli > 65535) ? 0 : uli);
+				return (ushort)((Object is not ulong uli) ? 0 : (uli > 65535) ? 0 : uli);
 			else if (basic_type == "real")
-				return (ushort)(IsNull ? 0 : (Number is < (-65535) or > 65535) ? 0 : Floor(Abs(Number)));
+				return (ushort)((Number is < (-65535) or > 65535) ? 0 : Floor(Abs(Number)));
 			else if (basic_type == "string")
-				return (ushort)((IsNull || String == "") ? 0 : ushort.TryParse(String.ToString(), out var a) ? a : 0);
+				return (ushort)((String == "") ? 0 : ushort.TryParse(String.ToString(), out var a) ? a : 0);
 			else if (basic_type == "list")
-				return (ushort)((IsNull || NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToUnsignedShortInt());
+				return (ushort)((NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToUnsignedShortInt());
 		}
 		return 0;
 	}
@@ -747,35 +708,35 @@ public sealed class Universal
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basic_type = InnerType.MainType.Peek().Name;
+			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
 			if (basic_type == "null")
 				return '\0';
 			else if (basic_type == "bool")
-				return (char)(IsNull ? 0 : (Bool == false) ? 0 : 1);
+				return (char)((Bool == false) ? 0 : 1);
 			else if (basic_type == "byte")
-				return (char)(IsNull ? 0 : Number);
+				return (char)Number;
 			else if (basic_type == "short int")
-				return (char)(IsNull ? 0 : Number);
+				return (char)Number;
 			else if (basic_type == "unsigned short int")
-				return (char)(IsNull ? 0 : Number);
+				return (char)Number;
 			else if (basic_type == "char")
-				return (char)(IsNull ? 0 : Number);
+				return (char)Number;
 			else if (basic_type == "int")
-				return (char)(IsNull ? 0 : (Number is < (-65535) or > 65535) ? 0 : Abs(Number));
+				return (char)((Number is < (-65535) or > 65535) ? 0 : Abs(Number));
 			else if (basic_type == "unsigned int")
-				return (char)(IsNull ? 0 : (Number is < (-65535) or > 65535) ? 0 : Number);
+				return (char)((Number is < (-65535) or > 65535) ? 0 : Number);
 			else if (basic_type == "long int")
-				return (char)((IsNull || Object is not long li) ? 0 : (li is < (-65535) or > 65535) ? 0 : Abs(li));
+				return (char)((Object is not long li) ? 0 : (li is < (-65535) or > 65535) ? 0 : Abs(li));
 			else if (basic_type == "DateTime")
-				return (char)((IsNull || Object is not DateTime dt) ? 0 : (dt.Ticks > 65535) ? 0 : dt.Ticks);
+				return (char)((Object is not DateTime dt) ? 0 : (dt.Ticks > 65535) ? 0 : dt.Ticks);
 			else if (basic_type == "unsigned long int")
-				return (char)((IsNull || Object is not ulong uli) ? 0 : (uli > 65535) ? 0 : uli);
+				return (char)((Object is not ulong uli) ? 0 : (uli > 65535) ? 0 : uli);
 			else if (basic_type == "real")
-				return (char)(IsNull ? 0 : (Number is < (-65535) or > 65535) ? 0 : Floor(Abs(Number)));
+				return (char)((Number is < (-65535) or > 65535) ? 0 : Floor(Abs(Number)));
 			else if (basic_type == "string")
-				return (char)((IsNull || String == "") ? 0 : char.TryParse(String.ToString(), out var a) ? a : 0);
+				return (char)((String == "") ? 0 : char.TryParse(String.ToString(), out var a) ? a : 0);
 			else if (basic_type == "list")
-				return (char)((IsNull || NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToChar());
+				return (char)((NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToChar());
 		}
 		return '\0';
 	}
@@ -784,35 +745,35 @@ public sealed class Universal
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basic_type = InnerType.MainType.Peek().Name;
+			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
 			if (basic_type == "null")
 				return 0;
 			else if (basic_type == "bool")
-				return IsNull ? 0 : (Bool == false) ? 0 : 1;
+				return (Bool == false) ? 0 : 1;
 			else if (basic_type == "byte")
-				return (int)(IsNull ? 0 : Number);
+				return (int)Number;
 			else if (basic_type == "short int")
-				return (int)(IsNull ? 0 : Number);
+				return (int)Number;
 			else if (basic_type == "unsigned short int")
-				return (int)(IsNull ? 0 : Number);
+				return (int)Number;
 			else if (basic_type == "char")
-				return (int)(IsNull ? 0 : Number);
+				return (int)Number;
 			else if (basic_type == "int")
-				return (int)(IsNull ? 0 : Number);
+				return (int)Number;
 			else if (basic_type == "unsigned int")
-				return (int)(IsNull ? 0 : Number);
+				return (int)Number;
 			else if (basic_type == "long int")
-				return (int)((IsNull || Object is not long li) ? 0 : (li is < (-2147483648) or > 2147483647) ? 0 : li);
+				return (int)((Object is not long li) ? 0 : (li is < (-2147483648) or > 2147483647) ? 0 : li);
 			else if (basic_type == "DateTime")
-				return (int)((IsNull || Object is not DateTime dt) ? 0 : (dt.Ticks > 2147483647) ? 0 : dt.Ticks);
+				return (int)((Object is not DateTime dt) ? 0 : (dt.Ticks > 2147483647) ? 0 : dt.Ticks);
 			else if (basic_type == "unsigned long int")
-				return (int)((IsNull || Object is not ulong uli) ? 0 : (uli > 2147483647) ? 0 : uli);
+				return (int)((Object is not ulong uli) ? 0 : (uli > 2147483647) ? 0 : uli);
 			else if (basic_type == "real")
-				return (int)(IsNull ? 0 : (Number is < (-2147483648) or > 2147483647) ? 0 : Floor(Number));
+				return (int)((Number is < (-2147483648) or > 2147483647) ? 0 : Floor(Number));
 			else if (basic_type == "string")
-				return (IsNull || String == "") ? 0 : int.TryParse(String.ToString(), out var a) ? a : 0;
+				return (String == "") ? 0 : int.TryParse(String.ToString(), out var a) ? a : 0;
 			else if (basic_type == "list")
-				return (IsNull || NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToInt();
+				return (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToInt();
 		}
 		return 0;
 	}
@@ -821,35 +782,35 @@ public sealed class Universal
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basic_type = InnerType.MainType.Peek().Name;
+			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
 			if (basic_type == "null")
 				return 0;
 			else if (basic_type == "bool")
-				return (uint)(IsNull ? 0 : (Bool == false) ? 0 : 1);
+				return (uint)((Bool == false) ? 0 : 1);
 			else if (basic_type == "byte")
-				return (uint)(IsNull ? 0 : Number);
+				return (uint)Number;
 			else if (basic_type == "short int")
-				return (uint)(IsNull ? 0 : Abs(Number));
+				return (uint)Abs(Number);
 			else if (basic_type == "unsigned short int")
-				return (uint)(IsNull ? 0 : Number);
+				return (uint)Number;
 			else if (basic_type == "char")
-				return (uint)(IsNull ? 0 : Number);
+				return (uint)Number;
 			else if (basic_type == "int")
-				return (uint)(IsNull ? 0 : Number);
+				return (uint)Number;
 			else if (basic_type == "unsigned int")
-				return (uint)(IsNull ? 0 : Number);
+				return (uint)Number;
 			else if (basic_type == "long int")
-				return (uint)((IsNull || Object is not long li) ? 0 : (li is < (-4294967295) or > 4294967295) ? 0 : Abs(li));
+				return (uint)((Object is not long li) ? 0 : (li is < (-4294967295) or > 4294967295) ? 0 : Abs(li));
 			else if (basic_type == "DateTime")
-				return (uint)((IsNull || Object is not DateTime dt) ? 0 : (dt.Ticks > 4294967295) ? 0 : dt.Ticks);
+				return (uint)((Object is not DateTime dt) ? 0 : (dt.Ticks > 4294967295) ? 0 : dt.Ticks);
 			else if (basic_type == "unsigned long int")
-				return (uint)((IsNull || Object is not ulong uli) ? 0 : (uli > 4294967295) ? 0 : uli);
+				return (uint)((Object is not ulong uli) ? 0 : (uli > 4294967295) ? 0 : uli);
 			else if (basic_type == "real")
-				return (uint)(IsNull ? 0 : (Number is < (-4294967295) or > 4294967295) ? 0 : Floor(Abs(Number)));
+				return (uint)((Number is < (-4294967295) or > 4294967295) ? 0 : Floor(Abs(Number)));
 			else if (basic_type == "string")
-				return (IsNull || String == "") ? 0 : uint.TryParse(String.ToString(), out var a) ? a : 0;
+				return (String == "") ? 0 : uint.TryParse(String.ToString(), out var a) ? a : 0;
 			else if (basic_type == "list")
-				return (IsNull || NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToUnsignedInt();
+				return (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToUnsignedInt();
 		}
 		return 0;
 	}
@@ -858,74 +819,74 @@ public sealed class Universal
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basic_type = InnerType.MainType.Peek().Name;
+			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
 			if (basic_type == "null")
 				return 0;
 			else if (basic_type == "bool")
-				return IsNull ? 0 : (Bool == false) ? 0 : 1;
+				return (Bool == false) ? 0 : 1;
 			else if (basic_type == "byte")
-				return (long)(IsNull ? 0 : Number);
+				return (long)Number;
 			else if (basic_type == "short int")
-				return (long)(IsNull ? 0 : Number);
+				return (long)Number;
 			else if (basic_type == "unsigned short int")
-				return (long)(IsNull ? 0 : Number);
+				return (long)Number;
 			else if (basic_type == "char")
-				return (long)(IsNull ? 0 : Number);
+				return (long)Number;
 			else if (basic_type == "int")
-				return (long)(IsNull ? 0 : Number);
+				return (long)Number;
 			else if (basic_type == "unsigned int")
-				return (long)(IsNull ? 0 : Number);
+				return (long)Number;
 			else if (basic_type == "long int")
-				return (IsNull || Object is not long li) ? 0 : li;
+				return (Object is not long li) ? 0 : li;
 			else if (basic_type == "DateTime")
-				return (IsNull || Object is not DateTime dt) ? 0 : dt.Ticks;
+				return (Object is not DateTime dt) ? 0 : dt.Ticks;
 			else if (basic_type == "unsigned long int")
-				return (long)((IsNull || Object is not ulong uli) ? 0 : uli);
+				return (long)((Object is not ulong uli) ? 0 : uli);
 			else if (basic_type == "real")
-				return (long)(IsNull ? 0 : (Number is < (-(double)9223372036854775808) or > 9223372036854775807) ? 0 : Floor(Number));
+				return (long)((Number is < (-(double)9223372036854775808) or > 9223372036854775807) ? 0 : Floor(Number));
 			else if (basic_type == "string")
-				return (IsNull || String == "") ? 0 : long.TryParse(String.ToString(), out var a) ? a : 0;
+				return (String == "") ? 0 : long.TryParse(String.ToString(), out var a) ? a : 0;
 			else if (basic_type == "list")
-				return (IsNull || NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToLongInt();
+				return (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToLongInt();
 		}
 		return 0;
 	}
 
-	public DateTime ToDateTime() => TypeEqualsToPrimitive(InnerType, "DateTime") ? (IsNull || Object is not DateTime dt) ? new(0) : dt : new(ToLongInt());
+	public DateTime ToDateTime() => TypeEqualsToPrimitive(InnerType, "DateTime") ? (Object is not DateTime dt) ? new(0) : dt : new(ToLongInt());
 
 	public ulong ToUnsignedLongInt()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basic_type = InnerType.MainType.Peek().Name;
+			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
 			if (basic_type == "null")
 				return 0;
 			else if (basic_type == "bool")
-				return (ulong)(IsNull ? 0 : (Bool == false) ? 0 : 1);
+				return (ulong)((Bool == false) ? 0 : 1);
 			else if (basic_type == "byte")
-				return (ulong)(IsNull ? 0 : Number);
+				return (ulong)Number;
 			else if (basic_type == "short int")
-				return (ulong)(IsNull ? 0 : Abs(Number));
+				return (ulong)Abs(Number);
 			else if (basic_type == "unsigned short int")
-				return (ulong)(IsNull ? 0 : Number);
+				return (ulong)Number;
 			else if (basic_type == "char")
-				return (ulong)(IsNull ? 0 : Number);
+				return (ulong)Number;
 			else if (basic_type == "int")
-				return (ulong)(IsNull ? 0 : Number);
+				return (ulong)Number;
 			else if (basic_type == "unsigned int")
-				return (ulong)(IsNull ? 0 : Number);
+				return (ulong)Number;
 			else if (basic_type == "long int")
-				return (ulong)((IsNull || Object is not long li) ? 0 : Abs(li));
+				return (ulong)((Object is not long li) ? 0 : Abs(li));
 			else if (basic_type == "DateTime")
-				return (ulong)((IsNull || Object is not DateTime dt) ? 0 : dt.Ticks);
+				return (ulong)((Object is not DateTime dt) ? 0 : dt.Ticks);
 			else if (basic_type == "unsigned long int")
-				return (IsNull || Object is not ulong uli) ? 0 : uli;
+				return (Object is not ulong uli) ? 0 : uli;
 			else if (basic_type == "real")
-				return (ulong)(IsNull ? 0 : (Number is < (-(double)18446744073709551615) or > 18446744073709551615) ? 0 : Floor(Abs(Number)));
+				return (ulong)((Number is < (-(double)18446744073709551615) or > 18446744073709551615) ? 0 : Floor(Abs(Number)));
 			else if (basic_type == "string")
-				return (IsNull || String == "") ? 0 : ulong.TryParse(String.ToString(), out var a) ? a : 0;
+				return (String == "") ? 0 : ulong.TryParse(String.ToString(), out var a) ? a : 0;
 			else if (basic_type == "list")
-				return (IsNull || NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToUnsignedLongInt();
+				return (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToUnsignedLongInt();
 		}
 		return 0;
 	}
@@ -934,35 +895,35 @@ public sealed class Universal
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basic_type = InnerType.MainType.Peek().Name;
+			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
 			if (basic_type == "null")
 				return 0;
 			else if (basic_type == "bool")
-				return IsNull ? 0 : (Bool == false) ? 0 : 1;
+				return (Bool == false) ? 0 : 1;
 			else if (basic_type == "byte")
-				return (double)(IsNull ? 0 : Number);
+				return (double)Number;
 			else if (basic_type == "short int")
-				return (double)(IsNull ? 0 : Number);
+				return (double)Number;
 			else if (basic_type == "unsigned short int")
-				return (double)(IsNull ? 0 : Number);
+				return (double)Number;
 			else if (basic_type == "char")
-				return (double)(IsNull ? 0 : Number);
+				return (double)Number;
 			else if (basic_type == "int")
-				return (double)(IsNull ? 0 : Number);
+				return (double)Number;
 			else if (basic_type == "unsigned int")
-				return (double)(IsNull ? 0 : Number);
+				return (double)Number;
 			else if (basic_type == "long int")
-				return (IsNull || Object is not long li) ? 0 : li;
+				return (Object is not long li) ? 0 : li;
 			else if (basic_type == "DateTime")
-				return (IsNull || Object is not DateTime dt) ? 0 : dt.Ticks;
+				return (Object is not DateTime dt) ? 0 : dt.Ticks;
 			else if (basic_type == "unsigned long int")
-				return (IsNull || Object is not ulong uli) ? 0 : uli;
+				return (Object is not ulong uli) ? 0 : uli;
 			else if (basic_type == "real")
-				return (double)(IsNull ? 0 : Number);
+				return (double)Number;
 			else if (basic_type == "string")
-				return (double)((IsNull || String == "") ? 0 : double.TryParse(String.ToString(), out var a) ? a : 0);
+				return (double)((String == "") ? 0 : double.TryParse(String.ToString(), out var a) ? a : 0);
 			else if (basic_type == "list")
-				return (double)((IsNull || NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToReal());
+				return (double)((NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToReal());
 		}
 		return 0;
 	}
@@ -971,8 +932,8 @@ public sealed class Universal
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basic_type = InnerType.MainType.Peek().Name;
-			if (basic_type == "null" || IsNull)
+			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
+			if (basic_type == "null")
 				return addCasting ? "default!" : "null";
 			else if (basic_type == "bool")
 				return (Bool == false) ? "false" : "true";
@@ -1006,15 +967,15 @@ public sealed class Universal
 				return ((uint)Number).ToString(EnUsCulture);
 			else if (basic_type == "long int")
 			{
-				return IsNull || Object == null ? "" : Object is long li ? li.ToString() : "0";
+				return Object == null ? "" : Object is long li ? li.ToString() : "0";
 			}
 			else if (basic_type == "DateTime")
 			{
-				return IsNull || Object == null ? "" : Object is DateTime dt ? dt.ToString() : new DateTime(0).ToString();
+				return Object == null ? "" : Object is DateTime dt ? dt.ToString() : new DateTime(0).ToString();
 			}
 			else if (basic_type == "unsigned long int")
 			{
-				return IsNull || Object == null ? "" : Object is ulong uli ? uli.ToString() : "0";
+				return Object == null ? "" : Object is ulong uli ? uli.ToString() : "0";
 			}
 			else if (basic_type == "real")
 			{
@@ -1028,11 +989,11 @@ public sealed class Universal
 			}
 			else if (basic_type == "typename")
 			{
-				return IsNull || Object == null ? "" : Object is UniversalType UnvType ? TypeToString(UnvType) : TypeToString(NullType);
+				return Object == null ? "" : Object is UniversalType UnvType ? UnvType.ToString() : NullType.ToString();
 			}
 			else if (basic_type == "string")
 			{
-				if (IsNull || String == "")
+				if (String == "")
 					return (String)(takeIntoQuotes ? "\"\"" : "");
 				else if (!takeIntoQuotes)
 					return String;
@@ -1054,21 +1015,19 @@ public sealed class Universal
 					(IList<bool> UnsignedIntIsNullList, IList<uint> UnsignedIntList) => ListToString(UnsignedIntIsNullList, UnsignedIntList),
 					(IList<bool> RealIsNullList, IList<double> RealList) => ListToString(RealIsNullList, RealList),
 					(IList<bool> StringIsNullList, IList<string> StringList) => ListToString(StringIsNullList, StringList),
-					_ => ListToString(takeIntoQuotes)
+					_ => ListToString()
 				};
 			}
 			else if (basic_type == "tuple")
-				return ListToString(takeIntoQuotes);
+				return ListToString();
 		}
 		else if (InnerType.MainType.Length != 0 && UserDefinedTypesList.TryGetValue(SplitType(InnerType.MainType), out var type2) && type2.Decomposition != null && type2.Decomposition.Length != 0)
-			return ListToString(takeIntoQuotes, InnerType.MainType.Peek().Name.ToString());
-		return takeIntoQuotes ? (IsNull ? "null" : "Unknown Object") : "";
+			return ListToString(InnerType.MainType.Peek().Name.ToString());
+		return takeIntoQuotes ? "Unknown Object" : "";
 	}
 
-	private string ListToString(bool take_into_ic, string type_name = "")
+	private string ListToString(string type_name = "")
 	{
-		if (IsNull)
-			return take_into_ic ? "null" : "";
 		var list = ToList();
 		if (list.Length == 0)
 			return (type_name == "" ? "ListWithSingle" : "new " + type_name) + "(null)";
@@ -1092,13 +1051,13 @@ public sealed class Universal
 		if (MainList.Length == 0)
 			return "ListWithSingle(null)";
 		else if (MainList.Length == 1)
-			return "ListWithSingle(" + (IsNullList[0] ? Null : TryConstruct(MainList[0])).ToString(true) + ")";
+			return "ListWithSingle(" + (IsNullList[0] ? new() : TryConstruct(MainList[0])).ToString(true) + ")";
 		String output = new(MainList.Length * 4 + 2) { '(' };
-		output.AddRange((IsNullList[0] ? Null : TryConstruct(MainList[0])).ToString(true));
+		output.AddRange((IsNullList[0] ? new() : TryConstruct(MainList[0])).ToString(true));
 		for (var i = 1; i <= MainList.Length - 1; i++)
 		{
 			output.AddRange(", ");
-			output.AddRange((IsNullList[i] ? Null : TryConstruct(MainList[i])).ToString(true));
+			output.AddRange((IsNullList[i] ? new() : TryConstruct(MainList[i])).ToString(true));
 		}
 		output.Add(')');
 		return new([.. output]);
@@ -1112,7 +1071,7 @@ public sealed class Universal
 			return Object is DelegateParameters delegateParameters ? delegateParameters : null;
 	}
 
-	public static Universal PerformOperation<T>(Universal x, Universal y, Func<Universal, T> Input, Func<T, T, Universal> Output, String leftType, String rightType, String inputType) => x.IsNull || y.IsNull ? Null : ValidateFixing(Output(Input(x), Input(y)), GetPrimitiveType(inputType), x.Fixed && leftType == inputType || y.Fixed && rightType == inputType);
+	public static Universal PerformOperation<T>(Universal x, Universal y, Func<Universal, T> Input, Func<T, T, Universal> Output, String leftType, String rightType, String inputType) => ValidateFixing(Output(Input(x), Input(y)), GetPrimitiveType(inputType), x.Fixed && leftType == inputType || y.Fixed && rightType == inputType);
 
 	public static Universal PerformOperation<T>(T x, T y, Func<T, T, Universal> Process, String leftType, String rightType, String inputType) => ValidateFixing(Process(x, y), GetPrimitiveType(inputType), leftType == inputType || rightType == inputType);
 
@@ -1143,7 +1102,7 @@ public sealed class Universal
 	{
 		List<Universal> output = new(MainList.Length);
 		for (var i = 0; i < MainList.Length; i++)
-			output.Add(IsNullList[i] ? Null : TryConstruct(MainList[i]));
+			output.Add(IsNullList[i] ? new() : TryConstruct(MainList[i]));
 		return output;
 	}
 
@@ -1156,7 +1115,7 @@ public sealed class Universal
 		BitList output = new(list.Length);
 		for (var i = 0; i < list.Length; i++)
 		{
-			is_null.Add(list[i].IsNull);
+			is_null.Add(false);
 			output.Add(list[i].ToBool());
 		}
 		return (is_null, output);
@@ -1171,7 +1130,7 @@ public sealed class Universal
 		List<byte> output = new(list.Length);
 		for (var i = 0; i < list.Length; i++)
 		{
-			is_null.Add(list[i].IsNull);
+			is_null.Add(false);
 			output.Add(list[i].ToByte());
 		}
 		return (is_null, output);
@@ -1186,7 +1145,7 @@ public sealed class Universal
 		List<short> output = new(list.Length);
 		for (var i = 0; i < list.Length; i++)
 		{
-			is_null.Add(list[i].IsNull);
+			is_null.Add(false);
 			output.Add(list[i].ToShortInt());
 		}
 		return (is_null, output);
@@ -1201,7 +1160,7 @@ public sealed class Universal
 		List<ushort> output = new(list.Length);
 		for (var i = 0; i < list.Length; i++)
 		{
-			is_null.Add(list[i].IsNull);
+			is_null.Add(false);
 			output.Add(list[i].ToUnsignedShortInt());
 		}
 		return (is_null, output);
@@ -1221,7 +1180,7 @@ public sealed class Universal
 		String output = new(list.Length);
 		for (var i = 0; i < list.Length; i++)
 		{
-			is_null.Add(list[i].IsNull);
+			is_null.Add(false);
 			output.Add(list[i].ToChar());
 		}
 		return (is_null, output);
@@ -1236,7 +1195,7 @@ public sealed class Universal
 		NList<int> output = new(list.Length);
 		for (var i = 0; i < list.Length; i++)
 		{
-			is_null.Add(list[i].IsNull);
+			is_null.Add(false);
 			output.Add(list[i].ToInt());
 		}
 		return (is_null, output);
@@ -1251,7 +1210,7 @@ public sealed class Universal
 		List<uint> output = new(list.Length);
 		for (var i = 0; i < list.Length; i++)
 		{
-			is_null.Add(list[i].IsNull);
+			is_null.Add(false);
 			output.Add(list[i].ToUnsignedInt());
 		}
 		return (is_null, output);
@@ -1266,7 +1225,7 @@ public sealed class Universal
 		List<long> output = new(list.Length);
 		for (var i = 0; i < list.Length; i++)
 		{
-			is_null.Add(list[i].IsNull);
+			is_null.Add(false);
 			output.Add(list[i].ToLongInt());
 		}
 		return (is_null, output);
@@ -1281,7 +1240,7 @@ public sealed class Universal
 		List<ulong> output = new(list.Length);
 		for (var i = 0; i < list.Length; i++)
 		{
-			is_null.Add(list[i].IsNull);
+			is_null.Add(false);
 			output.Add(list[i].ToUnsignedLongInt());
 		}
 		return (is_null, output);
@@ -1296,7 +1255,7 @@ public sealed class Universal
 		List<double> output = new(list.Length);
 		for (var i = 0; i < list.Length; i++)
 		{
-			is_null.Add(list[i].IsNull);
+			is_null.Add(false);
 			output.Add(list[i].ToReal());
 		}
 		return (is_null, output);
@@ -1311,7 +1270,7 @@ public sealed class Universal
 		List<String> output = new(list.Length);
 		for (var i = 0; i < list.Length; i++)
 		{
-			is_null.Add(list[i].IsNull);
+			is_null.Add(false);
 			output.Add(list[i].ToString());
 		}
 		return (is_null, output);
@@ -1327,7 +1286,7 @@ public sealed class Universal
 			else if (TypesAreEqual(type, InnerType))
 				a = this;
 			else if (type.MainType.Length != 0 && UserDefinedTypesList.TryGetValue(SplitType(type.MainType), out var type_descr) && type_descr.Decomposition != null && type_descr.Decomposition.Length != 0)
-				a = IsNull ? Null : ToTupleType(type_descr.Decomposition);
+				a = ToTupleType(type_descr.Decomposition);
 			else
 				a = new();
 			if (!TypeEqualsToPrimitive(type, "universal"))
@@ -1338,7 +1297,7 @@ public sealed class Universal
 		}
 		catch (StackOverflowException)
 		{
-			return Null;
+			return new();
 		}
 	}
 
@@ -1346,7 +1305,7 @@ public sealed class Universal
 	{
 		var basic_type = type.MainType.Peek().Name;
 		if (basic_type == "null")
-			return Null;
+			return new();
 		else if (basic_type == "universal")
 			return this;
 		else if (basic_type == "bool")
@@ -1373,7 +1332,7 @@ public sealed class Universal
 			return ToReal();
 		else if (basic_type == "typename")
 		{
-			return TypeIsPrimitive(InnerType.MainType) && InnerType.MainType.Peek().Name == "typename" ? this : Null;
+			return TypeIsPrimitive(InnerType.MainType) && InnerType.MainType.Peek().Name == "typename" ? this : new();
 		}
 		else if (basic_type == "string")
 			return ToString();
@@ -1449,7 +1408,7 @@ public sealed class Universal
 				return true;
 			}
 		}
-		a = Null;
+		a = new();
 		return false;
 	}
 
@@ -1519,7 +1478,7 @@ public sealed class Universal
 				npos++;
 		}
 		for (var i = old_list.Length; i < count; i++)
-			new_list[i] = Null;
+			new_list[i] = new();
 		return new_list;
 	}
 
@@ -1589,8 +1548,6 @@ public sealed class Universal
 
 	public static Universal operator +(Universal x)
 	{
-		if (x.IsNull)
-			return Null;
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
 			var basic_type = x.InnerType.MainType.Peek().Name;
@@ -1609,19 +1566,17 @@ public sealed class Universal
 				else if (basic_type == "unsigned short int")
 					return ValidateFixing(+x.ToUnsignedShortInt(), UnsignedShortIntType, x.Fixed);
 				else
-					return basic_type == "short int" ? ValidateFixing(+x.ToShortInt(), ShortIntType, x.Fixed) : Null;
+					return basic_type == "short int" ? ValidateFixing(+x.ToShortInt(), ShortIntType, x.Fixed) : new();
 			}
 			else
-				return Null;
+				return new();
 		}
 		else
-			return Null;
+			return new();
 	}
 
 	public static Universal operator -(Universal x)
 	{
-		if (x.IsNull)
-			return Null;
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
 			var basic_type = x.InnerType.MainType.Peek().Name;
@@ -1640,21 +1595,19 @@ public sealed class Universal
 				else if (basic_type == "unsigned short int")
 					return ValidateFixing(-x.ToShortInt(), UnsignedShortIntType, x.Fixed);
 				else
-					return basic_type == "short int" ? ValidateFixing(-x.ToShortInt(), ShortIntType, x.Fixed) : Null;
+					return basic_type == "short int" ? ValidateFixing(-x.ToShortInt(), ShortIntType, x.Fixed) : new();
 			}
 			else
-				return Null;
+				return new();
 		}
 		else
-			return Null;
+			return new();
 	}
 
-	public static Universal operator !(Universal x) => x.IsNull ? Null : ValidateFixing(!x.ToBool(), BoolType, x.Fixed && TypeIsPrimitive(x.InnerType.MainType) && x.InnerType.MainType.Peek().Name == "bool");
+	public static Universal operator !(Universal x) => ValidateFixing(!x.ToBool(), BoolType, x.Fixed && TypeIsPrimitive(x.InnerType.MainType) && x.InnerType.MainType.Peek().Name == "bool");
 
 	public static Universal operator ~(Universal x)
 	{
-		if (x.IsNull)
-			return Null;
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
 			var basic_type = x.InnerType.MainType.Peek().Name;
@@ -1671,13 +1624,13 @@ public sealed class Universal
 				else if (basic_type == "unsigned short int")
 					return ValidateFixing(~x.ToUnsignedShortInt(), UnsignedShortIntType, x.Fixed);
 				else
-					return basic_type == "short int" ? ValidateFixing(~x.ToShortInt(), ShortIntType, x.Fixed) : Null;
+					return basic_type == "short int" ? ValidateFixing(~x.ToShortInt(), ShortIntType, x.Fixed) : new();
 			}
 			else
-				return Null;
+				return new();
 		}
 		else
-			return Null;
+			return new();
 	}
 
 	public static Universal operator +(Universal left, Universal right)
@@ -1710,13 +1663,13 @@ public sealed class Universal
 				else if (left_type == (t = "byte") || left_type == "bool" || right_type == t || right_type == "bool")
 					return PerformOperation(left, right, x => x.ToByte(), (x, y) => x + y, left_type, right_type, t);
 				else
-					return Null;
+					return new();
 			}
 			else
-				return Null;
+				return new();
 		}
 		else
-			return Null;
+			return new();
 	}
 
 	public static Universal operator -(Universal left, Universal right)
@@ -1749,20 +1702,18 @@ public sealed class Universal
 				else if (left_type == (t = "byte") || left_type == "bool" || right_type == t || right_type == "bool")
 					return PerformOperation(left, right, x => x.ToByte(), (x, y) => x - y, left_type, right_type, t);
 				else
-					return Null;
+					return new();
 			}
 			else
-				return Null;
+				return new();
 		}
 		else
-			return Null;
+			return new();
 	}
 
 	private static Universal StringSubtract(Universal left, Universal right, String left_type, String right_type)
 	{
-		if (left.IsNull || right.IsNull)
-			return Null;
-		else if (byte.TryParse(left.ToString().ToString(), out var left_byte) && byte.TryParse(right.ToString().ToString(), out var right_byte))
+		if (byte.TryParse(left.ToString().ToString(), out var left_byte) && byte.TryParse(right.ToString().ToString(), out var right_byte))
 			return PerformOperation(left_byte, right_byte, (x, y) => x - y, left_type, right_type, "byte");
 		else if (short.TryParse(left.ToString().ToString(), out var left_short_int) && short.TryParse(right.ToString().ToString(), out var right_short_int))
 			return PerformOperation(left_short_int, right_short_int, (x, y) => x - y, left_type, right_type, "short int");
@@ -1779,7 +1730,7 @@ public sealed class Universal
 		else if (double.TryParse(left.ToString().ToString(), out var left_real) && double.TryParse(right.ToString().ToString(), out var right_real))
 			return PerformOperation(left_real, right_real, (x, y) => x - y, left_type, right_type, "real");
 		else
-			return Null;
+			return new();
 	}
 
 	public static Universal operator *(Universal left, Universal right)
@@ -1794,7 +1745,7 @@ public sealed class Universal
 				if (left_type == "string")
 					return StringMultiply(left, right, right_type);
 				else if (right_type == "string")
-					return left.IsNull || right.IsNull ? Null : new String(RedStarLinq.Fill(right.ToString(), Max((int)left.ToUnsignedInt(), 0)).JoinIntoSingle());
+					return new String(RedStarLinq.Fill(right.ToString(), Max((int)left.ToUnsignedInt(), 0)).JoinIntoSingle());
 				else if (left_type == (t = "real") || right_type == t)
 					return PerformOperation(left, right, x => x.ToReal(), (x, y) => x * y, left_type, right_type, t);
 				else if (left_type == (t = "unsigned long int") || right_type == t)
@@ -1814,31 +1765,26 @@ public sealed class Universal
 				else if (left_type == (t = "byte") || left_type == "bool" || right_type == t || right_type == "bool")
 					return PerformOperation(left, right, x => x.ToByte(), (x, y) => x * y, left_type, right_type, t);
 				else
-					return Null;
+					return new();
 			}
 			else
-				return Null;
+				return new();
 		}
 		else
-			return Null;
+			return new();
 	}
 
 	private static Universal StringMultiply(Universal left, Universal right, String right_type)
 	{
-		if (left.IsNull || right.IsNull)
-			return Null;
-		else
+		if (right_type == "string" && uint.TryParse(right.ToString().ToString(), out _) == false)
 		{
-			if (right_type == "string" && uint.TryParse(right.ToString().ToString(), out _) == false)
-			{
-				if (uint.TryParse(left.ToString().ToString(), out _) == false)
-					return Null;
-				else
-					return (Universal)new String(RedStarLinq.Fill(right.ToString(), Max((int)left.ToUnsignedInt(), 0)).JoinIntoSingle());
-			}
+			if (uint.TryParse(left.ToString().ToString(), out _) == false)
+				return new();
 			else
-				return (Universal)new String(RedStarLinq.Fill(left.ToString(), Max((int)right.ToUnsignedInt(), 0)).JoinIntoSingle());
+				return (Universal)new String(RedStarLinq.Fill(right.ToString(), Max((int)left.ToUnsignedInt(), 0)).JoinIntoSingle());
 		}
+		else
+			return (Universal)new String(RedStarLinq.Fill(left.ToString(), Max((int)right.ToUnsignedInt(), 0)).JoinIntoSingle());
 	}
 
 	public static Universal operator /(Universal left, Universal right)
@@ -1855,7 +1801,7 @@ public sealed class Universal
 				else if (left_type == "real" || right_type == "real")
 					return PerformOperation(left, right, x => x.ToReal(), (x, y) => x / y, left_type, right_type, t);
 				else if (right == 0)
-					return Null;
+					return new();
 				else if (left_type == "unsigned long int" || right_type == "unsigned long int")
 					return PerformOperation(left, right, x => x.ToUnsignedLongInt(), (x, y) => new(x / y, UnsignedLongIntType), left_type, right_type, t);
 				else if (left_type == "long int" || right_type == "long int")
@@ -1873,19 +1819,17 @@ public sealed class Universal
 				else if (left_type == (t = "byte") || left_type == "bool" || right_type == t || right_type == "bool")
 					return PerformOperation(left, right, x => x.ToByte(), (x, y) => x / y, left_type, right_type, t);
 				else
-					return Null;
+					return new();
 			}
 			else
-				return Null;
+				return new();
 		}
 		else
-			return Null;
+			return new();
 	}
 
 	private static Universal StringDivide(Universal left, Universal right, String left_type, String right_type)
 	{
-		if (left.IsNull || right.IsNull)
-			return Null;
 		var t = GetQuotientType(left_type, right, right_type);
 		if (short.TryParse(left.ToString().ToString(), out var left_short_int) && short.TryParse(right.ToString().ToString(), out var right_short_int))
 			return PerformOperation(left_short_int, right_short_int, (x, y) => x / y, left_type, right_type, t);
@@ -1902,7 +1846,7 @@ public sealed class Universal
 		else if (double.TryParse(left.ToString().ToString(), out var left_real) && double.TryParse(right.ToString().ToString(), out var right_real))
 			return PerformOperation(left_real, right_real, (x, y) => x / y, left_type, right_type, t);
 		else
-			return Null;
+			return new();
 	}
 
 	public static Universal operator %(Universal left, Universal right)
@@ -1915,7 +1859,7 @@ public sealed class Universal
 			{
 				var t = GetRemainderType(left_type, right, right_type);
 				if (right.ToReal() == 0)
-					return Null;
+					return new();
 				else if (left_type == "string" || right_type == "string")
 					return StringMod(left, right, left_type, right_type);
 				else if (left_type == "real" || right_type == "real")
@@ -1937,19 +1881,17 @@ public sealed class Universal
 				else if (left_type == "byte" || left_type == "bool" || right_type == "byte" || right_type == "bool")
 					return PerformOperation(left, right, x => x.ToByte(), (x, y) => x - x / y * y, left_type, right_type, t);
 				else
-					return Null;
+					return new();
 			}
 			else
-				return Null;
+				return new();
 		}
 		else
-			return Null;
+			return new();
 	}
 
 	private static Universal StringMod(Universal left, Universal right, String left_type, String right_type)
 	{
-		if (left.IsNull || right.IsNull)
-			return Null;
 		var t = GetRemainderType(left_type, right, right_type);
 		if (short.TryParse(left.ToString().ToString(), out var left_short_int) && short.TryParse(right.ToString().ToString(), out var right_short_int))
 			return PerformOperation(left_short_int, right_short_int, (x, y) => x - x / y * y, left_type, right_type, t);
@@ -1966,7 +1908,7 @@ public sealed class Universal
 		else if (double.TryParse(left.ToString().ToString(), out var left_real) && double.TryParse(right.ToString().ToString(), out var right_real))
 			return PerformOperation(left_real, right_real, (x, y) => x - Floor(x / y) * y, left_type, right_type, t);
 		else
-			return Null;
+			return new();
 	}
 
 	public static Universal operator &(Universal left, Universal right) => left.ToInt() & right.ToInt();
@@ -1981,12 +1923,7 @@ public sealed class Universal
 
 	public static bool operator ==(Universal left, Universal right)
 	{
-		if (left is null && right is null)
-			return true;
-		else if (left is null || right is null)
-			return false;
-		else
-			return left.ToBool() == right.ToBool() && left.ToReal() == right.ToReal() && left.ToString() == right.ToString();
+		return left.ToBool() == right.ToBool() && left.ToReal() == right.ToReal() && left.ToString() == right.ToString();
 	}
 
 	public static bool operator !=(Universal left, Universal right) => !(left == right);

@@ -95,6 +95,18 @@ public class CodeSample(String newString)
 
 	private bool CheckLD() => CheckLetter() || CheckDigit();
 
+	private void IncreasePosSmoothly()
+	{
+		if (ValidateChar('\r') | ValidateChar('\n'))
+		{
+			lineN++;
+			lineStart = pos;
+			success = true;
+		}
+		else
+			pos++;
+	}
+
 	private String GetNumber(out LexemType type)
 	{
 		var start = pos;
@@ -297,7 +309,7 @@ public class CodeSample(String newString)
 		}
 		else if (ValidateAndAdd('\''))
 		{
-			s2 = "";
+			s2 = [];
 			TriStateCondition(ref s2, ValidateCharOrEscapeSequence(), true);
 			TriStateCondition(ref s2, ValidateAndAdd('\''), false);
 		}
@@ -306,7 +318,7 @@ public class CodeSample(String newString)
 			if (!ValidateChar('\"'))
 			{
 				pos = start;
-				return s2 = "";
+				return s2 = [];
 			}
 			result.Add('\"');
 			while (true)
@@ -318,7 +330,7 @@ public class CodeSample(String newString)
 				else
 				{
 					result.Add(input[pos]);
-					pos++;
+					IncreasePosSmoothly();
 				}
 				continue;
 			l0:
@@ -376,7 +388,7 @@ public class CodeSample(String newString)
 			else
 			{
 				result.Add(input[pos]);
-				pos++;
+				IncreasePosSmoothly();
 			}
 		}
 		s2 = input[start..pos];
@@ -400,10 +412,80 @@ public class CodeSample(String newString)
 		return input[start..pos];
 	}
 
-	private void SkipSpaces()
+	private void SkipSpacesAndComments()
 	{
-		while (IsNotEnd() && (input[pos] == ' ' || input[pos] == '\t' || input[pos] == (char)160))
-			pos++;
+		while (true)
+		{
+			while (IsNotEnd() && input[pos] is ' ' or '\t' or (char)160)
+				pos++;
+			if (!(pos <= input.Length - 2 && input[pos] == '/'))
+				return;
+			var c = input[pos + 1];
+			if (c == '/')
+			{
+				pos += 2;
+				while (IsNotEnd() && input[pos] is not ('\r' or '\n'))
+					pos++;
+			}
+			else if (c == '*')
+			{
+				pos += 3;
+				while (IsNotEnd() && !(input[pos - 1] == '*' && input[pos] == '/'))
+					IncreasePosSmoothly();
+				if (IsNotEnd())
+					pos++;
+				else
+				{
+					GenerateMessage("Wreck", pos, "unclosed comment in the end of code");
+					wreckOccurred = true;
+					return;
+				}
+			}
+			else if (c == '{')
+			{
+				pos += 2;
+				SkipNestedComments();
+			}
+			else
+				return;
+		}
+	}
+
+	private void SkipNestedComments()
+	{
+		int depth = 0, state = 0;
+		while (IsNotEnd())
+		{
+			var c = input[pos];
+			if (c == '/')
+			{
+				if (state != 2)
+					state = 1;
+				else if (depth == 0)
+				{
+					pos++;
+					return;
+				}
+				else
+				{
+					depth--;
+					state = 0;
+				}
+			}
+			else if (c == '{')
+			{
+				if (state == 1)
+					depth++;
+				state = 0;
+			}
+			else if (c == '}')
+				state = 2;
+			else
+				state = 0;
+			IncreasePosSmoothly();
+		}
+		GenerateMessage("Wreck", pos, "unclosed " + (depth + 1) + " nested comments in the end of code");
+		wreckOccurred = true;
 	}
 
 	private void ValidateEquality(ref String s)
@@ -425,7 +507,9 @@ public class CodeSample(String newString)
 				success = false;
 				return (lexems, input, errorsList, true);
 			}
-			SkipSpaces();
+			SkipSpacesAndComments();
+			if (wreckOccurred)
+				goto l0;
 			if (!IsNotEnd())
 			{
 				success = true;

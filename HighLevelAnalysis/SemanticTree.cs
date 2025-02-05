@@ -18,7 +18,7 @@ namespace CSharp.NStar;
 public sealed class SemanticTree
 {
 	private readonly List<Lexem> lexems;
-	private readonly String input, compiledClasses = "";
+	private readonly String input, compiledClasses = [];
 	private bool wreckOccurred;
 	private (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters, TreeBranch? Location)? currentFunction;
 	private readonly TreeBranch topBranch = TreeBranch.DoNotAdd();
@@ -60,7 +60,7 @@ public sealed class SemanticTree
 		{
 			innerErrorsList.Add("Wreck in unknown line at unknown position: translation failed because of internal error");
 			errorsList = innerErrorsList;
-			compiledClasses = "";
+			compiledClasses = [];
 			wreckOccurred = true;
 			return "";
 		}
@@ -92,10 +92,16 @@ public sealed class SemanticTree
 
 	private String Main(TreeBranch branch, out List<String> errorsList)
 	{
-		String result = "";
+		String result = [];
 		errorsList = [];
-		foreach (var x in branch.Elements)
+		for (var i = 0; i < branch.Length; i++)
 		{
+			var x = branch[i];
+			if (i != 0 && branch[i - 1].Info == "return" && !(i >= 2 && branch[i - 2].Info.ToString() is "if" or "else if" or "if!" or "else if!"))
+			{
+				Add(ref errorsList!, "Warning in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": unreachable code detected");
+				break;
+			}
 			var s = CalculationParseAction(x.Info)(x, out var innerErrorsList);
 			if (x.Length == 0 || s.Length != 0)
 			{
@@ -116,24 +122,24 @@ public sealed class SemanticTree
 
 	private String Class(TreeBranch branch, out List<String> errorsList)
 	{
-		String result = "";
+		String result = [];
 		errorsList = [];
 		var name = branch[0].Info;
 		var (_, Attributes, _, _) = UserDefinedTypesList[(branch.Container, name)];
-		if ((Attributes & ClassAttributes.Closed) != 0)
+		if ((Attributes & TypeAttributes.Closed) != 0)
 			result.AddRange("private ");
-		if ((Attributes & ClassAttributes.Protected) != 0)
+		if ((Attributes & TypeAttributes.Protected) != 0)
 			result.AddRange("protected ");
-		if ((Attributes & ClassAttributes.Internal) != 0)
+		if ((Attributes & TypeAttributes.Internal) != 0)
 		{
 			result.AddRange("internal ");
 			Add(ref errorsList!, "Warning in line " + lexems[branch.Pos].LineN.ToString() + " at position " + lexems[branch.Pos].Pos.ToString() + ": at present time the word \"internal\" does nothing because C#.NStar does not have multiple assemblies");
 		}
-		if ((Attributes & (ClassAttributes.Closed | ClassAttributes.Protected | ClassAttributes.Internal)) == 0)
+		if ((Attributes & (TypeAttributes.Closed | TypeAttributes.Protected | TypeAttributes.Internal)) == 0)
 			result.AddRange("public ");
-		if ((Attributes & ClassAttributes.Static) == ClassAttributes.Static)
+		if ((Attributes & TypeAttributes.Static) == TypeAttributes.Static)
 			result.AddRange("static ");
-		if ((Attributes & ClassAttributes.Abstract) != 0 && (Attributes & ClassAttributes.Static) != ClassAttributes.Static)
+		if ((Attributes & TypeAttributes.Abstract) != 0 && (Attributes & TypeAttributes.Static) != TypeAttributes.Static)
 		{
 			result.AddRange("abstract ");
 			Add(ref errorsList!, "Wreck in line " + lexems[branch.Pos].LineN.ToString() + " at position " + lexems[branch.Pos].Pos.ToString() + ": at present time the word \"abstract\" is forbidden");
@@ -155,7 +161,7 @@ public sealed class SemanticTree
 
 	private String Function(TreeBranch branch, out List<String> errorsList)
 	{
-		String result = "";
+		String result = [];
 		errorsList = [];
 		var name = branch[0].Info;
 		var t = UserDefinedFunctionsList[branch.Container][name][0];
@@ -201,7 +207,7 @@ public sealed class SemanticTree
 
 	private String Constructor(TreeBranch branch, out List<String> errorsList)
 	{
-		String result = "";
+		String result = [];
 		errorsList = [];
 		var parameterTypes = GetParameterTypes(branch[0]);
 		var (Attributes, Parameters) = UserDefinedConstructorsList[branch.Container].FindLast(x => x.Parameters.Equals(parameterTypes));
@@ -259,7 +265,7 @@ public sealed class SemanticTree
 			return value.ToString(true, true);
 		if (branch.Length == 0)
 			return branch.Info;
-		String result = "", result2 = "", result3 = "";
+		String result = [], result2 = [], result3 = [];
 		foreach (var x in branch.Elements)
 		{
 			var s = Property(x, out var innerErrorsList, out var innerResult2, out var innerResult3);
@@ -284,15 +290,15 @@ public sealed class SemanticTree
 	private String Property(TreeBranch branch, out List<String> errorsList, out String result2, out String result3)
 	{
 		errorsList = [];
-		result2 = "";
-		result3 = "";
+		result2 = [];
+		result3 = [];
 		if (branch[0].Extra is not UniversalType UnvType)
 			return "";
 		var name = branch[1].Info;
 		var (UnvType2, Attributes) = UserDefinedPropertiesList[branch.Container][name];
 		if (!UnvType.Equals(UnvType2))
 			return "";
-		String result = "";
+		String result = [];
 		if ((Attributes & PropertyAttributes.Closed) != 0)
 			result.AddRange("private ");
 		if ((Attributes & PropertyAttributes.Protected) != 0)
@@ -388,17 +394,15 @@ public sealed class SemanticTree
 
 	private String For(TreeBranch branch, out List<String> errorsList)
 	{
-		String result = "";
 		errorsList = [];
-		foreach (var x in branch.Elements)
+		if (!(branch.Length == 2 && branch[0].Info == "Declaration"))
 		{
-			var s = CalculationParseAction(x.Info)(x, out var innerErrorsList);
-			if (s != "")
-			{
-				result.AddRange(s);
-				errorsList.AddRange(innerErrorsList);
-			}
+			return [];
 		}
+		var result = ((String)"foreach (").AddRange(Declaration(branch[0], out var innerErrorsList));
+		errorsList.AddRange(innerErrorsList);
+		result.AddRange(" in ").AddRange(CalculationParseAction(branch[1].Info)(branch[1], out innerErrorsList)).Add(')');
+		errorsList.AddRange(innerErrorsList);
 		return result;
 	}
 
@@ -444,7 +448,7 @@ public sealed class SemanticTree
 
 	private String Hypername(TreeBranch branch, out List<String> errorsList, object? extra)
 	{
-		String result = "";
+		String result = [];
 		errorsList = [];
 		result.AddRange(Hypername1(branch, out var firstErrorsList, ref extra));
 		errorsList.AddRange(firstErrorsList);
@@ -460,7 +464,7 @@ public sealed class SemanticTree
 
 	private String Hypername1(TreeBranch branch, out List<String> errorsList, ref object? extra)
 	{
-		String result = "";
+		String result = [];
 		errorsList = [];
 		var info = branch[0].Info;
 		var prevIndex = branch.Parent!.Elements.FindIndex(x => ReferenceEquals(branch, x));
@@ -478,6 +482,7 @@ public sealed class SemanticTree
 			{
 				result.AddRange(CalculationParseAction(branch[0].Info)(branch[0], out var innerErrorsList));
 				AddRange(ref errorsList!, innerErrorsList);
+				branch.Extra = branch[0].Extra;
 			}
 			else if (info == "type")
 			{
@@ -492,8 +497,8 @@ public sealed class SemanticTree
 					extra = new List<object> { (String)"Constructor", NullType };
 				else if (UserDefinedConstructorsExist(UnvType.MainType, out var constructors) && constructors != null)
 					extra = new List<object> { (String)"Constructor", UnvType, (String)"user", constructors };
-				else if (ConstructorsExist(UnvType.MainType, out var constructors2) && constructors2 != null)
-					extra = new List<object> { (String)"Constructor", UnvType, (String)"typical", constructors2 };
+				else if (ConstructorsExist(UnvType, out constructors) && constructors != null)
+					extra = new List<object> { (String)"Constructor", UnvType, (String)"typical", constructors };
 				else
 					extra = new List<object> { (String)"Constructor", NullType };
 				result.AddRange("new ").AddRange(branch[0].Extra is UniversalType type3 ? Type(type3) : "dynamic");
@@ -623,7 +628,7 @@ public sealed class SemanticTree
 				result.AddRange(info);
 				branch.Extra = new UniversalType(FuncBlockStack, new([function.Value.ReturnUnvType, .. function.Value.Parameters.Convert(x => new UniversalType(x.Type, x.ExtraTypes))]));
 			}
-			else if (MethodExists(ContainerUnvType.MainType, info, out var function2))
+			else if (MethodExists(ContainerUnvType, FunctionMapping(info), out var function2))
 			{
 				if (HypernameMethod(branch, info, ref extra, errorsList, prevIndex, ContainerUnvType.MainType, function2) != null || !function2.HasValue)
 					return "_";
@@ -699,7 +704,7 @@ public sealed class SemanticTree
 			}
 			else if (!elem2.StartsWith("user") && branch.Parent?[0].Extra is UniversalType ContainerUnvType)
 			{
-				if (MethodExists(ContainerUnvType.MainType, s, out function) && function != null)
+				if (MethodExists(ContainerUnvType, s, out function) && function != null)
 				{
 					result.AddRange(FunctionMapping(s)).AddRange(ExprCall(branch[index], out var innerErrorsList, extra));
 					errorsList.AddRange(innerErrorsList);
@@ -771,12 +776,29 @@ public sealed class SemanticTree
 		{
 			if (branch[index - 1].Extra is not UniversalType CollectionUnvType)
 				return "";
+			if (!TypeEqualsToPrimitive(CollectionUnvType, "tuple", false))
+			{
+				foreach (var x in branch[index].Elements)
+				{
+					result.AddRange("[(").AddRange(CalculationParseAction(x.Info)(x, out var innerErrorsList)).AddRange(TypeEqualsToPrimitive(CollectionUnvType, "list", false) ? ") - 1]" : ")]");
+					errorsList.AddRange(innerErrorsList);
+				}
+				branch.Extra = GetSubtype(CollectionUnvType, branch[index].Length);
+				return result;
+			}
 			foreach (var x in branch[index].Elements)
 			{
-				result.AddRange("[(").AddRange(CalculationParseAction(x.Info)(x, out var innerErrorsList)).AddRange(TypeEqualsToPrimitive(CollectionUnvType, "list", false) ? ") - 1]" : ")]");
+				if (!int.TryParse(CalculationParseAction(x.Info)(x, out var innerErrorsList).ToString(), out var value))
+				{
+					var otherPos = branch[index].Pos;
+					errorsList.Add("Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": at present time index in the tuple must be compilation-time constant");
+					return "default!";
+				}
+				result.AddRange(".Item").AddRange(value.ToString());
 				errorsList.AddRange(innerErrorsList);
+				CollectionUnvType = (CollectionUnvType.ExtraTypes[value - 1].MainType.Type, CollectionUnvType.ExtraTypes[value - 1].ExtraTypes);
 			}
-			branch.Extra = GetSubtype(CollectionUnvType, branch[index].Length);
+			branch.Extra = CollectionUnvType;
 		}
 		else if (branch[index].Info == "Call")
 		{
@@ -922,7 +944,7 @@ public sealed class SemanticTree
 
 	private String Expr(TreeBranch branch, out List<String> errorsList)
 	{
-		String result = "";
+		String result = [];
 		errorsList = [];
 		if (branch.Info == "Call")
 			return ExprCall(branch, out errorsList);
@@ -1052,16 +1074,16 @@ public sealed class SemanticTree
 					+ ": cannot make this call with the expression of type that contains numbers");
 			else if (!TypesAreCompatible(CallParameterUnvType, CreateVar((UnvType.ExtraTypes[i - 1].MainType.Type,
 				UnvType.ExtraTypes[i - 1].ExtraTypes), out var FunctionParameterUnvType), out var warning, innerResult,
-				out adaptedInnerResult) || adaptedInnerResult == null)
+				out adaptedInnerResult, out var extraMessage) || adaptedInnerResult == null)
 				errorsList.Add("Error in line " + lexems[otherPos].LineN.ToString() + " at position "
-					+ lexems[otherPos].Pos.ToString() + ": incompatibility between type of parameter of the call \""
-					+ TypeToString(CallParameterUnvType) + "\" and type of parameter of the function \""
-					+ TypeToString(FunctionParameterUnvType) + "\"");
+					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage
+					?? "incompatibility between type of parameter of the call \"" + CallParameterUnvType
+					+ "\" and type of parameter of the function \"" + FunctionParameterUnvType + "\""));
 			else if (warning)
 				errorsList.Add("Warning in line " + lexems[otherPos].LineN.ToString() + " at position "
-					+ lexems[otherPos].Pos.ToString() + ": type of parameter of the call \""
-					+ TypeToString(CallParameterUnvType) + "\" and type of parameter of the function \""
-					+ TypeToString(FunctionParameterUnvType) + "\" are badly compatible, you may lost data");
+					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage ?? "type of parameter of the call \""
+					+ CallParameterUnvType + "\" and type of parameter of the function \""
+					+ FunctionParameterUnvType + "\" are badly compatible, you may lost data"));
 			innerResult.Replace(adaptedInnerResult ?? "default!");
 			if (i >= branch.Length || UnvType.ExtraTypes.Length < i)
 			{
@@ -1082,16 +1104,16 @@ public sealed class SemanticTree
 				errorsList.Add("Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": incorrect number of parameters of the call");
 			else if (!TypesAreCompatible(CallParameterUnvType, CreateVar(PartialTypeToGeneralType(Parameters[i].Type,
 				Parameters[i].ExtraTypes), out var FunctionParameterUnvType), out var warning, innerResult,
-				out adaptedInnerResult) || adaptedInnerResult == null)
+				out adaptedInnerResult, out var extraMessage) || adaptedInnerResult == null)
 				errorsList.Add("Error in line " + lexems[otherPos].LineN.ToString() + " at position "
-					+ lexems[otherPos].Pos.ToString() + ": incompatibility between type of parameter of the call \""
-					+ TypeToString(CallParameterUnvType) + "\" and type of parameter of the function \""
-					+ TypeToString(FunctionParameterUnvType) + "\"");
+					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage
+					?? "incompatibility between type of parameter of the call \"" + CallParameterUnvType
+					+ "\" and type of parameter of the function \"" + FunctionParameterUnvType + "\""));
 			else if (warning)
 				errorsList.Add("Warning in line " + lexems[otherPos].LineN.ToString() + " at position "
-					+ lexems[otherPos].Pos.ToString() + ": type of parameter of the call \""
-					+ TypeToString(CallParameterUnvType) + "\" and type of parameter of the function \""
-					+ TypeToString(FunctionParameterUnvType) + "\" are badly compatible, you may lost data");
+					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage ?? "type of parameter of the call \""
+					+ CallParameterUnvType + "\" and type of parameter of the function \""
+					+ FunctionParameterUnvType + "\" are badly compatible, you may lost data"));
 			innerResult.Replace(adaptedInnerResult ?? "default!");
 			if (i >= branch.Length || Parameters.Length < i + 1)
 			{
@@ -1099,22 +1121,22 @@ public sealed class SemanticTree
 				return true;
 			}
 		}
-		else if (list[2] is (GeneralArrayParameters, UniversalType GeneralReturnUnvType, FunctionAttributes, GeneralMethodParameters GeneralParameters, TreeBranch))
+		else if (list[2] is (GeneralArrayParameters, UniversalType GeneralReturnUnvType, FunctionAttributes, GeneralMethodParameters GeneralParameters, _))
 		{
 			if (GeneralParameters.Length < i + 1 && (GeneralParameters.Length == 0 || (GeneralParameters[^1].Attributes & ParameterAttributes.Params) == 0))
 				errorsList.Add("Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": incorrect number of parameters of the call");
 			else if (!TypesAreCompatible(CallParameterUnvType, CreateVar((GeneralParameters[i].Type,
 				GeneralParameters[i].ExtraTypes), out var FunctionParameterUnvType), out var warning, innerResult,
-				out adaptedInnerResult) || adaptedInnerResult == null)
+				out adaptedInnerResult, out var extraMessage) || adaptedInnerResult == null)
 				errorsList.Add("Error in line " + lexems[otherPos].LineN.ToString() + " at position "
-					+ lexems[otherPos].Pos.ToString() + ": incompatibility between type of parameter of the call \""
-					+ TypeToString(CallParameterUnvType) + "\" and type of parameter of the function \""
-					+ TypeToString(FunctionParameterUnvType) + "\"");
+					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage
+					?? "incompatibility between type of parameter of the call \"" + CallParameterUnvType
+					+ "\" and type of parameter of the function \"" + FunctionParameterUnvType + "\""));
 			else if (warning)
 				errorsList.Add("Warning in line " + lexems[otherPos].LineN.ToString() + " at position "
-					+ lexems[otherPos].Pos.ToString() + ": type of parameter of the call \""
-					+ TypeToString(CallParameterUnvType) + "\" and type of parameter of the function \""
-					+ TypeToString(FunctionParameterUnvType) + "\" are badly compatible, you may lost data");
+					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage ?? "type of parameter of the call \""
+					+ CallParameterUnvType + "\" and type of parameter of the function \""
+					+ FunctionParameterUnvType + "\" are badly compatible, you may lost data"));
 			innerResult.Replace(adaptedInnerResult ?? "default!");
 			if (i >= branch.Length || GeneralParameters.Length < i + 1)
 			{
@@ -1302,7 +1324,7 @@ public sealed class SemanticTree
 			case "pow":
 			try
 			{
-				branch[Max(i - 3, 0)] = new((value1.IsNull || value2.IsNull ? Universal.Null : Pow(value2.ToReal(), value1.ToReal())).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
+				branch[Max(i - 3, 0)] = new(((Universal)Pow(value2.ToReal(), value1.ToReal())).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
 			}
 			catch
 			{
@@ -1329,7 +1351,7 @@ public sealed class SemanticTree
 				errorsList.Add("Warning in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss");
 			if (!TypeEqualsToPrimitive(UnvType1, "real") && !TypeEqualsToPrimitive(UnvType2, "real") && value2 == 0)
 			{
-				errorsList.Add("Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": integer division by zero is forbidden");
+				errorsList.Add("Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": division by integer zero is forbidden");
 				branch[Max(i - 3, 0)] = new("default!", branch.Pos, branch.EndPos, branch.Container);
 			}
 			else if (i == 2)
@@ -1348,7 +1370,7 @@ public sealed class SemanticTree
 				errorsList.Add("Warning in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss");
 			if (!TypeEqualsToPrimitive(UnvType1, "real") && !TypeEqualsToPrimitive(UnvType2, "real") && value2 == 0)
 			{
-				errorsList.Add("Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": integer division by zero is forbidden");
+				errorsList.Add("Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": division by integer zero is forbidden");
 				branch[Max(i - 3, 0)] = new("default!", branch.Pos, branch.EndPos, branch.Container);
 			}
 			else if (i == 2)
@@ -1500,9 +1522,13 @@ public sealed class SemanticTree
 		branch[i].Extra = resultType;
 		if (branch[i].Info.ToString() is "/" or "%" && !TypeEqualsToPrimitive(UnvType1, "real") && !TypeEqualsToPrimitive(UnvType2, "real") && innerResults[^1].ToString() is "0" or "0i" or "0u" or "0L" or "0uL" or "\"0\"")
 		{
-			errorsList.Add("Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": integer division by zero is forbidden");
+			errorsList.Add("Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": division by integer zero is forbidden");
 			branch[Max(i - 3, 0)] = new("default!", branch.Pos, branch.EndPos, branch.Container);
 		}
+		if (innerResults[^2].ContainsAnyExcluding(AlphanumericCharacters))
+			innerResults[^2].Insert(0, '(').Add(')');
+		if (innerResults[^1].ContainsAnyExcluding(AlphanumericCharacters))
+			innerResults[^1].Insert(0, '(').Add(')');
 		return i < 2 ? branch[i].Info : new String(innerResults[^2]).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]);
 	}
 
@@ -1514,7 +1540,7 @@ public sealed class SemanticTree
 			UnvType2 = NullType;
 		if (!(i >= 4 && branch[i - 4].Extra is UniversalType PrevUnvType))
 			PrevUnvType = NullType;
-		bool isString1 = TypeEqualsToPrimitive(UnvType1, "string"), isString2 = TypeEqualsToPrimitive(UnvType2, "string"), isStringPrev = TypeEqualsToPrimitive(PrevUnvType, "string");
+		bool isString1 = TypeEqualsToPrimitive(UnvType1, "string"), isString2 = TypeEqualsToPrimitive(UnvType2, "string") || TypeEqualsToPrimitive(UnvType2, "char"), isStringPrev = TypeEqualsToPrimitive(PrevUnvType, "string");
 		if (branch[i].Info == "-" && (isString1 || isString2))
 			errorsList.Add("Warning in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": the strings cannot be subtracted; they can be converted to number but this is not recommended and can cause data loss");
 		if (isStringPrev && isString2 == false)
@@ -1558,7 +1584,13 @@ public sealed class SemanticTree
 		else if (isString1 || isString2)
 			return ((String)"((").AddRange(nameof(Universal)).Add(')').AddRange(innerResults[^2]).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]).AddRange(").ToString()");
 		else
+		{
+			if (innerResults[^2].ContainsAnyExcluding(AlphanumericCharacters))
+				innerResults[^2].Insert(0, '(').Add(')');
+			if (innerResults[^1].ContainsAnyExcluding(AlphanumericCharacters))
+				innerResults[^1].Insert(0, '(').Add(')');
 			return i < 2 ? branch[i][^1].Info : innerResults[^2].Copy().Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]);
+		}
 	}
 
 	private static String ExprPow(TreeBranch branch, List<String> innerResults, int i)
@@ -1582,23 +1614,35 @@ public sealed class SemanticTree
 			SrcUnvType = NullType;
 		if (branch[i - 1].Extra is not UniversalType DestUnvType)
 			DestUnvType = NullType;
-		if (!TypesAreCompatible(SrcUnvType, DestUnvType, out var warning, innerResults[^2], out var adaptedSource) || adaptedSource == null)
+		var warning = false;
+		if (branch[i].Info == "pow=" && TypesAreCompatible(SrcUnvType, RealType, out warning, innerResults[^2],
+			out var adaptedSource, out _) && adaptedSource != null)
+		{
+			SrcUnvType = RealType;
+			innerResults[^2] = ((String)"Pow(").AddRange(innerResults[^1]).AddRange(", ").AddRange(adaptedSource).Add(')');
+		}
+		if (!TypesAreCompatible(SrcUnvType, DestUnvType, out var warning2, innerResults[^2], out adaptedSource,
+			out var extraMessage) || adaptedSource == null)
 		{
 			var otherPos = branch[i].Pos;
-			errorsList.Add("Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": cannot convert from type \"" + TypeToString(SrcUnvType) + "\" to type \"" + TypeToString(DestUnvType) + "\"");
+			errorsList.Add("Error in line " + lexems[otherPos].LineN.ToString() + " at position "
+				+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage
+				?? "cannot convert from type \"" + SrcUnvType + "\" to type \"" + DestUnvType + "\""));
 			branch.Info = "default!";
 			branch.RemoveEnd(0);
 			branch.Extra = NullType;
 			return "default!";
 		}
-		else if (warning)
+		else if (warning || warning2)
 		{
 			var otherPos = branch[i].Pos;
-			errorsList.Add("Warning in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": conversion from type \"" + TypeToString(SrcUnvType) + "\" to type \"" + TypeToString(DestUnvType) + "\" is possible but not recommended, you may lost data");
+			errorsList.Add("Warning in line " + lexems[otherPos].LineN.ToString() + " at position "
+				+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage ?? "conversion from type \""
+				+ SrcUnvType + "\" to type \"" + DestUnvType + "\" is possible but not recommended, you may lost data"));
 		}
 		branch[i].Extra = DestUnvType;
 		if (branch[i].Info == "pow=")
-			return i < 2 ? branch[i].Info : innerResults[^1].Copy().AddRange(" = Pow(").AddRange(innerResults[^1]).AddRange(", ").AddRange(adaptedSource).Add(')');
+			return i < 2 ? branch[i].Info : innerResults[^1].Copy().AddRange(" = ").AddRange(adaptedSource);
 		else if (branch[i].Info == "+=" && TypeEqualsToPrimitive(DestUnvType, "string"))
 			return i < 2 ? branch[i].Info : innerResults[^1].Copy().AddRange(".AddRange(").AddRange(adaptedSource).Add(')');
 		else
@@ -1626,6 +1670,10 @@ public sealed class SemanticTree
 	private String ExprBool(TreeBranch branch, List<String> innerResults, int i)
 	{
 		branch[i].Extra = BoolType;
+		if (innerResults[^2].ContainsAnyExcluding(AlphanumericCharacters))
+			innerResults[^2].Insert(0, '(').Add(')');
+		if (innerResults[^1].ContainsAnyExcluding(AlphanumericCharacters))
+			innerResults[^1].Insert(0, '(').Add(')');
 		return i < 2 ? branch[i].Info : ((String)nameof(Universal)).Add('.').AddRange(branch[i].Info.ToString() switch
 		{
 			"==" => nameof(Universal.Eq),
@@ -1648,6 +1696,10 @@ public sealed class SemanticTree
 		if (branch[i - 1].Extra is not UniversalType UnvType2)
 			UnvType2 = NullType;
 		branch[i].Extra = GetResultType(UnvType1, UnvType2);
+		if (innerResults[^2].ContainsAnyExcluding(AlphanumericCharacters))
+			innerResults[^2].Insert(0, '(').Add(')');
+		if (innerResults[^1].ContainsAnyExcluding(AlphanumericCharacters))
+			innerResults[^1].Insert(0, '(').Add(')');
 		return i < 2 ? branch[i].Info : new String(innerResults[^2]).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]);
 	}
 
@@ -1748,7 +1800,7 @@ public sealed class SemanticTree
 
 	private String Return(TreeBranch branch, out List<String> errorsList)
 	{
-		String result = "";
+		String result = [];
 		errorsList = [];
 		result.AddRange("return ");
 		if (branch[0].Length == 0)
@@ -1762,19 +1814,21 @@ public sealed class SemanticTree
 			result.AddRange(expr == "_" ? "default!" : expr);
 		else if (TypesAreEqual(currentFunction.Value.ReturnUnvType, NullType))
 			return "return;";
-		else if (!TypesAreCompatible(ExprUnvType, currentFunction.Value.ReturnUnvType, out var warning, expr, out var adapterExpr))
+		else if (!TypesAreCompatible(ExprUnvType, currentFunction.Value.ReturnUnvType, out var warning, expr,
+			out var adapterExpr, out var extraMessage))
 		{
 			errorsList.Add("Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString()
-				+ ": incompatibility between type of the returning value \"" + TypeToString(ExprUnvType)
-				+ "\" and the function return type \"" + TypeToString(currentFunction.Value.ReturnUnvType) + "\"");
+				+ ": " + (extraMessage ?? "incompatibility between type of the returning value \"" + ExprUnvType
+				+ "\" and the function return type \"" + currentFunction.Value.ReturnUnvType + "\""));
 			result.AddRange("default!");
 		}
 		else
 		{
 			if (warning)
-				errorsList.Add("Warning in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString()
-					+ ": type of the returning value \"" + TypeToString(ExprUnvType) + "\" and the function return type \""
-					+ TypeToString(currentFunction.Value.ReturnUnvType) + "\" are badly compatible, you may lost data");
+				errorsList.Add("Warning in line " + lexems[otherPos].LineN.ToString() + " at position "
+					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage ?? "type of the returning value \""
+					+ ExprUnvType + "\" and the function return type \"" + currentFunction.Value.ReturnUnvType
+					+ "\" are badly compatible, you may lost data"));
 			result.AddRange(adapterExpr ?? "default!");
 		}
 		result.Add(';');
@@ -1792,7 +1846,7 @@ public sealed class SemanticTree
 		}
 		if (branch.Length == 0)
 			return branch.Info == "ClassMain" ? "" : branch.Info;
-		String result = "";
+		String result = [];
 		if (branch.Info.StartsWith("Namespace "))
 			result.Add('n').AddRange(branch.Info[1..]).Add('{');
 		foreach (var x in branch.Elements)
@@ -1821,7 +1875,7 @@ public sealed class SemanticTree
 
 	private static String Type(UniversalType type)
 	{
-		String result = "";
+		String result = [];
 		if (TypeEqualsToPrimitive(type, "list", false))
 		{
 			var levelsCount = type.ExtraTypes.Length == 1 ? 1 : int.TryParse(type.ExtraTypes[0].ToString(), out var n) ? n : 0;
@@ -1905,7 +1959,7 @@ public sealed class SemanticTree
 
 	private static String Parameters(GeneralMethodParameters parameters, out List<String> errorsList)
 	{
-		String result = "";
+		String result = [];
 		errorsList = [];
 		for (var i = 0; i < parameters.Length; i++)
 		{

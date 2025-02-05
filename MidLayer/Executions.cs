@@ -60,10 +60,16 @@ public static partial class Executions
 
 	public static String TypeMappingBack(Type type)
 	{
+		if (type.IsSZArray)
+			type = typeof(List<>);
+		if (type.IsGenericType)
+			type = type.GetGenericTypeDefinition();
 		if (CreateVar(PrimitiveTypesList.Find(x => x.Value == type).Key, out var typename) != null)
 			return typename;
 		else if (CreateVar(ExtraTypesList.Find(x => x.Value == type).Key, out var type2) != default)
 			return type2.Namespace.Copy().Add('.').AddRange(type2.Type);
+		else if (CreateVar(InterfacesList.Find(x => x.Value.Exists(y => y.DotNetType == type)), out var type3).Key != default)
+			return type3.Key.Namespace.Copy().Add('.').AddRange(type3.Key.Interface);
 		else if (type == typeof(string))
 			return "string";
 		else
@@ -73,11 +79,12 @@ public static partial class Executions
 	public static String FunctionMapping(String function) => function.ToString() switch
 	{
 		"Add" => nameof(function.AddRange),
-		"Ceil" => nameof(Ceiling),
+		"Ceil" => "(int)" + nameof(Ceiling),
 		nameof(Ceiling) => throw new NotSupportedException(),
 		"Chain" => ((String)nameof(Executions)).Add('.').AddRange(nameof(Chain)),
 		nameof(RedStarLinq.Fill) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Fill)),
 		"FillList" => throw new NotSupportedException(),
+		nameof(Floor) => "(int)" + nameof(Floor),
 		"IntRandom" => nameof(IntRandomNumber),
 		nameof(IntRandomNumber) => throw new NotSupportedException(),
 		"IntToReal" => "(double)",
@@ -92,6 +99,8 @@ public static partial class Executions
 		"Min3" => throw new NotSupportedException(),
 		"Random" => nameof(RandomNumber),
 		nameof(RandomNumber) => throw new NotSupportedException(),
+		nameof(Round) => "(int)" + nameof(Round),
+		nameof(Truncate) => "(int)" + nameof(Truncate),
 		_ => function.Copy(),
 	};
 
@@ -100,21 +109,6 @@ public static partial class Executions
 		"UTCNow" => nameof(DateTime.UtcNow),
 		nameof(DateTime.UtcNow) => throw new NotSupportedException(),
 		_ => property.Copy(),
-	};
-
-	private static Universal ExecuteDateTimeConstructor(List<Universal> parameters, Universal parameters2, int constructor_index) => constructor_index switch
-	{
-		0 => parameters.Any(x => x.IsNull) ? Universal.Null : new(new DateTime(parameters2.GetElement(1).ToInt(), parameters2.GetElement(2).ToInt(), parameters2.GetElement(3).ToInt()), GetPrimitiveType("DateTime")),
-		1 => parameters.Take(6).Any(x => x.IsNull) ? Universal.Null : new(new DateTime(parameters2.GetElement(1).ToInt(), parameters2.GetElement(2).ToInt(), parameters2.GetElement(3).ToInt(), parameters2.GetElement(4).ToInt(), parameters2.GetElement(5).ToInt(), parameters2.GetElement(6).ToInt(), parameters2.GetElement(7).IsNull ? DateTimeKind.Unspecified : (DateTimeKind)parameters2.GetElement(7).ToInt()), GetPrimitiveType("DateTime")),
-		2 => parameters.Take(7).Any(x => x.IsNull) ? Universal.Null : new(new DateTime(parameters2.GetElement(1).ToInt(), parameters2.GetElement(2).ToInt(), parameters2.GetElement(3).ToInt(), parameters2.GetElement(4).ToInt(), parameters2.GetElement(5).ToInt(), parameters2.GetElement(6).ToInt(), parameters2.GetElement(7).ToInt(), parameters2.GetElement(8).IsNull ? DateTimeKind.Unspecified : (DateTimeKind)parameters2.GetElement(8).ToInt()), GetPrimitiveType("DateTime")),
-		3 => parameters2.GetElement(1).IsNull ? Universal.Null : new(new DateTime(parameters2.GetElement(1).ToLongInt(), parameters2.GetElement(2).IsNull ? DateTimeKind.Unspecified : (DateTimeKind)parameters2.GetElement(2).ToInt()), GetPrimitiveType("DateTime")),
-		_ => Universal.Null,
-	};
-
-	private static Universal ExecuteStringConstructor(List<Universal> parameters, Universal parameters2, int constructor_index) => constructor_index switch
-	{
-		0 => parameters.Any(x => x.IsNull) ? Universal.Null : new String(parameters2.GetElement(2).ToInt(), parameters2.GetElement(1).ToChar()),
-		_ => Universal.Null,
 	};
 
 	private static double RandomNumberBase(int calls, double initializer, double max)
@@ -196,46 +190,6 @@ public static partial class Executions
 
 	public static int RGB(int r, int g, int b) => Color.FromArgb(r, g, b).ToArgb();
 
-	public static short CompareStrings(Universal x, Universal y)
-	{
-		if (x.IsNull && y.IsNull)
-		{
-			return 0;
-		}
-		else if (x.IsNull)
-		{
-			return 1;
-		}
-		else if (y.IsNull)
-		{
-			return -1;
-		}
-		else
-		{
-			return (short)Sign(string.Compare(x.ToString().ToString(), y.ToString().ToString()));
-		}
-	}
-
-	public static Universal JoinStrings(List<Universal> parameters)
-	{
-		if (parameters.Length < 2 || parameters[1].IsNull)
-		{
-			return Universal.Null;
-		}
-		else
-		{
-			var separator = parameters[0].IsNull ? "" : parameters[0].ToString();
-			if (parameters.Length < 4 || parameters[2].IsNull || parameters[3].IsNull)
-			{
-				return String.Join(separator, [.. parameters[1].ToList().Filter(x => x.IsNull == false).Convert(x => x.ToString())]);
-			}
-			else
-			{
-				return String.Join(separator, [.. parameters[1].ToList().Filter(x => x.IsNull == false).Convert(x => x.ToString()).GetSlice(parameters[2].ToInt() - 1, parameters[3].ToInt())]);
-			}
-		}
-	}
-
 	public static bool CheckContainer(BlockStack container, Func<BlockStack, bool> check, out BlockStack type)
 	{
 		if (check(container))
@@ -260,15 +214,11 @@ public static partial class Executions
 
 	public static bool ExtraTypeExists(BlockStack container, String type)
 	{
-		var index = VariablesList.IndexOfKey(container);
-		if (index != -1)
+		if (VariablesList.TryGetValue(container, out var list))
 		{
-			var list = VariablesList.Values[index];
-			var index2 = list.IndexOfKey(type);
-			if (index2 != -1)
+			if (list.TryGetValue(type, out var type2))
 			{
-				var a = list.Values[index2];
-				return TypeIsPrimitive(a.MainType) && a.MainType.Peek().Name == "typename" && a.ExtraTypes.Length == 0;
+				return TypeIsPrimitive(type2.MainType) && type2.MainType.Peek().Name == "typename" && type2.ExtraTypes.Length == 0;
 			}
 			else
 			{
@@ -306,7 +256,7 @@ public static partial class Executions
 			useInstead = OutdatedNamespacesList.Values[index];
 			return true;
 		}
-		useInstead = "";
+		useInstead = [];
 		return false;
 	}
 
@@ -336,7 +286,7 @@ public static partial class Executions
 			useInstead = OutdatedTypesList.Values[index];
 			return true;
 		}
-		useInstead = "";
+		useInstead = [];
 		return false;
 	}
 
@@ -359,7 +309,7 @@ public static partial class Executions
 				return true;
 			}
 		}
-		typeEnd = "";
+		typeEnd = [];
 		return false;
 	}
 
@@ -374,8 +324,8 @@ public static partial class Executions
 				return true;
 			}
 		}
-		useInstead = "";
-		typeEnd = "";
+		useInstead = [];
+		typeEnd = [];
 		return false;
 	}
 
@@ -389,7 +339,7 @@ public static partial class Executions
 				return true;
 			}
 		}
-		typeEnd = "";
+		typeEnd = [];
 		return false;
 	}
 
@@ -419,7 +369,7 @@ public static partial class Executions
 				return true;
 			}
 		}
-		useInstead = "";
+		useInstead = [];
 		return false;
 	}
 
@@ -479,9 +429,9 @@ public static partial class Executions
 		return false;
 	}
 
-	public static bool MethodExists(BlockStack container, String name, out (List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters)? function)
+	public static bool MethodExists(UniversalType container, String name, out (List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters)? function)
 	{
-		var containerType = SplitType(container);
+		var containerType = SplitType(container.MainType);
 		if (!(PrimitiveTypesList.TryGetValue(containerType.Type, out var type) || ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out type)))
 		{
 			function = null;
@@ -494,11 +444,11 @@ public static partial class Executions
 			function = null;
 			return false;
 		}
-		function = (type.GenericTypeArguments.ToList(TypeMappingBack), TypeMappingBack(method.ReturnType),
-			method.ReturnType.GenericTypeArguments.ToList(TypeMappingBack), (method.IsAbstract
+		function = (type.GetGenericArguments().ToList(TypeMappingBack), TypeMappingBack(method.ReturnType),
+			method.ReturnType.GetGenericArguments().ToList(TypeMappingBack), (method.IsAbstract
 			? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
 			new(method.GetParameters().ToList(x => new MethodParameter(TypeMappingBack(x.ParameterType), x.Name ?? "x",
-			x.ParameterType.GenericTypeArguments.ToList(TypeMappingBack), (x.IsOptional ? ParameterAttributes.Optional : 0)
+			x.ParameterType.GetGenericArguments().ToList(TypeMappingBack), (x.IsOptional ? ParameterAttributes.Optional : 0)
 			| (x.ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
 			| (x.IsOut ? ParameterAttributes.Out : 0), x.DefaultValue?.ToString() ?? "null"))));
 		return true;
@@ -612,10 +562,10 @@ public static partial class Executions
 		return new("Function", pos, endPos, container) { Elements = { new("_", pos, endPos, container), new("type", pos, endPos, container) { Extra = extra }, branch, branch4 } };
 	}
 
-	public static bool ConstructorsExist(BlockStack container, out ConstructorOverloads? constructors)
+	public static bool ConstructorsExist(UniversalType container, out GeneralConstructorOverloads? constructors)
 	{
-		var containerType = SplitType(container);
-		if (!ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out var type))
+		var containerType = SplitType(container.MainType);
+		if (!(PrimitiveTypesList.TryGetValue(containerType.Type, out var type) || ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out type)))
 		{
 			constructors = null;
 			return false;
@@ -627,9 +577,10 @@ public static partial class Executions
 			return false;
 		}
 		constructors = new(typeConstructors.ToList(x => ((x.IsAbstract ? ConstructorAttributes.Abstract : 0)
-		| (x.IsStatic ? ConstructorAttributes.Static : 0), new MethodParameters(x.GetParameters().ToList(y =>
-			new MethodParameter(y.ParameterType.Name, y.Name ?? "x",
-			y.ParameterType.GenericTypeArguments.ToList(TypeMappingBack), (y.IsOptional ? ParameterAttributes.Optional : 0)
+		| (x.IsStatic ? ConstructorAttributes.Static : 0), new GeneralMethodParameters(x.GetParameters().ToList(y =>
+			new GeneralMethodParameter(CreateVar(PartialTypeToGeneralType(TypeMappingBack(y.ParameterType),
+			y.ParameterType.GetGenericArguments().ToList(TypeMappingBack)), out var UnvType).MainType, y.Name ?? "x",
+			UnvType.ExtraTypes, (y.IsOptional ? ParameterAttributes.Optional : 0)
 			| (y.ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
 			| (y.IsOut ? ParameterAttributes.Out : 0), y.DefaultValue?.ToString() ?? "null"))))));
 		return true;
@@ -1283,46 +1234,15 @@ public static partial class Executions
 			return GetListType(GetResultType(type1, GetSubtype(type2)));
 	}
 
-	public static String TypeToString(UniversalType type)
-	{
-		try
-		{
-			if (type.MainType.Length == 0)
-			{
-				return "null";
-			}
-			var basic_type = String.Join(".", type.MainType.ToArray(x => (x.Type == BlockType.Unnamed) ? "Unnamed(" + x.Name + ")" : x.Name));
-			if (type.ExtraTypes.Length == 0)
-			{
-				return basic_type;
-			}
-			else if (basic_type == "list")
-			{
-				return ListTypeToString(type, basic_type);
-			}
-			else
-			{
-				return basic_type + "[" + String.Join(", ",
-				[
-					.. type.ExtraTypes.Convert(x => x.Value.MainType.IsValue ? x.Value.MainType.Value : TypeToString((x.Value.MainType.Type, x.Value.ExtraTypes))),
-				]) + "]";
-			}
-		}
-		catch (StackOverflowException)
-		{
-			return "null";
-		}
-	}
-
 	private static String ListTypeToString(UniversalType type, String basic_type)
 	{
 		if (type.ExtraTypes.Length == 1)
 		{
-			return basic_type + "() " + (type.ExtraTypes[0].MainType.IsValue ? type.ExtraTypes[0].MainType.Value : TypeToString((type.ExtraTypes[0].MainType.Type, type.ExtraTypes[0].ExtraTypes)));
+			return basic_type + "() " + (type.ExtraTypes[0].MainType.IsValue ? type.ExtraTypes[0].MainType.Value : (type.ExtraTypes[0].MainType.Type, type.ExtraTypes[0].ExtraTypes));
 		}
 		else
 		{
-			return basic_type + "(" + type.ExtraTypes[0].MainType.Value + ") " + (type.ExtraTypes[1].MainType.IsValue ? type.ExtraTypes[1].MainType.Value : TypeToString((type.ExtraTypes[1].MainType.Type, type.ExtraTypes[1].ExtraTypes)));
+			return basic_type + "(" + type.ExtraTypes[0].MainType.Value + ") " + (type.ExtraTypes[1].MainType.IsValue ? type.ExtraTypes[1].MainType.Value : (type.ExtraTypes[1].MainType.Type, type.ExtraTypes[1].ExtraTypes));
 		}
 	}
 
@@ -1330,46 +1250,16 @@ public static partial class Executions
 
 	public static GeneralExtraTypes GetGeneralExtraTypes(List<String> partialBlockStack) => new(partialBlockStack.Convert(x => (UniversalTypeOrValue)((TypeOrValue)new BlockStack([new Block(BlockType.Primitive, x, 1)]), NoGeneralExtraTypes)));
 
-	public static bool TypesAreEqual(UniversalType type1, UniversalType type2)
-	{
-		if (type1.MainType.Length != type2.MainType.Length)
-		{
-			return false;
-		}
-		for (var i = 0; i < type1.MainType.Length; i++)
-		{
-			if (type1.MainType.ElementAt(i).Type != type2.MainType.ElementAt(i).Type || type1.MainType.ElementAt(i).Name != type2.MainType.ElementAt(i).Name)
-			{
-				return false;
-			}
-		}
-		if (type1.ExtraTypes.Length == 0)
-		{
-			if (type2.ExtraTypes.Length != 0)
-			{
-				return false;
-			}
-			return true;
-		}
-		if (type1.ExtraTypes.Length != type2.ExtraTypes.Length)
-		{
-			return false;
-		}
-		for (var i = 0; i < type1.ExtraTypes.Length; i++)
-		{
-			if (type1.ExtraTypes[i].MainType.IsValue ? !(type2.ExtraTypes[i].MainType.IsValue && type1.ExtraTypes[i].MainType.Value == type2.ExtraTypes[i].MainType.Value) : (type2.ExtraTypes[i].MainType.IsValue || !TypesAreEqual((type1.ExtraTypes[i].MainType.Type, type1.ExtraTypes[i].ExtraTypes), (type2.ExtraTypes[i].MainType.Type, type2.ExtraTypes[i].ExtraTypes))))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-
 	public static (BlockStack Container, String Type) SplitType(BlockStack blockStack) => (new(blockStack.ToList().SkipLast(1)), blockStack.TryPeek(out var block) ? block.Name : "");
 
-	public static bool TypesAreCompatible(UniversalType sourceType, UniversalType destinationType, out bool warning, String? srcExpr, out String? destExpr)
+	public static bool TypesAreCompatible(UniversalType sourceType, UniversalType destinationType, out bool warning, String? srcExpr, out String? destExpr, out String? extraMessage)
 	{
 		warning = false;
+		extraMessage = null;
+		while (TypeEqualsToPrimitive(sourceType, "tuple", false) && sourceType.ExtraTypes.Length == 1)
+			sourceType = (sourceType.ExtraTypes[0].MainType.Type, sourceType.ExtraTypes[0].ExtraTypes);
+		while (TypeEqualsToPrimitive(destinationType, "tuple", false) && destinationType.ExtraTypes.Length == 1)
+			destinationType = (destinationType.ExtraTypes[0].MainType.Type, destinationType.ExtraTypes[0].ExtraTypes);
 		if (TypesAreEqual(sourceType, destinationType))
 		{
 			destExpr = srcExpr;
@@ -1382,23 +1272,51 @@ public static partial class Executions
 		}
 		if (ImplicitConversionsFromAnythingList.Contains(destinationType, new FullTypeEComparer()))
 		{
-			destExpr = srcExpr;
+			if (srcExpr == null)
+				destExpr = null;
+			else if (TypeEqualsToPrimitive(destinationType, "string"))
+				destExpr = ((String)"(").AddRange(srcExpr).AddRange(").ToString()");
+			else if (TypeEqualsToPrimitive(destinationType, "list", false))
+				destExpr = ((String)"ListWithSingle(").AddRange(srcExpr).Add(')');
+			else
+				destExpr = srcExpr;
 			return true;
+		}
+		if (TypeEqualsToPrimitive(destinationType, "tuple", false))
+		{
+			if (!TypeEqualsToPrimitive(sourceType, "tuple", false))
+			{
+				destExpr = "default!";
+				return false;
+			}
+			if (sourceType.ExtraTypes.Length != destinationType.ExtraTypes.Length)
+			{
+				destExpr = "default!";
+				return false;
+			}
+			destExpr = srcExpr;
+			return sourceType.ExtraTypes.Values.Combine(destinationType.ExtraTypes.Values).All(x => TypesAreCompatible((x.Item1.MainType.Type, x.Item1.ExtraTypes), (x.Item2.MainType.Type, x.Item2.ExtraTypes), out var warning2, null, out _, out _) && !warning2);
 		}
 		if (TypeEqualsToPrimitive(destinationType, "list", false))
 		{
 			if (TypeEqualsToPrimitive(sourceType, "tuple", false))
 			{
 				var subtype = GetSubtype(destinationType);
-				if (sourceType.ExtraTypes.All(x => TypesAreCompatible((x.Value.MainType.Type, x.Value.ExtraTypes), subtype, out var warning2, null, out _) && !warning2))
+				if (sourceType.ExtraTypes.Length > 16)
 				{
-					destExpr = srcExpr;
-					return true;
+					destExpr = "default!";
+					extraMessage = "list can be constructed from tuple of up to 16 elements, if you need more, use the other ways like Chain() or Fill()";
+					return false;
 				}
-				else
+				else if (!sourceType.ExtraTypes.All(x => TypesAreCompatible((x.Value.MainType.Type, x.Value.ExtraTypes), subtype, out var warning2, null, out _, out _) && !warning2))
 				{
 					destExpr = "default!";
 					return false;
+				}
+				else
+				{
+					destExpr = srcExpr;
+					return true;
 				}
 			}
 			var (SourceDepth, SourceLeafType) = GetTypeDepthAndLeafType(sourceType);
@@ -1408,7 +1326,7 @@ public static partial class Executions
 				destExpr = srcExpr == null ? null : DestinationDepth == 0 ? ((String)"(").AddRange(srcExpr).AddRange(").ToString()") : srcExpr;
 				return true;
 			}
-			else if (SourceDepth <= DestinationDepth && TypesAreCompatible(SourceLeafType, DestinationLeafType, out warning, null, out _) && !warning)
+			else if (SourceDepth <= DestinationDepth && TypesAreCompatible(SourceLeafType, DestinationLeafType, out warning, null, out _, out _) && !warning)
 			{
 				destExpr = srcExpr ?? null;
 				return true;
@@ -1425,12 +1343,17 @@ public static partial class Executions
 			try
 			{
 				var warning2 = false;
-				if (!(sourceType.ExtraTypes.Length >= destinationType.ExtraTypes.Length && destinationType.ExtraTypes.Length >= 1 && !sourceType.ExtraTypes[0].MainType.IsValue && !destinationType.ExtraTypes[0].MainType.IsValue && TypesAreCompatible((sourceType.ExtraTypes[0].MainType.Type, sourceType.ExtraTypes[0].ExtraTypes), (destinationType.ExtraTypes[0].MainType.Type, destinationType.ExtraTypes[0].ExtraTypes), out warning, null, out _)))
+				if (!(sourceType.ExtraTypes.Length >= destinationType.ExtraTypes.Length
+					&& destinationType.ExtraTypes.Length >= 1 && !sourceType.ExtraTypes[0].MainType.IsValue
+					&& !destinationType.ExtraTypes[0].MainType.IsValue
+					&& TypesAreCompatible((sourceType.ExtraTypes[0].MainType.Type, sourceType.ExtraTypes[0].ExtraTypes),
+					(destinationType.ExtraTypes[0].MainType.Type, destinationType.ExtraTypes[0].ExtraTypes),
+					out warning, null, out _, out _)))
 					return false;
 				if (destinationType.ExtraTypes.Skip(1).Combine(sourceType.ExtraTypes.Skip(1), (x, y) =>
 				{
 					var warning3 = false;
-					var b = !x.Value.MainType.IsValue && !y.Value.MainType.IsValue && TypesAreCompatible((x.Value.MainType.Type, x.Value.ExtraTypes), (y.Value.MainType.Type, y.Value.ExtraTypes), out warning3, null, out _);
+					var b = !x.Value.MainType.IsValue && !y.Value.MainType.IsValue && TypesAreCompatible((x.Value.MainType.Type, x.Value.ExtraTypes), (y.Value.MainType.Type, y.Value.ExtraTypes), out warning3, null, out _, out _);
 					warning2 |= warning3;
 					return b;
 				}).All(x => x))
@@ -1677,14 +1600,6 @@ public class TupleConverter : JsonConverter<ITuple>
 
 public class UniversalConverter : JsonConverter<Universal>
 {
-	public override Universal? ReadJson(JsonReader reader, Type objectType, Universal? existingValue, bool hasExistingValue, JsonSerializer serializer) => throw new NotSupportedException();
-	public override void WriteJson(JsonWriter writer, Universal? value, JsonSerializer serializer)
-	{
-		if (value is null)
-		{
-			writer.WriteNull();
-			return;
-		}
-		writer.WriteRaw(value.ToString(true).ToString());
-	}
+	public override Universal ReadJson(JsonReader reader, Type objectType, Universal existingValue, bool hasExistingValue, JsonSerializer serializer) => throw new NotSupportedException();
+	public override void WriteJson(JsonWriter writer, Universal value, JsonSerializer serializer) => writer.WriteRaw(value.ToString(true).ToString());
 }

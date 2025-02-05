@@ -13,6 +13,7 @@ global using static System.Math;
 global using String = Corlib.NStar.String;
 using System.Diagnostics;
 using System.Text;
+using System.Numerics;
 
 namespace CSharp.NStar;
 public sealed class Block(BlockType type, String name, int unnamedIndex)
@@ -30,7 +31,7 @@ public sealed class Block(BlockType type, String name, int unnamedIndex)
 
 public sealed class TypeOrValue
 {
-	public String Value { get; set; } = "";
+	public String Value { get; set; } = [];
 	public BlockStack Type { get; set; } = new();
 	public bool IsValue { get; set; }
 
@@ -83,7 +84,7 @@ public class BlockStack : Stack<Block>
 	public override string ToString() => string.Join(".", this.ToArray(x => x.ToString()));
 }
 
-public record struct UserDefinedType(GeneralArrayParameters ArrayParameters, ClassAttributes Attributes, UniversalType BaseType, GeneralExtraTypes Decomposition);
+public record struct UserDefinedType(GeneralArrayParameters ArrayParameters, TypeAttributes Attributes, UniversalType BaseType, GeneralExtraTypes Decomposition);
 
 public record struct MethodParameter(String Type, String Name, List<String> ExtraTypes, ParameterAttributes Attributes, String DefaultValue);
 
@@ -122,7 +123,7 @@ public class BlocksToJump : List<(BlockStack Container, String Type, String Name
 public class ParameterValues : List<(BlockStack Container, String Name, int ParameterIndex, int Start, int End)>
 {
 }
-public class GeneralTypes(G.IComparer<(BlockStack Container, String Type)> comparer) : SortedDictionary<(BlockStack Container, String Type), (GeneralArrayParameters ArrayParameters, ClassAttributes Attributes)>(comparer)
+public class GeneralTypes(G.IComparer<(BlockStack Container, String Type)> comparer) : SortedDictionary<(BlockStack Container, String Type), (GeneralArrayParameters ArrayParameters, TypeAttributes Attributes)>(comparer)
 {
 }
 public class TypeVariables : SortedDictionary<String, UniversalType>
@@ -249,17 +250,21 @@ public class OutdatedMethods : SortedDictionary<String, OutdatedMethodOverloads>
 {
 }
 
-public enum ClassAttributes
+public enum TypeAttributes
 {
 	None = 0,
 	Sealed = 1,
 	Abstract = 2,
 	Static = 3,
+	Struct = 4,
+	Enum = 5,
+	Delegate = 6,
 	Closed = 16,
 	Protected = 32,
 	Internal = 64,
 	Partial = 256,
 }
+
 public enum PropertyAttributes
 {
 	None = 0,
@@ -271,6 +276,7 @@ public enum PropertyAttributes
 	ClosedSet = 32,
 	ProtectedSet = 64,
 }
+
 public enum FunctionAttributes
 {
 	None = 0,
@@ -282,6 +288,7 @@ public enum FunctionAttributes
 	Multiconst = 32,
 	Abstract = 64,
 }
+
 public enum ParameterAttributes
 {
 	None = 0,
@@ -290,6 +297,7 @@ public enum ParameterAttributes
 	Out = 4,
 	Params = 6,
 }
+
 public enum ConstructorAttributes
 {
 	None = 0,
@@ -300,6 +308,7 @@ public enum ConstructorAttributes
 	Multiconst = 16,
 	Abstract = 32,
 }
+
 public enum BlockType
 {
 	Unnamed,
@@ -318,6 +327,14 @@ public enum BlockType
 	Extent,
 	Other,
 }
+
+public enum TypeConstraints
+{
+	None = 0,
+	BaseClassOrInterface = 1,
+	BaseInterface = 2,
+}
+
 public enum ExecutionFlags
 {
 	None = 0,
@@ -331,6 +348,7 @@ public enum ExecutionFlags
 	Assignment = 128,
 	PreservingFlags = Continue | Break | Return | Assignment,
 }
+
 public enum OptimizationStage
 {
 	None,
@@ -544,6 +562,7 @@ public static partial class Constructions
 	public static readonly List<String> StopLexemsList = ["\r\n", ";", "{", "}"];
 	public static readonly List<(String, BlockType)> BlockTypesList = [("Main", BlockType.Unnamed), ("Namespace", BlockType.Namespace), ("Class", BlockType.Class), ("Struct", BlockType.Struct), ("Interface", BlockType.Interface), ("Delegate", BlockType.Delegate), ("Enum", BlockType.Enum), ("Function", BlockType.Function), ("Constructor", BlockType.Constructor), ("Destructor", BlockType.Destructor), ("Operator", BlockType.Operator), ("Extent", BlockType.Extent)];
 	public static readonly CultureInfo EnUsCulture = new("en-US");
+	public static readonly string AlphanumericCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.";
 	private static readonly MethodParameter ParameterPredicate = new("System.Predicate", "match", ExtraTypesT, ParameterAttributes.None, "");
 	private static readonly MethodParameter ParameterRealValue = new("real", "value", NoExtraTypes, ParameterAttributes.None, "");
 	private static readonly MethodParameter ParameterICharT = new("IChar", "c", ExtraTypesT, ParameterAttributes.None, "");
@@ -571,7 +590,7 @@ public static partial class Constructions
 	private static readonly GeneralMethodParameter GeneralParameterTCollection = new(new([new(BlockType.Interface, "IEnumerable", 1), new(BlockType.Namespace, "Collections", 1), new(BlockType.Namespace, "System", 1)]), "collection", GeneralExtraTypesT, ParameterAttributes.None, "");
 	private static readonly GeneralMethodParameter GeneralParameterIgnoreCase = new(GeneralTypeBool, "ignore_case", NoGeneralExtraTypes, ParameterAttributes.Optional, "false");
 	private static readonly GeneralMethodParameter GeneralParameterSeparator = new(GeneralTypeString, "separator", NoGeneralExtraTypes, ParameterAttributes.None, "");
-	private static readonly GeneralMethodParameter GeneralParameterStringS = new(GeneralTypeString, "info", NoGeneralExtraTypes, ParameterAttributes.None, "");
+	private static readonly GeneralMethodParameter GeneralParameterStringS = new(GeneralTypeString, "s", NoGeneralExtraTypes, ParameterAttributes.None, "");
 	private static readonly GeneralMethodParameter GeneralParameterString1 = new(GeneralTypeString, "string1", NoGeneralExtraTypes, ParameterAttributes.None, "");
 	private static readonly GeneralMethodParameter GeneralParameterString2 = new(GeneralTypeString, "string2", NoGeneralExtraTypes, ParameterAttributes.None, "");
 	private static readonly GeneralMethodParameter GeneralParameterString3 = new(GeneralTypeString, "string3", NoGeneralExtraTypes, ParameterAttributes.None, "");
@@ -594,17 +613,12 @@ public static partial class Constructions
 	/// <summary>
 	/// Sorted by tuple, contains Namespace and Type.
 	/// </summary>
-	public static SortedDictionary<(String Namespace, String Type), Type> ExtraTypesList { get; } = new() { { ("System", nameof(DateTimeKind)), typeof(DateTimeKind) }, { ("System", nameof(DayOfWeek)), typeof(DayOfWeek) }, { ("System", nameof(Predicate<bool>)), typeof(Predicate<bool>) }, { ("System.Collections", nameof(BaseDictionary<bool, bool, Dictionary<bool, bool>>)), typeof(BaseDictionary<bool, bool, Dictionary<bool, bool>>) }, { ("System.Collections", nameof(BaseHashSet<bool, ListHashSet<bool>>)), typeof(BaseHashSet<bool, ListHashSet<bool>>) }, { ("System.Collections", nameof(BaseIndexable<bool, List<bool>>)), typeof(BaseIndexable<bool, List<bool>>) }, { ("System.Collections", nameof(BaseList<bool, List<bool>>)), typeof(BaseList<bool, List<bool>>) }, { ("System.Collections", nameof(BaseSet<bool, TreeSet<bool>>)), typeof(BaseSet<bool, TreeSet<bool>>) }, { ("System.Collections", nameof(BaseSortedSet<bool, TreeSet<bool>>)), typeof(BaseSortedSet<bool, TreeSet<bool>>) }, { ("System.Collections", nameof(BaseSumList<int, SumList>)), typeof(BaseSumList<int, SumList>) }, { ("System.Collections", nameof(BigSumList)), typeof(BigSumList) }, { ("System.Collections", nameof(BitList)), typeof(BitList) }, { ("System.Collections", nameof(Buffer)), typeof(Buffer<bool>) }, { ("System.Collections", nameof(Chain)), typeof(Chain) }, { ("System.Collections", nameof(Comparer<bool>)), typeof(Comparer<bool>) }, { ("System.Collections", nameof(Dictionary<bool, bool>)), typeof(Dictionary<bool, bool>) }, { ("System.Collections", nameof(EComparer<bool>)), typeof(EComparer<bool>) }, { ("System.Collections", nameof(Extents)), typeof(Extents) }, { ("System.Collections", nameof(FastDelHashSet<bool>)), typeof(FastDelHashSet<bool>) }, { ("System.Collections", nameof(Group<bool, bool>)), typeof(Group<bool, bool>) }, { ("System.Collections", nameof(G.LinkedList<bool>)), typeof(G.LinkedList<bool>) }, { ("System.Collections", nameof(G.LinkedListNode<bool>)), typeof(G.LinkedListNode<bool>) }, { ("System.Collections", nameof(LimitedQueue<bool>)), typeof(LimitedQueue<bool>) }, { ("System.Collections", nameof(ListEComparer<bool>)), typeof(ListEComparer<bool>) }, { ("System.Collections", nameof(ListHashSet<bool>)), typeof(ListHashSet<bool>) }, { ("System.Collections", nameof(Mirror<bool, bool>)), typeof(Mirror<bool, bool>) }, { ("System.Collections", nameof(NGroup<bool, bool>)), typeof(NGroup<bool, bool>) }, { ("System.Collections", nameof(NList<bool>)), typeof(NList<bool>) }, { ("System.Collections", nameof(NListEComparer<bool>)), typeof(NListEComparer<bool>) }, { ("System.Collections", nameof(ParallelHashSet<bool>)), typeof(ParallelHashSet<bool>) }, { ("System.Collections", nameof(Queue<bool>)), typeof(Queue<bool>) }, { ("System.Collections", nameof(Slice<bool>)), typeof(Slice<bool>) }, { ("System.Collections", nameof(SortedDictionary<bool, bool>)), typeof(SortedDictionary<bool, bool>) }, { ("System.Collections", nameof(SortedSet<bool>)), typeof(SortedSet<bool>) }, { ("System.Collections", nameof(Stack<bool>)), typeof(Stack<bool>) }, { ("System.Collections", nameof(SumList)), typeof(SumList) }, { ("System.Collections", nameof(SumSet<bool>)), typeof(SumSet<bool>) }, { ("System.Collections", nameof(TreeHashSet<bool>)), typeof(TreeHashSet<bool>) }, { ("System.Collections", nameof(TreeSet<bool>)), typeof(TreeSet<bool>) } };
-
-	/// <summary>
-	/// Sorted by Namespace and Type, also contains ExtraTypes and Attributes.
-	/// </summary>
-	public static SortedDictionary<(String Namespace, String Type), (List<String> ExtraTypes, ClassAttributes Attributes)> CompositeTypesList { get; } = new() { { ("", "out"), (ExtraTypesT, ClassAttributes.None) }, { ("", "ref"), (ExtraTypesT, ClassAttributes.None) } };
+	public static SortedDictionary<(String Namespace, String Type), Type> ExtraTypesList { get; } = new() { { ("System", nameof(DateTimeKind)), typeof(DateTimeKind) }, { ("System", nameof(DayOfWeek)), typeof(DayOfWeek) }, { ("System", nameof(Predicate<bool>)), typeof(Predicate<>) }, { ("System", nameof(ReadOnlySpan<bool>)), typeof(ReadOnlySpan<>) }, { ("System", nameof(Span<bool>)), typeof(Span<>) }, { ("System.Collections", nameof(BaseDictionary<bool, bool, Dictionary<bool, bool>>)), typeof(BaseDictionary<,,>) }, { ("System.Collections", nameof(BaseHashSet<bool, ListHashSet<bool>>)), typeof(BaseHashSet<,>) }, { ("System.Collections", nameof(BaseIndexable<bool, List<bool>>)), typeof(BaseIndexable<,>) }, { ("System.Collections", nameof(BaseList<bool, List<bool>>)), typeof(BaseList<,>) }, { ("System.Collections", nameof(BaseSet<bool, TreeSet<bool>>)), typeof(BaseSet<,>) }, { ("System.Collections", nameof(BaseSortedSet<bool, TreeSet<bool>>)), typeof(BaseSortedSet<,>) }, { ("System.Collections", nameof(BaseSumList<int, SumList>)), typeof(BaseSumList<int, SumList>) }, { ("System.Collections", nameof(BigSumList)), typeof(BigSumList) }, { ("System.Collections", nameof(BitList)), typeof(BitList) }, { ("System.Collections", nameof(Buffer)), typeof(Buffer<>) }, { ("System.Collections", nameof(Chain)), typeof(Chain) }, { ("System.Collections", nameof(Comparer<bool>)), typeof(Comparer<>) }, { ("System.Collections", nameof(Dictionary<bool, bool>)), typeof(Dictionary<,>) }, { ("System.Collections", nameof(EComparer<bool>)), typeof(EComparer<>) }, { ("System.Collections", nameof(Extents)), typeof(Extents) }, { ("System.Collections", nameof(FastDelHashSet<bool>)), typeof(FastDelHashSet<>) }, { ("System.Collections", nameof(Group<bool, bool>)), typeof(Group<,>) }, { ("System.Collections", nameof(G.LinkedList<bool>)), typeof(G.LinkedList<>) }, { ("System.Collections", nameof(G.LinkedListNode<bool>)), typeof(G.LinkedListNode<>) }, { ("System.Collections", nameof(LimitedQueue<bool>)), typeof(LimitedQueue<>) }, { ("System.Collections", nameof(ListEComparer<bool>)), typeof(ListEComparer<>) }, { ("System.Collections", nameof(ListHashSet<bool>)), typeof(ListHashSet<>) }, { ("System.Collections", nameof(Mirror<bool, bool>)), typeof(Mirror<,>) }, { ("System.Collections", nameof(NGroup<bool, bool>)), typeof(NGroup<,>) }, { ("System.Collections", nameof(NList<bool>)), typeof(NList<>) }, { ("System.Collections", nameof(NListEComparer<bool>)), typeof(NListEComparer<>) }, { ("System.Collections", nameof(ParallelHashSet<bool>)), typeof(ParallelHashSet<>) }, { ("System.Collections", nameof(Queue<bool>)), typeof(Queue<>) }, { ("System.Collections", nameof(Slice<bool>)), typeof(Slice<>) }, { ("System.Collections", nameof(SortedDictionary<bool, bool>)), typeof(SortedDictionary<,>) }, { ("System.Collections", nameof(SortedSet<bool>)), typeof(SortedSet<>) }, { ("System.Collections", nameof(Stack<bool>)), typeof(Stack<>) }, { ("System.Collections", nameof(SumList)), typeof(SumList) }, { ("System.Collections", nameof(SumSet<bool>)), typeof(SumSet<>) }, { ("System.Collections", nameof(TreeHashSet<bool>)), typeof(TreeHashSet<>) }, { ("System.Collections", nameof(TreeSet<bool>)), typeof(TreeSet<>) } };
 
 	/// <summary>
 	/// Sorted by Container and Type, also contains ArrayParameterPackage modifiers, ArrayParameterRestrictions, ArrayParameterTypes, ArrayParameterNames and Attributes.
 	/// </summary>
-	public static GeneralTypes GeneralTypesList { get; } = new(new BlockStackAndStringComparer()) { { (new([new(BlockType.Namespace, "System", 1)]), "Action"), ([(true, NoGeneralExtraTypes, GetPrimitiveBlockStack("typename"), "Types")], ClassAttributes.None) }, { (new([new(BlockType.Namespace, "System", 1)]), "Func"), ([(false, NoGeneralExtraTypes, GetPrimitiveBlockStack("typename"), "TReturn"), (true, NoGeneralExtraTypes, GetPrimitiveBlockStack("typename"), "Types")], ClassAttributes.None) } };
+	public static GeneralTypes GeneralTypesList { get; } = new(new BlockStackAndStringComparer()) { { (new([new(BlockType.Namespace, "System", 1)]), nameof(Action)), ([(true, NoGeneralExtraTypes, GetPrimitiveBlockStack("typename"), "Types")], TypeAttributes.None) }, { (new([new(BlockType.Namespace, "System", 1)]), nameof(Func<bool>)), ([(false, NoGeneralExtraTypes, GetPrimitiveBlockStack("typename"), "TReturn"), (true, NoGeneralExtraTypes, GetPrimitiveBlockStack("typename"), "Types")], TypeAttributes.None) } };
 
 	/// <summary>
 	/// Sorted by Container and Type, also contains ArrayParameterPackage modifiers, ArrayParameterRestrictions, ArrayParameterTypes, ArrayParameterNames and Attributes.
@@ -614,7 +628,7 @@ public static partial class Constructions
 	/// <summary>
 	/// Sorted by tuple, contains Namespace, Interface and ExtraTypes.
 	/// </summary>
-	public static G.SortedSet<(String Namespace, String Interface, List<String> ExtraTypes)> InterfacesList { get; } = [("", "IBase", ExtraTypesT), ("", "IChar", ExtraTypesT), ("", "IComparable", ExtraTypesT), ("", "IComparableRaw", NoExtraTypes), ("", "IConvertible", NoExtraTypes), ("", "IEquatable", ExtraTypesT), ("", "IIncreasable", ExtraTypesT), ("", "IIntegerNumber", ExtraTypesT), ("", "INumber", ExtraTypesT), ("", "IRealNumber", ExtraTypesT), ("", "ISignedIntegerNumber", ExtraTypesT), ("", "IUnsignedIntegerNumber", ExtraTypesT), ("System.Collections", "ICollection", ExtraTypesT), ("System.Collections", "ICollectionRaw", NoExtraTypes), ("System.Collections", "G.IDictionary", ["TKey", "TValue"]), ("System.Collections", "IDictionaryRaw", NoExtraTypes), ("System.Collections", "IEnumerable", ExtraTypesT), ("System.Collections", "IEnumerableRaw", NoExtraTypes), ("System.Collections", "IList", ExtraTypesT), ("System.Collections", "IListRaw", NoExtraTypes)];
+	public static SortedDictionary<(String Namespace, String Interface), List<(List<String> ExtraTypes, Type DotNetType)>> InterfacesList { get; } = new() { { ("", "IBase"), (ExtraTypesT, typeof(void)) }, { ("", "IChar"), (ExtraTypesT, typeof(void)) }, { ("", nameof(IComparable<bool>)), (ExtraTypesT, typeof(IComparable<>)) }, { ("", "IComparableRaw"), (NoExtraTypes, typeof(void)) }, { ("", nameof(IConvertible)), (NoExtraTypes, typeof(IConvertible)) }, { ("", nameof(IEquatable<bool>)), (ExtraTypesT, typeof(IEquatable<>)) }, { ("", "IIncreasable"), (ExtraTypesT, typeof(IIncrementOperators<>)) }, { ("", "IIntegerNumber"), (ExtraTypesT, typeof(IBinaryInteger<>)) }, { ("", "INumber"), (ExtraTypesT, typeof(INumber<>)) }, { ("", "IRealNumber"), (ExtraTypesT, typeof(IFloatingPoint<>)) }, { ("", "ISignedIntegerNumber"), (ExtraTypesT, typeof(ISignedNumber<>)) }, { ("", "IUnsignedIntegerNumber"), (ExtraTypesT, typeof(IUnsignedNumber<>)) }, { ("System.Collections", nameof(ICollection)), (ExtraTypesT, typeof(ICollection<>)) }, { ("System.Collections", "ICollectionRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", nameof(IDictionary)), (["TKey", "TValue"], typeof(IDictionary<,>)) }, { ("System.Collections", "IDictionaryRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", nameof(G.IEnumerable<bool>)), (ExtraTypesT, typeof(G.IEnumerable<>)) }, { ("System.Collections", "IEnumerableRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", nameof(IList)), (ExtraTypesT, typeof(IList<>)) }, { ("System.Collections", "IListRaw"), (NoExtraTypes, typeof(void)) } };
 
 	/// <summary>
 	/// Sorted by DestInterface, also contains SrcInterface and SrcUnvType.ExtraTypes.
@@ -664,7 +678,7 @@ public static partial class Constructions
 	/// <summary>
 	/// Sorted by Name, also contains ExtraTypes, ReturnType, ReturnUnvType.ExtraTypes, Attributes, ParameterTypes, ParameterNames, ParameterExtraTypes, ParameterAttributes and ParameterDefaultValues.
 	/// </summary>
-	public static FunctionsList PublicFunctionsList { get; } = new() { { "Abs", (ExtraTypesT, "real"/*"INumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Ceil", (ExtraTypesT, "int"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Chain", (NoExtraTypes, "list", ["int"], FunctionAttributes.Multiconst, [new("int", "start", NoExtraTypes, ParameterAttributes.None, ""), new("int", "end", NoExtraTypes, ParameterAttributes.None, "")]) }, { "Choose", (NoExtraTypes, "universal", NoExtraTypes, FunctionAttributes.None, [new("universal", "variants", NoExtraTypes, ParameterAttributes.Params, "")]) }, { "Clamp", (ExtraTypesT, "INumber", NoExtraTypes, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("real"/*"INumber"*/, "min", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.Optional, "ExecuteString(\"return \" + ReinterpretCast[string](T) + \".MinValue;\")"), new("real"/*"INumber"*/, "max", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.Optional, "ExecuteString(\"return \" + ReinterpretCast[string](T) + \".MaxValue;\")")]) }, { "Exp", (ExtraTypesT, "real"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Fibonacci", (NoExtraTypes, "real", NoExtraTypes, FunctionAttributes.Multiconst, [new("int", "n", NoExtraTypes, ParameterAttributes.None, "")]) }, { "Fill", (ExtraTypesT, "list", ExtraTypesT, FunctionAttributes.Multiconst, [new("T", "element", NoExtraTypes, ParameterAttributes.None, ""), new("int", "count", NoExtraTypes, ParameterAttributes.None, "")]) }, { "Floor", (ExtraTypesT, "int"/*"INumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Frac", (ExtraTypesT, "real"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "IntRandom", (NoExtraTypes, "int", NoExtraTypes, FunctionAttributes.None, [new("int", "max", NoExtraTypes, ParameterAttributes.None, "")]) }, { "IntToReal", (ExtraTypesT, "real", NoExtraTypes, FunctionAttributes.Multiconst, [new("T", "x", NoExtraTypes, ParameterAttributes.None, "")]) }, { "ListWithSingle", (ExtraTypesT, "list", ExtraTypesT, FunctionAttributes.Multiconst, [new("T", "value", NoExtraTypes, ParameterAttributes.None, "")]) }, { "Log", (ExtraTypesT, "real"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("real"/*"IRealNumber"*/, "y", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Max", (ExtraTypesT, "real"/*"INumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("real"/*"INumber"*/, "y", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Mean", (ExtraTypesT, "real"/*"INumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("real"/*"INumber"*/, "y", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Min", (ExtraTypesT, "real"/*"INumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("real"/*"INumber"*/, "y", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Q", (NoExtraTypes, "string", NoExtraTypes, FunctionAttributes.None, []) }, { "Random", (NoExtraTypes, "real", NoExtraTypes, FunctionAttributes.None, [new("real", "max", NoExtraTypes, ParameterAttributes.None, "")]) }, { "RealRemainder", (ExtraTypesT, "real"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("real", "y", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "RGB", (NoExtraTypes, "int", NoExtraTypes, FunctionAttributes.Multiconst, [new("byte", "red", NoExtraTypes, ParameterAttributes.None, ""), new("byte", "green", NoExtraTypes, ParameterAttributes.None, ""), new("byte", "blue", NoExtraTypes, ParameterAttributes.None, "")]) }, { "Round", (ExtraTypesT, "int"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("int", "digits_after_dot", NoExtraTypes, ParameterAttributes.Optional, "0")]) }, { "Sign", (ExtraTypesT, "short int", NoExtraTypes, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Sqrt", (ExtraTypesT, "short int", NoExtraTypes, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Truncate", (ExtraTypesT, "int"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) } };
+	public static FunctionsList PublicFunctionsList { get; } = new() { { "Abs", (ExtraTypesT, "real"/*"INumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Ceil", (ExtraTypesT, "int"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Chain", (NoExtraTypes, "list", ["int"], FunctionAttributes.Multiconst, [new("int", "start", NoExtraTypes, ParameterAttributes.None, ""), new("int", "end", NoExtraTypes, ParameterAttributes.None, "")]) }, { "Choose", (NoExtraTypes, "universal", NoExtraTypes, FunctionAttributes.None, [new("universal", "variants", NoExtraTypes, ParameterAttributes.Params, "")]) }, { "Clamp", (ExtraTypesT, "INumber", NoExtraTypes, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("real"/*"INumber"*/, "min", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.Optional, "ExecuteString(\"return \" + ReinterpretCast[string](T) + \".MinValue;\")"), new("real"/*"INumber"*/, "max", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.Optional, "ExecuteString(\"return \" + ReinterpretCast[string](T) + \".MaxValue;\")")]) }, { "Exp", (ExtraTypesT, "real"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Fibonacci", (NoExtraTypes, "real", NoExtraTypes, FunctionAttributes.Multiconst, [new("int", "n", NoExtraTypes, ParameterAttributes.None, "")]) }, { "Fill", (ExtraTypesT, "list", ExtraTypesT, FunctionAttributes.Multiconst, [new("T", "element", NoExtraTypes, ParameterAttributes.None, ""), new("int", "count", NoExtraTypes, ParameterAttributes.None, "")]) }, { "Floor", (ExtraTypesT, "int"/*"INumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Frac", (ExtraTypesT, "real"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "IntRandom", (NoExtraTypes, "int", NoExtraTypes, FunctionAttributes.None, [new("int", "max", NoExtraTypes, ParameterAttributes.None, "")]) }, { "IntToReal", (ExtraTypesT, "real", NoExtraTypes, FunctionAttributes.Multiconst, [new("T", "x", NoExtraTypes, ParameterAttributes.None, "")]) }, { "ListWithSingle", (ExtraTypesT, "list", ExtraTypesT, FunctionAttributes.Multiconst, [new("T", "value", NoExtraTypes, ParameterAttributes.None, "")]) }, { "Log", (ExtraTypesT, "real"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("real"/*"IRealNumber"*/, "y", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Max", (ExtraTypesT, "real"/*"INumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("real"/*"INumber"*/, "y", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Mean", (ExtraTypesT, "real"/*"INumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("real"/*"INumber"*/, "y", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Min", (ExtraTypesT, "real"/*"INumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("real"/*"INumber"*/, "y", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Q", (NoExtraTypes, "string", NoExtraTypes, FunctionAttributes.None, []) }, { "Random", (NoExtraTypes, "real", NoExtraTypes, FunctionAttributes.None, [new("real", "max", NoExtraTypes, ParameterAttributes.None, "")]) }, { "RealRemainder", (ExtraTypesT, "real"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("real", "y", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "RGB", (NoExtraTypes, "int", NoExtraTypes, FunctionAttributes.Multiconst, [new("byte", "red", NoExtraTypes, ParameterAttributes.None, ""), new("byte", "green", NoExtraTypes, ParameterAttributes.None, ""), new("byte", "blue", NoExtraTypes, ParameterAttributes.None, "")]) }, { "Round", (ExtraTypesT, "int"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, ""), new("int", "digits_after_dot", NoExtraTypes, ParameterAttributes.Optional, "0")]) }, { "Sign", (ExtraTypesT, "short int", NoExtraTypes, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Sqrt", (ExtraTypesT, "real", NoExtraTypes, FunctionAttributes.Multiconst, [new("real"/*"INumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) }, { "Truncate", (ExtraTypesT, "int"/*"IRealNumber"*/, NoExtraTypes/*ExtraTypesT*/, FunctionAttributes.Multiconst, [new("real"/*"IRealNumber"*/, "x", NoExtraTypes/*ExtraTypesT*/, ParameterAttributes.None, "")]) } };
 
 	/// <summary>
 	/// Sorted by Container, then by Name, also contains ArrayParameters, ReturnType, ReturnArrayParameters, Attributes, ParameterTypes, ParameterNames, ParameterArrayParameters, ParameterAttributes and ParameterDefaultValues.
@@ -786,7 +800,7 @@ public static partial class Constructions
 	public static G.SortedSet<String> ReservedOperatorsList { get; } = ["#", "G", "I", "K", "_", "g", "hexa", "hexa=", "penta", "penta=", "tetra", "tetra="];
 	// To specify non-associative N-ary operator, set OperandsCount to -1. To specify postfix unary operator, set it to -2.
 
-	public static G.SortedSet<String> AutoCompletionList { get; } = new(new List<String>("abstract", "break", "case", "Class", "closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypesList.Keys).AddRange(ExtraTypesList.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type))).AddRange(CompositeTypesList.Keys.Convert(x => x.Namespace.Concat(".").AddRange(x.Type))).AddRange(PropertiesList.Values.ConvertAndJoin(x => x.Keys)).AddRange(PublicFunctionsList.Keys));
+	public static G.SortedSet<String> AutoCompletionList { get; } = new(new List<String>("abstract", "break", "case", "Class", "closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypesList.Keys).AddRange(ExtraTypesList.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type))).AddRange(PropertiesList.Values.ConvertAndJoin(x => x.Keys)).AddRange(PublicFunctionsList.Keys));
 
 	public static void Add<T>(ref IList<T>? list, T item)
 	{
@@ -845,9 +859,49 @@ public static partial class Constructions
 		return ~start;
 	}
 
+	public static bool IsValidBaseClass(TypeAttributes attributes)
+		=> (attributes & (TypeAttributes.Sealed | TypeAttributes.Abstract
+		| TypeAttributes.Static | TypeAttributes.Struct | TypeAttributes.Enum
+		| TypeAttributes.Delegate)) is TypeAttributes.None or TypeAttributes.Abstract;
+
+	public static bool TypesAreEqual(UniversalType type1, UniversalType type2)
+	{
+		if (type1.MainType.Length != type2.MainType.Length)
+		{
+			return false;
+		}
+		for (var i = 0; i < type1.MainType.Length; i++)
+		{
+			if (type1.MainType.ElementAt(i).Type != type2.MainType.ElementAt(i).Type || type1.MainType.ElementAt(i).Name != type2.MainType.ElementAt(i).Name)
+			{
+				return false;
+			}
+		}
+		if (type1.ExtraTypes.Length == 0)
+		{
+			if (type2.ExtraTypes.Length != 0)
+			{
+				return false;
+			}
+			return true;
+		}
+		if (type1.ExtraTypes.Length != type2.ExtraTypes.Length)
+		{
+			return false;
+		}
+		for (var i = 0; i < type1.ExtraTypes.Length; i++)
+		{
+			if (type1.ExtraTypes[i].MainType.IsValue ? !(type2.ExtraTypes[i].MainType.IsValue && type1.ExtraTypes[i].MainType.Value == type2.ExtraTypes[i].MainType.Value) : (type2.ExtraTypes[i].MainType.IsValue || !TypesAreEqual((type1.ExtraTypes[i].MainType.Type, type1.ExtraTypes[i].ExtraTypes), (type2.ExtraTypes[i].MainType.Type, type2.ExtraTypes[i].ExtraTypes))))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	public static bool TypeEqualsToPrimitive(UniversalType type, String primitive, bool noExtra = true) => TypeIsPrimitive(type.MainType) && type.MainType.Peek().Name == primitive && (!noExtra || type.ExtraTypes.Length == 0);
 
-	public static bool TypeIsPrimitive(BlockStack type) => type.Length == 1 && type.Peek().Type == BlockType.Primitive;
+	public static bool TypeIsPrimitive(BlockStack type) => type is null || type.Length == 1 && type.Peek().Type == BlockType.Primitive;
 
 	public static UniversalType GetPrimitiveType(String primitive) => (new([new(BlockType.Primitive, primitive, 1)]), NoGeneralExtraTypes);
 
@@ -1185,9 +1239,51 @@ public sealed class StringComparer : G.IEqualityComparer<String>
 	}
 }
 
-public record struct UniversalType(BlockStack MainType, GeneralExtraTypes ExtraTypes)
+public readonly record struct UniversalType(BlockStack MainType, GeneralExtraTypes ExtraTypes)
 {
-	public override readonly string ToString() => TypeEqualsToPrimitive(this, "list", false) ? "list(" + (ExtraTypes.Length == 2 ? ExtraTypes[0].ToString() : "") + ") " + ExtraTypes[^1].ToString() : MainType.ToString() + (ExtraTypes.Length == 0 ? "" : "[" + ExtraTypes.ToString() + "]");
+	public override readonly string ToString()
+	{
+		if (TypeEqualsToPrimitive(this, "list", false))
+			return "list(" + (ExtraTypes.Length == 2 ? ExtraTypes[0].ToString() : "") + ") " + ExtraTypes[^1].ToString();
+		else if (TypeEqualsToPrimitive(this, "tuple", false))
+		{
+			var prev = new UniversalType(ExtraTypes[0].MainType.Type, ExtraTypes[0].ExtraTypes);
+			if (ExtraTypes.Length == 1)
+				return prev.ToString();
+			String result = [];
+			var repeats = 1;
+			for (var i = 1; i < ExtraTypes.Length; i++)
+			{
+				var current = (ExtraTypes[i].MainType.Type, ExtraTypes[i].ExtraTypes);
+				if (TypesAreEqual(prev, current))
+				{
+					repeats++;
+					continue;
+				}
+				if (result.Length == 0)
+					result.Add('(');
+				else
+					result.AddRange(", ");
+				result.AddRange(prev.ToString());
+				if (repeats != 1)
+					result.Add('[').AddRange(repeats.ToString()).Add(']');
+				repeats = 1;
+				prev = current;
+			}
+			var containsMultiple = result.Length != 0;
+			if (containsMultiple)
+				result.AddRange(", ");
+			result.AddRange(prev.ToString());
+			if (repeats != 1)
+				result.Add('[').AddRange(repeats.ToString()).Add(']');
+			if (containsMultiple)
+				result.Add(')');
+			return result.ToString();
+		}
+		else
+			return MainType.ToString() + (ExtraTypes.Length == 0 ? "" : "[" + ExtraTypes.ToString() + "]");
+	}
+
 	public static implicit operator UniversalType((BlockStack MainType, GeneralExtraTypes ExtraTypes) value) => new(value.MainType, value.ExtraTypes);
 }
 

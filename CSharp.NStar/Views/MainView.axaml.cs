@@ -11,6 +11,7 @@ namespace CSharp.NStar.Views;
 public partial class MainView : UserControl
 {
 	private Assembly? compiledAssembly;
+
 	public MainView()
     {
         InitializeComponent();
@@ -18,7 +19,8 @@ public partial class MainView : UserControl
 		TextBoxInput.Options.EnableTextDragDrop = true;
 		TextBoxInput.AddHandler(PointerReleasedEvent, TextBoxInput_PointerReleased, handledEventsToo: true);
 #if RELEASE
-		String result, program, targetResult, targetErrors = "";
+		ButtonSaveExe.IsEnabled = false;
+		String result, program, targetResult, targetErrors = [];
 		if ((result = ExecuteProgram(program = """
 			return ("7" * "2", "7" * 2, 7 * "2", "7" / "2", "7" / 2, 7 / "2", "7" % "2", "7" % 2, 7 % "2", "7" - "2", "7" - 2, 7 - "2");
 
@@ -114,6 +116,11 @@ while (n < 1000)
 {
 	n++;
 }
+return n;", out errors)) != (targetResult = "1000") || errors != (targetErrors = "Ошибок нет") || (result = ExecuteProgram(program = @"int n = 0;
+for (int i in Chain(1, 1000))
+{
+	n++;
+}
 return n;", out errors)) != (targetResult = "1000") || errors != (targetErrors = "Ошибок нет") || (result = ExecuteProgram(program = @"real a = 0;
 loop
 {
@@ -154,7 +161,20 @@ return One();
 	return F2;
 }
 return F()();
-", out errors)) != (targetResult = "100") || errors != (targetErrors = "Ошибок нет") || (result = ExecuteProgram(program = @"bool bool=bool;
+", out errors)) != (targetResult = "100") || errors != (targetErrors = "Ошибок нет") || (result = ExecuteProgram(program = @"Class MyClass /{Class - с большой буквы
+{
+   unsigned int Function F1(unsigned int n) /{Слово Function обязательно
+   {
+      return n * 2;
+   }
+ 
+   null Function F2()
+   {
+      return null; //Просто ""return;"" не катит
+   }
+}
+", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Wreck in line 13 at position 0: unclosed 2 nested comments in the end of code
+") || (result = ExecuteProgram(program = @"bool bool=bool;
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Error in line 1 at position 10: one cannot use the local variable ""bool"" before it is declared or inside such declaration in line 1 at position 0
 ") || (result = ExecuteProgram(program = @"return 100000000000000000*100000000000000000000;
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Error in line 1 at position 26: too large number; long long type is under development
@@ -171,7 +191,46 @@ return ExecuteString("return args[1];", Q());
 return x*1;
 ", out errors)) != (targetResult = "0") || errors != (targetErrors = "Ошибок нет") || (result = ExecuteProgram(program = @"return куегкт;
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Error in line 1 at position 7: identifier ""куегкт"" is not defined in this location
-"))
+") || (result = ExecuteProgram(program = @"real Function D(real[3] abc)
+{
+	return abc[2] * abc[2] - 4 * abc[1] * abc[3];
+}
+string Function DecomposeSquareTrinomial(real[3] abc)
+{
+	if (abc[1] == 0)
+		return ""Это не квадратный трехчлен"";
+	var d = D(abc);
+	string first;
+	if (abc[1] == 1)
+		first = """";
+	else if (abc[1] == -1)
+		first = ""-"";
+	else
+		first = abc[1];
+	if (d < 0)
+		return ""Неразложимо"";
+	else if (d == 0)
+		return first + Format(abc[2] / (2 * abc[1])) + '²';
+	else
+	{
+		var sqrtOfD = Sqrt(d);
+		return first + Format((abc[2] + sqrtOfD) / (2 * abc[1])) + Format((abc[2] - sqrtOfD) / (2 * abc[1]));
+	}
+}
+string Function Format(real n)
+{
+	if (n == 0)
+		return ""x"";
+	else if (n < 0)
+		return ""(x - "" + (-n) + "")"";
+	else
+		return ""(x + "" + n + "")"";
+}
+return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 64)),
+	DecomposeSquareTrinomial((-1, -1, -10)), DecomposeSquareTrinomial((0, 11, 5)),
+	DecomposeSquareTrinomial((-1, 0, 0)), DecomposeSquareTrinomial((2, -11, 0)));
+", out errors)) != (targetResult = @"(""3(x + 5)(x - 2)"", ""(x + 8)²"", ""Неразложимо"", ""Это не квадратный трехчлен"", ""-x²"", ""2x(x - 5.5)"")")
+|| errors != (targetErrors = @"Ошибок нет"))
 		{
 			throw new Exception("Error: @\"" + program.Replace("\"", "\"\"") + "\"" + (result == targetResult ? "" : " returned @\"" + result.Replace("\"", "\"\"") + "\" instead of @\"" + targetResult.Replace("\"", "\"\"") + "\"" + (errors == targetErrors ? "" : " and")) + (errors == targetErrors ? "" : " produced errors @\"" + errors.Replace("\"", "\"\"") + "\" instead of @\"" + targetErrors.Replace("\"", "\"\"") + "\"") + "!");
 		}
@@ -225,8 +284,6 @@ return x*1;
 
 	private async void SaveExe()
 	{
-		if (compiledAssembly != null)
-			return;
 		if (compiledAssembly == null)
 		{
 			TextBoxOutput.Text = "Чтобы сохранить EXE, сначала выполните программу!";
