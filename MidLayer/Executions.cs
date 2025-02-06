@@ -108,7 +108,7 @@ public static partial class Executions
 			return typename;
 		else if (CreateVar(ExtraTypesList.Find(x => x.Value == type).Key, out var type2) != default)
 			return type2.Namespace.Copy().Add('.').AddRange(type2.Type);
-		else if (CreateVar(InterfacesList.Find(x => x.Value.Exists(y => y.DotNetType == type)), out var type3).Key != default)
+		else if (CreateVar(InterfacesList.Find(x => x.Value.DotNetType == type), out var type3).Key != default)
 			return type3.Key.Namespace.Copy().Add('.').AddRange(type3.Key.Interface);
 		else if (type == typeof(string))
 			return "string";
@@ -127,33 +127,48 @@ public static partial class Executions
 			throw new InvalidOperationException();
 	}
 
-	public static String FunctionMapping(String function) => function.ToString() switch
+	public static String FunctionMapping(String function, List<String>? parameters)
 	{
-		"Add" => nameof(function.AddRange),
-		"Ceil" => "(int)" + nameof(Ceiling),
-		nameof(Ceiling) => throw new NotSupportedException(),
-		"Chain" => ((String)nameof(Executions)).Add('.').AddRange(nameof(Chain)),
-		nameof(RedStarLinq.Fill) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Fill)),
-		"FillList" => throw new NotSupportedException(),
-		nameof(Floor) => "(int)" + nameof(Floor),
-		"IntRandom" => nameof(IntRandomNumber),
-		nameof(IntRandomNumber) => throw new NotSupportedException(),
-		"IntToReal" => "(double)",
-		"IsSummertime" => nameof(DateTime.IsDaylightSavingTime),
-		nameof(DateTime.IsDaylightSavingTime) => throw new NotSupportedException(),
-		"Log" => ((String)nameof(Executions)).Add('.').AddRange(nameof(Log)),
-		nameof(RedStarLinq.Max) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Max)),
-		"Max3" => throw new NotSupportedException(),
-		nameof(RedStarLinq.Mean) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Mean)),
-		"Mean3" => throw new NotSupportedException(),
-		nameof(RedStarLinq.Min) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Min)),
-		"Min3" => throw new NotSupportedException(),
-		"Random" => nameof(RandomNumber),
-		nameof(RandomNumber) => throw new NotSupportedException(),
-		nameof(Round) => "(int)" + nameof(Round),
-		nameof(Truncate) => "(int)" + nameof(Truncate),
-		_ => function.Copy(),
-	};
+		var result = function.ToString() switch
+		{
+			"Add" => nameof(function.AddRange),
+			"Ceil" => "(int)" + nameof(Ceiling),
+			nameof(Ceiling) => throw new NotSupportedException(),
+			"Chain" => ((String)nameof(Executions)).Add('.').AddRange(nameof(Chain)),
+			nameof(RedStarLinq.Fill) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Fill)),
+			"FillList" => throw new NotSupportedException(),
+			nameof(Floor) => "(int)" + nameof(Floor),
+			"IntRandom" => nameof(IntRandomNumber),
+			nameof(IntRandomNumber) => throw new NotSupportedException(),
+			"IntToReal" => "(double)",
+			"IsSummertime" => nameof(DateTime.IsDaylightSavingTime),
+			nameof(DateTime.IsDaylightSavingTime) => throw new NotSupportedException(),
+			"Log" => ((String)nameof(Executions)).Add('.').AddRange(nameof(Log)),
+			nameof(RedStarLinq.Max) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Max)),
+			"Max3" => throw new NotSupportedException(),
+			nameof(RedStarLinq.Mean) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Mean)),
+			"Mean3" => throw new NotSupportedException(),
+			nameof(RedStarLinq.Min) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Min)),
+			"Min3" => throw new NotSupportedException(),
+			"Random" => nameof(RandomNumber),
+			nameof(RandomNumber) => throw new NotSupportedException(),
+			nameof(Round) => "(int)" + nameof(Round),
+			nameof(Truncate) => "(int)" + nameof(Truncate),
+			_ => function.Copy(),
+		};
+		if (parameters == null)
+			return result;
+		result.Add('(');
+		if (function.ToString() is nameof(parameters.GetRange) or nameof(parameters.Remove) or nameof(parameters.RemoveAt)
+			or nameof(parameters.RemoveEnd) && parameters.Length >= 1)
+			parameters[0].Insert(0, '(').AddRange(") - 1");
+		if (function.ToString() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf) && parameters.Length >= 2)
+			parameters[1].Insert(0, '(').AddRange(") - 1");
+		result.AddRange(String.Join(", ", parameters)).Add(')');
+		if (function.ToString() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf))
+			result.Insert(0, '(').AddRange(") + 1");
+		return result;
+	}
 
 	public static String PropertyMapping(String property) => property.ToString() switch
 	{
@@ -499,14 +514,15 @@ public static partial class Executions
 			return false;
 		}
 		function = (type.GetGenericArguments().ToList(x =>
-			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes)), TypeMappingBack(method.ReturnType, type.GetGenericArguments(), container.ExtraTypes),
+			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes)),
+			TypeMappingBack(method.ReturnType, type.GetGenericArguments(), container.ExtraTypes),
 			method.ReturnType.GenericTypeArguments.ToList(x =>
 			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes)), (method.IsAbstract
 			? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
-			new(method.GetParameters().ToList(x => new MethodParameter(TypeMappingBack(x.ParameterType, type.GetGenericArguments(), container.ExtraTypes),
-			x.Name ?? "x", x.ParameterType.GenericTypeArguments.ToList(x =>
-			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes)), (x.IsOptional ? ParameterAttributes.Optional : 0)
-			| (x.ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
+			new(method.GetParameters().ToList(x => new MethodParameter(TypeMappingBack(x.ParameterType,
+			type.GetGenericArguments(), container.ExtraTypes), x.Name ?? "x", x.ParameterType.GetGenericArguments().ToList(x =>
+			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes)),
+			(x.IsOptional ? ParameterAttributes.Optional : 0) | (x.ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
 			| (x.IsOut ? ParameterAttributes.Out : 0), x.DefaultValue?.ToString() ?? "null"))));
 		return true;
 	}
@@ -740,7 +756,7 @@ public static partial class Executions
 					LeafType = (LeafType.ExtraTypes[1].MainType.Type, LeafType.ExtraTypes[1].ExtraTypes);
 				}
 			}
-			else if (LeafType.MainType.Length != 0 && LeafType.MainType.Peek().Type == BlockType.Class && ListTypesList.Contains(LeafType.MainType.Peek().Name))
+			else if (LeafType.MainType.Length != 0 && LeafType.MainType.Peek().Type is BlockType.Class or BlockType.Struct or BlockType.Interface && CollectionTypesList.Contains(LeafType.MainType.Peek().Name.GetAfterLast(".")))
 			{
 				Depth++;
 				LeafType = (LeafType.ExtraTypes[^1].MainType.Type, LeafType.ExtraTypes[^1].ExtraTypes);
@@ -1287,7 +1303,7 @@ public static partial class Executions
 
 	private static UniversalType GetListResultType(UniversalType type1, UniversalType type2, String left_type, String right_type)
 	{
-		if (ListTypesList.Contains(left_type) || ListTypesList.Contains(right_type))
+		if (CollectionTypesList.Contains(left_type) || CollectionTypesList.Contains(right_type))
 			return GetListType(GetResultType(GetSubtype(type1), GetSubtype(type2)));
 		else if (left_type == "list")
 			return GetListType(GetResultType(GetSubtype(type1), (right_type == "list") ? GetSubtype(type2) : type2));
@@ -1307,7 +1323,7 @@ public static partial class Executions
 		}
 	}
 
-	public static UniversalType PartialTypeToGeneralType(String mainType, List<String> extraTypes) => (GetPrimitiveBlockStack(mainType), GetGeneralExtraTypes(extraTypes));
+	public static UniversalType PartialTypeToGeneralType(String mainType, List<String> extraTypes) => (GetBlockStack(mainType), GetGeneralExtraTypes(extraTypes));
 
 	public static GeneralExtraTypes GetGeneralExtraTypes(List<String> partialBlockStack) => new(partialBlockStack.Convert(x => (UniversalTypeOrValue)((TypeOrValue)new BlockStack([new Block(BlockType.Primitive, x, 1)]), NoGeneralExtraTypes)));
 
@@ -1358,7 +1374,9 @@ public static partial class Executions
 			destExpr = srcExpr;
 			return sourceType.ExtraTypes.Values.Combine(destinationType.ExtraTypes.Values).All(x => TypesAreCompatible((x.Item1.MainType.Type, x.Item1.ExtraTypes), (x.Item2.MainType.Type, x.Item2.ExtraTypes), out var warning2, null, out _, out _) && !warning2);
 		}
-		if (TypeEqualsToPrimitive(destinationType, "list", false))
+		if (TypeEqualsToPrimitive(destinationType, "list", false) || destinationType.MainType.Length != 0
+			&& destinationType.MainType.Peek().Type is BlockType.Class or BlockType.Struct or BlockType.Interface
+			&& CollectionTypesList.Contains(destinationType.MainType.Peek().Name.GetAfterLast(".")))
 		{
 			if (TypeEqualsToPrimitive(sourceType, "tuple", false))
 			{
@@ -1429,6 +1447,26 @@ public static partial class Executions
 			}
 			catch (StackOverflowException)
 			{
+				return false;
+			}
+		}
+		if (destinationType.MainType.ToShortString() is "System." + nameof(ReadOnlySpan<bool>) or "System." + nameof(Span<bool>))
+		{
+			var (SourceDepth, SourceLeafType) = GetTypeDepthAndLeafType(sourceType);
+			var (DestinationDepth, DestinationLeafType) = GetTypeDepthAndLeafType(destinationType);
+			if (SourceDepth >= DestinationDepth && TypeEqualsToPrimitive(DestinationLeafType, "string"))
+			{
+				destExpr = srcExpr == null ? null : DestinationDepth == 0 ? ((String)"(").AddRange(srcExpr).AddRange(").ToString()") : srcExpr;
+				return true;
+			}
+			else if (SourceDepth <= DestinationDepth && TypesAreCompatible(SourceLeafType, DestinationLeafType, out warning, null, out _, out _) && !warning)
+			{
+				destExpr = srcExpr ?? null;
+				return true;
+			}
+			else
+			{
+				destExpr = "default!";
 				return false;
 			}
 		}

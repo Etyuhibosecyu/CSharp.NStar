@@ -14,6 +14,7 @@ global using String = Corlib.NStar.String;
 using System.Diagnostics;
 using System.Text;
 using System.Numerics;
+using ILGPU.Util;
 
 namespace CSharp.NStar;
 public sealed class Block(BlockType type, String name, int unnamedIndex)
@@ -558,7 +559,7 @@ public static partial class Constructions
 	public static readonly List<String> CycleTypesList = ["loop", "while", "while!", "repeat", "for", "loop_while", "for_while", "repeat_while"];
 	public static readonly List<String> ConvertibleTypesList = ["bool", "byte", "short int", "unsigned short int", "char", "int", "unsigned int", "long int", "unsigned long int", "real", "string"];
 	public static readonly List<String> NumberTypesList = ["byte", "short char", "char", "long char", "short int", "unsigned short int", "int", "unsigned int", "long int", "unsigned long int"];
-	public static readonly List<String> ListTypesList = ["Dictionary", "G.HashSet", "HashTable", "G.LinkedList", "LinkedListNode", "Queue", "G.SortedSet", "Stack"];
+	public static readonly List<String> CollectionTypesList = [nameof(Dictionary<bool, bool>), nameof(FastDelHashSet<bool>), "HashTable", nameof(ICollection), nameof(G.IEnumerable<bool>), nameof(IList), nameof(IReadOnlyCollection<bool>), nameof(IReadOnlyList<bool>), nameof(LimitedQueue<bool>), nameof(G.LinkedList<bool>), nameof(G.LinkedListNode<bool>), nameof(ListHashSet<bool>), nameof(Mirror<bool, bool>), nameof(NList<bool>), nameof(Queue<bool>), nameof(ParallelHashSet<bool>), nameof(ReadOnlySpan<bool>), nameof(Slice<bool>), nameof(SortedDictionary<bool, bool>), nameof(SortedSet<bool>), nameof(Span<bool>), nameof(Stack<bool>), nameof(TreeHashSet<bool>), nameof(TreeSet<bool>)];
 	public static readonly List<String> StopLexemsList = ["\r\n", ";", "{", "}"];
 	public static readonly List<(String, BlockType)> BlockTypesList = [("Main", BlockType.Unnamed), ("Namespace", BlockType.Namespace), ("Class", BlockType.Class), ("Struct", BlockType.Struct), ("Interface", BlockType.Interface), ("Delegate", BlockType.Delegate), ("Enum", BlockType.Enum), ("Function", BlockType.Function), ("Constructor", BlockType.Constructor), ("Destructor", BlockType.Destructor), ("Operator", BlockType.Operator), ("Extent", BlockType.Extent)];
 	public static readonly CultureInfo EnUsCulture = new("en-US");
@@ -630,7 +631,7 @@ public static partial class Constructions
 	/// <summary>
 	/// Sorted by tuple, contains Namespace, Interface and ExtraTypes.
 	/// </summary>
-	public static SortedDictionary<(String Namespace, String Interface), List<(List<String> ExtraTypes, Type DotNetType)>> InterfacesList { get; } = new() { { ("", "IBase"), (ExtraTypesT, typeof(void)) }, { ("", "IChar"), (ExtraTypesT, typeof(void)) }, { ("", nameof(IComparable<bool>)), (ExtraTypesT, typeof(IComparable<>)) }, { ("", "IComparableRaw"), (NoExtraTypes, typeof(void)) }, { ("", nameof(IConvertible)), (NoExtraTypes, typeof(IConvertible)) }, { ("", nameof(IEquatable<bool>)), (ExtraTypesT, typeof(IEquatable<>)) }, { ("", "IIncreasable"), (ExtraTypesT, typeof(IIncrementOperators<>)) }, { ("", "IIntegerNumber"), (ExtraTypesT, typeof(IBinaryInteger<>)) }, { ("", "INumber"), (ExtraTypesT, typeof(INumber<>)) }, { ("", "IRealNumber"), (ExtraTypesT, typeof(IFloatingPoint<>)) }, { ("", "ISignedIntegerNumber"), (ExtraTypesT, typeof(ISignedNumber<>)) }, { ("", "IUnsignedIntegerNumber"), (ExtraTypesT, typeof(IUnsignedNumber<>)) }, { ("System.Collections", nameof(ICollection)), (ExtraTypesT, typeof(ICollection<>)) }, { ("System.Collections", "ICollectionRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", "IComparer"), (ExtraTypesT, typeof(G.IComparer<>)) }, { ("System.Collections", nameof(IDictionary)), (["TKey", "TValue"], typeof(G.IDictionary<,>)) }, { ("System.Collections", "IDictionaryRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", nameof(G.IEnumerable<bool>)), (ExtraTypesT, typeof(G.IEnumerable<>)) }, { ("System.Collections", "IEnumerableRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", "IEqualityComparer"), (ExtraTypesT, typeof(G.IEqualityComparer<>)) }, { ("System.Collections", nameof(IList)), (ExtraTypesT, typeof(IList<>)) }, { ("System.Collections", "IListRaw"), (NoExtraTypes, typeof(void)) } };
+	public static SortedDictionary<(String Namespace, String Interface), (List<String> ExtraTypes, Type DotNetType)> InterfacesList { get; } = new() { { ("", "IBase"), (ExtraTypesT, typeof(void)) }, { ("", "IChar"), (ExtraTypesT, typeof(void)) }, { ("", nameof(IComparable<bool>)), (ExtraTypesT, typeof(IComparable<>)) }, { ("", "IComparableRaw"), (NoExtraTypes, typeof(void)) }, { ("", nameof(IConvertible)), (NoExtraTypes, typeof(IConvertible)) }, { ("", nameof(IEquatable<bool>)), (ExtraTypesT, typeof(IEquatable<>)) }, { ("", "IIncreasable"), (ExtraTypesT, typeof(IIncrementOperators<>)) }, { ("", "IIntegerNumber"), (ExtraTypesT, typeof(IBinaryInteger<>)) }, { ("", "INumber"), (ExtraTypesT, typeof(INumber<>)) }, { ("", "IRealNumber"), (ExtraTypesT, typeof(IFloatingPoint<>)) }, { ("", "ISignedIntegerNumber"), (ExtraTypesT, typeof(ISignedNumber<>)) }, { ("", "IUnsignedIntegerNumber"), (ExtraTypesT, typeof(IUnsignedNumber<>)) }, { ("System.Collections", nameof(ICollection)), (ExtraTypesT, typeof(ICollection<>)) }, { ("System.Collections", "ICollectionRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", "IComparer"), (ExtraTypesT, typeof(G.IComparer<>)) }, { ("System.Collections", nameof(IDictionary)), (["TKey", "TValue"], typeof(G.IDictionary<,>)) }, { ("System.Collections", "IDictionaryRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", nameof(G.IEnumerable<bool>)), (ExtraTypesT, typeof(G.IEnumerable<>)) }, { ("System.Collections", "IEnumerableRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", "IEqualityComparer"), (ExtraTypesT, typeof(G.IEqualityComparer<>)) }, { ("System.Collections", nameof(IList)), (ExtraTypesT, typeof(IList<>)) }, { ("System.Collections", "IListRaw"), (NoExtraTypes, typeof(void)) } };
 
 	/// <summary>
 	/// Sorted by DestInterface, also contains SrcInterface and SrcUnvType.ExtraTypes.
@@ -908,6 +909,24 @@ public static partial class Constructions
 	public static UniversalType GetPrimitiveType(String primitive) => (new([new(BlockType.Primitive, primitive, 1)]), NoGeneralExtraTypes);
 
 	public static BlockStack GetPrimitiveBlockStack(String primitive) => new([new(BlockType.Primitive, primitive, 1)]);
+
+	public static BlockStack GetBlockStack(String basic)
+	{
+		var typeName = basic.Copy();
+		var namespace_ = typeName.GetBeforeSetAfterLast(".");
+		if (PrimitiveTypesList.ContainsKey(basic))
+			return GetPrimitiveBlockStack(basic);
+		else if (ExtraTypesList.TryGetValue((namespace_, typeName), out var type))
+			return new([new(type.IsClass ? BlockType.Class : type.IsValueType
+				? BlockType.Struct : type.IsDelegate() ? BlockType.Delegate
+				: throw new InvalidOperationException(), basic, 1)]);
+		else if (InterfacesList.TryGetValue((namespace_, typeName), out var value) && value.DotNetType.IsInterface)
+			return new([new(BlockType.Interface, basic, 1)]);
+		else if (basic.ToString() is nameof(Action) or nameof(Func<bool>))
+			return new([new(BlockType.Delegate, basic, 1)]);
+		else
+			throw new InvalidOperationException();
+	}
 
 	public static UniversalType GetListType(UniversalTypeOrValue InnerType)
 	{

@@ -453,7 +453,7 @@ public struct Universal
 		return a;
 	}
 
-	public Universal GetElement(int index)
+	public readonly Universal GetElement(int index)
 	{
 		if (Object is (IList<bool> BoolIsNullList, IList<bool> BoolList))
 			return GetElement2(index, BoolIsNullList, BoolList);
@@ -491,7 +491,7 @@ public struct Universal
 
 	private static Universal GetElement2<T>(int index, IList<bool> IsNullList, IList<T> MainList) => index <= 0 || index > MainList.Length ? new() : IsNullList[index - 1] ? new() : TryConstruct(MainList[index - 1]);
 
-	public void SetElement(int index, Universal value)
+	public readonly void SetElement(int index, Universal value)
 	{
 		if (Object is (IList<bool> BoolIsNullList, IList<bool> BoolList))
 			SetElement2(index, BoolIsNullList, BoolList, value.ToBool());
@@ -538,7 +538,7 @@ public struct Universal
 		}
 	}
 
-	public int GetLength() => Object switch
+	public readonly int GetLength() => Object switch
 	{
 		(IList<bool> BoolIsNullList, IList<bool> BoolList) => GetLength2(BoolIsNullList, BoolList),
 		(IList<bool> ByteIsNullList, IList<byte> ByteList) => GetLength2(ByteIsNullList, ByteList),
@@ -556,7 +556,7 @@ public struct Universal
 
 	private static int GetLength2<T>(IList<bool> IsNullList, IList<T> MainList) => IsNullList.Length != MainList.Length ? 0 : MainList.Length;
 
-	public bool ToBool()
+	public readonly bool ToBool()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
@@ -593,7 +593,7 @@ public struct Universal
 		return false;
 	}
 
-	public byte ToByte()
+	public readonly byte ToByte()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
@@ -630,7 +630,7 @@ public struct Universal
 		return 0;
 	}
 
-	public short ToShortInt()
+	public readonly short ToShortInt()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
@@ -667,7 +667,7 @@ public struct Universal
 		return 0;
 	}
 
-	public ushort ToUnsignedShortInt()
+	public readonly ushort ToUnsignedShortInt()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
@@ -704,7 +704,7 @@ public struct Universal
 		return 0;
 	}
 
-	public char ToChar()
+	public readonly char ToChar()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
@@ -741,7 +741,7 @@ public struct Universal
 		return '\0';
 	}
 
-	public int ToInt()
+	public readonly int ToInt()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
@@ -778,7 +778,7 @@ public struct Universal
 		return 0;
 	}
 
-	public uint ToUnsignedInt()
+	public readonly uint ToUnsignedInt()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
@@ -815,7 +815,7 @@ public struct Universal
 		return 0;
 	}
 
-	public long ToLongInt()
+	public readonly long ToLongInt()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
@@ -852,9 +852,9 @@ public struct Universal
 		return 0;
 	}
 
-	public DateTime ToDateTime() => TypeEqualsToPrimitive(InnerType, "DateTime") ? (Object is not DateTime dt) ? new(0) : dt : new(ToLongInt());
+	public readonly DateTime ToDateTime() => TypeEqualsToPrimitive(InnerType, "DateTime") ? (Object is not DateTime dt) ? new(0) : dt : new(ToLongInt());
 
-	public ulong ToUnsignedLongInt()
+	public readonly ulong ToUnsignedLongInt()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
@@ -891,7 +891,7 @@ public struct Universal
 		return 0;
 	}
 
-	public double ToReal()
+	public readonly double ToReal()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
@@ -928,7 +928,7 @@ public struct Universal
 		return 0;
 	}
 
-	public String ToString(bool takeIntoQuotes = false, bool addCasting = false)
+	public readonly String ToString(bool takeIntoQuotes = false, bool addCasting = false)
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
@@ -1026,7 +1026,7 @@ public struct Universal
 		return takeIntoQuotes ? "Unknown Object" : "";
 	}
 
-	private string ListToString(string type_name = "")
+	private readonly string ListToString(string type_name = "")
 	{
 		var list = ToList();
 		if (list.Length == 0)
@@ -1063,7 +1063,7 @@ public struct Universal
 		return new([.. output]);
 	}
 
-	public DelegateParameters? ToDelegate()
+	public readonly DelegateParameters? ToDelegate()
 	{
 		if (!new BlockStackEComparer().Equals(InnerType.MainType, FuncBlockStack))
 			return null;
@@ -1075,7 +1075,7 @@ public struct Universal
 
 	public static Universal PerformOperation<T>(T x, T y, Func<T, T, Universal> Process, String leftType, String rightType, String inputType) => ValidateFixing(Process(x, y), GetPrimitiveType(inputType), leftType == inputType || rightType == inputType);
 
-	public List<Universal> ToList()
+	public readonly List<Universal> ToList()
 	{
 		if (TypeIsPrimitive(InnerType.MainType) && InnerType.MainType.Peek().Name != "list" && InnerType.MainType.Peek().Name != "tuple")
 			return [this];
@@ -1106,7 +1106,7 @@ public struct Universal
 		return output;
 	}
 
-	public (IList<bool> IsNullList, IList<bool> MainList) ToBoolList()
+	public readonly (IList<bool> IsNullList, IList<bool> MainList) ToBoolList()
 	{
 		if (Object is (IList<bool> IsNullList, IList<bool> MainList))
 			return (IsNullList, MainList);
@@ -1121,7 +1121,7 @@ public struct Universal
 		return (is_null, output);
 	}
 
-	public (IList<bool> IsNullList, IList<byte> MainList) ToByteList()
+	public readonly (IList<bool> IsNullList, IList<byte> MainList) ToByteList()
 	{
 		if (Object is (IList<bool> IsNullList, IList<byte> MainList))
 			return (IsNullList, MainList);
@@ -1136,7 +1136,7 @@ public struct Universal
 		return (is_null, output);
 	}
 
-	public (IList<bool> IsNullList, IList<short> MainList) ToShortIntList()
+	public readonly (IList<bool> IsNullList, IList<short> MainList) ToShortIntList()
 	{
 		if (Object is (IList<bool> IsNullList, IList<short> MainList))
 			return (IsNullList, MainList);
@@ -1151,7 +1151,7 @@ public struct Universal
 		return (is_null, output);
 	}
 
-	public (IList<bool> IsNullList, IList<ushort> MainList) ToUnsignedShortIntList()
+	public readonly (IList<bool> IsNullList, IList<ushort> MainList) ToUnsignedShortIntList()
 	{
 		if (Object is (IList<bool> IsNullList, IList<ushort> MainList))
 			return (IsNullList, MainList);
@@ -1166,7 +1166,7 @@ public struct Universal
 		return (is_null, output);
 	}
 
-	public (IList<bool> IsNullList, IList<char> MainList) ToCharList()
+	public readonly (IList<bool> IsNullList, IList<char> MainList) ToCharList()
 	{
 		if (Object is (IList<bool> IsNullList, IList<char> MainList))
 			return (IsNullList, MainList);
@@ -1186,7 +1186,7 @@ public struct Universal
 		return (is_null, output);
 	}
 
-	public (IList<bool> IsNullList, IList<int> MainList) ToIntList()
+	public readonly (IList<bool> IsNullList, IList<int> MainList) ToIntList()
 	{
 		if (Object is (IList<bool> IsNullList, IList<int> MainList))
 			return (IsNullList, MainList);
@@ -1201,7 +1201,7 @@ public struct Universal
 		return (is_null, output);
 	}
 
-	public (IList<bool> IsNullList, IList<uint> MainList) ToUnsignedIntList()
+	public readonly (IList<bool> IsNullList, IList<uint> MainList) ToUnsignedIntList()
 	{
 		if (Object is (IList<bool> IsNullList, IList<uint> MainList))
 			return (IsNullList, MainList);
@@ -1216,7 +1216,7 @@ public struct Universal
 		return (is_null, output);
 	}
 
-	public (IList<bool> IsNullList, IList<long> MainList) ToLongIntList()
+	public readonly (IList<bool> IsNullList, IList<long> MainList) ToLongIntList()
 	{
 		if (Object is (IList<bool> IsNullList, IList<long> MainList))
 			return (IsNullList, MainList);
@@ -1231,7 +1231,7 @@ public struct Universal
 		return (is_null, output);
 	}
 
-	public (IList<bool> IsNullList, IList<ulong> MainList) ToUnsignedLongIntList()
+	public readonly (IList<bool> IsNullList, IList<ulong> MainList) ToUnsignedLongIntList()
 	{
 		if (Object is (IList<bool> IsNullList, IList<ulong> MainList))
 			return (IsNullList, MainList);
@@ -1246,7 +1246,7 @@ public struct Universal
 		return (is_null, output);
 	}
 
-	public (IList<bool> IsNullList, IList<double> MainList) ToRealList()
+	public readonly (IList<bool> IsNullList, IList<double> MainList) ToRealList()
 	{
 		if (Object is (IList<bool> IsNullList, IList<double> MainList))
 			return (IsNullList, MainList);
@@ -1261,7 +1261,7 @@ public struct Universal
 		return (is_null, output);
 	}
 
-	public (IList<bool> IsNullList, IList<String> MainList) ToStringList()
+	public readonly (IList<bool> IsNullList, IList<String> MainList) ToStringList()
 	{
 		if (Object is (IList<bool> IsNullList, IList<String> MainList))
 			return (IsNullList, MainList);
@@ -1347,7 +1347,7 @@ public struct Universal
 		else return basic_type == "tuple" ? ToTupleType(type.ExtraTypes) : new();
 	}
 
-	private bool ToListType(UniversalType type, out Universal a)
+	private readonly bool ToListType(UniversalType type, out Universal a)
 	{
 		if (type.ExtraTypes.Length == 1 && TypeIsPrimitive(type.ExtraTypes[0].MainType.Type) && type.ExtraTypes[0].ExtraTypes.Length == 0)
 		{
@@ -1444,7 +1444,7 @@ public struct Universal
 		}
 	}
 
-	private Universal ToTupleType(GeneralExtraTypes type_parts)
+	private readonly Universal ToTupleType(GeneralExtraTypes type_parts)
 	{
 		var count = 0;
 		NList<int> numbers = [];
@@ -1482,10 +1482,10 @@ public struct Universal
 		return new_list;
 	}
 
-	public override bool Equals(object? obj) => obj != null
+	public override readonly bool Equals(object? obj) => obj != null
 && obj is Universal m && ToBool() == m.ToBool() && ToReal() == m.ToReal() && ToString() == m.ToString();
 
-	public override int GetHashCode()
+	public override readonly int GetHashCode()
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
@@ -1921,10 +1921,8 @@ public struct Universal
 
 	public static Universal operator <<(Universal left, int right) => left.ToInt() << right;
 
-	public static bool operator ==(Universal left, Universal right)
-	{
-		return left.ToBool() == right.ToBool() && left.ToReal() == right.ToReal() && left.ToString() == right.ToString();
-	}
+	public static bool operator ==(Universal left, Universal right) =>
+		left.ToBool() == right.ToBool() && left.ToReal() == right.ToReal() && left.ToString() == right.ToString();
 
 	public static bool operator !=(Universal left, Universal right) => !(left == right);
 }

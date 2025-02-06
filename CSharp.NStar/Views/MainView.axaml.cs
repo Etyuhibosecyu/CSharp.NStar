@@ -176,7 +176,17 @@ return F()();
    }
 }
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Wreck in line 13 at position 0: unclosed 2 nested comments in the end of code
-") || (result = ExecuteProgram(program = @"using System.Collections;
+") || (result = ExecuteProgram(program = @"using System;
+real Function F(int n)
+{
+	return 1r / n;
+}
+list() real Function Calculate(Func[real, int] function)
+{
+	return (function(5), function(8), function(13));
+}
+return Calculate(F);
+", out errors)) != (targetResult = @"(0.2, 0.125, 0.07692307692307693)") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"using System.Collections;
 NList[int] bitList = new NList[int](10, 123, 456, 789, 111, 222, 333, 444, 555, 777);
 return bitList;
 ", out errors)) != (targetResult = @"(123, 456, 789, 111, 222, 333, 444, 555, 777)") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"list() int list = (1, 2, 3);
@@ -201,7 +211,17 @@ dic.TryAdd(""1"", 1);
 dic.TryAdd(""2"", 2);
 dic.TryAdd(""3"", 3);
 return dic;
-", out errors)) != (targetResult = """(("1", 1), ("2", 2), ("3", 3))""") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"bool bool=bool;
+", out errors)) != (targetResult = """(("1", 1), ("2", 2), ("3", 3))""") || (result = ExecuteProgram(program = @"using System.Collections;
+NList[int] list = new NList[int](3, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list.IndexOf(2, 2);
+", out errors)) != (targetResult = @"2") || (result = ExecuteProgram(program = @"using System.Collections;
+NList[int] list = new NList[int](3, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list.Remove(2, 3);
+", out errors)) != (targetResult = @"(1, 5, 6, 7)") || (result = ExecuteProgram(program = @"bool bool=bool;
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Error in line 1 at position 10: one cannot use the local variable ""bool"" before it is declared or inside such declaration in line 1 at position 0
 ") || (result = ExecuteProgram(program = @"return 100000000000000000*100000000000000000000;
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Error in line 1 at position 26: too large number; long long type is under development

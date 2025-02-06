@@ -1553,26 +1553,20 @@ public partial class MainParsing : LexemStream
 		if (success)
 		{
 			_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
-			try
-			{
-				_ExtraStack[_Stackpos - 1] = ((List<object>?)_ExtraStack[_Stackpos - 1] ?? []).Append((UniversalType?)extra ?? NullType);
-			}
-			catch
-			{
-			}
 		}
 		else
 			_TBStack[_Stackpos]?.Add(new("type", pos, pos + 1, container) { Extra = NullType });
+		if (_ExtraStack[_Stackpos - 1] is List<object> list)
+		{
+			list.Add((success ? (UniversalType?)extra : null) ?? NullType);
+		}
 		if (lexems[pos].Type == LexemType.Identifier)
 		{
 			pos++;
 			_TBStack[_Stackpos]?.Add(new(lexems[pos - 1].String, pos - 1, pos, container));
-			try
+			if (_ExtraStack[_Stackpos - 1] is List<object> list2)
 			{
-				_ExtraStack[_Stackpos - 1] = ((List<object>?)_ExtraStack[_Stackpos - 1] ?? []).Append(lexems[pos - 1].String);
-			}
-			catch
-			{
+				list2.Add(lexems[pos - 1].String);
 			}
 			return true;
 		}
@@ -2888,7 +2882,7 @@ public partial class MainParsing : LexemStream
 		TypeConstraints constraints = TypeConstraints.None)
 	{
 		String s, namespace_ = [], outerClass = [];
-		BlockStack container = new();
+		BlockStack container = new(), container2;
 	l0:
 		s = lexems[pos].String;
 		if (s == "short")
@@ -3140,7 +3134,9 @@ public partial class MainParsing : LexemStream
 			UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), innerArrayParameters);
 			return EndParseType2(ref pos, end, ref UnvType, ref errorsList);
 		}
-		else if (GeneralTypesList.TryGetValue((container, s), out var value))
+		else if (GeneralTypesList.TryGetValue((container2 = container, s), out var value) || namespace_ == ""
+			&& ExplicitlyConnectedNamespacesList.FindIndex(x => GeneralTypesList.TryGetValue((container2 = new(x.Split('.').Convert(x =>
+			new Block(BlockType.Namespace, x, 1))), s), out value)) >= 0)
 		{
 			var pos2 = pos;
 			var (ArrayParameters, Attributes) = value;
@@ -3153,7 +3149,7 @@ public partial class MainParsing : LexemStream
 			pos++;
 			if (ArrayParameters.Length == 0)
 			{
-				UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
+				UnvType = (new(container2.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 			}
 			if (pos >= end)
@@ -3171,7 +3167,7 @@ public partial class MainParsing : LexemStream
 				return false;
 			}
 			ParseTypeChain(ref pos, end, mainContainer, ArrayParameters, out var innerArrayParameters, ref errorsList, "associativeArray");
-			UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), innerArrayParameters);
+			UnvType = (new(container2.ToList().Append(new(BlockType.Class, s, 1))), innerArrayParameters);
 			return EndParseType2(ref pos, end, ref UnvType, ref errorsList);
 		}
 		else if (UserDefinedTypesList.TryGetValue((container, s), out var value2))
@@ -3197,7 +3193,7 @@ public partial class MainParsing : LexemStream
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 			}
 		}
-		else if (container.Length == 0 && CheckContainer(mainContainer, stack => UserDefinedTypesList.TryGetValue((stack, s), out value2), out var container2))
+		else if (container.Length == 0 && CheckContainer(mainContainer, stack => UserDefinedTypesList.TryGetValue((stack, s), out value2), out container2))
 		{
 			var pos2 = pos;
 			if (constraints != TypeConstraints.None && !IsValidBaseClass(value2.Attributes))
@@ -3302,7 +3298,7 @@ public partial class MainParsing : LexemStream
 			if (container.Length == 0)
 			{
 				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "type \"" + String.Join(".", [.. container.ToList().Convert(X => X.Name), .. s]) + "\" is not defined in this location");
+				GenerateError(pos, "type \"" + String.Join(".", [.. container.ToList().Convert(X => X.Name), s]) + "\" is not defined in this location");
 			}
 			else
 			{
