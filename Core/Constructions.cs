@@ -4,6 +4,7 @@ global using System.Drawing;
 global using System.Globalization;
 global using System.IO;
 global using System.Net.Http;
+global using System.Reflection;
 global using System.Text.RegularExpressions;
 global using System.Threading;
 global using System.Threading.Tasks;
@@ -204,7 +205,7 @@ public class GeneralMethodParameters : List<GeneralMethodParameter>
 	{
 	}
 }
-public class GeneralMethodOverloads : List<(GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters, TreeBranch? Location)>
+public class GeneralMethodOverloads : List<(GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)>
 {
 }
 public class GeneralMethods : SortedDictionary<String, GeneralMethodOverloads>
@@ -334,6 +335,15 @@ public enum TypeConstraints
 	None = 0,
 	BaseClassOrInterface = 1,
 	BaseInterface = 2,
+}
+
+public enum RawStringState
+{
+	Normal,
+	ForwardSlash,
+	Quote,
+	ForwardSlashAndQuote,
+	EmailSign,
 }
 
 public enum ExecutionFlags
@@ -564,6 +574,7 @@ public static partial class Constructions
 	public static readonly List<(String, BlockType)> BlockTypesList = [("Main", BlockType.Unnamed), ("Namespace", BlockType.Namespace), ("Class", BlockType.Class), ("Struct", BlockType.Struct), ("Interface", BlockType.Interface), ("Delegate", BlockType.Delegate), ("Enum", BlockType.Enum), ("Function", BlockType.Function), ("Constructor", BlockType.Constructor), ("Destructor", BlockType.Destructor), ("Operator", BlockType.Operator), ("Extent", BlockType.Extent)];
 	public static readonly CultureInfo EnUsCulture = new("en-US");
 	public static readonly string AlphanumericCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.";
+	public static readonly string AlphanumericCharactersWithoutDot = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	private static readonly MethodParameter ParameterPredicate = new("System.Predicate", "match", ExtraTypesT, ParameterAttributes.None, "");
 	private static readonly MethodParameter ParameterRealValue = new("real", "value", NoExtraTypes, ParameterAttributes.None, "");
 	private static readonly MethodParameter ParameterICharT = new("IChar", "c", ExtraTypesT, ParameterAttributes.None, "");
@@ -649,11 +660,6 @@ public static partial class Constructions
 	public static SortedDictionary<String, List<(String Interface, List<String> ExtraTypes)>> UserDefinedImplementedInterfacesList { get; } = [];
 
 	/// <summary>
-	/// Sorted by Container, then by Name, also contains Type and Attributes.
-	/// </summary>
-	public static TypeSortedList<TypeProperties> PropertiesList { get; } = new() { { GetPrimitiveBlockStack("DateTime"), new() { { "Date", ((GetPrimitiveBlockStack("DateTime"), NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "Day", ((GeneralTypeInt, NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "DayOfWeek", ((new([new(BlockType.Namespace, "System", 1), new(BlockType.Enum, "DayOfWeek", 1)]), NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "DayOfYear", ((GeneralTypeInt, NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "Hour", ((GeneralTypeInt, NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "Kind", ((new([new(BlockType.Namespace, "System", 1), new(BlockType.Enum, "DateTimeKind", 1)]), NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "Millisecond", ((GeneralTypeInt, NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "Minute", ((GeneralTypeInt, NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "Month", ((GeneralTypeInt, NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "Now", ((GetPrimitiveBlockStack("DateTime"), NoGeneralExtraTypes), PropertyAttributes.Static | PropertyAttributes.NoSet) }, { "Second", ((GeneralTypeInt, NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "Ticks", ((new([new(BlockType.Primitive, "long int", 1)]), NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "TimeOfDay", ((new([new(BlockType.Namespace, "System", 1), new(BlockType.Class, "TimeSpan", 1)]), NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "Today", ((GetPrimitiveBlockStack("DateTime"), NoGeneralExtraTypes), PropertyAttributes.Static | PropertyAttributes.NoSet) }, { "UTCNow", ((GetPrimitiveBlockStack("DateTime"), NoGeneralExtraTypes), PropertyAttributes.Static | PropertyAttributes.NoSet) }, { "Year", ((GeneralTypeInt, NoGeneralExtraTypes), PropertyAttributes.NoSet) } } }, { GetPrimitiveBlockStack("IntPtr"), new() { { "Size", ((GeneralTypeInt, NoGeneralExtraTypes), PropertyAttributes.Static | PropertyAttributes.NoSet) } } }, { GeneralTypeList, new() { { "Last", ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), PropertyAttributes.None) }, { "Length", ((GeneralTypeInt, NoGeneralExtraTypes), PropertyAttributes.NoSet) }, { "Sorted", ((GeneralTypeBool, NoGeneralExtraTypes), PropertyAttributes.None) } } }, { GeneralTypeString, new() { { "Length", ((GeneralTypeInt, NoGeneralExtraTypes), PropertyAttributes.NoSet) } } } };
-
-	/// <summary>
 	/// Sorted by Container, then by Name, also contains Type, ExtraTypes and Attributes.
 	/// </summary>
 	public static TypeDictionary<UserDefinedTypeProperties> UserDefinedPropertiesList { get; } = [];
@@ -686,7 +692,7 @@ public static partial class Constructions
 	/// <summary>
 	/// Sorted by Container, then by Name, also contains ArrayParameters, ReturnType, ReturnArrayParameters, Attributes, ParameterTypes, ParameterNames, ParameterArrayParameters, ParameterAttributes and ParameterDefaultValues.
 	/// </summary>
-	public static TypeSortedList<GeneralMethods> GeneralMethodsList { get; } = new() { { new(), new() { { "ExecuteString", new() { ([], (new([new(BlockType.Primitive, "universal", 1)]), NoGeneralExtraTypes), FunctionAttributes.Multiconst, [GeneralParameterStringS, new(new([new(BlockType.Primitive, "universal", 1)]), "parameters", NoGeneralExtraTypes, ParameterAttributes.Params, "")], null) } } } } };
+	public static TypeSortedList<GeneralMethods> GeneralMethodsList { get; } = new() { { new(), new() { { "ExecuteString", new() { ([], (new([new(BlockType.Primitive, "universal", 1)]), NoGeneralExtraTypes), FunctionAttributes.Multiconst, [GeneralParameterStringS, new(new([new(BlockType.Primitive, "universal", 1)]), "parameters", NoGeneralExtraTypes, ParameterAttributes.Params, "")]) } } } } };
 
 	/// <summary>
 	/// Sorted by Container, then by Name, also contains ArrayParameters, ReturnType, ReturnArrayParameters, Attributes, ParameterTypes, ParameterNames, ParameterArrayParameters, ParameterAttributes and ParameterDefaultValues.
@@ -803,7 +809,9 @@ public static partial class Constructions
 	public static G.SortedSet<String> ReservedOperatorsList { get; } = ["#", "G", "I", "K", "_", "g", "hexa", "hexa=", "penta", "penta=", "tetra", "tetra="];
 	// To specify non-associative N-ary operator, set OperandsCount to -1. To specify postfix unary operator, set it to -2.
 
-	public static G.SortedSet<String> AutoCompletionList { get; } = new(new List<String>("abstract", "break", "case", "Class", "closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypesList.Keys).AddRange(ExtraTypesList.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type))).AddRange(PropertiesList.Values.ConvertAndJoin(x => x.Keys)).AddRange(PublicFunctionsList.Keys));
+	public static G.SortedSet<String> AutoCompletionList { get; } = new(new List<String>("abstract", "break", "case", "Class", "closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypesList.Keys).AddRange(ExtraTypesList.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type))).AddRange(PublicFunctionsList.Keys));
+
+	public static G.SortedSet<string> AutoCompletionAfterDotList { get; } = new(PrimitiveTypesList.Values.ToList().AddRange(ExtraTypesList.Values).ConvertAndJoin(x => x.GetProperties(BindingFlags.Instance | BindingFlags.Public).ToList(x => x.Name).AddRange(x.GetMethods(BindingFlags.Instance | BindingFlags.Public).ToList(x => x.Name))).Filter(x => !x.Contains('_')));
 
 	public static void Add<T>(ref IList<T>? list, T item)
 	{
@@ -914,14 +922,17 @@ public static partial class Constructions
 	{
 		var typeName = basic.Copy();
 		var namespace_ = typeName.GetBeforeSetAfterLast(".");
+		var split = namespace_.Split('.');
 		if (PrimitiveTypesList.ContainsKey(basic))
 			return GetPrimitiveBlockStack(basic);
 		else if (ExtraTypesList.TryGetValue((namespace_, typeName), out var type))
-			return new([new(type.IsClass ? BlockType.Class : type.IsValueType
+			return new([.. split.Convert(x => new Block(BlockType.Namespace, x, 1)),
+				new(type.IsClass ? BlockType.Class : type.IsValueType
 				? BlockType.Struct : type.IsDelegate() ? BlockType.Delegate
-				: throw new InvalidOperationException(), basic, 1)]);
+				: throw new InvalidOperationException(), typeName, 1)]);
 		else if (InterfacesList.TryGetValue((namespace_, typeName), out var value) && value.DotNetType.IsInterface)
-			return new([new(BlockType.Interface, basic, 1)]);
+			return new([.. split.Convert(x => new Block(BlockType.Namespace, x, 1)),
+				new(BlockType.Interface, typeName, 1)]);
 		else if (basic.ToString() is nameof(Action) or nameof(Func<bool>))
 			return new([new(BlockType.Delegate, basic, 1)]);
 		else
@@ -968,7 +979,7 @@ public static partial class Constructions
 	{
 		if (IsRawStringContent(input))
 		{
-			output = ((String)"/\"").AddRange(input).AddRange("\"/");
+			output = ((String)"/\"").AddRange(input).AddRange("\"\\");
 			return true;
 		}
 		else
@@ -1068,7 +1079,7 @@ public static partial class Constructions
 
 	public static bool IsRawString(this String input, out String output)
 	{
-		if (!(input.Length >= 4 && input[0] == '/' && input[1] == '\"' && input[^2] == '\"' && input[^1] == '/'))
+		if (!(input.Length >= 4 && input[0] == '/' && input[1] == '\"' && input[^2] == '\"' && input[^1] == '\\'))
 		{
 			output = [];
 			return false;
@@ -1081,8 +1092,89 @@ public static partial class Constructions
 
 	private static bool IsRawStringContent(this String input)
 	{
+		var depth = 0;
+		var state = RawStringState.Normal;
+		for (var i = 0; i < input.Length;)
+		{
+			if (i >= input.Length)
+				return false;
+			var c = input[i++];
+			if (c == '/')
+			{
+				if (state != RawStringState.ForwardSlash)
+				{
+					state = RawStringState.ForwardSlash;
+					continue;
+				}
+				while (i < input.Length && input[i] is not ('\r' or '\n'))
+					i++;
+			}
+			else if (c == '*')
+			{
+				if (state != RawStringState.ForwardSlash)
+				{
+					state = RawStringState.Normal;
+					continue;
+				}
+				i++;
+				while (i < input.Length && !(input[i - 1] == '*' && input[i] == '/'))
+					i++;
+				if (i < input.Length)
+					i++;
+				else
+					return false;
+			}
+			else if (c == '{')
+			{
+				if (state != RawStringState.ForwardSlash)
+				{
+					state = RawStringState.Normal;
+					continue;
+				}
+				if (!SkipNestedComments(input, ref i))
+					return false;
+			}
+			else if (c == '\\')
+			{
+				if (state is not (RawStringState.Quote or RawStringState.ForwardSlashAndQuote))
+					state = RawStringState.Normal;
+				else if (depth == 0 || state == RawStringState.ForwardSlashAndQuote && depth == 1)
+					return false;
+				else if (state == RawStringState.ForwardSlashAndQuote)
+				{
+					depth -= 2;
+					state = RawStringState.Normal;
+				}
+				else
+				{
+					depth--;
+					state = RawStringState.Normal;
+				}
+			}
+			else if (c == '\"')
+			{
+				if (state == RawStringState.ForwardSlash)
+				{
+					depth++;
+					state = RawStringState.ForwardSlashAndQuote;
+				}
+				else if (state != RawStringState.EmailSign)
+					state = RawStringState.Quote;
+				else if (!SkipVerbatimStringInsideRaw(input, ref i))
+					return false;
+			}
+			else if (c == '@')
+				state = RawStringState.EmailSign;
+			else
+				state = RawStringState.Normal;
+		}
+		return depth == 0;
+	}
+
+	private static bool SkipNestedComments(String input, ref int i)
+	{
 		int depth = 0, state = 0;
-		for (var i = 0; i < input.Length; i++)
+		while (i < input.Length)
 		{
 			var c = input[i];
 			if (c == '/')
@@ -1090,25 +1182,46 @@ public static partial class Constructions
 				if (state != 2)
 					state = 1;
 				else if (depth == 0)
-					return false;
+				{
+					i++;
+					return true;
+				}
 				else
 				{
 					depth--;
 					state = 0;
 				}
 			}
-			else if (c == '\"')
+			else if (c == '{')
 			{
 				if (state == 1)
-				{
 					depth++;
-					state = 0;
-				}
-				else
-					state = 2;
+				state = 0;
 			}
+			else if (c == '}')
+				state = 2;
+			else
+				state = 0;
+			i++;
 		}
-		return true;
+		return false;
+	}
+
+	private static bool SkipVerbatimStringInsideRaw(String input, ref int i)
+	{
+		while (i < input.Length)
+		{
+			var c = input[i++];
+			if (c == '\"')
+				goto l0;
+			else if (i >= input.Length)
+				return false;
+			continue;
+		l0:
+			if (i < input.Length && input[i] != '\"')
+				return true;
+		}
+		return false;
 	}
 
 	[GeneratedRegex("[0-9]+")]
@@ -1268,6 +1381,8 @@ public readonly record struct UniversalType(BlockStack MainType, GeneralExtraTyp
 			return "list(" + (ExtraTypes.Length == 2 ? ExtraTypes[0].ToString() : "") + ") " + ExtraTypes[^1].ToString();
 		else if (TypeEqualsToPrimitive(this, "tuple", false))
 		{
+			if (ExtraTypes.Length == 0)
+				return "()";
 			var prev = new UniversalType(ExtraTypes[0].MainType.Type, ExtraTypes[0].ExtraTypes);
 			if (ExtraTypes.Length == 1)
 				return prev.ToString();

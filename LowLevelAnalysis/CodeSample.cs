@@ -299,11 +299,13 @@ public class CodeSample(String newString)
 		String GenerateDoubleQuoteWreck(out String s2) => GenerateQuoteWreck(out s2, "unexpected end of code reached; expected: double quote", true);
 		if (ValidateAndAdd('\"'))
 		{
-			while (IsNotEnd() && !IsCharAfterBackslash('\"', false))
+			while (IsNotEnd() && input[pos] is not ('\r' or '\n') && !IsCharAfterBackslash('\"', false))
 			{
 				if (!ValidateCharOrEscapeSequence())
 					AddChar(result);
 			}
+			if (IsNotEnd() && input[pos] is '\r' or '\n')
+				return GenerateQuoteWreck(out s2, "classic string (not raw or verbatim) must be single-line; expected: double quote");
 			if (!IsCharAfterBackslash('\"'))
 				return GenerateDoubleQuoteWreck(out s2);
 		}
@@ -353,41 +355,103 @@ public class CodeSample(String newString)
 			pos = start;
 			return s2 = [];
 		}
-		int depth = 0, state = 0;
+		var depth = 0;
+		var state = RawStringState.Normal;
 		while (true)
 		{
-			if (pos >= input.Length)
+			if (wreckOccurred)
 			{
-				GenerateMessage("Wreck", pos, "unexpected end of code reached; expected: matching number of pairs \"double quote - forward slash\" (starting with quote)");
+				s2 = input[start..pos];
+				return result.AddRange(((String)"\"\\").Repeat(depth + 1));
+			}
+			else if (pos >= input.Length)
+			{
+				GenerateMessage("Wreck", pos, "unexpected end of code reached; expected: " + (depth + 1)
+					+ " pairs \"double quote - reverse slash\" (starting with quote)");
 				wreckOccurred = true;
 				s2 = input[start..pos];
-				return result.AddRange(((String)"\"/").Repeat(depth + 1));
+				return result.AddRange(((String)"\"\\").Repeat(depth + 1));
 			}
 			else if (ValidateAndAdd('/'))
 			{
-				if (state != 2)
-					state = 1;
-				else if (depth == 0)
+				if (state != RawStringState.ForwardSlash)
+				{
+					state = RawStringState.ForwardSlash;
+					continue;
+				}
+				var pos2 = pos;
+				while (IsNotEnd() && input[pos] is not ('\r' or '\n'))
+					pos++;
+				result.AddRange(input[pos2..pos]);
+			}
+			else if (ValidateAndAdd('*'))
+			{
+				if (state != RawStringState.ForwardSlash)
+				{
+					state = RawStringState.Normal;
+					continue;
+				}
+				var pos2 = pos;
+				pos++;
+				while (IsNotEnd() && !(input[pos - 1] == '*' && input[pos] == '/'))
+					IncreasePosSmoothly();
+				if (IsNotEnd())
+					pos++;
+				else
+				{
+					GenerateMessage("Wreck", pos, "unclosed comment in the end of code");
+					wreckOccurred = true;
+					s2 = input[start..pos];
+					return result.AddRange("*/").AddRange(((String)"\"\\").Repeat(depth + 1));
+				}
+				result.AddRange(input[pos2..pos]);
+			}
+			else if (ValidateAndAdd('{'))
+			{
+				if (state != RawStringState.ForwardSlash)
+				{
+					state = RawStringState.Normal;
+					continue;
+				}
+				var pos2 = pos;
+				SkipNestedComments();
+				result.AddRange(input[pos2..pos]);
+			}
+			else if (ValidateAndAdd('\\'))
+			{
+				if (state is not (RawStringState.Quote or RawStringState.ForwardSlashAndQuote))
+					state = RawStringState.Normal;
+				else if (depth == 0 || state == RawStringState.ForwardSlashAndQuote && depth == 1)
 					break;
+				else if (state == RawStringState.ForwardSlashAndQuote)
+				{
+					depth -= 2;
+					state = RawStringState.Normal;
+				}
 				else
 				{
 					depth--;
-					state = 0;
+					state = RawStringState.Normal;
 				}
 			}
 			else if (ValidateAndAdd('\"'))
 			{
-				if (state == 1)
+				if (state == RawStringState.ForwardSlash)
 				{
 					depth++;
-					state = 0;
+					state = RawStringState.ForwardSlashAndQuote;
 				}
+				else if (state == RawStringState.EmailSign)
+					result.AddRange(GetVerbatimStringInsideRaw());
 				else
-					state = 2;
+					state = RawStringState.Quote;
 			}
+			else if (ValidateAndAdd('@'))
+				state = RawStringState.EmailSign;
 			else
 			{
 				result.Add(input[pos]);
+				state = RawStringState.Normal;
 				IncreasePosSmoothly();
 			}
 		}
@@ -402,6 +466,36 @@ public class CodeSample(String newString)
 			}
 			return false;
 		}
+	}
+
+	private String GetVerbatimStringInsideRaw()
+	{
+		String result = [];
+		while (true)
+		{
+			if (ValidateChar('\"'))
+			{
+				result.Add(input[pos - 1]);
+				goto l0;
+			}
+			else if (!IsNotEnd())
+			{
+				GenerateMessage("Wreck", pos, "unexpected end of code reached; expected: double quote");
+				wreckOccurred = true;
+				return result.Add('\"');
+			}
+			else
+			{
+				result.Add(input[pos]);
+				IncreasePosSmoothly();
+			}
+			continue;
+		l0:
+			if (!ValidateChar('\"'))
+				break;
+			result.Add(input[pos - 1]);
+		}
+		return result;
 	}
 
 	private String GetUnformatted()

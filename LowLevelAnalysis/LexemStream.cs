@@ -329,7 +329,7 @@ public class LexemStream
 			UserDefinedFunctionsList.TryAdd(container, []);
 			var list = UserDefinedFunctionsList[container];
 			list.Add(name, []);
-			list[name].Add(([], (new([new(BlockType.Primitive, "???", 1)]), NoGeneralExtraTypes), attributes, [], null));
+			list[name].Add(([], (new([new(BlockType.Primitive, "???", 1)]), NoGeneralExtraTypes), attributes, []));
 			blocksToJump.Add((container, "Function", name, blockStart, pos));
 		});
 	}
@@ -818,7 +818,7 @@ public partial class MainParsing : LexemStream
 			nameof(Hypername) or "HypernameNotCall" => Hypername(),
 			"HypernameNew" => HypernameNew(),
 			"HypernameType" or "HypernameNotCallType" => HypernameType(),
-			"HypernameBasicExpr" or "HypernameNotCallBasicExpr" => HypernameBasicExpr(),
+			nameof(HypernameBasicExpr) or "HypernameNotCallBasicExpr" => HypernameBasicExpr(),
 			nameof(HypernameCall) => HypernameCall(),
 			nameof(HypernameIndexes) or "HypernameNotCallIndexes" => HypernameIndexes(),
 			"HypernameClosing" or "HypernameNotCallClosing" or "BasicExpr4" => HypernameClosing_BasicExpr4(),
@@ -2260,7 +2260,7 @@ public partial class MainParsing : LexemStream
 			return IncreaseStack("AssignedExpr", pos_: pos, applyPos: true, applyCurrentErl: true);
 		l0:
 			GenerateError(pos, "only variables can be assigned");
-			_TBStack[_Stackpos]?.Insert(0, treeBranch ?? TreeBranch.DoNotAdd());
+			_TBStack[_Stackpos]?.Insert(0, new TreeBranch("null", pos, pos + 1, container));
 			while (!IsLexemOther(lexems[pos], StopLexemsList))
 				pos++;
 			return Default();
@@ -2470,7 +2470,7 @@ public partial class MainParsing : LexemStream
 				AppendBranch(nameof(Hypername), new(lexems[pos - 1].String, pos - 1, pos, container));
 			}
 			else if (_TaskStack[_Stackpos - 1].ToString() is not "HypernameClosing" and not "HypernameNotCallClosing")
-				return IncreaseStack(nameof(BasicExpr), currentTask: "HypernameBasicExpr", applyCurrentTask: true);
+				return IncreaseStack(nameof(BasicExpr), currentTask: nameof(HypernameBasicExpr), applyCurrentTask: true);
 			else
 				return EndWithError(pos, "expected: identifier", true);
 		}
@@ -3313,7 +3313,11 @@ public partial class MainParsing : LexemStream
 	private bool ParseTupleType(ref int pos, int end, BlockStack mainContainer, out UniversalType UnvType, ref List<String>? errorsList)
 	{
 		pos++;
-		ParseTypeChain(ref pos, end, mainContainer, [(true, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), "")], out var innerArrayParameters, ref errorsList, "tuple");
+		if (ParseTypeChain(ref pos, end, mainContainer, [(true, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), "")], out var innerArrayParameters, ref errorsList, "tuple") == false)
+		{
+			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+			return false;
+		}
 		if (pos >= end)
 		{
 			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);

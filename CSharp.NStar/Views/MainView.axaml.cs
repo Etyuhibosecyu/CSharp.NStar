@@ -1,7 +1,15 @@
 ﻿#define RELEASE
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using AvaloniaEdit.CodeCompletion;
+using AvaloniaEdit.Document;
+using AvaloniaEdit.Editing;
+using AvaloniaEdit.Highlighting;
+using AvaloniaEdit.Highlighting.Xshd;
+using AvaloniaEdit.Utils;
 using System.Globalization;
 using System.Reflection;
 using static CSharp.NStar.SemanticTree;
@@ -11,13 +19,31 @@ namespace CSharp.NStar.Views;
 public partial class MainView : UserControl
 {
 	private Assembly? compiledAssembly;
+	private readonly String enteredText = [];
 
 	public MainView()
-    {
-        InitializeComponent();
+	{
+		InitializeComponent();
 		CultureInfo.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 		TextBoxInput.Options.EnableTextDragDrop = true;
 		TextBoxInput.AddHandler(PointerReleasedEvent, TextBoxInput_PointerReleased, handledEventsToo: true);
+		TextBoxInput.TextArea.TextEntering += TextBoxInput_TextArea_TextEntering;
+		TextBoxInput.TextArea.TextEntered += TextBoxInput_TextArea_TextEntered;
+		using (var stream = new FileStream("SyntaxHighlighting.xshd", FileMode.Open))
+		{
+			using var reader = new System.Xml.XmlTextReader(stream);
+			TextBoxInput.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
+			var spans = TextBoxInput.SyntaxHighlighting.MainRuleSet.Spans;
+			var nestedCommentSpans = spans.FindAll(x => x.SpanColor.Foreground.ToString()?.Contains("#ffbfbf00") ?? false);
+			nestedCommentSpans[^1].RuleSet.Spans.AddRange(nestedCommentSpans);
+			var rules = TextBoxInput.SyntaxHighlighting.MainRuleSet.Rules;
+			var stringRule = rules.Find(x => x.Color.Foreground.ToString()?.Contains("#ffbf4000") ?? false);
+			var stringSpans = spans.FindAll(x => x.SpanColor.Foreground.ToString()?.Contains("#ffbf4000") ?? false);
+			stringSpans[^1].RuleSet.Rules.Add(stringRule);
+			stringSpans[^1].RuleSet.Spans.AddRange(stringSpans);
+			stringSpans[^1].RuleSet.Spans.AddRange(nestedCommentSpans);
+		}
+		_ = TextBoxInput.TextArea.TextView.GetDocumentLineByVisualTop(TextBoxInput.TextArea.TextView.ScrollOffset.Y).LineNumber;
 #if RELEASE
 		ButtonSaveExe.IsEnabled = false;
 		String result, program, targetResult, targetErrors = [];
@@ -167,16 +193,24 @@ return F()();
 {
    unsigned int Function F1(unsigned int n) /{Слово Function обязательно
    {
-      return n * 2;
+	  return n * 2;
    }
  
    null Function F2()
    {
-      return null; //Просто ""return;"" не катит
+	  return null; //Просто ""return;"" не катит
    }
 }
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Wreck in line 13 at position 0: unclosed 2 nested comments in the end of code
-") || (result = ExecuteProgram(program = @"using System;
+") || (result = ExecuteProgram(program = @"return /""Hello, world!""ssssssssssssssss\;
+", out errors)) != (targetResult = "null") || errors
+!= (targetErrors = @"Wreck in line 2 at position 0: unexpected end of code reached; expected: 1 pairs ""double quote - reverse slash"" (starting with quote)
+") || (result = ExecuteProgram(program = @"return /""Hello, world!/""\;
+", out errors)) != (targetResult = @"""Hello, world!/""") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"return /""Hell@""/""o, world!""\;
+", out errors)) != (targetResult = @"/""Hell@""/""o, world!""\") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"return /""Hell@""\""o, world!""\;
+", out errors)) != (targetResult = @"/""Hell@""\""o, world!""\") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"return /""Hell@""/{""o, world!""\;
+", out errors)) != (targetResult = @"/""Hell@""/{""o, world!""\") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"return /""Hell@""\""""\""o, world!""\;
+", out errors)) != (targetResult = @"/""Hell@""\""""\""o, world!""\") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"using System;
 real Function F(int n)
 {
 	return 1r / n;
@@ -186,7 +220,15 @@ list() real Function Calculate(Func[real, int] function)
 	return (function(5), function(8), function(13));
 }
 return Calculate(F);
-", out errors)) != (targetResult = @"(0.2, 0.125, 0.07692307692307693)") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"using System.Collections;
+", out errors)) != (targetResult = @"(0.2, 0.125, 0.07692307692307693)") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"list(3) int list = 8;
+list = 123;
+return list;
+", out errors)) != (targetResult = @"(((123)))") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"var x = 5;
+return 5 pow x += 3;
+", out errors)) != (targetResult = @"null") || errors != (targetErrors = @"Error in line 2 at position 15: only variables can be assigned
+") || (result = ExecuteProgram(program = @"return ;
+", out errors)) != (targetResult = @"null") || errors != (targetErrors = @"Warning in line 1 at position 7: syntax ""return;"" is deprecated; consider using ""return null;"" instead
+") || (result = ExecuteProgram(program = @"using System.Collections;
 NList[int] bitList = new NList[int](10, 123, 456, 789, 111, 222, 333, 444, 555, 777);
 return bitList;
 ", out errors)) != (targetResult = @"(123, 456, 789, 111, 222, 333, 444, 555, 777)") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"list() int list = (1, 2, 3);
@@ -220,8 +262,28 @@ return list.IndexOf(2, 2);
 NList[int] list = new NList[int](3, 1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
+return list.LastIndexOf(2, 1);
+", out errors)) != (targetResult = @"0") || (result = ExecuteProgram(program = @"using System.Collections;
+NList[int] list = new NList[int](3, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
 return list.Remove(2, 3);
-", out errors)) != (targetResult = @"(1, 5, 6, 7)") || (result = ExecuteProgram(program = @"bool bool=bool;
+", out errors)) != (targetResult = @"(1, 5, 6, 7)") || (result = ExecuteProgram(program = @"using System.Collections;
+NList[int] list = new NList[int](3, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list.RemoveAt(5);
+", out errors)) != (targetResult = @"(1, 2, 3, 4, 6, 7)") || (result = ExecuteProgram(program = @"using System.Collections;
+NList[int] list = new NList[int](3, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list.RemoveEnd(5);
+", out errors)) != (targetResult = @"(1, 2, 3, 4)") || (result = ExecuteProgram(program = @"using System.Collections;
+NList[int] list = new NList[int](3, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list.Reverse(2, 3);
+", out errors)) != (targetResult = @"(1, 4, 3, 2, 5, 6, 7)") || (result = ExecuteProgram(program = @"bool bool=bool;
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Error in line 1 at position 10: one cannot use the local variable ""bool"" before it is declared or inside such declaration in line 1 at position 0
 ") || (result = ExecuteProgram(program = @"return 100000000000000000*100000000000000000000;
 ", out errors)) != (targetResult = "null") || errors != (targetErrors = @"Error in line 1 at position 26: too large number; long long type is under development
@@ -230,10 +292,10 @@ return ExecuteString("return args[1];", Q());
 
 """, out errors)) != (targetResult = """
 /"return ExecuteString("return args[1];", Q());
-"/
+"\
 """) || errors != (targetErrors = @"Ошибок нет")
-|| (result = ExecuteProgram(program = """var s = /"var s = /""/;return s.Insert(10, s) + Q();"/;return s.Insert(10, s) + Q();""", out errors))
-!= (targetResult = """/"var s = /"var s = /""/;return s.Insert(10, s) + Q();"/;return s.Insert(10, s) + Q();var s = /"var s = /""/;return s.Insert(10, s) + Q();"/;return s.Insert(10, s) + Q();"/""")
+|| (result = ExecuteProgram(program = """var s = /"var s = /""\;return s.Insert(10, s) + Q();"\;return s.Insert(10, s) + Q();""", out errors))
+!= (targetResult = """/"var s = /"var s = /""\;return s.Insert(10, s) + Q();"\;return s.Insert(10, s) + Q();var s = /"var s = /""\;return s.Insert(10, s) + Q();"\;return s.Insert(10, s) + Q();"\""")
 || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"int x=null;
 return x*1;
 ", out errors)) != (targetResult = "0") || errors != (targetErrors = "Ошибок нет") || (result = ExecuteProgram(program = @"return куегкт;
@@ -295,6 +357,19 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 		TextBlockPos.Text = "Pos " + (TextBoxInput.SelectionStart - TextBoxInput.Document.Lines[line - 1].Offset);
 	}
 
+	private void SetupEnteredText()
+	{
+		var textBeforeCursor = TextBoxInput.Text.AsSpan(..TextBoxInput.SelectionStart);
+		var i = textBeforeCursor.Length - 1;
+		for (; i >= 0; i--)
+			if (!AlphanumericCharactersWithoutDot.Contains(textBeforeCursor[i]))
+				break;
+		if (i >= 0 && textBeforeCursor[i] == '.')
+			enteredText.Replace(textBeforeCursor[i..]);
+		else
+			enteredText.Replace(textBeforeCursor[(i + 1)..]);
+	}
+
 	private void UserControl_SizeChanged(object? sender, SizeChangedEventArgs e)
 	{
 		TextBoxInput.Height = TextBoxInput.MaxHeight = TextBoxInput.MinHeight
@@ -308,21 +383,69 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 3 / 12;
 	}
 
-	private void TextBoxInput_KeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+	private void TextBoxInput_KeyUp(object? sender, KeyEventArgs e)
 	{
-		if (e.KeyModifiers == Avalonia.Input.KeyModifiers.Control && e.Key == Avalonia.Input.Key.Return)
+		if (e.KeyModifiers == KeyModifiers.Control)
 		{
-			e.Handled = true;
-			ButtonExecute_Click(ButtonExecute, e);
+			if (e.Key == Key.Return)
+			{
+				e.Handled = true;
+				ButtonExecute_Click(ButtonExecute, e);
+			}
+			else if (e.Key is Key.Y or Key.Z)
+			{
+				UpdateInputPos();
+				SetupEnteredText();
+			}
 		}
 	}
 
-	private void TextBoxInput_PointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e) => UpdateInputPos();
+	private void TextBoxInput_PointerReleased(object? sender, PointerReleasedEventArgs e)
+	{
+		UpdateInputPos();
+		SetupEnteredText();
+	}
 
 	private void TextBoxInput_TextChanged(object? sender, EventArgs e)
 	{
 		UpdateInputPos();
 		compiledAssembly = null;
+	}
+
+	CompletionWindow? completionWindow;
+
+	void TextBoxInput_TextArea_TextEntered(object? sender, TextInputEventArgs e)
+	{
+		// Open code completion after the user has pressed dot:
+		completionWindow = new CompletionWindow(TextBoxInput.TextArea);
+		var data = completionWindow.CompletionList.CompletionData;
+		if (e.Text == ".")
+			enteredText.Replace(e.Text);
+		else
+			enteredText.AddRange(e.Text ?? "");
+		if (enteredText.StartsWith('.'))
+			data.AddRange(AutoCompletionAfterDotList.Filter(x => x.StartsWith(enteredText[1..])).Convert(x =>
+				new MyCompletionData(x.ToString(), enteredText.Length + 1)));
+		else
+			data.AddRange(AutoCompletionList.Filter(x => x.StartsWith(enteredText)).Convert(x =>
+				new MyCompletionData(x.ToString(), enteredText.Length)));
+		completionWindow.Show();
+		completionWindow.Closed += (_, _) => completionWindow = null;
+	}
+
+	void TextBoxInput_TextArea_TextEntering(object? sender, TextInputEventArgs e)
+	{
+		if (e.Text?.Length > 0 && completionWindow != null)
+		{
+			if (!char.IsLetterOrDigit(e.Text[0]))
+			{
+				// Whenever a non-letter is typed while the completion window is open,
+				// insert the currently selected element.
+				completionWindow.CompletionList.RequestInsertion(e);
+			}
+		}
+		// Do not set e.Handled=true.
+		// We still want to insert the character that was typed.
 	}
 
 	private void ButtonExecute_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -354,14 +477,31 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 			foreach (var dependency in GetNecessaryDependencies(compiledAssembly.GetReferencedAssemblies().ToList(x => x.Name ?? throw new NotSupportedException())))
 				File.WriteAllBytes(dir + "/" + dependency.Name + ".dll", dependency.Bytes);
 			File.WriteAllText(dir + "/" + Path.GetFileNameWithoutExtension(filename) + ".runtimeconfig.json", @$"{{
-    ""runtimeOptions"": {{
-        ""tfm"": ""net{Environment.Version.Major}.{Environment.Version.Minor}"",
-        ""framework"": {{
-            ""name"": ""Microsoft.NETCore.App"",
-            ""version"": ""{Environment.Version.Major}.{Environment.Version.Minor}.{Environment.Version.Build}""
-        }}
-    }}
+	""runtimeOptions"": {{
+		""tfm"": ""net{Environment.Version.Major}.{Environment.Version.Minor}"",
+		""framework"": {{
+			""name"": ""Microsoft.NETCore.App"",
+			""version"": ""{Environment.Version.Major}.{Environment.Version.Minor}.{Environment.Version.Build}""
+		}}
+	}}
 }}"); File.WriteAllBytes(filename, CompileProgram(TextBoxInput.Text));
 		}
 	}
+}
+
+public class MyCompletionData(string text, int offset) : ICompletionData
+{
+	public IImage? Image => null;
+
+	public string Text { get; private set; } = text;
+
+	// Use this property if you want to show a fancy UIElement in the list.
+	public object Content => Text;
+
+	public object Description => "Description for " + Text;
+
+	public double Priority { get; }
+
+	public void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs) =>
+		textArea.Document.Replace(completionSegment, Text[Min(offset, Text.Length)..]);
 }

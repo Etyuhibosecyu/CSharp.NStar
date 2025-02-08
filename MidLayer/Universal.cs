@@ -294,7 +294,7 @@ public struct Universal
 			return PI;
 		else if (s == "E")
 			return E;
-		else if ((uint)(s[0] - '0') > 9 && s[^1] is not ('\"' or '\'' or '/'))
+		else if ((uint)(s[0] - '0') > 9 && s[^1] is not ('\"' or '\'' or '\\'))
 			throw new FormatException();
 		else if (s[^1] == 'i')
 			return int.Parse(s[..^1], EnUsCulture);

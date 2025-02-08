@@ -8,7 +8,7 @@
 						 x:Class="CSharp.NStar.Views.MainView"
 						 x:DataType="vm:MainViewModel"
 						 SizeChanged="UserControl_SizeChanged"
-						 KeyDown="TextBoxInput_KeyDown">
+						 KeyUp="TextBoxInput_KeyUp">
 	<Design.DataContext>
 		<!-- This only sets the DataContext for the previewer in an IDE,
 				 to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
@@ -31,11 +31,11 @@
 			<ae:TextEditor
 				x:Name="TextBoxInput"
 				Text='return "Hello, world!";&#x0a;'
-				FontSize="16"
+				FontSize="21"
 				HorizontalAlignment="Stretch"
 				ShowLineNumbers="True"
 				TabIndex="0"
-				KeyDown="TextBoxInput_KeyDown"
+				KeyUp="TextBoxInput_KeyUp"
 				TextChanged="TextBoxInput_TextChanged"/>
 			<Grid
 				Grid.Row="1">
@@ -56,7 +56,7 @@
 						Text="Выполнить"
 						TextAlignment="Center"
 						FontFamily="Arial Narrow"
-						FontSize="36"
+						FontSize="32"
 						HorizontalAlignment="Center"
 						VerticalAlignment="Center"/>
 				</Button>
@@ -71,7 +71,7 @@
 						Text="Сохранить EXE (в разраб.)"
 						TextAlignment="Center"
 						FontFamily="Arial Narrow"
-						FontSize="36"
+						FontSize="32"
 						HorizontalAlignment="Center"
 						VerticalAlignment="Center"/>
 				</Button>
@@ -82,7 +82,7 @@
 				AcceptsReturn="True"
 				AcceptsTab="True"
 				FontFamily="Arial Narrow"
-				FontSize="16"
+				FontSize="21"
 				Grid.Row="2"
 				HorizontalAlignment="Stretch"
 				MaxLength="0"
@@ -95,7 +95,7 @@
 				AcceptsReturn="True"
 				AcceptsTab="True"
 				FontFamily="Arial Narrow"
-				FontSize="16"
+				FontSize="21"
 				Grid.Row="3"
 				HorizontalAlignment="Stretch"
 				IsReadOnly="True"
@@ -108,13 +108,13 @@
 					x:Name="TextBlockLine"
 					Text="Line 1"
 					FontFamily="Arial Narrow"
-					FontSize="16"
+					FontSize="21"
 					Width="128"/>
 				<TextBlock
 					x:Name="TextBlockPos"
 					Text="Pos 1"
 					FontFamily="Arial Narrow"
-					FontSize="16"
+					FontSize="21"
 					Width="128"/>
 			</StackPanel>
 		</Grid>

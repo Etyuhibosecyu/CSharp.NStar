@@ -21,7 +21,7 @@ public struct DelegateParameters
 	public object? Function { get; private set; }
 	public Universal? ContainerValue { get; private set; }
 
-	public DelegateParameters(TreeBranch? location, (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters, TreeBranch? Location)? function, Universal? containerValue = null)
+	public DelegateParameters(TreeBranch? location, (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function, Universal? containerValue = null)
 	{
 		Location = location;
 		Function = function;
@@ -81,7 +81,7 @@ public static partial class Executions
 		&& ExplicitlyConnectedNamespacesList.FindIndex(y => ExtraTypesList.TryGetValue((y,
 		UnvType.MainType.Type.ToShortString()), out innerType)) >= 0) ? innerType : throw new InvalidOperationException();
 
-	public static String TypeMappingBack(Type type, Type[] genericArguments, GeneralExtraTypes extraTypes)
+	public static UniversalType TypeMappingBack(Type type, Type[] genericArguments, GeneralExtraTypes extraTypes)
 	{
 		if (type.IsSZArray || type.IsPointer)
 			type = typeof(List<>);
@@ -89,10 +89,15 @@ public static partial class Executions
 			type = typeof(BitList);
 		else if (type == typeof(Index))
 			type = typeof(int);
-		else if (type.Name.Contains("Func"))
-			return "Func";
+		var typeGenericArguments = type.GetGenericArguments();
+		if (type.Name.Contains("Func"))
+		{
+			return new(FuncBlockStack, new([.. typeGenericArguments.GetSlice(..^1).Convert((x, index) =>
+				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes)),
+				typeGenericArguments[^1].Wrap(x => TypeMappingBack(x, genericArguments, extraTypes))]));
+		}
 		int foundIndex;
-		if ((foundIndex = genericArguments.IndexOf(type)) >= 0)
+		if ((foundIndex = genericArguments.FindIndex(x => x.Name == type.Name)) >= 0)
 			type = TypeMapping(extraTypes[foundIndex]);
 		List<Type> innerTypes = [];
 		foreach (var genericArgument in type.GenericTypeArguments)
@@ -105,20 +110,27 @@ public static partial class Executions
 			type = type.GetGenericTypeDefinition();
 	l1:
 		if (CreateVar(PrimitiveTypesList.Find(x => x.Value == type).Key, out var typename) != null)
-			return typename;
+			return typename == "list" ? new(ListBlockStack,
+				new([.. typeGenericArguments.Convert((x, index) =>
+				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))]))
+				: GetPrimitiveType(typename);
 		else if (CreateVar(ExtraTypesList.Find(x => x.Value == type).Key, out var type2) != default)
-			return type2.Namespace.Copy().Add('.').AddRange(type2.Type);
+			return new(GetBlockStack(type2.Namespace + "." + type2.Type),
+				new([.. typeGenericArguments.Convert((x, index) =>
+				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))]));
 		else if (CreateVar(InterfacesList.Find(x => x.Value.DotNetType == type), out var type3).Key != default)
-			return type3.Key.Namespace.Copy().Add('.').AddRange(type3.Key.Interface);
+			return new(GetBlockStack(type3.Key.Namespace + "." + type3.Key.Interface),
+				new([.. typeGenericArguments.Convert((x, index) =>
+				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))]));
 		else if (type == typeof(string))
-			return "string";
+			return StringType;
 		else if (innerTypes.Length != 0)
 		{
 			type = type.MakeGenericType([.. innerTypes]);
 			if (type.Name.Contains("Tuple") || type.Name.Contains("KeyValuePair"))
 			{
-				return ((String)"(").AddRange(String.Join(", ", type.GenericTypeArguments.ToList(x =>
-				TypeMappingBack(x, genericArguments, extraTypes)))).Add(')');
+				return new(TupleBlockStack, new(type.GenericTypeArguments.ToList(x =>
+				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))));
 			}
 			innerTypes.Clear();
 			goto l1;
@@ -160,7 +172,7 @@ public static partial class Executions
 			return result;
 		result.Add('(');
 		if (function.ToString() is nameof(parameters.GetRange) or nameof(parameters.Remove) or nameof(parameters.RemoveAt)
-			or nameof(parameters.RemoveEnd) && parameters.Length >= 1)
+			or nameof(parameters.RemoveEnd) or nameof(parameters.Reverse) && parameters.Length >= 1)
 			parameters[0].Insert(0, '(').AddRange(") - 1");
 		if (function.ToString() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf) && parameters.Length >= 2)
 			parameters[1].Insert(0, '(').AddRange(") - 1");
@@ -241,7 +253,16 @@ public static partial class Executions
 		return a;
 	}
 
-	public static List<T> ListWithSingle<T>(T item) => new(item);
+	public static dynamic ListWithSingle<T>(T item)
+	{
+		if (item is bool b)
+			return new BitList([b]);
+		else if (typeof(T).IsUnmanaged())
+			return typeof(NList<>).MakeGenericType(typeof(T)).GetConstructor([typeof(G.IEnumerable<T>)])
+				?.Invoke([(G.IEnumerable<T>)[item]]) ?? throw new InvalidOperationException();
+		else
+			return new List<T>(item);
+	}
 
 	public static double Log(double a, double x) => Math.Log(x, a);
 
@@ -452,20 +473,31 @@ public static partial class Executions
 		return false;
 	}
 
-	public static bool PropertyExists(BlockStack container, String name, out (UniversalType UnvType, PropertyAttributes Attributes)? property)
+	public static bool PropertyExists(UniversalType container, String name, out (UniversalType UnvType, PropertyAttributes Attributes)? property)
 	{
-		if (UserDefinedPropertiesList.TryGetValue(container, out var list) && list.TryGetValue(name, out var a))
+		if (UserDefinedPropertiesList.TryGetValue(container.MainType, out var list) && list.TryGetValue(name, out var a))
 		{
 			property = a;
 			return true;
 		}
-		if (PropertiesList.TryGetValue(container, out var list2) && list2.TryGetValue(name, out a))
+		var containerType = SplitType(container.MainType);
+		if (!(PrimitiveTypesList.TryGetValue(containerType.Type, out var type)
+			|| ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out type)
+			|| containerType.Container.Length == 0
+			&& ExplicitlyConnectedNamespacesList.FindIndex(x => ExtraTypesList.TryGetValue((x, containerType.Type), out type)) >= 0))
 		{
-			property = a;
-			return true;
+			property = null;
+			return false;
 		}
-		property = null;
-		return false;
+		if (!type.TryWrap(x => x.GetProperty(name.ToString()), out var prop))
+			prop = type.GetProperties().Find(x => x.Name == name.ToString());
+		if (prop == null)
+		{
+			property = null;
+			return false;
+		}
+		property = (TypeMappingBack(prop.PropertyType, type.GetGenericArguments(), container.ExtraTypes), PropertyAttributes.None);
+		return true;
 	}
 
 	public static bool UserDefinedPropertyExists(BlockStack container, String name, out (UniversalType UnvType, PropertyAttributes Attributes)? property, out BlockStack matchingContainer)
@@ -485,17 +517,16 @@ public static partial class Executions
 
 	public static bool PublicFunctionExists(String name, out (List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters)? function)
 	{
-		var index = PublicFunctionsList.IndexOfKey(name);
-		if (index != -1)
+		if (PublicFunctionsList.TryGetValue(name, out var function2))
 		{
-			function = PublicFunctionsList.Values[index];
+			function = function2;
 			return true;
 		}
 		function = null;
 		return false;
 	}
 
-	public static bool MethodExists(UniversalType container, String name, out (List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters)? function)
+	public static bool MethodExists(UniversalType container, String name, out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function)
 	{
 		var containerType = SplitType(container.MainType);
 		if (!(PrimitiveTypesList.TryGetValue(containerType.Type, out var type)
@@ -513,21 +544,17 @@ public static partial class Executions
 			function = null;
 			return false;
 		}
-		function = (type.GetGenericArguments().ToList(x =>
-			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes)),
-			TypeMappingBack(method.ReturnType, type.GetGenericArguments(), container.ExtraTypes),
-			method.ReturnType.GenericTypeArguments.ToList(x =>
-			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes)), (method.IsAbstract
-			? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
-			new(method.GetParameters().ToList(x => new MethodParameter(TypeMappingBack(x.ParameterType,
-			type.GetGenericArguments(), container.ExtraTypes), x.Name ?? "x", x.ParameterType.GetGenericArguments().ToList(x =>
-			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes)),
+		function = ([], TypeMappingBack(method.ReturnType, type.GetGenericArguments(), container.ExtraTypes),
+			(method.IsAbstract ? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
+			new(method.GetParameters().ToList(x => new GeneralMethodParameter(CreateVar(TypeMappingBack(x.ParameterType,
+			type.GetGenericArguments(), container.ExtraTypes), out var UnvType).MainType,
+			x.Name ?? "x", UnvType.ExtraTypes,
 			(x.IsOptional ? ParameterAttributes.Optional : 0) | (x.ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
 			| (x.IsOut ? ParameterAttributes.Out : 0), x.DefaultValue?.ToString() ?? "null"))));
 		return true;
 	}
 
-	public static bool GeneralMethodExists(BlockStack container, String name, out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters, TreeBranch? Location)? function, out bool user)
+	public static bool GeneralMethodExists(BlockStack container, String name, out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function, out bool user)
 	{
 		if (UserDefinedFunctionsList.TryGetValue(container, out var methods) && methods.TryGetValue(name, out var method_overloads))
 		{
@@ -552,9 +579,9 @@ public static partial class Executions
 		return false;
 	}
 
-	public static bool UserDefinedFunctionExists(BlockStack container, String name, out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters, TreeBranch? Location)? function) => UserDefinedFunctionExists(container, name, out function, out _);
+	public static bool UserDefinedFunctionExists(BlockStack container, String name, out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function) => UserDefinedFunctionExists(container, name, out function, out _);
 
-	public static bool UserDefinedFunctionExists(BlockStack container, String name, out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters, TreeBranch? Location)? function, out BlockStack matchingContainer)
+	public static bool UserDefinedFunctionExists(BlockStack container, String name, out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function, out BlockStack matchingContainer)
 	{
 		if (CheckContainer(container, UserDefinedFunctionsList.ContainsKey, out matchingContainer))
 		{
@@ -654,10 +681,9 @@ public static partial class Executions
 		}
 		constructors = new(typeConstructors.ToList(x => ((x.IsAbstract ? ConstructorAttributes.Abstract : 0)
 		| (x.IsStatic ? ConstructorAttributes.Static : 0), new GeneralMethodParameters(x.GetParameters().ToList(y =>
-			new GeneralMethodParameter(CreateVar(PartialTypeToGeneralType(TypeMappingBack(y.ParameterType,
-			type.GetGenericArguments(), container.ExtraTypes), y.ParameterType.GenericTypeArguments.ToList(x =>
-			TypeMappingBack(x, type.GetGenericArguments(), container.ExtraTypes))), out var UnvType).MainType, y.Name ?? "x",
-			UnvType.ExtraTypes, (y.IsOptional ? ParameterAttributes.Optional : 0)
+			new GeneralMethodParameter(CreateVar(TypeMappingBack(y.ParameterType,
+			type.GetGenericArguments(), container.ExtraTypes),
+			out var UnvType).MainType, y.Name ?? "x", UnvType.ExtraTypes, (y.IsOptional ? ParameterAttributes.Optional : 0)
 			| (y.ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
 			| (y.IsOut ? ParameterAttributes.Out : 0), y.DefaultValue?.ToString() ?? "null"))))));
 		return true;
@@ -756,7 +782,7 @@ public static partial class Executions
 					LeafType = (LeafType.ExtraTypes[1].MainType.Type, LeafType.ExtraTypes[1].ExtraTypes);
 				}
 			}
-			else if (LeafType.MainType.Length != 0 && LeafType.MainType.Peek().Type is BlockType.Class or BlockType.Struct or BlockType.Interface && CollectionTypesList.Contains(LeafType.MainType.Peek().Name.GetAfterLast(".")))
+			else if (LeafType.MainType.Length != 0 && LeafType.MainType.Peek().Type is BlockType.Class or BlockType.Struct or BlockType.Interface && CollectionTypesList.Contains(LeafType.MainType.ToShortString().ToNString().GetAfterLast(".")))
 			{
 				Depth++;
 				LeafType = (LeafType.ExtraTypes[^1].MainType.Type, LeafType.ExtraTypes[^1].ExtraTypes);
@@ -1376,7 +1402,7 @@ public static partial class Executions
 		}
 		if (TypeEqualsToPrimitive(destinationType, "list", false) || destinationType.MainType.Length != 0
 			&& destinationType.MainType.Peek().Type is BlockType.Class or BlockType.Struct or BlockType.Interface
-			&& CollectionTypesList.Contains(destinationType.MainType.Peek().Name.GetAfterLast(".")))
+			&& CollectionTypesList.Contains(destinationType.MainType.ToShortString().ToNString().GetAfterLast(".")))
 		{
 			if (TypeEqualsToPrimitive(sourceType, "tuple", false))
 			{
@@ -1407,7 +1433,14 @@ public static partial class Executions
 			}
 			else if (SourceDepth <= DestinationDepth && TypesAreCompatible(SourceLeafType, DestinationLeafType, out warning, null, out _, out _) && !warning)
 			{
-				destExpr = srcExpr ?? null;
+				if (srcExpr == null)
+					destExpr = null;
+				else
+				{
+					srcExpr.Insert(0, ((String)nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth));
+					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth));
+					destExpr = srcExpr;
+				}
 				return true;
 			}
 			else
