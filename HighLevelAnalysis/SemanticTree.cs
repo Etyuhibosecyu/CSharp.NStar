@@ -467,10 +467,10 @@ public sealed class SemanticTree
 		for (var i = 1; i < branch.Length; i++)
 		{
 			if (i == 1 && branch[i].Info.ToString() is "Call" or "ConstructorCall")
-				result.Replace(Hypername2(branch, errorsList, ref extra, ref i));
+				result.Replace(Hypername2(branch, ref errorsList, ref extra, ref i));
 			else
 			{
-				var innerResult = Hypername2(branch, errorsList, ref extra, ref i);
+				var innerResult = Hypername2(branch, ref errorsList, ref extra, ref i);
 				if (innerResult.StartsWith('(') && innerResult.Length > 2)
 				{
 					innerResult.RemoveAt(0);
@@ -563,7 +563,7 @@ public sealed class SemanticTree
 			{
 				if (functionContainer.Length == 0)
 					HypernamePublicGeneralMethod(branch, info, ref extra, function, "user");
-				else if (HypernameGeneralMethod(branch, info, ref extra, errorsList, prevIndex, functionContainer, function, "userMethod") != null)
+				else if (HypernameGeneralMethod(branch, info, ref extra, ref errorsList, prevIndex, functionContainer, function, "userMethod") != null)
 					return "_";
 				result.AddRange(info);
 				branch.Extra = new UniversalType(FuncBlockStack, new([function.Value.ReturnUnvType, .. function.Value.Parameters.Convert(x => new UniversalType(x.Type, x.ExtraTypes))]));
@@ -644,14 +644,14 @@ public sealed class SemanticTree
 			}
 			else if (UserDefinedFunctionExists(ContainerUnvType.MainType, info, out var function, out _))
 			{
-				if (HypernameGeneralMethod(branch, info, ref extra, errorsList, prevIndex, ContainerUnvType.MainType, function, "userMethod") != null || !function.HasValue)
+				if (HypernameGeneralMethod(branch, info, ref extra, ref errorsList, prevIndex, ContainerUnvType.MainType, function, "userMethod") != null || !function.HasValue)
 					return "_";
 				result.AddRange(info);
 				branch.Extra = new UniversalType(FuncBlockStack, new([function.Value.ReturnUnvType, .. function.Value.Parameters.Convert(x => new UniversalType(x.Type, x.ExtraTypes))]));
 			}
 			else if (MethodExists(ContainerUnvType, FunctionMapping(info, null), out function))
 			{
-				if (HypernameMethod(branch, info, ref extra, errorsList, prevIndex, ContainerUnvType.MainType, function) != null || !function.HasValue)
+				if (HypernameMethod(branch, info, ref extra, ref errorsList, prevIndex, ContainerUnvType.MainType, function) != null || !function.HasValue)
 					return "_";
 				result.AddRange(info);
 				branch.Extra = new UniversalType(FuncBlockStack, new([function.Value.ReturnUnvType, .. function.Value.Parameters.Convert(x => new UniversalType(x.Type, x.ExtraTypes))]));
@@ -668,7 +668,7 @@ public sealed class SemanticTree
 		return result;
 	}
 
-	private String Hypername2(TreeBranch branch, List<String>? errorsList, ref object? extra, ref int index)
+	private String Hypername2(TreeBranch branch, ref List<String>? errorsList, ref object? extra, ref int index)
 	{
 		String result = [];
 		if (branch[index].Info == "Call" && extra is List<object> list)
@@ -881,7 +881,7 @@ public sealed class SemanticTree
 		return null;
 	}
 
-	private bool? HypernameMethod(TreeBranch branch, String s, ref object? refExtra, List<String>? errorsList, int prevIndex, BlockStack ContainerMainType, (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function)
+	private bool? HypernameMethod(TreeBranch branch, String s, ref object? refExtra, ref List<String>? errorsList, int prevIndex, BlockStack ContainerMainType, (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function)
 	{
 		UniversalType extra;
 		object extra2;
@@ -914,7 +914,7 @@ public sealed class SemanticTree
 		return null;
 	}
 
-	private bool? HypernameGeneralMethod(TreeBranch branch, String s, ref object? refExtra, List<String>? errorsList, int prevIndex, BlockStack ContainerMainType, (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function, String category)
+	private bool? HypernameGeneralMethod(TreeBranch branch, String s, ref object? refExtra, ref List<String>? errorsList, int prevIndex, BlockStack ContainerMainType, (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function, String category)
 	{
 		UniversalType extra;
 		object extra2;
@@ -1010,7 +1010,7 @@ public sealed class SemanticTree
 			}
 			else if (i == 1 && innerResults.Length == 1 && TryReadValue(branch[0].Info, out value))
 			{
-				innerResults.SetOrAdd(i, ExprValue(value, branch, errorsList, i--));
+				innerResults.SetOrAdd(i, ExprValue(value, branch, ref errorsList, i--));
 				continue;
 			}
 			else if (i > 0 && i % 2 == 0)
@@ -1020,27 +1020,27 @@ public sealed class SemanticTree
 					or "&=" or "|=" or "^=" or ">>=" or "<<=") && TryReadValue(branch[Max(i - 3, 0)].Info, out var value1)
 					&& TryReadValue(branch[i - 1].Info, out var value2))
 				{
-					var innerResult = ExprTwoValues(value1, value2, branch, errorsList, ref i);
+					var innerResult = new ExprTwoValues(value1, value2, branch, lexems).Calculate(ref errorsList, ref i);
 					innerResults.SetOrAdd(i, innerResult);
 					continue;
 				}
 				innerResults.SetOrAdd(i, branch[i].Info.ToString() switch
 				{
-					"*" or "/" or "%" => ExprMulDiv(branch, innerResults, errorsList, ref i),
-					"+" or "-" => ExprPM(branch, innerResults, errorsList, ref i),
+					"*" or "/" or "%" => ExprMulDiv(branch, innerResults, ref errorsList, ref i),
+					"+" or "-" => ExprPM(branch, innerResults, ref errorsList, ref i),
 					"pow" or "tetra" or "penta" or "hexa" => ExprPow(branch, innerResults, i),
 					"==" or ">" or "<" or ">=" or "<=" or "!=" or "&&" or "||" or "^^" => ExprBool(branch, innerResults, i),
-					"=" or "+=" or "-=" or "*=" or "/=" or "%=" or "pow=" or "tetra=" or "penta=" or "hexa=" or "&=" or "|=" or "^=" or ">>=" or "<<=" => ExprAssignment(branch, innerResults, errorsList, i),
+					"=" or "+=" or "-=" or "*=" or "/=" or "%=" or "pow=" or "tetra=" or "penta=" or "hexa=" or "&=" or "|=" or "^=" or ">>=" or "<<=" => ExprAssignment(branch, innerResults, ref errorsList, i),
 					"?" or "?=" or "?>" or "?<" or "?>=" or "?<=" or "?!=" or ":" => ExprTernary(branch, i),
 					"CombineWith" => ExprCombineWith(branch, innerResults, i),
 					not nameof(List) => ExprBinaryNotList(branch, innerResults, i),
-					_ => ExprDefault(branch, errorsList, i),
+					_ => ExprDefault(branch, ref errorsList, i),
 				});
 			}
 			else if (branch.Length == 2 && i == 1)
-				return ExprUnary(branch, errorsList, i);
+				return ExprUnary(branch, ref errorsList, i);
 			else
-				return ExprDefault(branch, errorsList, i);
+				return ExprDefault(branch, ref errorsList, i);
 		}
 		var prevIndex = branch.Parent!.Elements.FindIndex(x => ReferenceEquals(branch, x));
 		if (branch.Info == "StringConcatenation")
@@ -1079,7 +1079,7 @@ public sealed class SemanticTree
 				result.Add(innerResult);
 				AddRange(ref errorsList, innerErrorsList);
 			}
-			if (!ExprCallCheck(branch, errorsList, innerResult, i, extra))
+			if (!ExprCallCheck(branch, ref errorsList, innerResult, i, extra))
 				return [];
 		}
 		return result;
@@ -1091,7 +1091,7 @@ public sealed class SemanticTree
 		return joined.Insert(0, '(').Add(')');
 	}
 
-	private bool ExprCallCheck(TreeBranch branch, List<String>? errorsList, String innerResult, int i, object? extra = null)
+	private bool ExprCallCheck(TreeBranch branch, ref List<String>? errorsList, String innerResult, int i, object? extra = null)
 	{
 		var otherPos = branch[i].Pos;
 		String? adaptedInnerResult = null;
@@ -1212,7 +1212,7 @@ public sealed class SemanticTree
 		return result.Add(')');
 	}
 
-	private String ExprValue(Universal value, TreeBranch branch, List<String>? errorsList, int i)
+	private String ExprValue(Universal value, TreeBranch branch, ref List<String>? errorsList, int i)
 	{
 		var otherPos = branch[i].Pos;
 		Universal result;
@@ -1322,223 +1322,7 @@ public sealed class SemanticTree
 		return "default!";
 	}
 
-	private String ExprTwoValues(Universal value1, Universal value2, TreeBranch branch, List<String>? errorsList, ref int i)
-	{
-		var otherPos = branch[i].Pos;
-		if (branch[i - 2].Extra is not UniversalType UnvType1)
-			UnvType1 = NullType;
-		if (branch[i - 1].Extra is not UniversalType UnvType2)
-			UnvType2 = NullType;
-		if (!(i >= 4 && branch[i - 4].Extra is UniversalType PrevUnvType))
-			PrevUnvType = NullType;
-		switch (branch[i].Info.ToString())
-		{
-			case "?" or "?=" or "?>" or "?<" or "?>=" or "?<=" or "?!=":
-			var s = branch[i].Info;
-			if ((s == "?" ? value1 : s == "?=" ? Universal.Eq(value1, value2) : s == "?>" ? Universal.Gt(value1, value2) : s == "?<" ? Universal.Lt(value1, value2) : s == "?>=" ? Universal.Goe(value1, value2) : s == "?<=" ? Universal.Loe(value1, value2) : Universal.Neq(value1, value2)).ToBool())
-			{
-				branch[Max(i - 3, 0)] = new((s == "?" ? value2 : value1).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-				branch.RemoveEnd(i - 1);
-			}
-			else if (i + 2 >= branch.Length)
-			{
-				branch[Max(i - 3, 0)] = new("null", branch.Pos, branch.EndPos, branch.Container) { Extra = NullType };
-				branch.RemoveEnd(i - 1);
-			}
-			else
-			{
-				branch[Max(i - 3, 0)] = branch[i + 1];
-				branch.Remove(i - 1, 4);
-			}
-			i--;
-			return new String(branch[i - 2].Info).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(branch[i - 1].Info);
-			case ":":
-			if (i + 2 >= branch.Length)
-			{
-				var i2 = i;
-				branch[i].Extra = branch.Elements.Filter((_, index) => index == i2 - 1 || index % 4 == 1).Convert(x => x.Extra is UniversalType ElemType ? ElemType : NullType).Progression(GetResultType);
-				i++;
-				return new String(branch[i - 2].Info).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(branch[i - 1].Info);
-			}
-			else
-			{
-				branch[i].Extra = UnvType2;
-				i++;
-				return new String(branch[i - 2].Info).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(branch[i - 1].Info);
-			}
-			case "pow":
-			try
-			{
-				branch[Max(i - 3, 0)] = new(((Universal)Pow(value2.ToReal(), value1.ToReal())).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			}
-			catch
-			{
-				Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": cannot compute this expression");
-				branch[Max(i - 3, 0)] = new("null", branch.Pos, branch.EndPos, branch.Container);
-			}
-			break;
-			case "*":
-			if (TypeEqualsToPrimitive(UnvType1, "string") && TypeEqualsToPrimitive(UnvType2, "string"))
-				Add(ref errorsList, "Warning in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": the string cannot be multiplied by string; one of them can be converted to number but this is not recommended and can cause data loss");
-			if (i == 2)
-				branch[Max(i - 3, 0)] = new((value1 * value2).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			else if (i >= 4 && TypeEqualsToPrimitive(PrevUnvType, "string") && branch[i - 2].Info == "*")
-				branch[Max(i - 3, 0)] = new((value1 * value2).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			else
-			{
-				branch[i].Extra = GetResultType(UnvType1, UnvType2);
-				i++;
-				return new String(branch[i - 2].Info).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(branch[i - 1].Info);
-			}
-			break;
-			case "/":
-			if (TypeEqualsToPrimitive(UnvType1, "string") || TypeEqualsToPrimitive(UnvType2, "string"))
-				Add(ref errorsList, "Warning in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss");
-			if (!TypeEqualsToPrimitive(UnvType1, "real") && !TypeEqualsToPrimitive(UnvType2, "real") && value2 == 0)
-			{
-				Add(ref errorsList, "Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": division by integer zero is forbidden");
-				branch[Max(i - 3, 0)] = new("default!", branch.Pos, branch.EndPos, branch.Container);
-			}
-			else if (i == 2)
-				branch[Max(i - 3, 0)] = new((value1 / value2).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			else if (i >= 4 && TypeEqualsToPrimitive(PrevUnvType, "string") && branch[i - 2].Info == "*")
-				branch[Max(i - 3, 0)] = new((value1 / value2).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			else
-			{
-				branch[i].Extra = GetResultType(UnvType1, UnvType2);
-				i++;
-				return new String(branch[i - 2].Info).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(branch[i - 1].Info);
-			}
-			break;
-			case "%":
-			if (TypeEqualsToPrimitive(UnvType1, "string") || TypeEqualsToPrimitive(UnvType2, "string"))
-				Add(ref errorsList, "Warning in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss");
-			if (!TypeEqualsToPrimitive(UnvType1, "real") && !TypeEqualsToPrimitive(UnvType2, "real") && value2 == 0)
-			{
-				Add(ref errorsList, "Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": division by integer zero is forbidden");
-				branch[Max(i - 3, 0)] = new("default!", branch.Pos, branch.EndPos, branch.Container);
-			}
-			else if (i == 2)
-				branch[Max(i - 3, 0)] = new((value1 % value2).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			else if (i >= 4 && TypeEqualsToPrimitive(PrevUnvType, "string") && branch[i - 2].Info == "*")
-				branch[Max(i - 3, 0)] = new((value1 % value2).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			else
-			{
-				branch[i].Extra = GetResultType(UnvType1, UnvType2);
-				i++;
-				return new String(branch[i - 2].Info).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(branch[i - 1].Info);
-			}
-			break;
-			case "+":
-			bool isString1 = TypeEqualsToPrimitive(UnvType1, "string"), isString2 = TypeEqualsToPrimitive(UnvType2, "string");
-			if (i == 2)
-			{
-				branch[Max(i - 3, 0)] = new((value1 + value2).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-				break;
-			}
-			branch[i].Extra = GetResultType(UnvType1, UnvType2);
-			if (isString1 && isString2)
-			{
-				i++;
-				var result2 = value1.ToString(true, true).Copy();
-				if (TypeEqualsToPrimitive(PrevUnvType, "string"))
-					result2.AddRange((String)".Copy()");
-				return result2.AddRange(".AddRange(").AddRange(value2.ToString(true, true)).Add(')');
-			}
-			else if (isString1 || isString2)
-				return ((String)"((").AddRange(nameof(Universal)).Add(')').AddRange(value1.ToString(true, true)).Add(' ').AddRange(branch[i++].Info).Add(' ').AddRange(value2.ToString(true, true)).AddRange(").ToString()");
-			else
-				return i < 2 ? branch[i][^1].Info : value1.ToString(true, true).Copy().Add(' ').AddRange(branch[i++].Info).Add(' ').AddRange(value2.ToString(true, true));
-			case "-":
-			if (TypeEqualsToPrimitive(UnvType1, "string") || TypeEqualsToPrimitive(UnvType2, "string"))
-				Add(ref errorsList, "Warning in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": the strings cannot be subtracted; they can be converted to number but this is not recommended and can cause data loss");
-			if (i == 2)
-				branch[Max(i - 3, 0)] = new((value1 - value2).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			else if (i >= 4 && TypeEqualsToPrimitive(PrevUnvType, "string") && branch[i - 2].Info == "+")
-				branch[Max(i - 3, 0)] = new((value1 - value2).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			else
-			{
-				branch[i].Extra = GetResultType(UnvType1, UnvType2);
-				i++;
-				return new String(branch[i - 2].Info).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(branch[i - 1].Info);
-			}
-			break;
-			case ">>":
-			if (i == 2)
-				branch[Max(i - 3, 0)] = new((value1 >> value2.ToInt()).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			else
-			{
-				branch[i].Extra = GetResultType(UnvType1, UnvType2);
-				i++;
-				return new String(branch[i - 2].Info).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(branch[i - 1].Info);
-			}
-			break;
-			case "<<":
-			if (i == 2)
-				branch[Max(i - 3, 0)] = new((value1 << value2.ToInt()).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			else
-			{
-				branch[i].Extra = GetResultType(UnvType1, UnvType2);
-				i++;
-				return new String(branch[i - 2].Info).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(branch[i - 1].Info);
-			}
-			break;
-			case "&":
-			branch[Max(i - 3, 0)] = new((value1 & value2).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			break;
-			case "|":
-			branch[Max(i - 3, 0)] = new((value1 | value2).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			break;
-			case "^":
-			branch[Max(i - 3, 0)] = new((value1 ^ value2).ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			break;
-			case "==":
-			var result = Universal.Eq(value1, value2);
-			branch[Max(i - 3, 0)] = new(result.ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			break;
-			case ">":
-			result = Universal.Gt(value1, value2);
-			branch[Max(i - 3, 0)] = new(result.ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			break;
-			case "<":
-			result = Universal.Lt(value1, value2);
-			branch[Max(i - 3, 0)] = new(result.ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			break;
-			case ">=":
-			result = Universal.Goe(value1, value2);
-			branch[Max(i - 3, 0)] = new(result.ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			break;
-			case "<=":
-			result = Universal.Loe(value1, value2);
-			branch[Max(i - 3, 0)] = new(result.ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			break;
-			case "!=":
-			result = Universal.Neq(value1, value2);
-			branch[Max(i - 3, 0)] = new(result.ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			break;
-			case "&&":
-			result = Universal.And(value1, value2);
-			branch[Max(i - 3, 0)] = new(result.ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			break;
-			case "||":
-			result = Universal.Or(value1, value2);
-			branch[Max(i - 3, 0)] = new(result.ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			break;
-			case "^^":
-			result = Universal.Xor(value1, value2);
-			branch[Max(i - 3, 0)] = new(result.ToString(true, true), branch.Pos, branch.EndPos, branch.Container);
-			break;
-			default:
-			branch[i].Extra = GetResultType(UnvType1, UnvType2);
-			return new String(branch[Max(i - 3, 0)].Info).Add(' ').AddRange(branch[i - 1].Info).Add(' ').AddRange(branch[i++ - 1].Info);
-		}
-		branch.Remove(i - 1, 2);
-		i = Max(i - 3, 0);
-		branch[i].Extra = GetResultType(UnvType1, UnvType2);
-		return branch[i].Info;
-	}
-
-	private String ExprMulDiv(TreeBranch branch, List<String> innerResults, List<String>? errorsList, ref int i)
+	private String ExprMulDiv(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, ref int i)
 	{
 		if (branch[i - 2].Extra is not UniversalType UnvType1)
 			UnvType1 = NullType;
@@ -1581,7 +1365,7 @@ public sealed class SemanticTree
 		return i < 2 ? branch[i].Info : new String(innerResults[^2]).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]);
 	}
 
-	private String ExprPM(TreeBranch branch, List<String> innerResults, List<String>? errorsList, ref int i)
+	private String ExprPM(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, ref int i)
 	{
 		if (branch[i - 2].Extra is not UniversalType UnvType1)
 			UnvType1 = NullType;
@@ -1657,7 +1441,7 @@ public sealed class SemanticTree
 		return i < 2 ? branch[i].Info : ((String)"Pow(").AddRange(innerResults[^1]).AddRange(", ").AddRange(innerResults[^2]).Add(')');
 	}
 
-	private String ExprAssignment(TreeBranch branch, List<String> innerResults, List<String>? errorsList, int i)
+	private String ExprAssignment(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, int i)
 	{
 		if (branch[i].Info == "=" && TryReadValue(branch[Max(0, i - 3)].Info, out _) && branch.Parent != null && (branch.Parent.Info == "if" || branch.Parent.Info == "XorList" || branch.Parent.Info == "Expr" && new List<String> { "xor", "or", "and", "^^", "||", "&&", "!" }.Contains(branch.Parent[Min(Max(branch.Parent.Elements.FindIndex(x => ReferenceEquals(x, branch)) + 1, 2), branch.Parent.Length - 1)].Info)))
 			Add(ref errorsList, "Warning in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": this expression, used with conditional constructions, is constant; maybe you wanted to check equality of these values? - it is done with the operator \"==\"");
@@ -1757,7 +1541,7 @@ public sealed class SemanticTree
 		return i < 2 ? branch[i].Info : new String(innerResults[^2]).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]);
 	}
 
-	private String ExprUnary(TreeBranch branch, List<String>? errorsList, int i)
+	private String ExprUnary(TreeBranch branch, ref List<String>? errorsList, int i)
 	{
 		if (branch[i].Info.ToString() is "++" or "--" or "postfix ++" or "postfix --" or "!!")
 			branch.Info = "UnaryAssignment";
@@ -1799,7 +1583,7 @@ public sealed class SemanticTree
 		};
 	}
 
-	private String ExprDefault(TreeBranch branch, List<String>? errorsList, int i)
+	private String ExprDefault(TreeBranch branch, ref List<String>? errorsList, int i)
 	{
 		var result = CalculationParseAction(branch[i].Info)(branch[i], out var innerErrorsList);
 		AddRange(ref errorsList, innerErrorsList);
@@ -2320,13 +2104,13 @@ public sealed class SemanticTree
 		return [];
 	}
 
-	private static void Add<T>(ref List<T>? list, T item)
+	public static void Add<T>(ref List<T>? list, T item)
 	{
 		list ??= [];
 		list.Add(item);
 	}
 
-	private static void AddRange<T>(ref List<T>? list, G.IEnumerable<T>? collection)
+	public static void AddRange<T>(ref List<T>? list, G.IEnumerable<T>? collection)
 	{
 		if (collection is not null)
 		{
