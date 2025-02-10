@@ -386,28 +386,7 @@ public struct Universal
 		ulong uli => new(uli, UnsignedLongIntType),
 		double r => r,
 		String s => s,
-		(IList<bool> BoolIsNullList, IList<bool> BoolList) => (BoolIsNullList, BoolList),
-		(IList<bool> ByteIsNullList, IList<byte> ByteList) => (ByteIsNullList, ByteList),
-		(IList<bool> ShortIntIsNullList, IList<short> ShortIntList) => (ShortIntIsNullList, ShortIntList),
-		(IList<bool> UnsignedShortIntIsNullList, IList<ushort> UnsignedShortIntList) => (UnsignedShortIntIsNullList, UnsignedShortIntList),
-		(IList<bool> CharIsNullList, IList<char> CharList) => (CharIsNullList, CharList),
-		(IList<bool> IntIsNullList, IList<int> IntList) => (IntIsNullList, IntList),
-		(IList<bool> UnsignedIntIsNullList, IList<uint> UnsignedIntList) => (UnsignedIntIsNullList, UnsignedIntList),
-		(IList<bool> LongIntIsNullList, IList<long> LongIntList) => (LongIntIsNullList, LongIntList),
-		(IList<bool> UnsignedLongIntIsNullList, IList<ulong> UnsignedLongIntList) => (UnsignedLongIntIsNullList, UnsignedLongIntList),
-		(IList<bool> RealIsNullList, IList<double> RealList) => (RealIsNullList, RealList),
-		(IList<bool> StringIsNullList, IList<String> StringList) => (StringIsNullList, StringList),
-		IList<bool> BoolList2 => (new BitList(BoolList2.Length, false), BoolList2),
-		IList<byte> ByteList2 => (new BitList(ByteList2.Length, false), ByteList2),
-		IList<short> ShortIntList2 => (new BitList(ShortIntList2.Length, false), ShortIntList2),
-		IList<ushort> UnsignedShortIntList2 => (new BitList(UnsignedShortIntList2.Length, false), UnsignedShortIntList2),
-		IList<char> CharList2 => (new BitList(CharList2.Length, false), CharList2),
-		IList<int> IntList2 => (new BitList(IntList2.Length, false), IntList2),
-		IList<uint> UnsignedIntList2 => (new BitList(UnsignedIntList2.Length, false), UnsignedIntList2),
-		IList<long> LongIntList2 => (new BitList(LongIntList2.Length, false), LongIntList2),
-		IList<ulong> UnsignedLongIntList2 => (new BitList(UnsignedLongIntList2.Length, false), UnsignedLongIntList2),
-		IList<double> RealList2 => (Universal)(new BitList(RealList2.Length, false), RealList2),
-		_ => element is IList<String> StringList2 ? (Universal)(new BitList(StringList2.Length, false), StringList2) : new()
+		_ => new()
 	};
 
 	public static Universal And(Universal x, Universal y) => (Universal)(x.ToBool() && y.ToBool());
@@ -991,176 +970,6 @@ public struct Universal
 		return output;
 	}
 
-	public readonly (IList<bool> IsNullList, IList<bool> MainList) ToBoolList()
-	{
-		if (Object is (IList<bool> IsNullList, IList<bool> MainList))
-			return (IsNullList, MainList);
-		var list = ToList();
-		BitList is_null = new(list.Length);
-		BitList output = new(list.Length);
-		for (var i = 0; i < list.Length; i++)
-		{
-			is_null.Add(false);
-			output.Add(list[i].ToBool());
-		}
-		return (is_null, output);
-	}
-
-	public readonly (IList<bool> IsNullList, IList<byte> MainList) ToByteList()
-	{
-		if (Object is (IList<bool> IsNullList, IList<byte> MainList))
-			return (IsNullList, MainList);
-		var list = ToList();
-		BitList is_null = new(list.Length);
-		List<byte> output = new(list.Length);
-		for (var i = 0; i < list.Length; i++)
-		{
-			is_null.Add(false);
-			output.Add(list[i].ToByte());
-		}
-		return (is_null, output);
-	}
-
-	public readonly (IList<bool> IsNullList, IList<short> MainList) ToShortIntList()
-	{
-		if (Object is (IList<bool> IsNullList, IList<short> MainList))
-			return (IsNullList, MainList);
-		var list = ToList();
-		BitList is_null = new(list.Length);
-		List<short> output = new(list.Length);
-		for (var i = 0; i < list.Length; i++)
-		{
-			is_null.Add(false);
-			output.Add(list[i].ToShortInt());
-		}
-		return (is_null, output);
-	}
-
-	public readonly (IList<bool> IsNullList, IList<ushort> MainList) ToUnsignedShortIntList()
-	{
-		if (Object is (IList<bool> IsNullList, IList<ushort> MainList))
-			return (IsNullList, MainList);
-		var list = ToList();
-		BitList is_null = new(list.Length);
-		List<ushort> output = new(list.Length);
-		for (var i = 0; i < list.Length; i++)
-		{
-			is_null.Add(false);
-			output.Add(list[i].ToUnsignedShortInt());
-		}
-		return (is_null, output);
-	}
-
-	public readonly (IList<bool> IsNullList, IList<char> MainList) ToCharList()
-	{
-		if (Object is (IList<bool> IsNullList, IList<char> MainList))
-			return (IsNullList, MainList);
-		if (TypeEqualsToPrimitive(InnerType, "string"))
-		{
-			var string_ = ToString();
-			return (new BitList(string_.Length), new String(string_.AsSpan()));
-		}
-		var list = ToList();
-		BitList is_null = new(list.Length);
-		String output = new(list.Length);
-		for (var i = 0; i < list.Length; i++)
-		{
-			is_null.Add(false);
-			output.Add(list[i].ToChar());
-		}
-		return (is_null, output);
-	}
-
-	public readonly (IList<bool> IsNullList, IList<int> MainList) ToIntList()
-	{
-		if (Object is (IList<bool> IsNullList, IList<int> MainList))
-			return (IsNullList, MainList);
-		var list = ToList();
-		BitList is_null = new(list.Length);
-		NList<int> output = new(list.Length);
-		for (var i = 0; i < list.Length; i++)
-		{
-			is_null.Add(false);
-			output.Add(list[i].ToInt());
-		}
-		return (is_null, output);
-	}
-
-	public readonly (IList<bool> IsNullList, IList<uint> MainList) ToUnsignedIntList()
-	{
-		if (Object is (IList<bool> IsNullList, IList<uint> MainList))
-			return (IsNullList, MainList);
-		var list = ToList();
-		BitList is_null = new(list.Length);
-		List<uint> output = new(list.Length);
-		for (var i = 0; i < list.Length; i++)
-		{
-			is_null.Add(false);
-			output.Add(list[i].ToUnsignedInt());
-		}
-		return (is_null, output);
-	}
-
-	public readonly (IList<bool> IsNullList, IList<long> MainList) ToLongIntList()
-	{
-		if (Object is (IList<bool> IsNullList, IList<long> MainList))
-			return (IsNullList, MainList);
-		var list = ToList();
-		BitList is_null = new(list.Length);
-		List<long> output = new(list.Length);
-		for (var i = 0; i < list.Length; i++)
-		{
-			is_null.Add(false);
-			output.Add(list[i].ToLongInt());
-		}
-		return (is_null, output);
-	}
-
-	public readonly (IList<bool> IsNullList, IList<ulong> MainList) ToUnsignedLongIntList()
-	{
-		if (Object is (IList<bool> IsNullList, IList<ulong> MainList))
-			return (IsNullList, MainList);
-		var list = ToList();
-		BitList is_null = new(list.Length);
-		List<ulong> output = new(list.Length);
-		for (var i = 0; i < list.Length; i++)
-		{
-			is_null.Add(false);
-			output.Add(list[i].ToUnsignedLongInt());
-		}
-		return (is_null, output);
-	}
-
-	public readonly (IList<bool> IsNullList, IList<double> MainList) ToRealList()
-	{
-		if (Object is (IList<bool> IsNullList, IList<double> MainList))
-			return (IsNullList, MainList);
-		var list = ToList();
-		BitList is_null = new(list.Length);
-		List<double> output = new(list.Length);
-		for (var i = 0; i < list.Length; i++)
-		{
-			is_null.Add(false);
-			output.Add(list[i].ToReal());
-		}
-		return (is_null, output);
-	}
-
-	public readonly (IList<bool> IsNullList, IList<String> MainList) ToStringList()
-	{
-		if (Object is (IList<bool> IsNullList, IList<String> MainList))
-			return (IsNullList, MainList);
-		var list = ToList();
-		BitList is_null = new(list.Length);
-		List<String> output = new(list.Length);
-		for (var i = 0; i < list.Length; i++)
-		{
-			is_null.Add(false);
-			output.Add(list[i].ToString());
-		}
-		return (is_null, output);
-	}
-
 	public Universal ToType(UniversalType type, bool fix = false)
 	{
 		try
@@ -1223,78 +1032,11 @@ public struct Universal
 			return ToString();
 		else if (basic_type == "list")
 		{
-			if (ToListType(type, out var a))
-				return a;
 			(var LeftDepth, var LeftLeafType) = GetTypeDepthAndLeafType(type);
 			(var RightDepth, var RightLeafType) = GetTypeDepthAndLeafType(InnerType);
 			return ToFullListType(type, LeftDepth, LeftLeafType, RightDepth, RightLeafType, fix);
 		}
 		else return basic_type == "tuple" ? ToTupleType(type.ExtraTypes) : new();
-	}
-
-	private readonly bool ToListType(UniversalType type, out Universal a)
-	{
-		if (type.ExtraTypes.Length == 1 && TypeIsPrimitive(type.ExtraTypes[0].MainType.Type) && type.ExtraTypes[0].ExtraTypes.Length == 0)
-		{
-			var basic_type2 = type.ExtraTypes[0].MainType.Type.Peek().Name;
-			if (basic_type2 == "bool")
-			{
-				a = ToBoolList();
-				return true;
-			}
-			else if (basic_type2 == "byte")
-			{
-				a = ToByteList();
-				return true;
-			}
-			else if (basic_type2 == "short int")
-			{
-				a = ToShortIntList();
-				return true;
-			}
-			else if (basic_type2 == "unsigned short int")
-			{
-				a = ToUnsignedShortIntList();
-				return true;
-			}
-			else if (basic_type2 == "char")
-			{
-				a = ToCharList();
-				return true;
-			}
-			else if (basic_type2 == "int")
-			{
-				a = ToIntList();
-				return true;
-			}
-			else if (basic_type2 == "unsigned int")
-			{
-				a = ToUnsignedIntList();
-				return true;
-			}
-			else if (basic_type2 == "long int")
-			{
-				a = ToLongIntList();
-				return true;
-			}
-			else if (basic_type2 == "unsigned long int")
-			{
-				a = ToUnsignedLongIntList();
-				return true;
-			}
-			else if (basic_type2 == "real")
-			{
-				a = ToRealList();
-				return true;
-			}
-			else if (basic_type2 == "string")
-			{
-				a = ToStringList();
-				return true;
-			}
-		}
-		a = new();
-		return false;
 	}
 
 	private Universal ToFullListType(UniversalType type, int LeftDepth, UniversalType LeftLeafType, int RightDepth, UniversalType RightLeafType, bool fix = false)
@@ -1756,28 +1498,6 @@ public struct Universal
 	public static implicit operator Universal(String x) => new(x);
 
 	public static implicit operator Universal(List<Universal> x) => new(x);
-
-	public static implicit operator Universal((IList<bool>, IList<bool>) x) => new(x);
-
-	public static implicit operator Universal((IList<bool>, IList<byte>) x) => new(x);
-
-	public static implicit operator Universal((IList<bool>, IList<short>) x) => new(x);
-
-	public static implicit operator Universal((IList<bool>, IList<ushort>) x) => new(x);
-
-	public static implicit operator Universal((IList<bool>, IList<char>) x) => new(x);
-
-	public static implicit operator Universal((IList<bool>, IList<int>) x) => new(x);
-
-	public static implicit operator Universal((IList<bool>, IList<uint>) x) => new(x);
-
-	public static implicit operator Universal((IList<bool>, IList<long>) x) => new(x);
-
-	public static implicit operator Universal((IList<bool>, IList<ulong>) x) => new(x);
-
-	public static implicit operator Universal((IList<bool>, IList<double>) x) => new(x);
-
-	public static implicit operator Universal((IList<bool>, IList<String>) x) => new(x);
 
 	public static Universal operator +(Universal x)
 	{

@@ -1002,48 +1002,45 @@ public sealed class SemanticTree
 				innerResults.SetOrAdd(i, CalculationParseAction(branch[i].Info)(branch[i], out var innerErrorsList));
 				AddRange(ref errorsList, innerErrorsList);
 			}
-			else
+			else if (TryReadValue(branch[i].Info, out var value))
 			{
-				if (TryReadValue(branch[i].Info, out var value))
-				{
-					branch[i].Extra = value.InnerType;
-					innerResults.SetOrAdd(i, value.ToString(true, true));
-					continue;
-				}
-				else if (i == 1 && innerResults.Length == 1 && TryReadValue(branch[0].Info, out value))
-				{
-					innerResults.SetOrAdd(i, ExprValue(value, branch, errorsList, i--));
-					continue;
-				}
-				else if (i > 0 && i % 2 == 0)
-				{
-					if (!TryReadValue(branch[i].Info, out _) && branch[i].Info.ToString() is not ("pow" or "tetra" or "penta"
-						or "hexa" or "=" or "+=" or "-=" or "*=" or "/=" or "%=" or "pow=" or "tetra=" or "penta=" or "hexa="
-						or "&=" or "|=" or "^=" or ">>=" or "<<=") && TryReadValue(branch[Max(i - 3, 0)].Info, out var value1)
-						&& TryReadValue(branch[i - 1].Info, out var value2))
-					{
-						var innerResult = ExprTwoValues(value1, value2, branch, errorsList, ref i);
-						innerResults.SetOrAdd(i, innerResult);
-						continue;
-					}
-					innerResults.SetOrAdd(i, branch[i].Info.ToString() switch
-					{
-						"*" or "/" or "%" => ExprMulDiv(branch, innerResults, errorsList, ref i),
-						"+" or "-" => ExprPM(branch, innerResults, errorsList, ref i),
-						"pow" or "tetra" or "penta" or "hexa" => ExprPow(branch, innerResults, i),
-						"==" or ">" or "<" or ">=" or "<=" or "!=" or "&&" or "||" or "^^" => ExprBool(branch, innerResults, i),
-						"=" or "+=" or "-=" or "*=" or "/=" or "%=" or "pow=" or "tetra=" or "penta=" or "hexa=" or "&=" or "|=" or "^=" or ">>=" or "<<=" => ExprAssignment(branch, innerResults, errorsList, i),
-						"?" or "?=" or "?>" or "?<" or "?>=" or "?<=" or "?!=" or ":" => ExprTernary(branch, i),
-						"CombineWith" => ExprCombineWith(branch, innerResults, i),
-						not nameof(List) => ExprBinaryNotList(branch, innerResults, i),
-						_ => ExprDefault(branch, errorsList, i),
-					});
-				}
-				else if (branch.Length == 2 && i == 1)
-					return ExprUnary(branch, errorsList, i);
-				else
-					return ExprDefault(branch, errorsList, i);
+				branch[i].Extra = value.InnerType;
+				innerResults.SetOrAdd(i, value.ToString(true, true));
+				continue;
 			}
+			else if (i == 1 && innerResults.Length == 1 && TryReadValue(branch[0].Info, out value))
+			{
+				innerResults.SetOrAdd(i, ExprValue(value, branch, errorsList, i--));
+				continue;
+			}
+			else if (i > 0 && i % 2 == 0)
+			{
+				if (!TryReadValue(branch[i].Info, out _) && branch[i].Info.ToString() is not ("pow" or "tetra" or "penta"
+					or "hexa" or "=" or "+=" or "-=" or "*=" or "/=" or "%=" or "pow=" or "tetra=" or "penta=" or "hexa="
+					or "&=" or "|=" or "^=" or ">>=" or "<<=") && TryReadValue(branch[Max(i - 3, 0)].Info, out var value1)
+					&& TryReadValue(branch[i - 1].Info, out var value2))
+				{
+					var innerResult = ExprTwoValues(value1, value2, branch, errorsList, ref i);
+					innerResults.SetOrAdd(i, innerResult);
+					continue;
+				}
+				innerResults.SetOrAdd(i, branch[i].Info.ToString() switch
+				{
+					"*" or "/" or "%" => ExprMulDiv(branch, innerResults, errorsList, ref i),
+					"+" or "-" => ExprPM(branch, innerResults, errorsList, ref i),
+					"pow" or "tetra" or "penta" or "hexa" => ExprPow(branch, innerResults, i),
+					"==" or ">" or "<" or ">=" or "<=" or "!=" or "&&" or "||" or "^^" => ExprBool(branch, innerResults, i),
+					"=" or "+=" or "-=" or "*=" or "/=" or "%=" or "pow=" or "tetra=" or "penta=" or "hexa=" or "&=" or "|=" or "^=" or ">>=" or "<<=" => ExprAssignment(branch, innerResults, errorsList, i),
+					"?" or "?=" or "?>" or "?<" or "?>=" or "?<=" or "?!=" or ":" => ExprTernary(branch, i),
+					"CombineWith" => ExprCombineWith(branch, innerResults, i),
+					not nameof(List) => ExprBinaryNotList(branch, innerResults, i),
+					_ => ExprDefault(branch, errorsList, i),
+				});
+			}
+			else if (branch.Length == 2 && i == 1)
+				return ExprUnary(branch, errorsList, i);
+			else
+				return ExprDefault(branch, errorsList, i);
 		}
 		var prevIndex = branch.Parent!.Elements.FindIndex(x => ReferenceEquals(branch, x));
 		if (branch.Info == "StringConcatenation")

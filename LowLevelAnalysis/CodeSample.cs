@@ -21,7 +21,7 @@ public enum LexemType
 	Operator,
 	String,
 	Other,
-};
+}
 
 [DebuggerDisplay("{ToString()}")]
 public sealed class Lexem(String newString, LexemType newType, int newLineN, int newPos)
