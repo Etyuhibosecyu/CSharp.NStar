@@ -54,7 +54,7 @@ public sealed class SemanticTree
 			var result = CalculationParseAction(topBranch.Info)(topBranch, out innerErrorsList);
 			errorsList = (this.errorsList ?? []).AddRange(innerErrorsList);
 			compiledClasses = this.compiledClasses;
-			return wreckOccurred ? "" : result;
+			return wreckOccurred ? [] : result;
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException)
 		{
@@ -62,7 +62,7 @@ public sealed class SemanticTree
 			errorsList = innerErrorsList;
 			compiledClasses = [];
 			wreckOccurred = true;
-			return "";
+			return [];
 		}
 	}
 
@@ -108,7 +108,7 @@ public sealed class SemanticTree
 				if (branch.Info == "Main" && x.Info == "Main" && !s.EndsWith('}') && s.Length != 0 && s[..^1].Contains(';'))
 					result.Add('{');
 				if (s == "_")
-					s = "";
+					s = [];
 				result.AddRange(s);
 				if (s.Length != 0 && s[^1] is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_')
 					result.Add(' ');
@@ -157,7 +157,7 @@ public sealed class SemanticTree
 		else
 		{
 			compiledClasses.AddRange(result);
-			return "";
+			return [];
 		}
 	}
 
@@ -255,7 +255,7 @@ public sealed class SemanticTree
 	private String Parameters(TreeBranch branch, out List<String> errorsList)
 	{
 		errorsList = [];
-		return "";
+		return [];
 	}
 
 	private String Properties(TreeBranch branch, out List<String> errorsList)
@@ -269,14 +269,14 @@ public sealed class SemanticTree
 		foreach (var x in branch.Elements)
 		{
 			var s = Property(x, out var innerErrorsList, out var innerResult2, out var innerResult3);
-			if (s != "")
+			if (s.Length != 0)
 			{
 				result.AddRange(s);
 				errorsList.AddRange(innerErrorsList);
 			}
-			if (innerResult2 != "")
+			if (innerResult2.Length != 0)
 			{
-				if (result2 != "")
+				if (result2.Length != 0)
 					result2.AddRange(", ");
 				result2.AddRange(innerResult2);
 			}
@@ -293,11 +293,11 @@ public sealed class SemanticTree
 		result2 = [];
 		result3 = [];
 		if (branch[0].Extra is not UniversalType UnvType)
-			return "";
+			return [];
 		var name = branch[1].Info;
 		var (UnvType2, Attributes) = UserDefinedPropertiesList[branch.Container][name];
 		if (!UnvType.Equals(UnvType2))
-			return "";
+			return [];
 		String result = [];
 		if ((Attributes & PropertyAttributes.Closed) != 0)
 			result.AddRange("private ");
@@ -344,7 +344,7 @@ public sealed class SemanticTree
 		};
 		errorsList = [];
 		var s = CalculationParseAction(branch[0].Info)(branch[0], out var innerErrorsList);
-		if (s != "")
+		if (s.Length != 0)
 		{
 			result.AddRange(s);
 			errorsList.AddRange(innerErrorsList);
@@ -365,7 +365,7 @@ public sealed class SemanticTree
 		String result = "while (((Universal)";
 		errorsList = [];
 		var s = CalculationParseAction(branch[0].Info)(branch[0], out var innerErrorsList);
-		if (s != "")
+		if (s.Length != 0)
 		{
 			result.AddRange(s);
 			errorsList.AddRange(innerErrorsList);
@@ -381,7 +381,7 @@ public sealed class SemanticTree
 		result.AddRange(" = ");
 		errorsList = [];
 		var s = CalculationParseAction(branch[0].Info)(branch[0], out var innerErrorsList);
-		if (s != "")
+		if (s.Length != 0)
 		{
 			result.AddRange(s);
 			errorsList.AddRange(innerErrorsList);
@@ -610,7 +610,7 @@ public sealed class SemanticTree
 				errorsList.Add("Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": internal error");
 				return "default!";
 			}
-			if (PropertyExists(ContainerUnvType, info, out var property))
+			if (PropertyExists(ContainerUnvType, PropertyMapping(info), out var property))
 			{
 				if (!property.HasValue)
 				{
@@ -665,7 +665,7 @@ public sealed class SemanticTree
 		{
 			if (list.Length == 2 && list[0] is String delegateElem1 && delegateElem1.ToString() is "Variable" or "Property" or nameof(Expr) && list[1] is UniversalType DelegateUnvType && new BlockStackEComparer().Equals(DelegateUnvType.MainType, FuncBlockStack) && DelegateUnvType.ExtraTypes.Length != 0 && !DelegateUnvType.ExtraTypes[0].MainType.IsValue)
 			{
-				result.AddRange(index > 1 ? "" : branch[index - 1].Info).AddRange(List(branch[index], out var innerErrorsList));
+				result.AddRange(index > 1 ? [] : branch[index - 1].Info).AddRange(List(branch[index], out var innerErrorsList));
 				errorsList.AddRange(innerErrorsList);
 				branch.Extra = new UniversalType(DelegateUnvType.ExtraTypes[0].MainType.Type, DelegateUnvType.ExtraTypes[0].ExtraTypes);
 				return result;
@@ -689,7 +689,7 @@ public sealed class SemanticTree
 					errorsList.AddRange(parametersErrorsList);
 				}
 				else
-					parameters = (String)"";
+					parameters = [];
 				if (parameters.StartsWith(", (") && parameters.EndsWith(')'))
 				{
 					parameters[2] = '[';
@@ -716,7 +716,7 @@ public sealed class SemanticTree
 			}
 			else if (!elem2.StartsWith("user") && branch.Parent?[0].Extra is UniversalType ContainerUnvType)
 			{
-				if (MethodExists(ContainerUnvType, s, out var function2) && function2 != null)
+				if (MethodExists(ContainerUnvType, FunctionMapping(s, null), out var function2) && function2 != null)
 				{
 					result.AddRange(FunctionMapping(s, ExprCall(branch[index], out var innerErrorsList, extra)));
 					errorsList.AddRange(innerErrorsList);
@@ -733,14 +733,14 @@ public sealed class SemanticTree
 			}
 			else if (elem2 == "user" && UserDefinedFunctionExists(new(), s, out var function2) && function2.HasValue)
 			{
-				result.AddRange(index > 1 ? "" : EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s).AddRange(ExprCallUser(branch[index], out var innerErrorsList, extra));
+				result.AddRange(index > 1 ? [] : EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s).AddRange(ExprCallUser(branch[index], out var innerErrorsList, extra));
 				errorsList.AddRange(innerErrorsList);
 				branch.Extra = function2.Value.ReturnUnvType;
 				extra = new List<object> { (String)nameof(Expr), branch.Extra };
 			}
 			else if (elem2 == "userMethod" && UserDefinedFunctionExists(branch.Container, s, out function2) && function2.HasValue)
 			{
-				result.AddRange(index > 1 ? "" : EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s).AddRange(ExprCallUser(branch[index], out var innerErrorsList, extra));
+				result.AddRange(index > 1 ? [] : EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s).AddRange(ExprCallUser(branch[index], out var innerErrorsList, extra));
 				errorsList.AddRange(innerErrorsList);
 				branch.Extra = function2.Value.ReturnUnvType;
 				extra = new List<object> { (String)nameof(Expr), branch.Extra };
@@ -749,14 +749,14 @@ public sealed class SemanticTree
 			{
 				if (TypeEqualsToPrimitive(ContainerUnvType2, "typename") && list.Length >= 4 && list[3] is String elem4 && elem4 == "static" && UserDefinedFunctionExists(ContainerUnvType2.MainType, s, out function2, out _) && function2.HasValue)
 				{
-					result.AddRange(index > 1 ? "" : EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s).AddRange(ExprCallUser(branch[index], out var innerErrorsList, extra));
+					result.AddRange(index > 1 ? [] : EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s).AddRange(ExprCallUser(branch[index], out var innerErrorsList, extra));
 					errorsList.AddRange(innerErrorsList);
 					branch.Extra = function2.Value.ReturnUnvType;
 					extra = new List<object> { (String)nameof(Expr), branch.Extra };
 				}
 				else if (UserDefinedFunctionExists(ContainerUnvType2.MainType, s, out function2, out _) && function2.HasValue)
 				{
-					result.AddRange(index > 1 ? "" : EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s).AddRange(ExprCallUser(branch[index], out var innerErrorsList, extra));
+					result.AddRange(index > 1 ? [] : EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s).AddRange(ExprCallUser(branch[index], out var innerErrorsList, extra));
 					errorsList.AddRange(innerErrorsList);
 					branch.Extra = function2.Value.ReturnUnvType;
 					extra = new List<object> { (String)nameof(Expr), branch.Extra };
@@ -793,7 +793,7 @@ public sealed class SemanticTree
 		else if (branch[index].Info == "Indexes")
 		{
 			if (branch[index - 1].Extra is not UniversalType CollectionUnvType)
-				return "";
+				return [];
 			if (!TypeEqualsToPrimitive(CollectionUnvType, "tuple", false))
 			{
 				foreach (var x in branch[index].Elements)
@@ -1059,7 +1059,7 @@ public sealed class SemanticTree
 		for (var i = 0; i < branch.Length; i++)
 		{
 			var innerResult = CalculationParseAction(branch[i].Info)(branch[i], out var innerErrorsList);
-			if (innerResult != "")
+			if (innerResult.Length != 0)
 			{
 				result.Add(innerResult);
 				errorsList.AddRange(innerErrorsList);
@@ -1186,7 +1186,7 @@ public sealed class SemanticTree
 		for (var i = 0; i < branch.Length; i++)
 		{
 			var s = CalculationParseAction(branch[i].Info)(branch[i], out var innerErrorsList);
-			if (s != "")
+			if (s.Length != 0)
 			{
 				if (result != "(")
 					result.AddRange(", ");
@@ -1424,7 +1424,7 @@ public sealed class SemanticTree
 				if (isString1 && isString2)
 				{
 					i++;
-					return value1.ToString(true, true).Copy().AddRange(TypeEqualsToPrimitive(PrevUnvType, "string") ? ".Copy()" : "").AddRange(".AddRange(").AddRange(value2.ToString(true, true)).Add(')');
+					return value1.ToString(true, true).Copy().AddRange(TypeEqualsToPrimitive(PrevUnvType, "string") ? (String)".Copy()" : []).AddRange(".AddRange(").AddRange(value2.ToString(true, true)).Add(')');
 				}
 				else if (isString1 || isString2)
 					return ((String)"((").AddRange(nameof(Universal)).Add(')').AddRange(value1.ToString(true, true)).Add(' ').AddRange(branch[i++].Info).Add(' ').AddRange(value2.ToString(true, true)).AddRange(").ToString()");
@@ -1612,7 +1612,7 @@ public sealed class SemanticTree
 			branch.Info = "StringConcatenation";
 		branch[i].Extra = GetResultType(UnvType1, UnvType2);
 		if (isString1 && isString2)
-			return innerResults[^2].Copy().AddRange(isStringPrev ? ".Copy()" : "").AddRange(".AddRange(").AddRange(innerResults[^1]).Add(')');
+			return innerResults[^2].Copy().AddRange(isStringPrev ? (String)".Copy()" : []).AddRange(".AddRange(").AddRange(innerResults[^1]).Add(')');
 		else if (isString1 || isString2)
 			return ((String)"((").AddRange(nameof(Universal)).Add(')').AddRange(innerResults[^2]).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]).AddRange(").ToString()");
 		else
@@ -1743,7 +1743,7 @@ public sealed class SemanticTree
 			UnvType = NullType;
 		branch[i].Extra = UnvType;
 		var valueString = CalculationParseAction(branch[i - 1].Info)(branch[i - 1], out var innerErrorsList);
-		if (valueString == "")
+		if (valueString.Length == 0)
 			return "default!";
 		errorsList.AddRange(innerErrorsList);
 		branch.Extra = branch[i].Info.ToString() switch
@@ -1877,14 +1877,14 @@ public sealed class SemanticTree
 			return value.ToString(true, true);
 		}
 		if (branch.Length == 0)
-			return branch.Info == "ClassMain" ? "" : branch.Info;
+			return branch.Info == "ClassMain" ? [] : branch.Info;
 		String result = [];
 		if (branch.Info.StartsWith("Namespace "))
 			result.Add('n').AddRange(branch.Info[1..]).Add('{');
 		foreach (var x in branch.Elements)
 		{
 			var s = CalculationParseAction(x.Info)(x, out var innerErrorsList);
-			if (s != "")
+			if (s.Length != 0)
 				result.AddRange(s);
 			errorsList.AddRange(innerErrorsList);
 		}
@@ -1895,14 +1895,14 @@ public sealed class SemanticTree
 		else
 		{
 			compiledClasses.AddRange(result);
-			return "";
+			return [];
 		}
 	}
 
 	private static String Wreck(TreeBranch branch, out List<String> errorsList)
 	{
 		errorsList = [];
-		return "";
+		return [];
 	}
 
 	private static String Type(UniversalType type)
@@ -2284,7 +2284,7 @@ public sealed class SemanticTree
 				return branches[i][0].Info;
 		function = ([], (GetPrimitiveBlockStack("universal"), NoGeneralExtraTypes), FunctionAttributes.None, []);
 		matchingContainer = null;
-		return "";
+		return [];
 	}
 
 	private static bool IsTypeContext(TreeBranch branch) => branch.Container.TryPeek(out var nearestBlock) && nearestBlock.Type is BlockType.Namespace or BlockType.Class or BlockType.Struct or BlockType.Interface;
@@ -2304,14 +2304,14 @@ public sealed class SemanticTree
 		catch (OutOfMemoryException)
 		{
 			errorsList.Add("Memory limit exceeded during compilation, translation or execution; program has not been executed\r\n");
-			errors = String.Join("\r\n", errorsList.Append(""));
+			errors = String.Join("\r\n", errorsList.Append([]));
 			assembly = null;
 			return "null";
 		}
 		catch
 		{
 			errorsList.Add("A serious error occurred during compilation, translation or execution; program has not been executed\r\n");
-			errors = String.Join("\r\n", errorsList.Append(""));
+			errors = String.Join("\r\n", errorsList.Append([]));
 			assembly = null;
 			return "null";
 		}
@@ -2345,7 +2345,7 @@ public sealed class SemanticTree
 		var (bytes, errorsList) = CompileProgram(translated);
 		assembly = EasyEval.GetAssembly(bytes);
 		var result = assembly?.GetType("Program")?.GetMethod("F")?.Invoke(null, [args]) ?? null;
-		errors = errorsList == null || errorsList.Length == 0 ? "Ошибок нет" : String.Join("\r\n", errorsList.Append(""));
+		errors = errorsList == null || errorsList.Length == 0 ? "Ошибок нет" : String.Join("\r\n", errorsList.Append([]));
 		return result is null ? "null" : JsonConvert.SerializeObject(result, SerializerSettings);
 	}
 

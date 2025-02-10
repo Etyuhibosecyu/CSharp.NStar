@@ -35,7 +35,7 @@ public sealed class Lexem(String newString, LexemType newType, int newLineN, int
 	public int LineN { get; set; } = newLineN;
 	public int Pos { get; set; } = newPos;
 
-	public Lexem() : this("", LexemType.Other, 1, 0)
+	public Lexem() : this([], LexemType.Other, 1, 0)
 	{
 	}
 
@@ -47,7 +47,7 @@ public class CodeSample(String newString)
 	private readonly List<Lexem> lexems = [];
 	private List<Lexem> tempLexems = [];
 	private bool success;
-	private readonly String input = newString == "" ? "return null;" : newString;
+	private readonly String input = newString.Length == 0 ? "return null;" : newString;
 	private int pos = 0, lineStart = 0;
 	private int lineN = 1;
 	private bool wreckOccurred = false;
@@ -118,25 +118,25 @@ public class CodeSample(String newString)
 			list.Add(input[(pos - 1)..pos]);
 			list.Add(GetNumber2(out _));
 			if (CheckOverflow(list[^1], ref type) is String s2) return s2;
-			if (list[0] == "" && list[2] == "")
+			if (list[0].Length == 0 && list[2].Length == 0)
 			{
 				pos = start;
-				return "";
+				return [];
 			}
 		}
-		if (list[0] != "" && ValidateCharList("Ee") && ValidateCharList("+-"))
+		if (list[0].Length != 0 && ValidateCharList("Ee") && ValidateCharList("+-"))
 		{
 			type = LexemType.Real;
 			list.Add(input[(pos - 2)..pos]);
 			list.Add(GetNumber2(out _));
 			if (CheckOverflow(list[^1], ref type) is String s2) return s2;
 		}
-		if (list[0] != "" && ValidateChar('r'))
+		if (list[0].Length != 0 && ValidateChar('r'))
 		{
 			type = LexemType.Real;
 			list.Add("r");
 		}
-		return String.Join("", [.. list]);
+		return String.Join([], [.. list]);
 		String? CheckOverflow(String s, ref LexemType type)
 		{
 			if (s == "null")
@@ -242,14 +242,14 @@ public class CodeSample(String newString)
 		String TriStateCondition(ref String s2, bool condition, bool flag)
 		{
 			if (condition)
-				return "";
+				return [];
 			else if (!IsNotEnd())
 				return GenerateQuoteWreck(out s2);
 			else if (flag)
 			{
 				if (!CheckChar('\''))
 					AddChar(result);
-				return "";
+				return [];
 			}
 			{
 				return GenerateQuoteWreck(out s2, "there must be a single character or a single escape-sequence in the single quotes");
@@ -623,13 +623,13 @@ public class CodeSample(String newString)
 			if (CheckChar('\'') || CheckChar('\"') || CheckChar('@'))
 			{
 				s = GetString(out var s2);
-				if (s != "")
+				if (s.Length != 0)
 				{
 					AddLexem(s, LexemType.String, s2.Length);
 					goto l0;
 				}
 			}
-			else if ((s = GetRawString(out var s3)) != "")
+			else if ((s = GetRawString(out var s3)).Length != 0)
 			{
 				AddLexem(s, LexemType.String, s3.Length);
 				goto l0;
@@ -637,7 +637,7 @@ public class CodeSample(String newString)
 			else if (CheckDigit())
 			{
 				s = GetNumber(out var numberType);
-				if (s != "")
+				if (s.Length != 0)
 				{
 					AddLexem(s, numberType, s.Length);
 					goto l0;
@@ -646,7 +646,7 @@ public class CodeSample(String newString)
 			else if (CheckLetter() || CheckChar('_'))
 			{
 				s = GetWord();
-				if (s == "")
+				if (s.Length == 0)
 					goto l10;
 				if (s.ToString() is "_" or "abstract" or "break" or "case" or "Class" or "closed" or "const" or "Constructor" or "continue" or "Delegate" or "delete" or "Destructor" or "else" or "Enum" or "Event" or "Extent" or "extern" or "false" or "for" or "Function" or "if" or "Interface" or "internal" or "lock" or "loop" or "multiconst" or "Namespace" or "new" or "null" or "Operator" or "out" or "override" or "params" or "protected" or "public" or "readonly" or "ref" or "repeat" or "return" or "sealed" or "static" or "Struct" or "switch" or "this" or "throw" or "true" or "using" or "while")
 					AddLexem(s, LexemType.Keyword, s.Length);
@@ -663,7 +663,7 @@ public class CodeSample(String newString)
 			}
 			else if (";()[]{}".Contains(input[pos]))
 			{
-				AddOtherLexem("" + input[pos++]);
+				AddOtherLexem((String)input[pos++]);
 				goto l0;
 			}
 		l10:
@@ -683,13 +683,13 @@ public class CodeSample(String newString)
 			}
 			pos += l;
 			s = new String(32, [.. ValidateLexemTree(new LexemTree('\0', lexemTree), out var success_)]);
-			if (s != "" && success_)
+			if (s.Length != 0 && success_)
 			{
 				AddOperatorLexem(s);
 				goto l0;
 			}
 			s = GetUnformatted();
-			if (s != "")
+			if (s.Length != 0)
 			{
 				GenerateError(pos - s.Length, "unrecognized sequence of symbols");
 				goto l0;

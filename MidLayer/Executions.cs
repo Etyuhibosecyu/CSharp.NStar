@@ -66,10 +66,10 @@ public static partial class Executions
 	public static String TypeMapping(String type)
 	{
 		var after = type.GetAfter(((String)"System.Collections.").AddRange(nameof(G.LinkedList<bool>)));
-		if (after != "")
+		if (after.Length != 0)
 			return "G.LinkedList" + after;
 		after = type.GetAfter("System.Collections.");
-		if (after != "")
+		if (after.Length != 0)
 			return after;
 		return type;
 	}
@@ -145,25 +145,25 @@ public static partial class Executions
 		{
 			"Add" => nameof(function.AddRange),
 			"Ceil" => "(int)" + nameof(Ceiling),
-			nameof(Ceiling) => throw new NotSupportedException(),
+			nameof(Ceiling) => [],
 			"Chain" => ((String)nameof(Executions)).Add('.').AddRange(nameof(Chain)),
 			nameof(RedStarLinq.Fill) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Fill)),
-			"FillList" => throw new NotSupportedException(),
+			"FillList" => [],
 			nameof(Floor) => "(int)" + nameof(Floor),
 			"IntRandom" => nameof(IntRandomNumber),
-			nameof(IntRandomNumber) => throw new NotSupportedException(),
+			nameof(IntRandomNumber) => [],
 			"IntToReal" => "(double)",
 			"IsSummertime" => nameof(DateTime.IsDaylightSavingTime),
-			nameof(DateTime.IsDaylightSavingTime) => throw new NotSupportedException(),
+			nameof(DateTime.IsDaylightSavingTime) => [],
 			"Log" => ((String)nameof(Executions)).Add('.').AddRange(nameof(Log)),
 			nameof(RedStarLinq.Max) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Max)),
-			"Max3" => throw new NotSupportedException(),
+			"Max3" => [],
 			nameof(RedStarLinq.Mean) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Mean)),
-			"Mean3" => throw new NotSupportedException(),
+			"Mean3" => [],
 			nameof(RedStarLinq.Min) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Min)),
-			"Min3" => throw new NotSupportedException(),
+			"Min3" => [],
 			"Random" => nameof(RandomNumber),
-			nameof(RandomNumber) => throw new NotSupportedException(),
+			nameof(RandomNumber) => [],
 			nameof(Round) => "(int)" + nameof(Round),
 			nameof(Truncate) => "(int)" + nameof(Truncate),
 			_ => function.Copy(),
@@ -185,7 +185,7 @@ public static partial class Executions
 	public static String PropertyMapping(String property) => property.ToString() switch
 	{
 		"UTCNow" => nameof(DateTime.UtcNow),
-		nameof(DateTime.UtcNow) => throw new NotSupportedException(),
+		nameof(DateTime.UtcNow) => [],
 		_ => property.Copy(),
 	};
 
@@ -1353,7 +1353,7 @@ public static partial class Executions
 
 	public static GeneralExtraTypes GetGeneralExtraTypes(List<String> partialBlockStack) => new(partialBlockStack.Convert(x => (UniversalTypeOrValue)((TypeOrValue)new BlockStack([new Block(BlockType.Primitive, x, 1)]), NoGeneralExtraTypes)));
 
-	public static (BlockStack Container, String Type) SplitType(BlockStack blockStack) => (new(blockStack.ToList().SkipLast(1)), blockStack.TryPeek(out var block) ? block.Name : "");
+	public static (BlockStack Container, String Type) SplitType(BlockStack blockStack) => (new(blockStack.ToList().SkipLast(1)), blockStack.TryPeek(out var block) ? block.Name : []);
 
 	public static bool TypesAreCompatible(UniversalType sourceType, UniversalType destinationType, out bool warning, String? srcExpr, out String? destExpr, out String? extraMessage)
 	{

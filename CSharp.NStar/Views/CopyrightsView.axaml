@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:cc="using:CSharp.NStar.Controls"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:CSharp.NStar.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="1024" d:DesignHeight="768"
+             x:Class="CSharp.NStar.Views.CopyrightsView"
+             x:DataType="vm:MainViewModel"
+						 Background="Pink"
+						 HorizontalAlignment="Stretch"
+						 VerticalAlignment="Stretch">
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
+         to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		<vm:MainViewModel />
+	</Design.DataContext>
+
+	<StackPanel HorizontalAlignment="Center" VerticalAlignment="Top">
+		<TextBlock HorizontalAlignment="Center" Text="WARNING! There are copyrights for some elements of this app!&#x0a;
+More exactly, there was used content from the next proprietary sources:&#x0a;
+(Click to open in your default browser)" TextAlignment="Center"/>
+		<Button Background="Transparent" HorizontalAlignment="Center" Click="Button_Click">
+			<TextBlock Foreground="Blue" Text="https://dot.net/" TextDecorations="Underline"/>
+		</Button>
+		<Button Background="Transparent" HorizontalAlignment="Center" Click="Button_Click">
+			<TextBlock Foreground="Blue" Text="https://avaloniaui.net/" TextDecorations="Underline"/>
+		</Button>
+		<Button Background="Transparent" HorizontalAlignment="Center" Click="Button_Click">
+			<TextBlock Foreground="Blue" Text="https://github.com/AvaloniaCommunity/MessageBox.Avalonia" TextDecorations="Underline"/>
+		</Button>
+		<Button Background="Transparent" HorizontalAlignment="Center" Click="Button_Click">
+			<TextBlock Foreground="Blue" Text="https://github.com/AvaloniaUI/AvaloniaEdit" TextDecorations="Underline"/>
+		</Button>
+		<Button Background="Transparent" HorizontalAlignment="Center" Click="Button_Click">
+			<TextBlock Foreground="Blue" Text="https://github.com/danipen/TextMateSharp" TextDecorations="Underline"/>
+		</Button>
+		<Button Background="Transparent" HorizontalAlignment="Center" Click="Button_Click">
+			<TextBlock Foreground="Blue" Text="https://github.com/dotnet/roslyn" TextDecorations="Underline"/>
+		</Button>
+		<Button Background="Transparent" HorizontalAlignment="Center" Click="Button_Click">
+			<TextBlock Foreground="Blue" Text="https://ilgpu.net/" TextDecorations="Underline"/>
+		</Button>
+		<Button Background="Transparent" HorizontalAlignment="Center" Click="Button_Click">
+			<TextBlock Foreground="Blue" Text="https://wezeku.github.io/Mpir.NET/" TextDecorations="Underline"/>
+		</Button>
+		<Button Background="Transparent" HorizontalAlignment="Center" Click="Button_Click">
+			<TextBlock Foreground="Blue" Text="https://www.newtonsoft.com/json" TextDecorations="Underline"/>
+		</Button>
+		<Button Background="Red" HorizontalAlignment="Center" Click="Close_Click">
+			<TextBlock Text="Close"/>
+		</Button>
+	</StackPanel>
+</UserControl>

@@ -1,6 +1,7 @@
 ﻿#define RELEASE
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -10,6 +11,8 @@ using AvaloniaEdit.Editing;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
 using AvaloniaEdit.Utils;
+using MsBox.Avalonia;
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Reflection;
 using static CSharp.NStar.SemanticTree;
@@ -20,16 +23,18 @@ public partial class MainView : UserControl
 {
 	private Assembly? compiledAssembly;
 	private readonly String enteredText = [];
+	private readonly ImmutableArray<string> minorVersions = ["2o"];
+	private readonly ImmutableArray<string> langs = ["C#"];
 
 	public MainView()
 	{
-		InitializeComponent();
 		CultureInfo.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+		InitializeComponent();
 		TextBoxInput.Options.EnableTextDragDrop = true;
 		TextBoxInput.AddHandler(PointerReleasedEvent, TextBoxInput_PointerReleased, handledEventsToo: true);
 		TextBoxInput.TextArea.TextEntering += TextBoxInput_TextArea_TextEntering;
 		TextBoxInput.TextArea.TextEntered += TextBoxInput_TextArea_TextEntered;
-		using (var stream = new FileStream("SyntaxHighlighting.xshd", FileMode.Open))
+		using (var stream = new MemoryStream(NStar.Resources.SyntaxHighlighting))
 		{
 			using var reader = new System.Xml.XmlTextReader(stream);
 			TextBoxInput.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
@@ -373,14 +378,16 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 	private void UserControl_SizeChanged(object? sender, SizeChangedEventArgs e)
 	{
 		TextBoxInput.Height = TextBoxInput.MaxHeight = TextBoxInput.MinHeight
-			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 5 / 12;
+			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 5 / 13;
 		ButtonExecute.Height = ButtonExecute.MaxHeight = ButtonExecute.MinHeight
 			= ButtonSaveExe.Height = ButtonSaveExe.MaxHeight = ButtonSaveExe.MinHeight
-			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 1 / 12;
+			= ButtonOpenCode.Height = ButtonOpenCode.MaxHeight = ButtonOpenCode.MinHeight
+			= ButtonSaveCode.Height = ButtonSaveCode.MaxHeight = ButtonSaveCode.MinHeight
+			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 1 / 13;
 		TextBoxOutput.Height = TextBoxOutput.MaxHeight = TextBoxOutput.MinHeight
-			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 2 / 12;
+			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 2 / 13;
 		TextBoxErrors.Height = TextBoxErrors.MaxHeight = TextBoxErrors.MinHeight
-			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 3 / 12;
+			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 3 / 13;
 	}
 
 	private void TextBoxInput_KeyUp(object? sender, KeyEventArgs e)
@@ -425,7 +432,7 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 			enteredText.AddRange(e.Text ?? "");
 		if (enteredText.StartsWith('.'))
 			data.AddRange(AutoCompletionAfterDotList.Filter(x => x.StartsWith(enteredText[1..])).Convert(x =>
-				new MyCompletionData(x.ToString(), enteredText.Length + 1)));
+				new MyCompletionData(x.ToString(), enteredText.Length - 1)));
 		else
 			data.AddRange(AutoCompletionList.Filter(x => x.StartsWith(enteredText)).Convert(x =>
 				new MyCompletionData(x.ToString(), enteredText.Length)));
@@ -448,13 +455,149 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 		// We still want to insert the character that was typed.
 	}
 
-	private void ButtonExecute_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+	private void ButtonExecute_Click(object? sender, RoutedEventArgs e) => Execute();
+
+	private void ButtonOpenCode_Click(object? sender, RoutedEventArgs e) => OpenCode();
+
+	private void ButtonSaveCode_Click(object? sender, RoutedEventArgs e) => SaveCode();
+
+	private void ButtonSaveExe_Click(object? sender, RoutedEventArgs e) => SaveExe();
+
+	private void Copyrights_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => CopyrightsView.IsVisible = true;
+
+	private void Execute()
 	{
 		TextBoxOutput.Text = TranslateAndExecuteProgram(TextBoxInput.Text, out var errors, out compiledAssembly).ToString();
 		TextBoxErrors.Text = errors.ToString();
 	}
 
-	private void ButtonSaveExe_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => SaveExe();
+	private async void OpenCode()
+	{
+		var fileResult = await Dispatcher.UIThread.InvokeAsync(async () =>
+			await TopLevel.GetTopLevel(this)?.StorageProvider.OpenFilePickerAsync(new()
+			{
+				Title = "Select the C#.NStar code file",
+				FileTypeFilter = [new("C#.NStar code files") { Patterns = ["*.n-star-pre-pre-i"], AppleUniformTypeIdentifiers = ["UTType.Item"], MimeTypes = ["multipart/mixed"] }],
+			})!);
+		if (fileResult?.Count == 0)
+			return;
+		var filename = fileResult?[0]?.TryGetLocalPath() ?? "";
+		if (string.IsNullOrEmpty(filename))
+			return;
+		String content;
+		try
+		{
+			content = File.ReadAllText(filename);
+		}
+		catch
+		{
+			await Dispatcher.UIThread.InvokeAsync(async () =>
+				await MessageBoxManager.GetMessageBoxStandard("",
+				"Произошла ошибка при попытке открыть файл. Вероятно, он был удален или используется другим приложением.",
+				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
+			return;
+		}
+		var prefix = ".NStar Pre-Pre-I-";
+		if (!content.StartsWith(prefix))
+		{
+			await Dispatcher.UIThread.InvokeAsync(async () =>
+				await MessageBoxManager.GetMessageBoxStandard("",
+				"Ошибка! Файл не является кодом .NStar Pre-Pre-I или поврежден.",
+				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
+			return;
+		}
+		content.Remove(0, prefix.Length);
+		var versionIndex = 0;
+		for (; versionIndex < minorVersions.Length; versionIndex++)
+		{
+			prefix = minorVersions[versionIndex] + '\n';
+			if (content.StartsWith(prefix))
+			{
+				content.Remove(0, prefix.Length);
+				break;
+			}
+		}
+		if (versionIndex == minorVersions.Length)
+		{
+			await Dispatcher.UIThread.InvokeAsync(async () =>
+				await MessageBoxManager.GetMessageBoxStandard("",
+				"Ошибка! Файл не является кодом .NStar Pre-Pre-I совместимой ревизии или поврежден.",
+				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
+			return;
+		}
+		var langIndex = 0;
+		for (; langIndex < langs.Length; langIndex++)
+		{
+			prefix = langs[langIndex] + '\n';
+			if (content.StartsWith(prefix))
+			{
+				content.Remove(0, prefix.Length);
+				break;
+			}
+		}
+		if (langIndex == langs.Length)
+		{
+			await Dispatcher.UIThread.InvokeAsync(async () =>
+				await MessageBoxManager.GetMessageBoxStandard("",
+				"Ошибка! Файл не является кодом .NStar Pre-Pre-I совместимой ревизии на совместимом языке или поврежден.",
+				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
+			return;
+		}
+		prefix = "<Project>\n";
+		if (!content.StartsWith(prefix))
+		{
+			await Dispatcher.UIThread.InvokeAsync(async () =>
+				await MessageBoxManager.GetMessageBoxStandard("",
+				"Ошибка! Файл не является кодом .NStar Pre-Pre-I совместимой ревизии на совместимом языке или поврежден.",
+				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
+			return;
+		}
+		content.Remove(0, prefix.Length);
+		prefix = "\n</Project>\n";
+		var settings = content.GetBefore(prefix);
+		if (settings.Length + prefix.Length > content.Length)
+		{
+			await Dispatcher.UIThread.InvokeAsync(async () =>
+				await MessageBoxManager.GetMessageBoxStandard("",
+				"Ошибка! Файл не является кодом .NStar Pre-Pre-I совместимой ревизии на совместимом языке или поврежден.",
+				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
+			return;
+		}
+		TextBoxInput.Text = content.Remove(0, settings.Length + prefix.Length).ToString();
+		Execute();
+	}
+
+	private async void SaveCode()
+	{
+		if (compiledAssembly == null)
+		{
+			TextBoxOutput.Text = "Чтобы сохранить код, сначала выполните программу!";
+			return;
+		}
+		var fileResult = await Dispatcher.UIThread.InvokeAsync(async () =>
+			await TopLevel.GetTopLevel(this)?.StorageProvider.SaveFilePickerAsync(new()
+			{
+				Title = "Select the path to save a C#.NStar code file",
+				DefaultExtension = "n-star-pre-pre-i",
+				SuggestedFileName = "Program",
+			})!);
+		var filename = fileResult?.TryGetLocalPath() ?? "";
+		if (string.IsNullOrEmpty(filename))
+			return;
+		try
+		{
+			File.WriteAllText(filename, ".NStar Pre-Pre-I-" + minorVersions[^1] + "\nC#\n<Project>\n\n</Project>\n" + TextBoxInput.Text);
+		}
+		catch
+		{
+			await Dispatcher.UIThread.InvokeAsync(async () =>
+				await MessageBoxManager.GetMessageBoxStandard("",
+				"Произошла ошибка при попытке сохранить файл. Вероятно, файл с таким именем"
+				+ " используется другим приложением или у приложения нет прав на запись по этому пути.",
+				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
+			return;
+		}
+	}
 
 	private async void SaveExe()
 	{
@@ -471,12 +614,12 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 				SuggestedFileName = "Program.exe",
 			})!);
 		var filename = fileResult?.TryGetLocalPath() ?? "";
-		if (!string.IsNullOrEmpty(filename))
-		{
-			var dir = Path.GetDirectoryName(filename);
-			foreach (var dependency in GetNecessaryDependencies(compiledAssembly.GetReferencedAssemblies().ToList(x => x.Name ?? throw new NotSupportedException())))
-				File.WriteAllBytes(dir + "/" + dependency.Name + ".dll", dependency.Bytes);
-			File.WriteAllText(dir + "/" + Path.GetFileNameWithoutExtension(filename) + ".runtimeconfig.json", @$"{{
+		if (string.IsNullOrEmpty(filename))
+			return;
+		var dir = Path.GetDirectoryName(filename);
+		foreach (var dependency in GetNecessaryDependencies(compiledAssembly.GetReferencedAssemblies().ToList(x => x.Name ?? throw new NotSupportedException())))
+			File.WriteAllBytes(dir + "/" + dependency.Name + ".dll", dependency.Bytes);
+		File.WriteAllText(dir + "/" + Path.GetFileNameWithoutExtension(filename) + ".runtimeconfig.json", @$"{{
 	""runtimeOptions"": {{
 		""tfm"": ""net{Environment.Version.Major}.{Environment.Version.Minor}"",
 		""framework"": {{
@@ -484,8 +627,8 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 			""version"": ""{Environment.Version.Major}.{Environment.Version.Minor}.{Environment.Version.Build}""
 		}}
 	}}
-}}"); File.WriteAllBytes(filename, CompileProgram(TextBoxInput.Text));
-		}
+}}");
+		File.WriteAllBytes(filename, CompileProgram(TextBoxInput.Text));
 	}
 }
 
