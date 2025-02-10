@@ -1,19 +1,20 @@
 ﻿global using Corlib.NStar;
 global using System;
+global using System.Diagnostics;
 global using System.Drawing;
+global using System.Reflection;
 global using G = System.Collections.Generic;
 global using static Corlib.NStar.Extents;
 global using static CSharp.NStar.ChecksAndMappings;
-global using static CSharp.NStar.Core;
+global using static CSharp.NStar.Quotes;
+global using static CSharp.NStar.DeclaredConstructions;
 global using static CSharp.NStar.IntermediateFunctions;
 global using static System.Math;
 global using String = Corlib.NStar.String;
 using Newtonsoft.Json;
 using System.Collections;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Diagnostics;
 
 namespace CSharp.NStar;
 public struct DelegateParameters
@@ -42,6 +43,7 @@ public static class ChecksAndMappings
 	public static readonly String[] operators = ["or", "and", "^^", "||", "&&", "==", "!=", ">=", "<=", ">", "<", "^=", "|=", "&=", ">>=", "<<=", "+=", "-=", "*=", "/=", "%=", "pow=", "=", "^", "|", "&", ">>", "<<", "+", "-", "*", "/", "%", "pow", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "!", "~", "++", "--", "!!"];
 	public static readonly bool[] areOperatorsInverted = [false, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false];
 	public static readonly bool[] areOperatorsAssignment = [false, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, true];
+	public static readonly List<String> CollectionTypesList = [nameof(Dictionary<bool, bool>), nameof(FastDelHashSet<bool>), "HashTable", nameof(Corlib.NStar.ICollection), nameof(G.IEnumerable<bool>), nameof(Corlib.NStar.IList), nameof(IReadOnlyCollection<bool>), nameof(IReadOnlyList<bool>), nameof(LimitedQueue<bool>), nameof(G.LinkedList<bool>), nameof(G.LinkedListNode<bool>), nameof(ListHashSet<bool>), nameof(Mirror<bool, bool>), nameof(NList<bool>), nameof(Queue<bool>), nameof(ParallelHashSet<bool>), nameof(ReadOnlySpan<bool>), nameof(Slice<bool>), nameof(SortedDictionary<bool, bool>), nameof(SortedSet<bool>), nameof(Span<bool>), nameof(Stack<bool>), nameof(TreeHashSet<bool>), nameof(TreeSet<bool>)];
 
 	private static readonly Dictionary<Type, bool> memoizedTypes = [];
 
@@ -505,72 +507,6 @@ public static class ChecksAndMappings
 		}
 		function = null;
 		return false;
-	}
-
-	public static TreeBranch WrapFunctionWithDelegate((List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters) function, String functionName, int pos, int endPos, BlockStack container, UniversalType? containerType)
-	{
-		var extra = PartialTypeToGeneralType(function.ReturnType, function.ReturnExtraTypes);
-		TreeBranch branch, branch2 = new("Call", pos, endPos, container) { Extra = extra, Elements = { new("kernel", pos, endPos, container) { Extra = new List<object> { "Function " + functionName, containerType.HasValue ? "method" : "public", function } } } };
-		if (function.Parameters is MethodParameters parameters)
-		{
-			branch = new("Parameters", pos, endPos, container);
-			foreach (var x in parameters)
-			{
-				TreeBranch branch3 = new("Parameter", pos, endPos, container) { Elements = { new("type", pos, endPos, container) { Extra = PartialTypeToGeneralType(x.Type, x.ExtraTypes) }, new(x.Name, pos, endPos, container) } };
-				if ((x.Attributes & ParameterAttributes.Optional) != 0)
-				{
-					branch3.Add(new("optional", pos, endPos, container));
-					branch3.Add(new("Expr", pos, endPos, container) { Elements = { new(Universal.TryParse(x.DefaultValue.ToString(), out _) ? x.DefaultValue : "null", pos, endPos, container) } });
-				}
-				else
-				{
-					branch3.Add(new("no optional", pos, endPos, container));
-				}
-				branch.Add(branch3);
-				branch2.Add(new("Hypername", pos, endPos, container) { Extra = PartialTypeToGeneralType(x.Type, x.ExtraTypes), Elements = { new(x.Name, pos, endPos, container) { Extra = PartialTypeToGeneralType(x.Type, x.ExtraTypes) } } });
-			}
-		}
-		else
-		{
-			branch = new("no parameters", pos, endPos, container);
-		}
-		if (containerType.HasValue && branch2.Elements[0].Extra is List<object> list)
-			branch2.Elements[0].Extra = list.Append(new Universal(containerType.Value, GetPrimitiveType("typename")));
-		TreeBranch branch4 = new("Main", pos, endPos, container) { Elements = { new("return", pos, endPos, container) { Elements = { new("Expr", pos, endPos, container) { Elements = { new("Hypername", pos, endPos, container) { Elements = { new(functionName + " (function)", pos, endPos, container) { Extra = extra }, branch2 }, Extra = extra } }, Extra = extra } } } } };
-		return new("Function", pos, endPos, container) { Elements = { new("_", pos, endPos, container), new("type", pos, endPos, container) { Extra = extra }, branch, branch4 } };
-	}
-
-	public static TreeBranch WrapFunctionWithDelegate((GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters, TreeBranch Location) function, String functionName, int pos, int endPos, BlockStack container, UniversalType? containerType)
-	{
-		var extra = function.ReturnUnvType;
-		TreeBranch branch, branch2 = new("Call", pos, endPos, container) { Extra = extra, Elements = { new("kernel", pos, endPos, container) { Extra = new List<object> { "Function " + functionName, "general", function } } } };
-		if (function.Parameters is GeneralMethodParameters parameters)
-		{
-			branch = new("Parameters", pos, endPos, container);
-			foreach (var x in parameters)
-			{
-				TreeBranch branch3 = new("Parameter", pos, endPos, container) { Elements = { new("type", pos, endPos, container) { Extra = (x.Type, x.ExtraTypes) }, new(x.Name, pos, endPos, container) } };
-				if ((x.Attributes & ParameterAttributes.Optional) != 0)
-				{
-					branch3.Add(new("optional", pos, endPos, container));
-					branch3.Add(new("Expr", pos, endPos, container) { Elements = { new(Universal.TryParse(x.DefaultValue.ToString(), out _) ? x.DefaultValue : "null", pos, endPos, container) } });
-				}
-				else
-				{
-					branch3.Add(new("no optional", pos, endPos, container));
-				}
-				branch.Add(branch3);
-				branch2.Add(new("Hypername", pos, endPos, container) { Extra = (x.Type, x.ExtraTypes), Elements = { new(x.Name, pos, endPos, container) { Extra = (x.Type, x.ExtraTypes) } } });
-			}
-		}
-		else
-		{
-			branch = new("no parameters", pos, endPos, container);
-		}
-		if (containerType.HasValue && branch2.Elements[0].Extra is List<object> list)
-			branch2.Elements[0].Extra = list.Append(new Universal(containerType.Value, GetPrimitiveType("typename")));
-		TreeBranch branch4 = new("Main", pos, endPos, container) { Elements = { new("return", pos, endPos, container) { Elements = { new("Expr", pos, endPos, container) { Elements = { new("Hypername", pos, endPos, container) { Elements = { new(functionName + " (function)", pos, endPos, container) { Extra = extra }, branch2 }, Extra = extra } }, Extra = extra } } } } };
-		return new("Function", pos, endPos, container) { Elements = { new("_", pos, endPos, container), new("type", pos, endPos, container) { Extra = extra }, branch, branch4 } };
 	}
 
 	public static bool ConstructorsExist(UniversalType container, out GeneralConstructorOverloads? constructors)
@@ -1524,6 +1460,13 @@ public static class ChecksAndMappings
 		}
 		return list;
 	}
+}
+
+public sealed class FullTypeEComparer : G.IEqualityComparer<UniversalType>
+{
+	public bool Equals(UniversalType x, UniversalType y) => new BlockStackEComparer().Equals(x.MainType, y.MainType) && new GeneralExtraTypesEComparer().Equals(x.ExtraTypes, y.ExtraTypes);
+
+	public int GetHashCode(UniversalType x) => new BlockStackEComparer().GetHashCode(x.MainType) ^ new GeneralExtraTypesEComparer().GetHashCode(x.ExtraTypes);
 }
 
 public class DoubleConverter : JsonConverter<double>

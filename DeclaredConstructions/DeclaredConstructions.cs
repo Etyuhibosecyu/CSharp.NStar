@@ -1,23 +1,16 @@
 ﻿global using Corlib.NStar;
 global using System;
-global using System.Drawing;
-global using System.Globalization;
-global using System.IO;
-global using System.Net.Http;
-global using System.Reflection;
-global using System.Text.RegularExpressions;
-global using System.Threading;
-global using System.Threading.Tasks;
 global using G = System.Collections.Generic;
-global using static CSharp.NStar.Core;
 global using static System.Math;
 global using String = Corlib.NStar.String;
+using ILGPU.Util;
 using System.Diagnostics;
 using System.Text;
 using System.Numerics;
-using ILGPU.Util;
+using static CSharp.NStar.DeclaredConstructions;
 
 namespace CSharp.NStar;
+
 public sealed class Block(BlockType type, String name, int unnamedIndex)
 {
 	public BlockType Type { get; private set; } = type;
@@ -384,156 +377,8 @@ public sealed class LexemTree(char @char, List<LexemTree> nextTree, bool allowAl
 	public static implicit operator LexemTree(char x) => new(x);
 }
 
-[DebuggerDisplay("{ToString()}")]
-public sealed class TreeBranch
+public static class DeclaredConstructions
 {
-	public String Info { get; set; }
-	public int Pos { get; set; }
-	public int EndPos { get; set; }
-	public List<TreeBranch> Elements { get; set; }
-	public BlockStack Container { get; set; }
-	public object? Extra { get; set; }
-	public TreeBranch? Parent { get; private set; }
-
-	public TreeBranch this[Index index]
-	{
-		get => Elements[index];
-		set
-		{
-			Elements[index] = value;
-			value.Parent = this;
-			EndPos = Length == 0 ? Pos + 1 : Elements[^1].EndPos;
-		}
-	}
-
-	public int Length => Elements.Length;
-	public int FullCount => Elements.Length + Elements.Sum(x => x.FullCount);
-
-	public TreeBranch(String info, int pos, BlockStack container)
-	{
-		Info = info;
-		Pos = pos;
-		EndPos = pos + 1;
-		Elements = [];
-		Container = container;
-	}
-
-	public TreeBranch(String info, int pos, int endPos, BlockStack container)
-	{
-		Info = info;
-		Pos = pos;
-		EndPos = endPos;
-		Elements = [];
-		Container = container;
-	}
-
-	public TreeBranch(String info, TreeBranch element, BlockStack container)
-	{
-		Info = info;
-		Pos = element.Pos;
-		EndPos = element.EndPos;
-		Elements = [element];
-		element.Parent = this;
-		Container = container;
-	}
-
-	public TreeBranch(String info, List<TreeBranch> elements, BlockStack container)
-	{
-		Info = info;
-		Pos = elements.Length == 0 ? throw new ArgumentException(null, nameof(elements)) : elements[0].Pos;
-		EndPos = elements.Length == 0 ? throw new ArgumentException(null, nameof(elements)) : elements[^1].EndPos;
-		Elements = elements;
-		Elements.ForEach(x => x.Parent = this);
-		Container = container;
-	}
-
-	public static TreeBranch DoNotAdd() => new("DoNotAdd", 0, int.MaxValue, new());
-
-	public void Add(TreeBranch item)
-	{
-		if (item is TreeBranch branch && branch != DoNotAdd())
-		{
-			Elements.Add(item);
-			item.Parent = this;
-			EndPos = item.EndPos;
-		}
-	}
-
-	public void AddRange(G.IEnumerable<TreeBranch> collection)
-	{
-		Elements.AddRange(collection);
-		foreach (var x in collection)
-			x.Parent = this;
-		EndPos = Length == 0 ? Pos + 1 : Elements[^1].EndPos;
-	}
-
-	public List<TreeBranch> GetRange(int index, int count) => Elements.GetRange(index, count);
-
-	public void Insert(int index, TreeBranch item)
-	{
-		Elements.Insert(index, item);
-		item.Parent = this;
-		EndPos = Length == 0 ? Pos + 1 : Elements[^1].EndPos;
-	}
-
-	public void Insert(int index, G.IEnumerable<TreeBranch> collection)
-	{
-		Elements.Insert(index, collection);
-		foreach (var x in collection)
-			x.Parent = this;
-		EndPos = Length == 0 ? Pos + 1 : Elements[^1].EndPos;
-	}
-
-	public void Remove(int index, int count)
-	{
-		Elements.Remove(index, count);
-		EndPos = Length == 0 ? Pos + 1 : Elements[^1].EndPos;
-	}
-
-	public void RemoveEnd(int index)
-	{
-		Elements.RemoveEnd(index);
-		EndPos = Length == 0 ? Pos + 1 : Elements[^1].EndPos;
-	}
-
-	public void RemoveAt(int index)
-	{
-		Elements.RemoveAt(index);
-		EndPos = Length == 0 ? Pos + 1 : Elements[^1].EndPos;
-	}
-
-	public override bool Equals(object? obj) => obj is not null
-&& obj is TreeBranch m
-&& Info == m.Info && RedStarLinq.Equals(Elements, m.Elements, (x, y) => new TreeBranchComparer().Equals(x, y));
-
-	public override int GetHashCode() => Info.GetHashCode() ^ Elements.GetHashCode();
-
-	public override string ToString() => ToString(new());
-
-	private string ToString(BlockStack container)
-	{
-		var infoString = Info + (RedStarLinq.Equals(container, Container) ? "" : Container.StartsWith(container) ? "@" + string.Join(".", Container.Skip(container.Length).ToArray(x => x.ToString())) : throw new ArgumentException(null, nameof(container)));
-		return Length == 0 ? (Extra is null ? infoString : "(" + infoString + " :: " + Extra.ToString() + ")") + "#" + Pos.ToString() : "(" + infoString + " : " + string.Join(", ", Elements.ToArray(x => x.ToString(Container))) + (Extra is null ? "" : " : " + Extra.ToString()) + ")";
-	}
-
-	public static bool operator ==(TreeBranch? x, TreeBranch? y) => x is null && y is null || x is not null && y is not null && x.Info == y.Info && RedStarLinq.Equals(x.Elements, y.Elements, (x, y) => new TreeBranchComparer().Equals(x, y));
-
-	public static bool operator !=(TreeBranch? x, TreeBranch? y) => !(x == y);
-}
-
-public sealed class TreeBranchComparer : G.IEqualityComparer<TreeBranch>
-{
-	public bool Equals(TreeBranch? x, TreeBranch? y) => x is null && y is null || (x?.Equals(y) ?? false);
-
-	public int GetHashCode(TreeBranch x) => x.GetHashCode();
-}
-
-public static partial class Core
-{
-	public static readonly Random globalRandom = new();
-	public static readonly BitList EmptyBoolList = [];
-	private static readonly List<String> NoExtraTypes = [];
-	private static readonly List<String> ExtraTypesT = ["T"];
 	public static readonly GeneralExtraTypes NoGeneralExtraTypes = [];
 	public static readonly UniversalType NullType = GetPrimitiveType("null");
 	public static readonly UniversalType BoolType = GetPrimitiveType("bool");
@@ -564,50 +409,20 @@ public static partial class Core
 	public static readonly UniversalType RealListType = GetListType(RealType);
 	public static readonly UniversalType StringListType = GetListType(StringType);
 	public static readonly UniversalType UniversalListType = GetListType((new BlockStack([new(BlockType.Primitive, "universal", 1)]), NoGeneralExtraTypes));
-	public static readonly List<String> EmptyStringList = [];
-	public static readonly List<String> ExprTypesList = ["Expr", "List", "Indexes", "Ternary", "PmExpr", "MuldivExpr", "XorList", "StringConcatenation", "Assignment", "UnaryAssignment", "Declaration", "Hypername"];
-	public static readonly List<String> CycleTypesList = ["loop", "while", "while!", "repeat", "for", "loop_while", "for_while", "repeat_while"];
-	public static readonly List<String> ConvertibleTypesList = ["bool", "byte", "short int", "unsigned short int", "char", "int", "unsigned int", "long int", "unsigned long int", "real", "string"];
-	public static readonly List<String> NumberTypesList = ["byte", "short char", "char", "long char", "short int", "unsigned short int", "int", "unsigned int", "long int", "unsigned long int"];
-	public static readonly List<String> CollectionTypesList = [nameof(Dictionary<bool, bool>), nameof(FastDelHashSet<bool>), "HashTable", nameof(ICollection), nameof(G.IEnumerable<bool>), nameof(IList), nameof(IReadOnlyCollection<bool>), nameof(IReadOnlyList<bool>), nameof(LimitedQueue<bool>), nameof(G.LinkedList<bool>), nameof(G.LinkedListNode<bool>), nameof(ListHashSet<bool>), nameof(Mirror<bool, bool>), nameof(NList<bool>), nameof(Queue<bool>), nameof(ParallelHashSet<bool>), nameof(ReadOnlySpan<bool>), nameof(Slice<bool>), nameof(SortedDictionary<bool, bool>), nameof(SortedSet<bool>), nameof(Span<bool>), nameof(Stack<bool>), nameof(TreeHashSet<bool>), nameof(TreeSet<bool>)];
-	public static readonly List<String> StopLexemsList = ["\r\n", ";", "{", "}"];
-	public static readonly List<(String, BlockType)> BlockTypesList = [("Main", BlockType.Unnamed), ("Namespace", BlockType.Namespace), ("Class", BlockType.Class), ("Struct", BlockType.Struct), ("Interface", BlockType.Interface), ("Delegate", BlockType.Delegate), ("Enum", BlockType.Enum), ("Function", BlockType.Function), ("Constructor", BlockType.Constructor), ("Destructor", BlockType.Destructor), ("Operator", BlockType.Operator), ("Extent", BlockType.Extent)];
-	public static readonly CultureInfo EnUsCulture = new("en-US");
-	public static readonly string AlphanumericCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.";
-	public static readonly string AlphanumericCharactersWithoutDot = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	private static readonly MethodParameter ParameterPredicate = new("System.Predicate", "match", ExtraTypesT, ParameterAttributes.None, []);
-	private static readonly MethodParameter ParameterRealValue = new("real", "value", NoExtraTypes, ParameterAttributes.None, []);
-	private static readonly MethodParameter ParameterICharT = new("IChar", "c", ExtraTypesT, ParameterAttributes.None, []);
-	private static readonly MethodParameter ParameterListT = new("list", "list", ExtraTypesT, ParameterAttributes.None, []);
-	private static readonly MethodParameter ParameterChars = new("list", "chars", ["char"], ParameterAttributes.None, []);
-	private static readonly MethodParameter ParameterSubstring = new("string", "substring", NoExtraTypes, ParameterAttributes.None, []);
-	private static readonly MethodParameter ParameterIgnoreCase = new("bool", "ignore_case", NoExtraTypes, ParameterAttributes.Optional, "false");
-	private static readonly MethodParameter ParameterIndex = new("int", "index", NoExtraTypes, ParameterAttributes.None, []);
-	private static readonly MethodParameter ParameterLength = new("int", "length", NoExtraTypes, ParameterAttributes.None, []);
+	private static readonly List<String> NoExtraTypes = [];
+	private static readonly List<String> ExtraTypesT = ["T"];
 	private static readonly BlockStack GeneralTypeBool = new([new(BlockType.Primitive, "bool", 1)]);
 	private static readonly BlockStack GeneralTypeInt = new([new(BlockType.Primitive, "int", 1)]);
 	private static readonly BlockStack GeneralTypeList = new([new(BlockType.Primitive, "list", 1)]);
 	private static readonly BlockStack GeneralTypeString = new([new(BlockType.Primitive, "string", 1)]);
 	private static readonly GeneralExtraTypes GeneralExtraTypesT = [new(new BlockStack([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes)];
-	private static readonly GeneralMethodParameter GeneralParameterTValue = new(new([new(BlockType.Extra, "T", 1)]), "value", NoGeneralExtraTypes, ParameterAttributes.None, []);
 	private static readonly GeneralMethodParameter GeneralParameterIndex = new(GeneralTypeInt, "index", NoGeneralExtraTypes, ParameterAttributes.None, []);
-	private static readonly GeneralMethodParameter GeneralParameterStartIndex = new(GeneralTypeInt, "start_index", NoGeneralExtraTypes, ParameterAttributes.None, []);
-	private static readonly GeneralMethodParameter GeneralParameterLength = new(GeneralTypeInt, "length", NoGeneralExtraTypes, ParameterAttributes.None, []);
-	private static readonly GeneralMethodParameter GeneralParameterComparer = new(new([new(BlockType.Namespace, "System", 1), new(BlockType.Class, "Func", 1)]), "comparer", [new(ShortIntType), new(new BlockStack([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), new(new BlockStack([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes)], ParameterAttributes.None, []);
-	private static readonly GeneralMethodParameter GeneralParameterStringComparer = new(new([new(BlockType.Namespace, "System", 1), new(BlockType.Class, "Func", 1)]), "comparer", [new(ShortIntType), new(GeneralTypeString, NoGeneralExtraTypes), new(GeneralTypeString, NoGeneralExtraTypes)], ParameterAttributes.None, []);
-	private static readonly GeneralMethodParameter GeneralParameterPredicate = new(new([new(BlockType.Namespace, "System", 1), new(BlockType.Class, "Predicate", 1)]), "match", GeneralExtraTypesT, ParameterAttributes.None, []);
-	private static readonly GeneralMethodParameter GeneralParameterChars = new(GeneralTypeList, "chars", [new(GetPrimitiveType("char"))], ParameterAttributes.None, []);
-	private static readonly GeneralMethodParameter GeneralParameterStrings = new(GeneralTypeList, "strings", [new(GeneralTypeString, NoGeneralExtraTypes)], ParameterAttributes.None, []);
-	private static readonly GeneralMethodParameter GeneralParameterStringCollection = new(new([new(BlockType.Interface, "IEnumerable", 1), new(BlockType.Namespace, "Collections", 1), new(BlockType.Namespace, "System", 1)]), "collection", [new(GeneralTypeString, NoGeneralExtraTypes)], ParameterAttributes.None, []);
-	private static readonly GeneralMethodParameter GeneralParameterTCollection = new(new([new(BlockType.Interface, "IEnumerable", 1), new(BlockType.Namespace, "Collections", 1), new(BlockType.Namespace, "System", 1)]), "collection", GeneralExtraTypesT, ParameterAttributes.None, []);
-	private static readonly GeneralMethodParameter GeneralParameterIgnoreCase = new(GeneralTypeBool, "ignore_case", NoGeneralExtraTypes, ParameterAttributes.Optional, "false");
-	private static readonly GeneralMethodParameter GeneralParameterSeparator = new(GeneralTypeString, "separator", NoGeneralExtraTypes, ParameterAttributes.None, []);
 	private static readonly GeneralMethodParameter GeneralParameterStringS = new(GeneralTypeString, "s", NoGeneralExtraTypes, ParameterAttributes.None, []);
 	private static readonly GeneralMethodParameter GeneralParameterString1 = new(GeneralTypeString, "string1", NoGeneralExtraTypes, ParameterAttributes.None, []);
 	private static readonly GeneralMethodParameter GeneralParameterString2 = new(GeneralTypeString, "string2", NoGeneralExtraTypes, ParameterAttributes.None, []);
 	private static readonly GeneralMethodParameter GeneralParameterString3 = new(GeneralTypeString, "string3", NoGeneralExtraTypes, ParameterAttributes.None, []);
 
-	public static G.SortedSet<String> KeywordsList { get; } = ["abstract", "break", "case", "Class", "closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while"];
+	public static G.SortedSet<String> KeywordsList { get; } = ["_", "abstract", "break", "case", "Class", "closed", "const", "Constructor", "continue", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while"];
 
 	public static G.SortedSet<String> EscapedKeywordsList { get; } = ["abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue", "decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit", "extern", "false", "finally", "fixed, float, for, foreach, goto, if, implicit", "in", "int", "interface", "internal", "is", "lock", "long", "namespace", "new", "null", "object", "operator", "out", "override", "params", "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void", "volatile", "while"];
 
@@ -645,16 +460,6 @@ public static partial class Core
 	public static SortedDictionary<(String Namespace, String Interface), (List<String> ExtraTypes, Type DotNetType)> InterfacesList { get; } = new() { { ([], "IBase"), (ExtraTypesT, typeof(void)) }, { ([], "IChar"), (ExtraTypesT, typeof(void)) }, { ([], nameof(IComparable<bool>)), (ExtraTypesT, typeof(IComparable<>)) }, { ([], "IComparableRaw"), (NoExtraTypes, typeof(void)) }, { ([], nameof(IConvertible)), (NoExtraTypes, typeof(IConvertible)) }, { ([], nameof(IEquatable<bool>)), (ExtraTypesT, typeof(IEquatable<>)) }, { ([], "IIncreasable"), (ExtraTypesT, typeof(IIncrementOperators<>)) }, { ([], "IIntegerNumber"), (ExtraTypesT, typeof(IBinaryInteger<>)) }, { ([], "INumber"), (ExtraTypesT, typeof(INumber<>)) }, { ([], "IRealNumber"), (ExtraTypesT, typeof(IFloatingPoint<>)) }, { ([], "ISignedIntegerNumber"), (ExtraTypesT, typeof(ISignedNumber<>)) }, { ([], "IUnsignedIntegerNumber"), (ExtraTypesT, typeof(IUnsignedNumber<>)) }, { ("System.Collections", nameof(ICollection)), (ExtraTypesT, typeof(ICollection<>)) }, { ("System.Collections", "ICollectionRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", "IComparer"), (ExtraTypesT, typeof(G.IComparer<>)) }, { ("System.Collections", nameof(IDictionary)), (["TKey", "TValue"], typeof(G.IDictionary<,>)) }, { ("System.Collections", "IDictionaryRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", nameof(G.IEnumerable<bool>)), (ExtraTypesT, typeof(G.IEnumerable<>)) }, { ("System.Collections", "IEnumerableRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", "IEqualityComparer"), (ExtraTypesT, typeof(G.IEqualityComparer<>)) }, { ("System.Collections", nameof(IList)), (ExtraTypesT, typeof(IList<>)) }, { ("System.Collections", "IListRaw"), (NoExtraTypes, typeof(void)) } };
 
 	/// <summary>
-	/// Sorted by DestInterface, also contains SrcInterface and SrcUnvType.ExtraTypes.
-	/// </summary>
-	public static SortedDictionary<String, List<(String SrcInterface, List<String> SrcExtraTypes)>> NestedInterfacesList { get; } = new() { { "IChar", new() { ("IIncreasable", ExtraTypesT) } }, { "IIncreasable", new() { ("IComparable", ExtraTypesT) } }, { "IIntegerNumber", new() { ("INumber", ExtraTypesT) } }, { "INumber", new() { ("IComparable", ExtraTypesT) } }, { "IRealNumber", new() { ("INumber", ExtraTypesT) } }, { "ISignedIntegerNumber", new() { ("IIntegerNumber", ExtraTypesT) } }, { "IUnsignedIntegerNumber", new() { ("IIntegerNumber", ExtraTypesT) } } };
-
-	/// <summary>
-	/// Sorted by Class, also contains Interface and ExtraTypes.
-	/// </summary>
-	public static SortedDictionary<String, List<(String Interface, List<String> ExtraTypes)>> ImplementedInterfacesList { get; } = new() { { "bool", new() { ("IComparable", ["bool"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["bool"]) } }, { "byte", new() { ("IComparable", ["byte"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["byte"]), ("ISignedIntegerNumber", ["byte"]) } }, { "char", new() { ("IChar", ["char"]), ("IComparable", ["char"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["char"]) } }, { "DateTime", new() { ("IComparable", ["DateTime"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["DateTime"]) } }, { "int", new() { ("IComparable", ["int"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["int"]), ("ISignedIntegerNumber", ["int"]) } }, { "long char", new() { ("IChar", ["long char"]), ("IComparable", ["long char"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["long char"]) } }, { "long int", new() { ("IComparable", ["long int"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["long int"]), ("ISignedIntegerNumber", ["long int"]) } }, { "real", new() { ("IComparable", ["real"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["real"]), ("IRealNumber", ["real"]) } }, { "short char", new() { ("IChar", ["short char"]), ("IComparable", ["short char"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["short char"]) } }, { "short int", new() { ("IComparable", ["short int"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["short int"]), ("ISignedIntegerNumber", ["short int"]) } }, { "unsigned int", new() { ("IComparable", ["unsigned int"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["unsigned int"]), ("IUnsignedIntegerNumber", ["unsigned int"]) } }, { "unsigned long int", new() { ("IComparable", ["unsigned long int"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["unsigned long int"]), ("IUnsignedIntegerNumber", ["unsigned long int"]) } }, { "unsigned short int", new() { ("IComparable", ["unsigned short int"]), ("IConvertible", NoExtraTypes), ("IEquatable", ["unsigned short int"]), ("IUnsignedIntegerNumber", ["unsigned short int"]) } }, { "BitArray", new() { ("ICollection", ["bool"]), ("IEnumerable", ["bool"]) } }, { "Dictionary", new() { ("ICollection", ["TValue"]), ("G.IDictionary", ["TKey", "TValue"]), ("IEnumerable", ["TValue"]) } }, { "G.HashSet", new() { ("ICollection", ExtraTypesT), ("IEnumerable", ExtraTypesT) } }, { "HashTable", new() { ("ICollection", ["TValue"]), ("G.IDictionary", ["TKey", "TValue"]), ("IEnumerable", ["TValue"]) } }, { "G.LinkedList", new() { ("ICollection", ExtraTypesT), ("IEnumerable", ExtraTypesT) } }, { "Queue", new() { ("ICollection", ExtraTypesT), ("IEnumerable", ExtraTypesT) } }, { "G.SortedSet", new() { ("ICollection", ExtraTypesT), ("IEnumerable", ExtraTypesT) } }, { "Stack", new() { ("ICollection", ExtraTypesT), ("IEnumerable", ExtraTypesT) } } };
-
-	/// <summary>
 	/// Sorted by Class, also contains Interface and ExtraTypes.
 	/// </summary>
 	public static SortedDictionary<String, List<(String Interface, List<String> ExtraTypes)>> UserDefinedImplementedInterfacesList { get; } = [];
@@ -673,11 +478,6 @@ public static partial class Core
 	/// Sorted by Container, then by Name, also contains Index.
 	/// </summary>
 	public static TypeDictionary<Dictionary<String, int>> UserDefinedPropertiesMapping { get; } = [];
-
-	/// <summary>
-	/// Sorted by Container, also contains IndexType, Type, ExtraTypes and Attributes.
-	/// </summary>
-	public static TypeSortedList<TypeIndexers> IndexersList { get; } = new() { { GeneralTypeList, new() { { "this", (GeneralTypeInt, new([new(BlockType.Extra, "T", 1)]), NoExtraTypes, PropertyAttributes.None) } } }, { GeneralTypeString, new() { { "this", (GeneralTypeInt, GetPrimitiveBlockStack("char"), NoExtraTypes, PropertyAttributes.NoSet) } } } };
 
 	/// <summary>
 	/// Sorted by Container, also contains IndexType, Type, ExtraTypes and Attributes.
@@ -762,8 +562,6 @@ public static partial class Core
 
 	public static G.SortedSet<(String Namespace, String Type)> ReservedTypesList { get; } = [([], "*Attribute"), ([], "*Comparer"), ([], "*Enumerator"), ([], "*UriParser"), ([], "decimal"), ("System", "ActivationContext"), ("System", "ActivationContext.ContextForm"), ("System", "Activator"), ("System", "AppContext"), ("System", "AppDomain"), ("System", "AppDomainInitializer"), ("System", "AppDomainManager"), ("System", "AppDomainManagerInitializationOptions"), ("System", "AppDomainSetup"), ("System", "ApplicationId"), ("System", "ApplicationIdentity"), ("System", "ArgIterator"), ("System", "ArraySegment"), ("System", "AssemblyLoadEventArgs"), ("System", "AsyncCallback"), ("System", "AttributeTargets"), ("System", "Base64FormattingOptions"), ("System", "BitConverter"), ("System", "Buffer"), ("System", "Comparison"), ("System", "ContextBoundObject"), ("System", "ContextStaticAttribute"), ("System", "Convert"), ("System", "Converter"), ("System", "CrossAppDomainDelegate"), ("System", "DateTimeOffset"), ("System", "DBNull"), ("System", "Decimal"), ("System", "Environment.SpecialFolder"), ("System", "Environment.SpecialFolderOption"), ("System", "EnvironmentVariableTarget"), ("System", "EventArgs"), ("System", "EventHandler"), ("System", "FormattableString"), ("System", "GC"), ("System", "GCCollectionMode"), ("System", "GCNotificationStatus"), ("System", "GenericUriParserOptions"), ("System", "Guid"), ("System", "IAppDomainSetup"), ("System", "IAsyncResult"), ("System", "ICloneable"), ("System", "ICustomFormattable"), ("System", "IDisposable"), ("System", "IFormatProvider"), ("System", "IFormattable"), ("System", "IObservable"), ("System", "IObserver"), ("System", "IProgress"), ("System", "IServiceProvider"), ("System", "Lazy"), ("System", "LoaderOptimization"), ("System", "LocalDataStoreSlot"), ("System", "MarshalByRefObject"), ("System", "Math"), ("System", "MidpointRounding"), ("System", "ModuleHandle"), ("System", "MulticastDelegate"), ("System", "Nullable"), ("System", "PlatformID"), ("System", "Progress"), ("System", "ResolveEventArgs"), ("System", "ResolveEventHandler"), ("System", "RuntimeArgumentHandle"), ("System", "RuntimeFieldHandle"), ("System", "RuntimeMethodHandle"), ("System", "RuntimeTypeHandle"), ("System", "StringComparer"), ("System", "StringComparison"), ("System", "StringSplitOptions"), ("System", "TimeZone"), ("System", "TimeZoneInfo"), ("System", "TimeZoneInfo.AdjustmentRule"), ("System", "TimeZoneInfo.TransitionTime"), ("System", "Tuple"), ("System", "TupleExtensions"), ("System", "TypeCode"), ("System", "TypedReference"), ("System", "UIntPtr"), ("System", "Uri"), ("System", "UriBuilder"), ("System", "UriComponents"), ("System", "UriFormat"), ("System", "UriHostNameType"), ("System", "UriIdnScope"), ("System", "UriKind"), ("System", "UriPartial"), ("System", "UriTemplate"), ("System", "UriTemplateEquivalenceComparer"), ("System", "UriTemplateMatch"), ("System", "UriTemplateTable"), ("System", "UriTypeConverter"), ("System", "ValueTuple"), ("System", "ValueType"), ("System", "Version"), ("System", "WeakReference"), ("System", "_AppDomain"), ("System.Collections", "ArrayList"), ("System.Collections", "CaseInsensitiveHashCodeProvider"), ("System.Collections", "CollectionBase"), ("System.Collections", "Dictionary.KeyCollection"), ("System.Collections", "Dictionary.ValueCollection"), ("System.Collections", "DictionaryBase"), ("System.Collections", "DictionaryEntry"), ("System.Collections", "IHashCodeProvider"), ("System.Collections", "IReadOnlyCollection"), ("System.Collections", "IReadOnlyDictionary"), ("System.Collections", "IReadOnlyList"), ("System.Collections", "ISet"), ("System.Collections", "IStructuralComparable"), ("System.Collections", "IStructuralEquatable"), ("System.Collections", "KeyedByTypeCollection"), ("System.Collections", "ReadOnlyCollectionBase"), ("System.Collections", "StructuralComparisons"), ("System.Collections", "SynchronizedCollection"), ("System.Collections", "SynchronizedKeyedCollection"), ("System.Collections", "SynchronizedReadOnlyCollection")];
 
-	public static G.SortedSet<(String Namespace, String Type)> EmptyTypesList { get; } = [([], "BaseClass"), ([], "IntPtr"), ([], "TimeSpan"), ("System.Collections", "BitArray"), ("System.Collections", "Dictionary"), ("System.Collections", "G.HashSet"), ("System.Collections", "HashTable"), ("System.Collections", "G.LinkedList"), ("System.Collections", "LinkedListNode"), ("System.Collections", "Queue"), ("System.Collections", "G.SortedSet"), ("System.Collections", "Stack")];
-
 	public static G.SortedSet<String> NotImplementedTypeEndsList { get; } = [];
 
 	/// <summary>
@@ -808,85 +606,6 @@ public static partial class Core
 
 	public static G.SortedSet<String> ReservedOperatorsList { get; } = ["#", "G", "I", "K", "_", "g", "hexa", "hexa=", "penta", "penta=", "tetra", "tetra="];
 	// To specify non-associative N-ary operator, set OperandsCount to -1. To specify postfix unary operator, set it to -2.
-
-	public static G.SortedSet<String> AutoCompletionList { get; } = new(new List<String>("abstract", "break", "case", "Class", "closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypesList.Keys).AddRange(ExtraTypesList.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type))).AddRange(PublicFunctionsList.Keys));
-
-	public static G.SortedSet<string> AutoCompletionAfterDotList { get; } = new(PrimitiveTypesList.Values.ToList().AddRange(ExtraTypesList.Values).ConvertAndJoin(x => x.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).ToList(x => PropertyMappingBack(x.Name)).AddRange(x.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).ToList(x => FunctionMappingBack(x.Name)))).Filter(x => !x.Contains('_')));
-
-	public static void Add<T>(ref IList<T>? list, T item)
-	{
-		list ??= typeof(bool).IsAssignableTo(typeof(T)) ? (new BitList() is IList<T> list_ ? list_ : throw new ArgumentException(null, nameof(list))) : new List<T>();
-		list.Add(item);
-	}
-
-	public static void Add<T>(ref List<T>? list, T item)
-	{
-		list ??= [];
-		list.Add(item);
-	}
-
-	public static void AddRange<T>(ref List<T>? list, G.IEnumerable<T> collection)
-	{
-		if (collection is not null)
-		{
-			list ??= [];
-			list.AddRange(collection);
-		}
-	}
-
-	public static void Add<T>(List<List<T>?> list, Index index, T item)
-	{
-		if (list[index] is null)
-			list[index] = [];
-		list[index]?.Add(item);
-	}
-
-	public static void AddRange<T>(List<List<T>?> list, Index index, G.IEnumerable<T>? collection)
-	{
-		if (collection is not null)
-		{
-			if (list[index] is null)
-				list[index] = [];
-			list[index]?.AddRange(collection);
-		}
-	}
-
-	public static int BinarySearch<TKey, TValue>(this SortedDictionary<TKey, TValue> list, TKey item) where TKey : notnull where TValue : notnull => BinarySearch(list, item, list.Comparer);
-
-	public static int BinarySearch<TKey, TValue>(this SortedDictionary<TKey, TValue> list, TKey item, G.IComparer<TKey> comparer) where TKey : notnull where TValue : notnull
-	{
-		int start = 0, end = list.Length - 1;
-		while (start < end)
-		{
-			var i = (start + end) >> 1;
-			var order = comparer.Compare(list.Keys[i], item);
-			if (order == 0)
-				return i;
-			else if (order < 0)
-				start = i + 1;
-			else
-				end = i - 1;
-		}
-		return ~start;
-	}
-
-	public static string FunctionMappingBack(String function) => function.ToString() switch
-	{
-		nameof(function.AddRange) => "Add",
-		nameof(DateTime.IsDaylightSavingTime) => "IsSummertime",
-		_ => function.ToString(),
-	};
-
-	public static string PropertyMappingBack(String property) => property.ToString() switch
-	{
-		nameof(DateTime.UtcNow) => "UTCNow",
-		_ => property.ToString(),
-	};
-
-	public static bool IsValidBaseClass(TypeAttributes attributes)
-		=> (attributes & (TypeAttributes.Sealed | TypeAttributes.Abstract
-		| TypeAttributes.Static | TypeAttributes.Struct | TypeAttributes.Enum
-		| TypeAttributes.Delegate)) is TypeAttributes.None or TypeAttributes.Abstract;
 
 	public static bool TypesAreEqual(UniversalType type1, UniversalType type2)
 	{
@@ -961,287 +680,64 @@ public static partial class Core
 		else
 			return new(ListBlockStack, new([new((TypeOrValue)"2", []), InnerType.ExtraTypes[^1]]));
 	}
+}
 
-	public static String TakeIntoQuotes(this String input, bool oldStyle = false)
+public readonly record struct UniversalType(BlockStack MainType, GeneralExtraTypes ExtraTypes)
+{
+	public override readonly string ToString()
 	{
-		String list = new((int)Ceiling(input.Length * 1.1), '\"');
-		for (var i = 0; i < input.Length; i++)
+		if (TypeEqualsToPrimitive(this, "list", false))
+			return "list(" + (ExtraTypes.Length == 2 ? ExtraTypes[0].ToString() : "") + ") " + ExtraTypes[^1].ToString();
+		else if (TypeEqualsToPrimitive(this, "tuple", false))
 		{
-			list.AddRange(input[i] switch
+			if (ExtraTypes.Length == 0)
+				return "()";
+			var prev = new UniversalType(ExtraTypes[0].MainType.Type, ExtraTypes[0].ExtraTypes);
+			if (ExtraTypes.Length == 1)
+				return prev.ToString();
+			String result = [];
+			var repeats = 1;
+			for (var i = 1; i < ExtraTypes.Length; i++)
 			{
-				'\0' => new String('\\', '0'),
-				'\a' => new String('\\', 'a'),
-				'\b' => new String('\\', 'b'),
-				'\f' => new String('\\', 'f'),
-				'\n' => new String('\\', 'n'),
-				'\r' => new String('\\', 'r'),
-				'\t' => new String('\\', 't'),
-				'\v' => new String('\\', 'v'),
-				'\"' => new String('\\', oldStyle ? '\"' : 'q'),
-				'\\' => new String('\\', oldStyle ? '\\' : '!'),
-				_ => new String(input[i]),
-			});
-		}
-		list.Add('\"');
-		return list;
-	}
-
-	public static String TakeIntoVerbatimQuotes(this String input) => ((String)"@\"").AddRange(input.Replace("\"", "\"\"")).Add('\"');
-
-	public static bool TryTakeIntoRawQuotes(this String input, out String output)
-	{
-		if (IsRawStringContent(input))
-		{
-			output = ((String)"/\"").AddRange(input).AddRange("\"\\");
-			return true;
+				var current = (ExtraTypes[i].MainType.Type, ExtraTypes[i].ExtraTypes);
+				if (TypesAreEqual(prev, current))
+				{
+					repeats++;
+					continue;
+				}
+				if (result.Length == 0)
+					result.Add('(');
+				else
+					result.AddRange(", ");
+				result.AddRange(prev.ToString());
+				if (repeats != 1)
+					result.Add('[').AddRange(repeats.ToString()).Add(']');
+				repeats = 1;
+				prev = current;
+			}
+			var containsMultiple = result.Length != 0;
+			if (containsMultiple)
+				result.AddRange(", ");
+			result.AddRange(prev.ToString());
+			if (repeats != 1)
+				result.Add('[').AddRange(repeats.ToString()).Add(']');
+			if (containsMultiple)
+				result.Add(')');
+			return result.ToString();
 		}
 		else
-		{
-			output = [];
-			return false;
-		}
+			return MainType.ToString() + (ExtraTypes.Length == 0 ? "" : "[" + ExtraTypes.ToString() + "]");
 	}
 
-	public static String RemoveQuotes(this String input)
-	{
-		if (input.Length >= 3 && input[0] == '@' && input[1] == '\"' && input[^1] == '\"')
-			return input[2..^1].Replace("\"\"", "\"");
-		if (!(input.Length >= 2 && (input[0] == '\"' && input[^1] == '\"' || input[0] == '\'' && input[^1] == '\'')))
-		{
-			if (input.IsRawString(out var input2))
-				return input2;
-			else
-				return input;
-		}
-		String list = new(input.Length);
-		var state = 0;
-		var hex_left = 0;
-		var n = 0;
-		for (var i = 1; i < input.Length - 1; i++)
-		{
-			var c = input[i];
-			if (state == 0 && c == '\\')
-			{
-				if (state == 1)
-				{
-					list.Add('\\');
-					state = 0;
-				}
-				else
-					state = 1;
-			}
-			else if (state == 2)
-				State2(c);
-			else if (state == 1)
-			{
-				if (c == 'x')
-				{
-					state = 2;
-					hex_left = 2;
-				}
-				else if (c == 'u')
-				{
-					state = 2;
-					hex_left = 4;
-				}
-				else
-				{
-					State1(c);
-					state = 0;
-				}
-			}
-			else
-				list.Add(c);
-		}
-		return list;
-		void State1(char c) => list.Add(c switch
-		{
-			'0' => '\0',
-			'a' => '\a',
-			'b' => '\b',
-			'f' => '\f',
-			'n' => '\n',
-			'q' => '\"',
-			'r' => '\r',
-			't' => '\t',
-			'v' => '\v',
-			'\'' => '\'',
-			'\"' => '\"',
-			'!' => '\\',
-			_ => c,
-		});
-		void State2(char c)
-		{
-			if (c is >= '0' and <= '9' or >= 'A' and <= 'F' or >= 'a' and <= 'f')
-			{
-				n = n * 16 + ((c is >= '0' and <= '9') ? c - '0' : (c is >= 'A' and <= 'F') ? c - 'A' + 10 : c - 'a' + 10);
-				if (hex_left == 1)
-				{
-					list.Add((char)n);
-					state = 0;
-				}
-				hex_left--;
-			}
-			else
-			{
-				state = c == '\\' ? 1 : 0;
-				hex_left = 0;
-			}
-		}
-	}
+	public static implicit operator UniversalType((BlockStack MainType, GeneralExtraTypes ExtraTypes) value) => new(value.MainType, value.ExtraTypes);
+}
 
-	public static bool IsRawString(this String input, out String output)
-	{
-		if (!(input.Length >= 4 && input[0] == '/' && input[1] == '\"' && input[^2] == '\"' && input[^1] == '\\'))
-		{
-			output = [];
-			return false;
-		}
-		var content = input[2..^2];
-		var b = IsRawStringContent(content);
-		output = b ? content : [];
-		return b;
-	}
-
-	private static bool IsRawStringContent(this String input)
-	{
-		var depth = 0;
-		var state = RawStringState.Normal;
-		for (var i = 0; i < input.Length;)
-		{
-			if (i >= input.Length)
-				return false;
-			var c = input[i++];
-			if (c == '/')
-			{
-				if (state != RawStringState.ForwardSlash)
-				{
-					state = RawStringState.ForwardSlash;
-					continue;
-				}
-				while (i < input.Length && input[i] is not ('\r' or '\n'))
-					i++;
-			}
-			else if (c == '*')
-			{
-				if (state != RawStringState.ForwardSlash)
-				{
-					state = RawStringState.Normal;
-					continue;
-				}
-				i++;
-				while (i < input.Length && !(input[i - 1] == '*' && input[i] == '/'))
-					i++;
-				if (i < input.Length)
-					i++;
-				else
-					return false;
-			}
-			else if (c == '{')
-			{
-				if (state != RawStringState.ForwardSlash)
-				{
-					state = RawStringState.Normal;
-					continue;
-				}
-				if (!SkipNestedComments(input, ref i))
-					return false;
-			}
-			else if (c == '\\')
-			{
-				if (state is not (RawStringState.Quote or RawStringState.ForwardSlashAndQuote))
-					state = RawStringState.Normal;
-				else if (depth == 0 || state == RawStringState.ForwardSlashAndQuote && depth == 1)
-					return false;
-				else if (state == RawStringState.ForwardSlashAndQuote)
-				{
-					depth -= 2;
-					state = RawStringState.Normal;
-				}
-				else
-				{
-					depth--;
-					state = RawStringState.Normal;
-				}
-			}
-			else if (c == '\"')
-			{
-				if (state == RawStringState.ForwardSlash)
-				{
-					depth++;
-					state = RawStringState.ForwardSlashAndQuote;
-				}
-				else if (state != RawStringState.EmailSign)
-					state = RawStringState.Quote;
-				else if (!SkipVerbatimStringInsideRaw(input, ref i))
-					return false;
-			}
-			else if (c == '@')
-				state = RawStringState.EmailSign;
-			else
-				state = RawStringState.Normal;
-		}
-		return depth == 0;
-	}
-
-	private static bool SkipNestedComments(String input, ref int i)
-	{
-		int depth = 0, state = 0;
-		while (i < input.Length)
-		{
-			var c = input[i];
-			if (c == '/')
-			{
-				if (state != 2)
-					state = 1;
-				else if (depth == 0)
-				{
-					i++;
-					return true;
-				}
-				else
-				{
-					depth--;
-					state = 0;
-				}
-			}
-			else if (c == '{')
-			{
-				if (state == 1)
-					depth++;
-				state = 0;
-			}
-			else if (c == '}')
-				state = 2;
-			else
-				state = 0;
-			i++;
-		}
-		return false;
-	}
-
-	private static bool SkipVerbatimStringInsideRaw(String input, ref int i)
-	{
-		while (i < input.Length)
-		{
-			var c = input[i++];
-			if (c == '\"')
-				goto l0;
-			else if (i >= input.Length)
-				return false;
-			continue;
-		l0:
-			if (i < input.Length && input[i] != '\"')
-				return true;
-		}
-		return false;
-	}
-
-	[GeneratedRegex("[0-9]+")]
-	public static partial Regex IntRegex();
-
-	[GeneratedRegex("""\G([0-9]+(?:\.[0-9]+)?(?:[Ee][+-][0-9]+)?)|((?:pow=?|and|or|xor|CombineWith|is|typeof|sin|cos|tan|asin|acos|atan|ln|_|this|null|Infty|-Infty|Uncty|Pi|E|I|G)(?![0-9A-Za-z_]))|((?:abstract|break|case|Class|closed|const|Constructor|continue|default|Delegate|delete|Destructor|else|Enum|Event|Extent|extern|false|for|foreach|Function|if|Interface|internal|lock|loop|multiconst|Namespace|new|null|Operator|out|override|params|protected|public|readonly|ref|repeat|return|sealed|static|Struct|switch|this|throw|true|using|while)(?![0-9A-Za-z_]))|([A-Za-z_][0-9A-Za-z_]*)|(\^[\^=]?|\|[\|=]?|&[&=]|>(?:>>?)?=?|<(?:<<?)?=?|![!=]?|\?(?:!?=|>=?|<=?|\?|\.|\[)?|,|\:|$|~|\+[+=]?|-[\-=]?|\*=?|/=?|%=?|=[=>]?|\.(?:\.\.?)?)|((?:"(?:[^\\"]|\\[0abfnqrtv'"!]|\\x[0-9A-Fa-f]{2}|\\u[0-9A-Fa-f]{4})*?")|(?:@"(?:[^"]|"")*?"))|('(?:[^\\'"]|\\[0abfnqrtv'"!]|\\x[0-9A-Fa-f]{2}|\\u[0-9A-Fa-f]{4})?')|([;()[\]{}])|([ \t\r\n\xA0]+)|(.)""")]
-	public static partial Regex LexemRegex();
+public record struct UniversalTypeOrValue(TypeOrValue MainType, GeneralExtraTypes ExtraTypes)
+{
+	public UniversalTypeOrValue(UniversalType value) : this(value.MainType, value.ExtraTypes) { }
+	public override readonly string ToString() => MainType.IsValue ? MainType.Value.ToString() : new UniversalType(MainType.Type, ExtraTypes).ToString();
+	public static implicit operator UniversalTypeOrValue((TypeOrValue MainType, GeneralExtraTypes ExtraTypes) value) => new(value.MainType, value.ExtraTypes);
+	public static implicit operator UniversalTypeOrValue(UniversalType value) => new(value);
 }
 
 public sealed class BlockComparer : G.IComparer<Block>
@@ -1360,86 +856,4 @@ public sealed class GeneralExtraTypesEComparer : G.IEqualityComparer<GeneralExtr
 			hash ^= (x[i].MainType.IsValue ? x[i].MainType.Value.GetHashCode() : new BlockStackEComparer().GetHashCode(x[i].MainType.Type)) ^ GetHashCode(x[i].ExtraTypes);
 		return hash;
 	}
-}
-
-public sealed class FullTypeEComparer : G.IEqualityComparer<UniversalType>
-{
-	public bool Equals(UniversalType x, UniversalType y) => new BlockStackEComparer().Equals(x.MainType, y.MainType) && new GeneralExtraTypesEComparer().Equals(x.ExtraTypes, y.ExtraTypes);
-
-	public int GetHashCode(UniversalType x) => new BlockStackEComparer().GetHashCode(x.MainType) ^ new GeneralExtraTypesEComparer().GetHashCode(x.ExtraTypes);
-}
-
-public sealed class StringComparer : G.IEqualityComparer<String>
-{
-	public bool Equals(String? x, String? y) => x is null && y is null || x == y;
-
-	public int GetHashCode(String x)
-	{
-		try
-		{
-			return (x[0] << 4) ^ (x[1] << 2) ^ x[^1];
-		}
-		catch
-		{
-			return -123456789;
-		}
-	}
-}
-
-public readonly record struct UniversalType(BlockStack MainType, GeneralExtraTypes ExtraTypes)
-{
-	public override readonly string ToString()
-	{
-		if (TypeEqualsToPrimitive(this, "list", false))
-			return "list(" + (ExtraTypes.Length == 2 ? ExtraTypes[0].ToString() : "") + ") " + ExtraTypes[^1].ToString();
-		else if (TypeEqualsToPrimitive(this, "tuple", false))
-		{
-			if (ExtraTypes.Length == 0)
-				return "()";
-			var prev = new UniversalType(ExtraTypes[0].MainType.Type, ExtraTypes[0].ExtraTypes);
-			if (ExtraTypes.Length == 1)
-				return prev.ToString();
-			String result = [];
-			var repeats = 1;
-			for (var i = 1; i < ExtraTypes.Length; i++)
-			{
-				var current = (ExtraTypes[i].MainType.Type, ExtraTypes[i].ExtraTypes);
-				if (TypesAreEqual(prev, current))
-				{
-					repeats++;
-					continue;
-				}
-				if (result.Length == 0)
-					result.Add('(');
-				else
-					result.AddRange(", ");
-				result.AddRange(prev.ToString());
-				if (repeats != 1)
-					result.Add('[').AddRange(repeats.ToString()).Add(']');
-				repeats = 1;
-				prev = current;
-			}
-			var containsMultiple = result.Length != 0;
-			if (containsMultiple)
-				result.AddRange(", ");
-			result.AddRange(prev.ToString());
-			if (repeats != 1)
-				result.Add('[').AddRange(repeats.ToString()).Add(']');
-			if (containsMultiple)
-				result.Add(')');
-			return result.ToString();
-		}
-		else
-			return MainType.ToString() + (ExtraTypes.Length == 0 ? "" : "[" + ExtraTypes.ToString() + "]");
-	}
-
-	public static implicit operator UniversalType((BlockStack MainType, GeneralExtraTypes ExtraTypes) value) => new(value.MainType, value.ExtraTypes);
-}
-
-public record struct UniversalTypeOrValue(TypeOrValue MainType, GeneralExtraTypes ExtraTypes)
-{
-	public UniversalTypeOrValue(UniversalType value) : this(value.MainType, value.ExtraTypes) { }
-	public override readonly string ToString() => MainType.IsValue ? MainType.Value.ToString() : new UniversalType(MainType.Type, ExtraTypes).ToString();
-	public static implicit operator UniversalTypeOrValue((TypeOrValue MainType, GeneralExtraTypes ExtraTypes) value) => new(value.MainType, value.ExtraTypes);
-	public static implicit operator UniversalTypeOrValue(UniversalType value) => new(value);
 }

@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <ProjectReference Include="..\..\.NStar\Corlib.NStar\Corlib.NStar.csproj" />
   </ItemGroup>
 </Project>

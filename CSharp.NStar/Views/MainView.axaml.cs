@@ -23,8 +23,12 @@ public partial class MainView : UserControl
 {
 	private Assembly? compiledAssembly;
 	private readonly String enteredText = [];
-	private readonly ImmutableArray<string> minorVersions = ["2o"];
-	private readonly ImmutableArray<string> langs = ["C#"];
+
+	private static readonly ImmutableArray<string> minorVersions = ["2o"];
+	private static readonly ImmutableArray<string> langs = ["C#"];
+	private static readonly string AlphanumericCharactersWithoutDot = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	private static readonly G.SortedSet<String> AutoCompletionList = new(new List<String>("abstract", "break", "case", "Class", "closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypesList.Keys).AddRange(ExtraTypesList.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type))).AddRange(PublicFunctionsList.Keys));
+	private static readonly G.SortedSet<string> AutoCompletionAfterDotList = new(PrimitiveTypesList.Values.ToList().AddRange(ExtraTypesList.Values).ConvertAndJoin(x => x.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).ToList(x => PropertyMappingBack(x.Name)).AddRange(x.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).ToList(x => FunctionMappingBack(x.Name)))).Filter(x => !x.Contains('_')));
 
 	public MainView()
 	{
@@ -355,6 +359,19 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 		}
 #endif
 	}
+
+	private static string FunctionMappingBack(String function) => function.ToString() switch
+	{
+		nameof(function.AddRange) => "Add",
+		nameof(DateTime.IsDaylightSavingTime) => "IsSummertime",
+		_ => function.ToString(),
+	};
+
+	private static string PropertyMappingBack(String property) => property.ToString() switch
+	{
+		nameof(DateTime.UtcNow) => "UTCNow",
+		_ => property.ToString(),
+	};
 
 	private void UpdateInputPos()
 	{

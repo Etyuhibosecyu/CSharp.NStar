@@ -8,7 +8,8 @@ global using System.Threading.Tasks;
 global using G = System.Collections.Generic;
 global using static Corlib.NStar.Extents;
 global using static CSharp.NStar.ChecksAndMappings;
-global using static CSharp.NStar.Core;
+global using static CSharp.NStar.Quotes;
+global using static CSharp.NStar.DeclaredConstructions;
 global using static System.Math;
 global using String = Corlib.NStar.String;
 using System.Diagnostics;
@@ -648,7 +649,7 @@ public class CodeSample(String newString)
 				s = GetWord();
 				if (s.Length == 0)
 					goto l10;
-				if (s.ToString() is "_" or "abstract" or "break" or "case" or "Class" or "closed" or "const" or "Constructor" or "continue" or "Delegate" or "delete" or "Destructor" or "else" or "Enum" or "Event" or "Extent" or "extern" or "false" or "for" or "Function" or "if" or "Interface" or "internal" or "lock" or "loop" or "multiconst" or "Namespace" or "new" or "null" or "Operator" or "out" or "override" or "params" or "protected" or "public" or "readonly" or "ref" or "repeat" or "return" or "sealed" or "static" or "Struct" or "switch" or "this" or "throw" or "true" or "using" or "while")
+				if (KeywordsList.Contains(s))
 					AddLexem(s, LexemType.Keyword, s.Length);
 				else if (s.ToString() is "and" or "or" or "xor" or "is" or "typeof" or "sin" or "cos" or "tan" or "asin" or "acos" or "atan" or "ln" or "Infty" or "Uncty" or "Pi" or "E" or "CombineWith" or "CloseOnReturnWith")
 					AddOperatorLexem(s);

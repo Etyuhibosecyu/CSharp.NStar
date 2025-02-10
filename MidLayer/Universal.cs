@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace CSharp.NStar;
 [DebuggerDisplay("{ToString(true)}")]
@@ -16,6 +15,9 @@ public struct Universal
 	public static Universal Infinity => (double)1 / 0;
 	public static Universal MinusInfinity => (double)-1 / 0;
 	public static Universal Uncertainty => (double)0 / 0;
+
+	private static readonly List<String> ConvertibleTypesList = ["bool", "byte", "short int", "unsigned short int", "char", "int", "unsigned int", "long int", "unsigned long int", "real", "string"];
+	private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
 
 	public Universal()
 	{
@@ -297,7 +299,7 @@ public struct Universal
 		else if ((uint)(s[0] - '0') > 9 && s[^1] is not ('\"' or '\'' or '\\'))
 			throw new FormatException();
 		else if (s[^1] == 'i')
-			return int.Parse(s[..^1], EnUsCulture);
+			return int.Parse(s[..^1], InvariantCulture);
 		else if (s[^1] == 'L')
 		{
 			s2 = s[..^1];
@@ -313,11 +315,11 @@ public struct Universal
 				double n;
 				try
 				{
-					n = int.Parse(s2, EnUsCulture);
+					n = int.Parse(s2, InvariantCulture);
 				}
 				catch
 				{
-					n = double.Parse(s2, EnUsCulture);
+					n = double.Parse(s2, InvariantCulture);
 				}
 				return ValidateFixing(n, RealType, true);
 			}
@@ -332,16 +334,16 @@ public struct Universal
 		}
 		else if (s.Length >= 3 && s[0] == '@' && s[1] == '\"' && s[^1] == '\"')
 			return ((String)s)[2..^1].Replace("\"\"", "\"");
-		else if (Core.IsRawString(s, out var output))
+		else if (Quotes.IsRawString(s, out var output))
 			return output;
 		else
 		{
-			if (int.TryParse(s, NumberStyles.Integer, EnUsCulture, out var i))
+			if (int.TryParse(s, NumberStyles.Integer, InvariantCulture, out var i))
 				return i;
-			else if (long.TryParse(s, NumberStyles.Integer, EnUsCulture, out var l))
+			else if (long.TryParse(s, NumberStyles.Integer, InvariantCulture, out var l))
 				return (Universal)l;
 			else
-				return ulong.TryParse(s, NumberStyles.Integer, EnUsCulture, out var ul) ? (Universal)ul : (Universal)double.Parse(s, EnUsCulture);
+				return ulong.TryParse(s, NumberStyles.Integer, InvariantCulture, out var ul) ? (Universal)ul : (Universal)double.Parse(s, InvariantCulture);
 		}
 	}
 
@@ -558,374 +560,254 @@ public struct Universal
 
 	public readonly bool ToBool()
 	{
-		if (TypeIsPrimitive(InnerType.MainType))
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return false;
+		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basic_type switch
 		{
-			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
-			if (basic_type == "null")
-				return false;
-			else if (basic_type == "bool")
-				return Bool;
-			else if (basic_type == "byte")
-				return !(Number < 1);
-			else if (basic_type == "short int")
-				return !(Number < 1);
-			else if (basic_type == "unsigned short int")
-				return !(Number < 1);
-			else if (basic_type == "char")
-				return !(Number < 1);
-			else if (basic_type == "int")
-				return !(Number < 1);
-			else if (basic_type == "unsigned int")
-				return !(Number < 1);
-			else if (basic_type == "long int")
-				return !(Object is not long li || li < 1);
-			else if (basic_type == "DateTime")
-				return !(Object is not DateTime dt || dt.Ticks < 1);
-			else if (basic_type == "unsigned long int")
-				return !(Object is not ulong uli || uli < 1);
-			else if (basic_type == "real")
-				return !(Number < 1);
-			else if (basic_type == "string")
-				return !(String == "");
-			else if (basic_type == "list")
-				return !(NextList == null || NextList.Length == 0) && NextList[0].ToBool();
-		}
-		return false;
+			"null" => false,
+			"bool" => Bool,
+			"byte" => !(Number < 1),
+			"short int" => !(Number < 1),
+			"unsigned short int" => !(Number < 1),
+			"char" => !(Number < 1),
+			"int" => !(Number < 1),
+			"unsigned int" => !(Number < 1),
+			"long int" => !(Object is not long li || li < 1),
+			"DateTime" => !(Object is not DateTime dt || dt.Ticks < 1),
+			"unsigned long int" => !(Object is not ulong uli || uli < 1),
+			"real" => !(Number < 1),
+			"string" => !(String == ""),
+			"list" => !(NextList == null || NextList.Length == 0) && NextList[0].ToBool(),
+			_ => false
+		};
 	}
 
 	public readonly byte ToByte()
 	{
-		if (TypeIsPrimitive(InnerType.MainType))
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return 0;
+		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basic_type switch
 		{
-			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
-			if (basic_type == "null")
-				return 0;
-			else if (basic_type == "bool")
-				return (byte)((Bool == false) ? 0 : 1);
-			else if (basic_type == "byte")
-				return (byte)Number;
-			else if (basic_type == "short int")
-				return (byte)((Number is < (-255) or > 255) ? 0 : Abs(Number));
-			else if (basic_type == "unsigned short int")
-				return (byte)((Number is < (-255) or > 255) ? 0 : Number);
-			else if (basic_type == "char")
-				return (byte)((Number is < (-255) or > 255) ? 0 : Number);
-			else if (basic_type == "int")
-				return (byte)((Number is < (-255) or > 255) ? 0 : Abs(Number));
-			else if (basic_type == "unsigned int")
-				return (byte)((Number is < (-255) or > 255) ? 0 : Number);
-			else if (basic_type == "long int")
-				return (byte)((Object is not long li) ? 0 : (li is < (-255) or > 255) ? 0 : Abs(li));
-			else if (basic_type == "DateTime")
-				return (byte)((Object is not DateTime dt) ? 0 : (dt.Ticks > 255) ? 0 : dt.Ticks);
-			else if (basic_type == "unsigned long int")
-				return (byte)((Object is not ulong uli) ? 0 : (uli > 255) ? 0 : uli);
-			else if (basic_type == "real")
-				return (byte)((Number is < (-255) or > 255) ? 0 : Floor(Abs(Number)));
-			else if (basic_type == "string")
-				return (byte)((String == "") ? 0 : byte.TryParse(String.ToString(), out var a) ? a : 0);
-			else if (basic_type == "list")
-				return (byte)((NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToByte());
-		}
-		return 0;
+			"null" => 0,
+			"bool" => (byte)(Bool == false ? 0 : 1),
+			"byte" => (byte)Number,
+			"short int" => (byte)(Number is < (-255) or > 255 ? 0 : Abs(Number)),
+			"unsigned short int" => (byte)(Number is < (-255) or > 255 ? 0 : Number),
+			"char" => (byte)(Number is < (-255) or > 255 ? 0 : Number),
+			"int" => (byte)(Number is < (-255) or > 255 ? 0 : Abs(Number)),
+			"unsigned int" => (byte)(Number is < (-255) or > 255 ? 0 : Number),
+			"long int" => (byte)(Object is not long li ? 0 : li is < (-255) or > 255 ? 0 : Abs(li)),
+			"DateTime" => (byte)(Object is not DateTime dt ? 0 : dt.Ticks > 255 ? 0 : dt.Ticks),
+			"unsigned long int" => (byte)(Object is not ulong uli ? 0 : uli > 255 ? 0 : uli),
+			"real" => (byte)(Number is < (-255) or > 255 ? 0 : Floor(Abs(Number))),
+			"string" => (byte)(String == "" ? 0 : byte.TryParse(String.ToString(), out var a) ? a : 0),
+			"list" => (byte)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToByte()),
+			_ => 0
+		};
 	}
 
 	public readonly short ToShortInt()
 	{
-		if (TypeIsPrimitive(InnerType.MainType))
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return 0;
+		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basic_type switch
 		{
-			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
-			if (basic_type == "null")
-				return 0;
-			else if (basic_type == "bool")
-				return (short)((Bool == false) ? 0 : 1);
-			else if (basic_type == "byte")
-				return (short)Number;
-			else if (basic_type == "short int")
-				return (short)Number;
-			else if (basic_type == "unsigned short int")
-				return (short)Number;
-			else if (basic_type == "char")
-				return (short)Number;
-			else if (basic_type == "int")
-				return (short)((Number is < (-32768) or > 32767) ? 0 : Number);
-			else if (basic_type == "unsigned int")
-				return (short)((Number > 32767) ? 0 : Number);
-			else if (basic_type == "long int")
-				return (short)((Object is not long li) ? 0 : (li is < (-32768) or > 32767) ? 0 : li);
-			else if (basic_type == "DateTime")
-				return (short)((Object is not DateTime dt) ? 0 : (dt.Ticks > 32767) ? 0 : dt.Ticks);
-			else if (basic_type == "unsigned long int")
-				return (short)((Object is not ulong uli) ? 0 : (uli > 32767) ? 0 : uli);
-			else if (basic_type == "real")
-				return (short)((Number is < (-32768) or > 32767) ? 0 : Floor(Number));
-			else if (basic_type == "string")
-				return (short)((String == "") ? 0 : short.TryParse(String.ToString(), out var a) ? a : 0);
-			else if (basic_type == "list")
-				return (short)((NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToShortInt());
-		}
-		return 0;
+			"null" => 0,
+			"bool" => (short)(Bool == false ? 0 : 1),
+			"byte" => (short)Number,
+			"short int" => (short)Number,
+			"unsigned short int" => (short)Number,
+			"char" => (short)Number,
+			"int" => (short)(Number is < (-32768) or > 32767 ? 0 : Number),
+			"unsigned int" => (short)(Number > 32767 ? 0 : Number),
+			"long int" => (short)(Object is not long li ? 0 : li is < (-32768) or > 32767 ? 0 : li),
+			"DateTime" => (short)(Object is not DateTime dt ? 0 : dt.Ticks > 32767 ? 0 : dt.Ticks),
+			"unsigned long int" => (short)(Object is not ulong uli ? 0 : uli > 32767 ? 0 : uli),
+			"real" => (short)(Number is < (-32768) or > 32767 ? 0 : Floor(Number)),
+			"string" => (short)(String == "" ? 0 : short.TryParse(String.ToString(), out var a) ? a : 0),
+			"list" => (short)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToShortInt()),
+			_ => 0
+		};
 	}
 
 	public readonly ushort ToUnsignedShortInt()
 	{
-		if (TypeIsPrimitive(InnerType.MainType))
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return 0;
+		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basic_type switch
 		{
-			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
-			if (basic_type == "null")
-				return 0;
-			else if (basic_type == "bool")
-				return (ushort)((Bool == false) ? 0 : 1);
-			else if (basic_type == "byte")
-				return (ushort)Number;
-			else if (basic_type == "short int")
-				return (ushort)Number;
-			else if (basic_type == "unsigned short int")
-				return (ushort)Number;
-			else if (basic_type == "char")
-				return (ushort)Number;
-			else if (basic_type == "int")
-				return (ushort)((Number is < (-65535) or > 65535) ? 0 : Abs(Number));
-			else if (basic_type == "unsigned int")
-				return (ushort)((Number is < (-65535) or > 65535) ? 0 : Number);
-			else if (basic_type == "long int")
-				return (ushort)((Object is not long li) ? 0 : (li is < (-65535) or > 65535) ? 0 : Abs(li));
-			else if (basic_type == "DateTime")
-				return (ushort)((Object is not DateTime dt) ? 0 : (dt.Ticks > 65535) ? 0 : dt.Ticks);
-			else if (basic_type == "unsigned long int")
-				return (ushort)((Object is not ulong uli) ? 0 : (uli > 65535) ? 0 : uli);
-			else if (basic_type == "real")
-				return (ushort)((Number is < (-65535) or > 65535) ? 0 : Floor(Abs(Number)));
-			else if (basic_type == "string")
-				return (ushort)((String == "") ? 0 : ushort.TryParse(String.ToString(), out var a) ? a : 0);
-			else if (basic_type == "list")
-				return (ushort)((NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToUnsignedShortInt());
-		}
-		return 0;
+			"null" => 0,
+			"bool" => (ushort)(Bool == false ? 0 : 1),
+			"byte" => (ushort)Number,
+			"short int" => (ushort)Number,
+			"unsigned short int" => (ushort)Number,
+			"char" => (ushort)Number,
+			"int" => (ushort)(Number is < (-65535) or > 65535 ? 0 : Abs(Number)),
+			"unsigned int" => (ushort)(Number is < (-65535) or > 65535 ? 0 : Number),
+			"long int" => (ushort)(Object is not long li ? 0 : li is < (-65535) or > 65535 ? 0 : Abs(li)),
+			"DateTime" => (ushort)(Object is not DateTime dt ? 0 : dt.Ticks > 65535 ? 0 : dt.Ticks),
+			"unsigned long int" => (ushort)(Object is not ulong uli ? 0 : uli > 65535 ? 0 : uli),
+			"real" => (ushort)(Number is < (-65535) or > 65535 ? 0 : Floor(Abs(Number))),
+			"string" => (ushort)(String == "" ? 0 : ushort.TryParse(String.ToString(), out var a) ? a : 0),
+			"list" => (ushort)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedShortInt()),
+			_ => 0
+		};
 	}
 
 	public readonly char ToChar()
 	{
-		if (TypeIsPrimitive(InnerType.MainType))
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return '\0';
+		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basic_type switch
 		{
-			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
-			if (basic_type == "null")
-				return '\0';
-			else if (basic_type == "bool")
-				return (char)((Bool == false) ? 0 : 1);
-			else if (basic_type == "byte")
-				return (char)Number;
-			else if (basic_type == "short int")
-				return (char)Number;
-			else if (basic_type == "unsigned short int")
-				return (char)Number;
-			else if (basic_type == "char")
-				return (char)Number;
-			else if (basic_type == "int")
-				return (char)((Number is < (-65535) or > 65535) ? 0 : Abs(Number));
-			else if (basic_type == "unsigned int")
-				return (char)((Number is < (-65535) or > 65535) ? 0 : Number);
-			else if (basic_type == "long int")
-				return (char)((Object is not long li) ? 0 : (li is < (-65535) or > 65535) ? 0 : Abs(li));
-			else if (basic_type == "DateTime")
-				return (char)((Object is not DateTime dt) ? 0 : (dt.Ticks > 65535) ? 0 : dt.Ticks);
-			else if (basic_type == "unsigned long int")
-				return (char)((Object is not ulong uli) ? 0 : (uli > 65535) ? 0 : uli);
-			else if (basic_type == "real")
-				return (char)((Number is < (-65535) or > 65535) ? 0 : Floor(Abs(Number)));
-			else if (basic_type == "string")
-				return (char)((String == "") ? 0 : char.TryParse(String.ToString(), out var a) ? a : 0);
-			else if (basic_type == "list")
-				return (char)((NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToChar());
-		}
-		return '\0';
+			"null" => '\0',
+			"bool" => (char)(Bool == false ? 0 : 1),
+			"byte" => (char)Number,
+			"short int" => (char)Number,
+			"unsigned short int" => (char)Number,
+			"char" => (char)Number,
+			"int" => (char)(Number is < (-65535) or > 65535 ? 0 : Abs(Number)),
+			"unsigned int" => (char)(Number is < (-65535) or > 65535 ? 0 : Number),
+			"long int" => (char)(Object is not long li ? 0 : li is < (-65535) or > 65535 ? 0 : Abs(li)),
+			"DateTime" => (char)(Object is not DateTime dt ? 0 : dt.Ticks > 65535 ? 0 : dt.Ticks),
+			"unsigned long int" => (char)(Object is not ulong uli ? 0 : uli > 65535 ? 0 : uli),
+			"real" => (char)(Number is < (-65535) or > 65535 ? 0 : Floor(Abs(Number))),
+			"string" => (char)(String == "" ? 0 : char.TryParse(String.ToString(), out var a) ? a : 0),
+			"list" => (char)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToChar()),
+			_ => '\0'
+		};
 	}
 
 	public readonly int ToInt()
 	{
-		if (TypeIsPrimitive(InnerType.MainType))
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return 0;
+		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basic_type switch
 		{
-			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
-			if (basic_type == "null")
-				return 0;
-			else if (basic_type == "bool")
-				return (Bool == false) ? 0 : 1;
-			else if (basic_type == "byte")
-				return (int)Number;
-			else if (basic_type == "short int")
-				return (int)Number;
-			else if (basic_type == "unsigned short int")
-				return (int)Number;
-			else if (basic_type == "char")
-				return (int)Number;
-			else if (basic_type == "int")
-				return (int)Number;
-			else if (basic_type == "unsigned int")
-				return (int)Number;
-			else if (basic_type == "long int")
-				return (int)((Object is not long li) ? 0 : (li is < (-2147483648) or > 2147483647) ? 0 : li);
-			else if (basic_type == "DateTime")
-				return (int)((Object is not DateTime dt) ? 0 : (dt.Ticks > 2147483647) ? 0 : dt.Ticks);
-			else if (basic_type == "unsigned long int")
-				return (int)((Object is not ulong uli) ? 0 : (uli > 2147483647) ? 0 : uli);
-			else if (basic_type == "real")
-				return (int)((Number is < (-2147483648) or > 2147483647) ? 0 : Floor(Number));
-			else if (basic_type == "string")
-				return (String == "") ? 0 : int.TryParse(String.ToString(), out var a) ? a : 0;
-			else if (basic_type == "list")
-				return (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToInt();
-		}
-		return 0;
+			"null" => 0,
+			"bool" => Bool == false ? 0 : 1,
+			"byte" => (int)Number,
+			"short int" => (int)Number,
+			"unsigned short int" => (int)Number,
+			"char" => (int)Number,
+			"int" => (int)Number,
+			"unsigned int" => (int)Number,
+			"long int" => (int)(Object is not long li ? 0 : li is < (-2147483648) or > 2147483647 ? 0 : li),
+			"DateTime" => (int)(Object is not DateTime dt ? 0 : dt.Ticks > 2147483647 ? 0 : dt.Ticks),
+			"unsigned long int" => (int)(Object is not ulong uli ? 0 : uli > 2147483647 ? 0 : uli),
+			"real" => (int)(Number is < (-2147483648) or > 2147483647 ? 0 : Floor(Number)),
+			"string" => String == "" ? 0 : int.TryParse(String.ToString(), out var a) ? a : 0,
+			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToInt(),
+			_ => 0
+		};
 	}
 
 	public readonly uint ToUnsignedInt()
 	{
-		if (TypeIsPrimitive(InnerType.MainType))
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return 0;
+		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basic_type switch
 		{
-			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
-			if (basic_type == "null")
-				return 0;
-			else if (basic_type == "bool")
-				return (uint)((Bool == false) ? 0 : 1);
-			else if (basic_type == "byte")
-				return (uint)Number;
-			else if (basic_type == "short int")
-				return (uint)Abs(Number);
-			else if (basic_type == "unsigned short int")
-				return (uint)Number;
-			else if (basic_type == "char")
-				return (uint)Number;
-			else if (basic_type == "int")
-				return (uint)Number;
-			else if (basic_type == "unsigned int")
-				return (uint)Number;
-			else if (basic_type == "long int")
-				return (uint)((Object is not long li) ? 0 : (li is < (-4294967295) or > 4294967295) ? 0 : Abs(li));
-			else if (basic_type == "DateTime")
-				return (uint)((Object is not DateTime dt) ? 0 : (dt.Ticks > 4294967295) ? 0 : dt.Ticks);
-			else if (basic_type == "unsigned long int")
-				return (uint)((Object is not ulong uli) ? 0 : (uli > 4294967295) ? 0 : uli);
-			else if (basic_type == "real")
-				return (uint)((Number is < (-4294967295) or > 4294967295) ? 0 : Floor(Abs(Number)));
-			else if (basic_type == "string")
-				return (String == "") ? 0 : uint.TryParse(String.ToString(), out var a) ? a : 0;
-			else if (basic_type == "list")
-				return (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToUnsignedInt();
-		}
-		return 0;
+			"null" => 0,
+			"bool" => (uint)(Bool == false ? 0 : 1),
+			"byte" => (uint)Number,
+			"short int" => (uint)Abs(Number),
+			"unsigned short int" => (uint)Number,
+			"char" => (uint)Number,
+			"int" => (uint)Number,
+			"unsigned int" => (uint)Number,
+			"long int" => (uint)(Object is not long li ? 0 : li is < (-4294967295) or > 4294967295 ? 0 : Abs(li)),
+			"DateTime" => (uint)(Object is not DateTime dt ? 0 : dt.Ticks > 4294967295 ? 0 : dt.Ticks),
+			"unsigned long int" => (uint)(Object is not ulong uli ? 0 : uli > 4294967295 ? 0 : uli),
+			"real" => (uint)(Number is < (-4294967295) or > 4294967295 ? 0 : Floor(Abs(Number))),
+			"string" => String == "" ? 0 : uint.TryParse(String.ToString(), out var a) ? a : 0,
+			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedInt(),
+			_ => 0
+		};
 	}
 
 	public readonly long ToLongInt()
 	{
-		if (TypeIsPrimitive(InnerType.MainType))
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return 0;
+		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basic_type switch
 		{
-			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
-			if (basic_type == "null")
-				return 0;
-			else if (basic_type == "bool")
-				return (Bool == false) ? 0 : 1;
-			else if (basic_type == "byte")
-				return (long)Number;
-			else if (basic_type == "short int")
-				return (long)Number;
-			else if (basic_type == "unsigned short int")
-				return (long)Number;
-			else if (basic_type == "char")
-				return (long)Number;
-			else if (basic_type == "int")
-				return (long)Number;
-			else if (basic_type == "unsigned int")
-				return (long)Number;
-			else if (basic_type == "long int")
-				return (Object is not long li) ? 0 : li;
-			else if (basic_type == "DateTime")
-				return (Object is not DateTime dt) ? 0 : dt.Ticks;
-			else if (basic_type == "unsigned long int")
-				return (long)((Object is not ulong uli) ? 0 : uli);
-			else if (basic_type == "real")
-				return (long)((Number is < (-(double)9223372036854775808) or > 9223372036854775807) ? 0 : Floor(Number));
-			else if (basic_type == "string")
-				return (String == "") ? 0 : long.TryParse(String.ToString(), out var a) ? a : 0;
-			else if (basic_type == "list")
-				return (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToLongInt();
-		}
-		return 0;
+			"null" => 0,
+			"bool" => (Bool == false) ? 0 : 1,
+			"byte" => (long)Number,
+			"short int" => (long)Number,
+			"unsigned short int" => (long)Number,
+			"char" => (long)Number,
+			"int" => (long)Number,
+			"unsigned int" => (long)Number,
+			"long int" => (Object is not long li) ? 0 : li,
+			"DateTime" => (Object is not DateTime dt) ? 0 : dt.Ticks,
+			"unsigned long int" => (long)((Object is not ulong uli) ? 0 : uli),
+			"real" => (long)((Number is < (-(double)9223372036854775808) or > 9223372036854775807) ? 0 : Floor(Number)),
+			"string" => (String == "") ? 0 : long.TryParse(String.ToString(), out var a) ? a : 0,
+			"list" => (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToLongInt(),
+			_ => 0
+		};
 	}
 
 	public readonly DateTime ToDateTime() => TypeEqualsToPrimitive(InnerType, "DateTime") ? (Object is not DateTime dt) ? new(0) : dt : new(ToLongInt());
 
 	public readonly ulong ToUnsignedLongInt()
 	{
-		if (TypeIsPrimitive(InnerType.MainType))
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return 0;
+		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basic_type switch
 		{
-			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
-			if (basic_type == "null")
-				return 0;
-			else if (basic_type == "bool")
-				return (ulong)((Bool == false) ? 0 : 1);
-			else if (basic_type == "byte")
-				return (ulong)Number;
-			else if (basic_type == "short int")
-				return (ulong)Abs(Number);
-			else if (basic_type == "unsigned short int")
-				return (ulong)Number;
-			else if (basic_type == "char")
-				return (ulong)Number;
-			else if (basic_type == "int")
-				return (ulong)Number;
-			else if (basic_type == "unsigned int")
-				return (ulong)Number;
-			else if (basic_type == "long int")
-				return (ulong)((Object is not long li) ? 0 : Abs(li));
-			else if (basic_type == "DateTime")
-				return (ulong)((Object is not DateTime dt) ? 0 : dt.Ticks);
-			else if (basic_type == "unsigned long int")
-				return (Object is not ulong uli) ? 0 : uli;
-			else if (basic_type == "real")
-				return (ulong)((Number is < (-(double)18446744073709551615) or > 18446744073709551615) ? 0 : Floor(Abs(Number)));
-			else if (basic_type == "string")
-				return (String == "") ? 0 : ulong.TryParse(String.ToString(), out var a) ? a : 0;
-			else if (basic_type == "list")
-				return (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToUnsignedLongInt();
-		}
-		return 0;
+			"null" => 0,
+			"bool" => (ulong)(Bool == false ? 0 : 1),
+			"byte" => (ulong)Number,
+			"short int" => (ulong)Abs(Number),
+			"unsigned short int" => (ulong)Number,
+			"char" => (ulong)Number,
+			"int" => (ulong)Number,
+			"unsigned int" => (ulong)Number,
+			"long int" => (ulong)(Object is not long li ? 0 : Abs(li)),
+			"DateTime" => (ulong)(Object is not DateTime dt ? 0 : dt.Ticks),
+			"unsigned long int" => Object is not ulong uli ? 0 : uli,
+			"real" => (ulong)(Number is < (-(double)18446744073709551615) or > 18446744073709551615 ? 0 : Floor(Abs(Number))),
+			"string" => String == "" ? 0 : ulong.TryParse(String.ToString(), out var a) ? a : 0,
+			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedLongInt(),
+			_ => 0
+		};
 	}
 
 	public readonly double ToReal()
 	{
-		if (TypeIsPrimitive(InnerType.MainType))
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return 0;
+		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basic_type switch
 		{
-			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
-			if (basic_type == "null")
-				return 0;
-			else if (basic_type == "bool")
-				return (Bool == false) ? 0 : 1;
-			else if (basic_type == "byte")
-				return (double)Number;
-			else if (basic_type == "short int")
-				return (double)Number;
-			else if (basic_type == "unsigned short int")
-				return (double)Number;
-			else if (basic_type == "char")
-				return (double)Number;
-			else if (basic_type == "int")
-				return (double)Number;
-			else if (basic_type == "unsigned int")
-				return (double)Number;
-			else if (basic_type == "long int")
-				return (Object is not long li) ? 0 : li;
-			else if (basic_type == "DateTime")
-				return (Object is not DateTime dt) ? 0 : dt.Ticks;
-			else if (basic_type == "unsigned long int")
-				return (Object is not ulong uli) ? 0 : uli;
-			else if (basic_type == "real")
-				return (double)Number;
-			else if (basic_type == "string")
-				return (double)((String == "") ? 0 : double.TryParse(String.ToString(), out var a) ? a : 0);
-			else if (basic_type == "list")
-				return (double)((NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToReal());
-		}
-		return 0;
+			"null" => 0,
+			"bool" => Bool == false ? 0 : 1,
+			"byte" => Number,
+			"short int" => Number,
+			"unsigned short int" => Number,
+			"char" => Number,
+			"int" => Number,
+			"unsigned int" => Number,
+			"long int" => Object is not long li ? 0 : li,
+			"DateTime" => Object is not DateTime dt ? 0 : dt.Ticks,
+			"unsigned long int" => Object is not ulong uli ? 0 : uli,
+			"real" => Number,
+			"string" => (double)(String == "" ? 0 : double.TryParse(String.ToString(), out var a) ? a : 0),
+			"list" => (double)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToReal()),
+			_ => 0
+		};
 	}
 
 	public readonly String ToString(bool takeIntoQuotes = false, bool addCasting = false)
@@ -938,11 +820,11 @@ public struct Universal
 			else if (basic_type == "bool")
 				return (Bool == false) ? "false" : "true";
 			else if (basic_type == "byte")
-				return ((byte)Number).ToString(EnUsCulture);
+				return ((byte)Number).ToString(InvariantCulture);
 			else if (basic_type == "short int")
-				return ((short)Number).ToString(EnUsCulture);
+				return ((short)Number).ToString(InvariantCulture);
 			else if (basic_type == "unsigned short int")
-				return ((ushort)Number).ToString(EnUsCulture);
+				return ((ushort)Number).ToString(InvariantCulture);
 			else if (basic_type == "char")
 			{
 				return takeIntoQuotes ? "'" + (char)Number switch
@@ -962,9 +844,9 @@ public struct Universal
 				} + "'" : "" + (char)Number;
 			}
 			else if (basic_type == "int")
-				return ((int)Number).ToString(EnUsCulture);
+				return ((int)Number).ToString(InvariantCulture);
 			else if (basic_type == "unsigned int")
-				return ((uint)Number).ToString(EnUsCulture);
+				return ((uint)Number).ToString(InvariantCulture);
 			else if (basic_type == "long int")
 			{
 				return Object == null ? "" : Object is long li ? li.ToString() : "0";
@@ -984,7 +866,7 @@ public struct Universal
 					(double)1 / 0 => addCasting ? "((double)1 / 0)" : "Infty",
 					(double)-1 / 0 => addCasting ? "((double)-1 / 0)" : "-Infty",
 					(double)0 / 0 => addCasting ? "((double)0 / 0)" : "Uncty",
-					_ => Number.ToString(EnUsCulture)
+					_ => Number.ToString(InvariantCulture)
 				};
 			}
 			else if (basic_type == "typename")

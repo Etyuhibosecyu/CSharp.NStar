@@ -2,19 +2,9 @@
 
 public static class IntermediateFunctions
 {
+	public static readonly Random globalRandom = new();
 	private static int random_calls;
 	private static readonly double random_initializer = DateTime.Now.ToBinary() / 1E+9;
-
-	private static double RandomNumberBase(int calls, double initializer, double max)
-	{
-		var a = initializer * 5.29848949848415968;
-		var b = Abs(a - Floor(a / 100000) * 100000 + Sin(calls / 1.597486513 + 2.5845984) * 45758.479849894 - 489.498489641984);
-		var c = Tan((b - Floor(b / 179.999) * 179.999 - 90) * PI / 180);
-		var d = Pow(Abs(Sin(Cos(Tan(calls) * 3.0362187913025793 + 0.10320655487900326) * PI - 2.032198747013) * 146283.032478491032657 - 2903.0267951604) + 0.000001, 2.3065479615036587) + Pow(Abs(Math.Log(Abs(Pow(Pow((double)calls * 123 + 64.0657980165456, 2) + Pow(max - 21.970264984615, 2), 0.5) * 648.0654731649 - 47359.03197931073648) + 0.000001)) + 0.000001, 0.60265497063473049);
-		var e = Math.Log(Abs(Pow(Abs(Atan((a - Floor(a / 1000) * 1000 - max) / 169.340493) * 1.905676152049703) + 0.000001, 12.206479803657304) - 382.0654987304) + 0.000001);
-		var f = Pow(Abs(c * 1573.06546157302 + d / 51065574.32761504 + e * 1031.3248941027032) + 0.000001, 2.30465546897032);
-		return RealRemainder(f, max);
-	}
 
 	public static List<int> Chain(int start, int end) => new Chain(start, end - start + 1).ToList();
 
@@ -87,6 +77,17 @@ public static class IntermediateFunctions
 		var a = RandomNumberBase(random_calls, random_initializer, max);
 		random_calls++;
 		return a;
+	}
+
+	private static double RandomNumberBase(int calls, double initializer, double max)
+	{
+		var a = initializer * 5.29848949848415968;
+		var b = Abs(a - Floor(a / 100000) * 100000 + Sin(calls / 1.597486513 + 2.5845984) * 45758.479849894 - 489.498489641984);
+		var c = Tan((b - Floor(b / 179.999) * 179.999 - 90) * PI / 180);
+		var d = Pow(Abs(Sin(Cos(Tan(calls) * 3.0362187913025793 + 0.10320655487900326) * PI - 2.032198747013) * 146283.032478491032657 - 2903.0267951604) + 0.000001, 2.3065479615036587) + Pow(Abs(Math.Log(Abs(Pow(Pow((double)calls * 123 + 64.0657980165456, 2) + Pow(max - 21.970264984615, 2), 0.5) * 648.0654731649 - 47359.03197931073648) + 0.000001)) + 0.000001, 0.60265497063473049);
+		var e = Math.Log(Abs(Pow(Abs(Atan((a - Floor(a / 1000) * 1000 - max) / 169.340493) * 1.905676152049703) + 0.000001, 12.206479803657304) - 382.0654987304) + 0.000001);
+		var f = Pow(Abs(c * 1573.06546157302 + d / 51065574.32761504 + e * 1031.3248941027032) + 0.000001, 2.30465546897032);
+		return RealRemainder(f, max);
 	}
 
 	public static double RealRemainder(double x, double y) => x - Floor(x / y) * y;

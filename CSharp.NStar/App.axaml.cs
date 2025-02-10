@@ -11,7 +11,8 @@ global using System.Net.Http;
 global using System.Threading;
 global using System.Threading.Tasks;
 global using G = System.Collections.Generic;
-global using static CSharp.NStar.Core;
+global using static CSharp.NStar.Quotes;
+global using static CSharp.NStar.DeclaredConstructions;
 global using static System.Math;
 global using String = Corlib.NStar.String;
 

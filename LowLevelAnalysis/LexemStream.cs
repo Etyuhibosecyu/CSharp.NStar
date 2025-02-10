@@ -19,6 +19,8 @@ public class LexemStream
 	private int unknownIndex = 1;
 	private int figureBk;
 
+	private protected static readonly List<String> StopLexemsList = ["\r\n", ";", "{", "}"];
+
 	private protected LexemStream(List<Lexem> lexems, String input, List<String>? errorsList, bool wreckOccurred, BlockStack? rootContainer = null)
 	{
 		this.lexems = lexems;
@@ -621,6 +623,11 @@ public class LexemStream
 	}
 
 	private bool IsPos2LexemKeyword(String string_) => IsLexemKeyword(lexems[pos2], string_);
+
+	private protected static bool IsValidBaseClass(TypeAttributes attributes)
+		=> (attributes & (TypeAttributes.Sealed | TypeAttributes.Abstract
+		| TypeAttributes.Static | TypeAttributes.Struct | TypeAttributes.Enum
+		| TypeAttributes.Delegate)) is TypeAttributes.None or TypeAttributes.Abstract;
 
 	public static implicit operator LexemStream((List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred) x) => new(x.Lexems, x.String, x.ErrorsList, x.WreckOccurred);
 
