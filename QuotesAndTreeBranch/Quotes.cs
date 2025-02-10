@@ -8,13 +8,6 @@ global using String = Corlib.NStar.String;
 
 namespace CSharp.NStar;
 
-public sealed class TreeBranchComparer : G.IEqualityComparer<TreeBranch>
-{
-	public bool Equals(TreeBranch? x, TreeBranch? y) => x is null && y is null || (x?.Equals(y) ?? false);
-
-	public int GetHashCode(TreeBranch x) => x.GetHashCode();
-}
-
 public static partial class Quotes
 {
 	public static String TakeIntoQuotes(this String input, bool oldStyle = false)

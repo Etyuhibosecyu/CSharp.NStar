@@ -135,4 +135,11 @@ public sealed class TreeBranch
 	public static bool operator ==(TreeBranch? x, TreeBranch? y) => x is null && y is null || x is not null && y is not null && x.Info == y.Info && RedStarLinq.Equals(x.Elements, y.Elements, (x, y) => new TreeBranchComparer().Equals(x, y));
 
 	public static bool operator !=(TreeBranch? x, TreeBranch? y) => !(x == y);
+
+	private sealed class TreeBranchComparer : G.IEqualityComparer<TreeBranch>
+	{
+		public bool Equals(TreeBranch? x, TreeBranch? y) => x is null && y is null || (x?.Equals(y) ?? false);
+
+		public int GetHashCode(TreeBranch x) => x.GetHashCode();
+	}
 }

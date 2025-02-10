@@ -648,21 +648,21 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 }}");
 		File.WriteAllBytes(filename, CompileProgram(TextBoxInput.Text));
 	}
-}
 
-public class MyCompletionData(string text, int offset) : ICompletionData
-{
-	public IImage? Image => null;
+	private class MyCompletionData(string text, int offset) : ICompletionData
+	{
+		public IImage? Image => null;
 
-	public string Text { get; private set; } = text;
+		public string Text { get; private set; } = text;
 
-	// Use this property if you want to show a fancy UIElement in the list.
-	public object Content => Text;
+		// Use this property if you want to show a fancy UIElement in the list.
+		public object Content => Text;
 
-	public object Description => "Description for " + Text;
+		public object Description => "Description for " + Text;
 
-	public double Priority { get; }
+		public double Priority { get; }
 
-	public void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs) =>
-		textArea.Document.Replace(completionSegment, Text[Min(offset, Text.Length)..]);
+		public void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs) =>
+			textArea.Document.Replace(completionSegment, Text[Min(offset, Text.Length)..]);
+	}
 }

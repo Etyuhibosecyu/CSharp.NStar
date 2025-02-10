@@ -321,18 +321,6 @@ public static class TypeHelpers
 			return GetListType(GetResultType(type1, GetSubtype(type2)));
 	}
 
-	private static String ListTypeToString(UniversalType type, String basic_type)
-	{
-		if (type.ExtraTypes.Length == 1)
-		{
-			return basic_type + "() " + (type.ExtraTypes[0].MainType.IsValue ? type.ExtraTypes[0].MainType.Value : (type.ExtraTypes[0].MainType.Type, type.ExtraTypes[0].ExtraTypes));
-		}
-		else
-		{
-			return basic_type + "(" + type.ExtraTypes[0].MainType.Value + ") " + (type.ExtraTypes[1].MainType.IsValue ? type.ExtraTypes[1].MainType.Value : (type.ExtraTypes[1].MainType.Type, type.ExtraTypes[1].ExtraTypes));
-		}
-	}
-
 	public static UniversalType PartialTypeToGeneralType(String mainType, List<String> extraTypes) => (GetBlockStack(mainType), GetGeneralExtraTypes(extraTypes));
 
 	public static GeneralExtraTypes GetGeneralExtraTypes(List<String> partialBlockStack) => new(partialBlockStack.Convert(x => (UniversalTypeOrValue)((TypeOrValue)new BlockStack([new Block(BlockType.Primitive, x, 1)]), NoGeneralExtraTypes)));
@@ -584,7 +572,7 @@ public static class TypeHelpers
 			return ((String)"unchecked((").AddRange(destTypeconverter).AddRange(")(").AddRange(source).AddRange("))");
 	}
 
-	public static List<(UniversalType Type, bool Warning)> GetCompatibleTypes((UniversalType Type, bool Warning) source, List<(UniversalType Type, bool Warning)> blackList)
+	private static List<(UniversalType Type, bool Warning)> GetCompatibleTypes((UniversalType Type, bool Warning) source, List<(UniversalType Type, bool Warning)> blackList)
 	{
 		List<(UniversalType Type, bool Warning)> list = new(16);
 		list.AddRange(ImplicitConversionsFromAnythingList.Convert(x => (x, source.Warning)).Filter(x => !blackList.Contains(x)));
@@ -608,11 +596,11 @@ public static class TypeHelpers
 		else
 			return new List<T>(item);
 	}
-}
 
-public sealed class FullTypeEComparer : G.IEqualityComparer<UniversalType>
-{
-	public bool Equals(UniversalType x, UniversalType y) => new BlockStackEComparer().Equals(x.MainType, y.MainType) && new GeneralExtraTypesEComparer().Equals(x.ExtraTypes, y.ExtraTypes);
+	private sealed class FullTypeEComparer : G.IEqualityComparer<UniversalType>
+	{
+		public bool Equals(UniversalType x, UniversalType y) => new BlockStackEComparer().Equals(x.MainType, y.MainType) && new GeneralExtraTypesEComparer().Equals(x.ExtraTypes, y.ExtraTypes);
 
-	public int GetHashCode(UniversalType x) => new BlockStackEComparer().GetHashCode(x.MainType) ^ new GeneralExtraTypesEComparer().GetHashCode(x.ExtraTypes);
+		public int GetHashCode(UniversalType x) => new BlockStackEComparer().GetHashCode(x.MainType) ^ new GeneralExtraTypesEComparer().GetHashCode(x.ExtraTypes);
+	}
 }
