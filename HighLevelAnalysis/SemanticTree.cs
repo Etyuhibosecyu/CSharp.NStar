@@ -3,7 +3,8 @@ global using System;
 global using System.Diagnostics;
 global using G = System.Collections.Generic;
 global using static Corlib.NStar.Extents;
-global using static CSharp.NStar.ChecksAndMappings;
+global using static CSharp.NStar.DeclaredConstructionChecks;
+global using static CSharp.NStar.DeclaredConstructionMappings;
 global using static CSharp.NStar.IntermediateFunctions;
 global using static CSharp.NStar.DeclaredConstructions;
 global using static CSharp.NStar.TypeHelpers;
@@ -1554,7 +1555,7 @@ public sealed class SemanticTree
 			Add(ref errorsList, "Warning in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": the string cannot be multiplied by string; one of them can be converted to number but this is not recommended and can cause data loss");
 		else if (branch[i].Info != "*" && (isString1 || isString2))
 			Add(ref errorsList, "Warning in line " + lexems[branch[i].Pos].LineN.ToString() + " at position " + lexems[branch[i].Pos].Pos.ToString() + ": the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss");
-		var resultType = (branch[i].Info == "/" && TypeIsPrimitive(UnvType1.MainType) && TypeIsPrimitive(UnvType2.MainType)) ? GetPrimitiveType(GetQuotientType(UnvType1.MainType.Peek().Name, TryReadValue(branch[i - 1].Info, out var value) ? value : 5, UnvType2.MainType.Peek().Name)) : (branch[i].Info == "%" && TypeIsPrimitive(UnvType1.MainType) && TypeIsPrimitive(UnvType2.MainType)) ? GetPrimitiveType(GetRemainderType(UnvType1.MainType.Peek().Name, TryReadValue(branch[i - 1].Info, out var value2) ? value2 : new(12345678901234567890, UnsignedLongIntType), UnvType2.MainType.Peek().Name)) : GetResultType(UnvType1, UnvType2);
+		var resultType = (branch[i].Info == "/" && TypeIsPrimitive(UnvType1.MainType) && TypeIsPrimitive(UnvType2.MainType)) ? GetPrimitiveType(Universal.GetQuotientType(UnvType1.MainType.Peek().Name, TryReadValue(branch[i - 1].Info, out var value) ? value : 5, UnvType2.MainType.Peek().Name)) : (branch[i].Info == "%" && TypeIsPrimitive(UnvType1.MainType) && TypeIsPrimitive(UnvType2.MainType)) ? GetPrimitiveType(Universal.GetRemainderType(UnvType1.MainType.Peek().Name, TryReadValue(branch[i - 1].Info, out var value2) ? value2 : new(12345678901234567890, UnsignedLongIntType), UnvType2.MainType.Peek().Name)) : GetResultType(UnvType1, UnvType2);
 		if (TypeEqualsToPrimitive(PrevUnvType, "string") && isString2 == false)
 		{
 			if (branch[Max(i - 3, 0)].Info == "MulDivExpr")
@@ -1940,7 +1941,7 @@ public sealed class SemanticTree
 			else
 			{
 				result.AddRange(((String)"List<").Repeat(levelsCount - 1));
-				var DotNetType = TypeMapping(type.ExtraTypes[^1]);
+				var DotNetType = DeclaredConstructionMappings.TypeMapping(type.ExtraTypes[^1]);
 				if (DotNetType == typeof(bool))
 					result.AddRange(nameof(BitList));
 				else
@@ -2024,6 +2025,17 @@ public sealed class SemanticTree
 			result.Add('>');
 		}
 		return result;
+	}
+
+	private static String TypeMapping(String type)
+	{
+		var after = type.GetAfter(((String)"System.Collections.").AddRange(nameof(G.LinkedList<bool>)));
+		if (after.Length != 0)
+			return "G.LinkedList" + after;
+		after = type.GetAfter("System.Collections.");
+		if (after.Length != 0)
+			return after;
+		return type;
 	}
 
 	private static String Parameters(GeneralMethodParameters parameters, out List<String>? errorsList)
@@ -2385,7 +2397,7 @@ public sealed class SemanticTree
 		assembly = EasyEval.GetAssembly(bytes);
 		var result = assembly?.GetType("Program")?.GetMethod("F")?.Invoke(null, [args]) ?? null;
 		errors = errorsList == null || errorsList.Length == 0 ? "Ошибок нет" : String.Join("\r\n", errorsList.Append([]));
-		return result is null ? "null" : JsonConvert.SerializeObject(result, SerializerSettings);
+		return result is null ? "null" : JsonConvert.SerializeObject(result, SerializerHelpers.SerializerSettings);
 	}
 
 	public static byte[] CompileProgram(String program)
@@ -2449,7 +2461,7 @@ public static void Main(string[] args)
 Console.WriteLine(F(args));
 }
 }
-"), ["HighLevelAnalysis", "LowLevelAnalysis", "MidLayer", "QuotesAndTreeBranch", "EasyEval"], translateErrors);
+"), ["HighLevelAnalysis", "LowLevelAnalysis", "DeclaredConstructionHelpers", "DeclaredConstructions", "QuotesAndTreeBranch", "TypeHelpers", "Universal", "EasyEval"], translateErrors);
 		if (bytes == null || bytes.Length <= 2 || sb.ToString() != "Compilation done without any error.\r\n")
 			throw new EvaluationFailedException();
 		return (bytes, errorsList ?? []);

@@ -245,6 +245,8 @@ public class OutdatedMethods : SortedDictionary<String, OutdatedMethodOverloads>
 {
 }
 
+public interface IClass { }
+
 public enum TypeAttributes
 {
 	None = 0,

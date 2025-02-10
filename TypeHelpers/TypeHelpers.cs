@@ -1,9 +1,40 @@
-﻿using System.Text;
+﻿global using Corlib.NStar;
+global using System;
+global using System.Diagnostics;
+global using System.Drawing;
+global using System.Reflection;
+global using G = System.Collections.Generic;
+global using static Corlib.NStar.Extents;
+global using static CSharp.NStar.DeclaredConstructions;
+global using static System.Math;
+global using String = Corlib.NStar.String;
+using System.Text;
 
 namespace CSharp.NStar;
 
 public static class TypeHelpers
 {
+	public static readonly Random globalRandom = new();
+	public static readonly String[] operators = ["or", "and", "^^", "||", "&&", "==", "!=", ">=", "<=", ">", "<", "^=", "|=", "&=", ">>=", "<<=", "+=", "-=", "*=", "/=", "%=", "pow=", "=", "^", "|", "&", ">>", "<<", "+", "-", "*", "/", "%", "pow", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "!", "~", "++", "--", "!!"];
+	public static readonly List<String> CollectionTypesList = [nameof(Dictionary<bool, bool>), nameof(FastDelHashSet<bool>), "HashTable", nameof(Corlib.NStar.ICollection), nameof(G.IEnumerable<bool>), nameof(Corlib.NStar.IList), nameof(IReadOnlyCollection<bool>), nameof(IReadOnlyList<bool>), nameof(LimitedQueue<bool>), nameof(G.LinkedList<bool>), nameof(G.LinkedListNode<bool>), nameof(ListHashSet<bool>), nameof(Mirror<bool, bool>), nameof(NList<bool>), nameof(Queue<bool>), nameof(ParallelHashSet<bool>), nameof(ReadOnlySpan<bool>), nameof(Slice<bool>), nameof(SortedDictionary<bool, bool>), nameof(SortedSet<bool>), nameof(Span<bool>), nameof(Stack<bool>), nameof(TreeHashSet<bool>), nameof(TreeSet<bool>)];
+
+	private static readonly Dictionary<Type, bool> memoizedTypes = [];
+
+	public static bool IsUnmanaged(this Type type)
+	{
+		if (!memoizedTypes.TryGetValue(type, out var answer))
+		{
+			if (!type.IsValueType)
+				answer = false;
+			else if (type.IsPrimitive || type.IsPointer || type.IsEnum)
+				answer = true;
+			else
+				answer = type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).All(f => IsUnmanaged(f.FieldType));
+			memoizedTypes[type] = answer;
+		}
+		return answer;
+	}
+
 	public static UniversalType GetSubtype(UniversalType type, int levels = 1)
 	{
 		if (levels <= 0)
@@ -280,354 +311,6 @@ public static class TypeHelpers
 		}
 	}
 
-	public static String GetQuotientType(String leftType, Universal right, String rightType)
-	{
-		if (leftType == "long real" || rightType == "long real")
-		{
-			return "long real";
-		}
-		else if (leftType == "long long" || rightType == "long long")
-		{
-			if (leftType == "real" || rightType == "real")
-			{
-				return "long real";
-			}
-			else
-			{
-				return "long long";
-			}
-		}
-		else if (leftType == "unsigned long long" || rightType == "unsigned long long")
-		{
-			if (new List<String> { "short int", "int", "long int", "real" }.Contains(leftType) || new List<String> { "short int", "int", "long int", "real" }.Contains(rightType))
-			{
-				return "long real";
-			}
-			else
-			{
-				return "unsigned long long";
-			}
-		}
-		else if (leftType == "real" || rightType == "real")
-		{
-			return "real";
-		}
-		else if (rightType == "bool")
-		{
-			return "byte";
-		}
-		if (leftType == "unsigned long int")
-		{
-			if (right.ToUnsignedLongInt() >= (ulong)1 << 56)
-			{
-				return "byte";
-			}
-			else if (right.ToUnsignedLongInt() >= (ulong)1 << 48)
-			{
-				return "unsigned short int";
-			}
-			else if (right.ToUnsignedLongInt() >= 4294967296)
-			{
-				return "unsigned int";
-			}
-			else if (new List<String> { "short int", "int", "long int" }.Contains(rightType))
-			{
-				return "long long";
-			}
-			else
-			{
-				return "unsigned long int";
-			}
-		}
-		else if (leftType == "long int")
-		{
-			if (right.ToLongInt() >= (long)1 << 48)
-			{
-				return "short int";
-			}
-			else if (right.ToLongInt() >= 4294967296)
-			{
-				return "int";
-			}
-			else if (rightType == "unsigned long int")
-			{
-				return "long long";
-			}
-			else
-			{
-				return "long int";
-			}
-		}
-		else if (leftType == "long char" || rightType == "long char")
-		{
-			if (rightType.ToString() is "short int" or "int")
-			{
-				return "long int";
-			}
-			else
-			{
-				return "long char";
-			}
-		}
-		else if (leftType == "unsigned int")
-		{
-			if (right.ToUnsignedInt() >= 16777216)
-			{
-				return "byte";
-			}
-			else if (right.ToUnsignedInt() >= 65536)
-			{
-				return "unsigned short int";
-			}
-			else if (rightType.ToString() is "short int" or "int")
-			{
-				return "long int";
-			}
-			else
-			{
-				return "unsigned int";
-			}
-		}
-		else if (leftType == "int")
-		{
-			if (rightType == "unsigned int")
-			{
-				return "long int";
-			}
-			else if (right.ToInt() >= 65536)
-			{
-				return "short int";
-			}
-			else
-			{
-				return "int";
-			}
-		}
-		else if (leftType == "char" || rightType == "char")
-		{
-			if (rightType == "short int")
-			{
-				return "int";
-			}
-			else
-			{
-				return "char";
-			}
-		}
-		else if (leftType == "unsigned short int")
-		{
-			if (right.ToUnsignedShortInt() >= 256)
-			{
-				return "byte";
-			}
-			else if (rightType == "short int")
-			{
-				return "int";
-			}
-			else
-			{
-				return "unsigned short int";
-			}
-		}
-		else if (leftType == "short int")
-		{
-			if (rightType == "unsigned short int")
-			{
-				return "int";
-			}
-			else
-			{
-				return "short int";
-			}
-		}
-		else if (leftType == "short char" || rightType == "short char")
-		{
-			return "short char";
-		}
-		else if (leftType.ToString() is "byte" or "bool")
-		{
-			return "byte";
-		}
-		else
-		{
-			return "null";
-		}
-	}
-
-	public static String GetRemainderType(String leftType, Universal right, String rightType)
-	{
-		if (leftType == "long real" || rightType == "long real")
-		{
-			return "long real";
-		}
-		else if (leftType == "long long" || rightType == "long long")
-		{
-			if (leftType == "real" || rightType == "real")
-			{
-				return "long real";
-			}
-			else
-			{
-				return "long long";
-			}
-		}
-		else if (leftType == "unsigned long long" || rightType == "unsigned long long")
-		{
-			if (new List<String> { "short int", "int", "long int", "real" }.Contains(leftType) || new List<String> { "short int", "int", "long int", "real" }.Contains(rightType))
-			{
-				return "long real";
-			}
-			else
-			{
-				return "unsigned long long";
-			}
-		}
-		else if (leftType == "real" || rightType == "real")
-		{
-			return "real";
-		}
-		else if (rightType == "bool")
-		{
-			return "byte";
-		}
-		if (leftType == "unsigned long int")
-		{
-			if (right.ToUnsignedLongInt() <= 256)
-			{
-				return "byte";
-			}
-			else if (right.ToUnsignedLongInt() <= 65536)
-			{
-				return "unsigned short int";
-			}
-			else if (right.ToUnsignedLongInt() <= 4294967296)
-			{
-				return "unsigned int";
-			}
-			else if (new List<String> { "short int", "int", "long int" }.Contains(rightType))
-			{
-				return "long long";
-			}
-			else
-			{
-				return "unsigned long int";
-			}
-		}
-		else if (leftType == "long int")
-		{
-			if (right.ToLongInt() <= 32768)
-			{
-				return "short int";
-			}
-			else if (right.ToLongInt() <= 2147483648)
-			{
-				return "int";
-			}
-			else if (rightType == "unsigned long int")
-			{
-				return "long long";
-			}
-			else
-			{
-				return "long int";
-			}
-		}
-		else if (leftType == "long char" || rightType == "long char")
-		{
-			if (rightType.ToString() is "short int" or "int")
-			{
-				return "long int";
-			}
-			else
-			{
-				return "long char";
-			}
-		}
-		else if (leftType == "unsigned int")
-		{
-			if (right.ToUnsignedInt() <= 256)
-			{
-				return "byte";
-			}
-			else if (right.ToUnsignedInt() <= 65536)
-			{
-				return "unsigned short int";
-			}
-			else if (rightType.ToString() is "short int" or "int")
-			{
-				return "long int";
-			}
-			else
-			{
-				return "unsigned int";
-			}
-		}
-		else if (leftType == "int")
-		{
-			if (rightType == "unsigned int")
-			{
-				return "long int";
-			}
-			else if (right.ToInt() <= 32768)
-			{
-				return "short int";
-			}
-			else
-			{
-				return "int";
-			}
-		}
-		else if (leftType == "char" || rightType == "char")
-		{
-			if (rightType == "short int")
-			{
-				return "int";
-			}
-			else
-			{
-				return "char";
-			}
-		}
-		else if (leftType == "unsigned short int")
-		{
-			if (right.ToUnsignedShortInt() <= 256)
-			{
-				return "byte";
-			}
-			else if (rightType == "short int")
-			{
-				return "int";
-			}
-			else
-			{
-				return "unsigned short int";
-			}
-		}
-		else if (leftType == "short int")
-		{
-			if (rightType == "unsigned short int")
-			{
-				return "int";
-			}
-			else
-			{
-				return "short int";
-			}
-		}
-		else if (leftType == "short char" || rightType == "short char")
-		{
-			return "short char";
-		}
-		else if (leftType.ToString() is "byte" or "bool")
-		{
-			return "byte";
-		}
-		else
-		{
-			return "null";
-		}
-	}
-
 	private static UniversalType GetListResultType(UniversalType type1, UniversalType type2, String left_type, String right_type)
 	{
 		if (CollectionTypesList.Contains(left_type) || CollectionTypesList.Contains(right_type))
@@ -738,7 +421,7 @@ public static class TypeHelpers
 					destExpr = null;
 				else
 				{
-					srcExpr.Insert(0, ((String)nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth));
+					srcExpr.Insert(0, ((String)nameof(TypeHelpers)).Add('.').AddRange(nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth));
 					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth));
 					destExpr = srcExpr;
 				}
@@ -914,4 +597,22 @@ public static class TypeHelpers
 		}
 		return list;
 	}
+
+	public static dynamic ListWithSingle<T>(T item)
+	{
+		if (item is bool b)
+			return new BitList([b]);
+		else if (typeof(T).IsUnmanaged())
+			return typeof(NList<>).MakeGenericType(typeof(T)).GetConstructor([typeof(G.IEnumerable<T>)])
+				?.Invoke([(G.IEnumerable<T>)[item]]) ?? throw new InvalidOperationException();
+		else
+			return new List<T>(item);
+	}
+}
+
+public sealed class FullTypeEComparer : G.IEqualityComparer<UniversalType>
+{
+	public bool Equals(UniversalType x, UniversalType y) => new BlockStackEComparer().Equals(x.MainType, y.MainType) && new GeneralExtraTypesEComparer().Equals(x.ExtraTypes, y.ExtraTypes);
+
+	public int GetHashCode(UniversalType x) => new BlockStackEComparer().GetHashCode(x.MainType) ^ new GeneralExtraTypesEComparer().GetHashCode(x.ExtraTypes);
 }

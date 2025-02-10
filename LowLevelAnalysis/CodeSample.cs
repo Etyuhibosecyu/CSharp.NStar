@@ -1,13 +1,8 @@
 ﻿global using Corlib.NStar;
 global using System;
-global using System.Drawing;
-global using System.IO;
-global using System.Net.Http;
-global using System.Threading;
-global using System.Threading.Tasks;
 global using G = System.Collections.Generic;
 global using static Corlib.NStar.Extents;
-global using static CSharp.NStar.ChecksAndMappings;
+global using static CSharp.NStar.DeclaredConstructionChecks;
 global using static CSharp.NStar.DeclaredConstructions;
 global using static CSharp.NStar.TypeHelpers;
 global using static System.Math;

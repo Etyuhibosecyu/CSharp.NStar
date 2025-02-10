@@ -6,7 +6,7 @@
 	</PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MidLayer\MidLayer.csproj" />
+    <ProjectReference Include="..\DeclaredConstructionHelpers\DeclaredConstructionHelpers.csproj" />
+    <ProjectReference Include="..\SerializerHelpers\SerializerHelpers.csproj" />
   </ItemGroup>
-
 </Project>

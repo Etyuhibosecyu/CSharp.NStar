@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DeclaredConstructions\DeclaredConstructions.csproj" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <ProjectReference Include="..\Universal\Universal.csproj" />
   </ItemGroup>
 </Project>

@@ -54,7 +54,7 @@ public partial class MainParsing : LexemStream
 				blocksToJumpPos = _BTJPStack[_Stackpos];
 				registeredTypesPos = _RTPStack[_Stackpos];
 				parameterListsPos = _PLPStack[_Stackpos];
-				if (MainParseAction()())
+				if (MainParseAction())
 					continue;
 				if (_Stackpos >= 1 && _SuccessStack[_Stackpos])
 				{

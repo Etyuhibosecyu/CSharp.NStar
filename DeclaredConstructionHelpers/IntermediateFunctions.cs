@@ -1,8 +1,9 @@
-﻿namespace CSharp.NStar;
+﻿using System.Drawing;
+
+namespace CSharp.NStar;
 
 public static class IntermediateFunctions
 {
-	public static readonly Random globalRandom = new();
 	private static int random_calls;
 	private static readonly double random_initializer = DateTime.Now.ToBinary() / 1E+9;
 
@@ -57,17 +58,6 @@ public static class IntermediateFunctions
 		var a = (int)Floor(RandomNumberBase(random_calls, random_initializer, max) + 1);
 		random_calls++;
 		return a;
-	}
-
-	public static dynamic ListWithSingle<T>(T item)
-	{
-		if (item is bool b)
-			return new BitList([b]);
-		else if (typeof(T).IsUnmanaged())
-			return typeof(NList<>).MakeGenericType(typeof(T)).GetConstructor([typeof(G.IEnumerable<T>)])
-				?.Invoke([(G.IEnumerable<T>)[item]]) ?? throw new InvalidOperationException();
-		else
-			return new List<T>(item);
 	}
 
 	public static double Log(double a, double x) => Math.Log(x, a);

@@ -6,6 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DeclaredConstructions\DeclaredConstructions.csproj" />
+    <ProjectReference Include="..\TypeHelpers\TypeHelpers.csproj" />
   </ItemGroup>
 </Project>
