@@ -21,9 +21,7 @@ public static class IntermediateFunctions
 		{
 			double n = 1;
 			for (var i = 2; i <= x; i++)
-			{
 				n *= i;
-			}
 			return n;
 		}
 	}
@@ -31,13 +29,9 @@ public static class IntermediateFunctions
 	public static double Fibonacci(uint x)
 	{
 		if (x <= 1)
-		{
 			return x;
-		}
 		else if (x > 1476)
-		{
 			return 0;
-		}
 		else
 		{
 			var a = new double[] { 0, 1, 1 };

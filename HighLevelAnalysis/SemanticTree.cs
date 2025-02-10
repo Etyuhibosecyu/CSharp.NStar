@@ -406,9 +406,7 @@ public sealed class SemanticTree
 	{
 		errorsList = [];
 		if (!(branch.Length == 2 && branch[0].Info == "Declaration"))
-		{
 			return [];
-		}
 		var result = ((String)"foreach (").AddRange(Declaration(branch[0], out var innerErrorsList));
 		AddRange(ref errorsList, innerErrorsList);
 		result.AddRange(" in ").AddRange(CalculationParseAction(branch[1].Info)(branch[1], out innerErrorsList)).Add(')');

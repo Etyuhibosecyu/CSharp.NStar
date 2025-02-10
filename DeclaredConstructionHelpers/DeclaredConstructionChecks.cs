@@ -41,24 +41,16 @@ public static class DeclaredConstructionChecks
 		if (VariablesList.TryGetValue(container, out var list))
 		{
 			if (list.TryGetValue(type, out var type2))
-			{
 				return TypeIsPrimitive(type2.MainType) && type2.MainType.Peek().Name == "typename" && type2.ExtraTypes.Length == 0;
-			}
 			else
-			{
 				return false;
-			}
 		}
 		if (UserDefinedPropertiesList.TryGetValue(container, out var list_))
 		{
 			if (list_.TryGetValue(type, out var a))
-			{
 				return TypeIsPrimitive(a.UnvType.MainType) && a.UnvType.MainType.Peek().Name == "typename" && a.UnvType.ExtraTypes.Length == 0;
-			}
 			else
-			{
 				return false;
-			}
 		}
 		return false;
 	}
@@ -66,9 +58,7 @@ public static class DeclaredConstructionChecks
 	public static bool IsNotImplementedNamespace(String @namespace)
 	{
 		if (NotImplementedNamespacesList.Contains(@namespace))
-		{
 			return true;
-		}
 		return false;
 	}
 
@@ -87,18 +77,14 @@ public static class DeclaredConstructionChecks
 	public static bool IsReservedNamespace(String @namespace)
 	{
 		if (ReservedNamespacesList.Contains(@namespace))
-		{
 			return true;
-		}
 		return false;
 	}
 
 	public static bool IsNotImplementedType(String @namespace, String type)
 	{
 		if (NotImplementedTypesList.Contains((@namespace, type)))
-		{
 			return true;
-		}
 		return false;
 	}
 
@@ -117,9 +103,7 @@ public static class DeclaredConstructionChecks
 	public static bool IsReservedType(String @namespace, String type)
 	{
 		if (ReservedTypesList.Contains((@namespace, type)))
-		{
 			return true;
-		}
 		return false;
 	}
 
@@ -173,9 +157,7 @@ public static class DeclaredConstructionChecks
 		if (index != -1)
 		{
 			if (NotImplementedMembersList.Values[index].Contains(member))
-			{
 				return true;
-			}
 		}
 		return false;
 	}
@@ -203,9 +185,7 @@ public static class DeclaredConstructionChecks
 		if (index != -1)
 		{
 			if (ReservedMembersList.Values[index].Contains(member))
-			{
 				return true;
-			}
 		}
 		return false;
 	}
@@ -366,9 +346,7 @@ public static class DeclaredConstructionChecks
 		{
 			constructors = [.. temp_constructors];
 			if (constructors.Length != 0)
-			{
 				return true;
-			}
 		}
 		constructors = null;
 		return false;

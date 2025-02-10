@@ -612,34 +612,24 @@ public static class DeclaredConstructions
 	public static bool TypesAreEqual(UniversalType type1, UniversalType type2)
 	{
 		if (type1.MainType.Length != type2.MainType.Length)
-		{
 			return false;
-		}
 		for (var i = 0; i < type1.MainType.Length; i++)
 		{
 			if (type1.MainType.ElementAt(i).Type != type2.MainType.ElementAt(i).Type || type1.MainType.ElementAt(i).Name != type2.MainType.ElementAt(i).Name)
-			{
 				return false;
-			}
 		}
 		if (type1.ExtraTypes.Length == 0)
 		{
 			if (type2.ExtraTypes.Length != 0)
-			{
 				return false;
-			}
 			return true;
 		}
 		if (type1.ExtraTypes.Length != type2.ExtraTypes.Length)
-		{
 			return false;
-		}
 		for (var i = 0; i < type1.ExtraTypes.Length; i++)
 		{
 			if (type1.ExtraTypes[i].MainType.IsValue ? !(type2.ExtraTypes[i].MainType.IsValue && type1.ExtraTypes[i].MainType.Value == type2.ExtraTypes[i].MainType.Value) : (type2.ExtraTypes[i].MainType.IsValue || !TypesAreEqual((type1.ExtraTypes[i].MainType.Type, type1.ExtraTypes[i].ExtraTypes), (type2.ExtraTypes[i].MainType.Type, type2.ExtraTypes[i].ExtraTypes))))
-			{
 				return false;
-			}
 		}
 		return true;
 	}

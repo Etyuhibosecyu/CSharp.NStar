@@ -385,9 +385,7 @@ public partial class MainParsing : LexemStream
 		if (CheckClassSubordination())
 			return CheckColonAndAddTask(nameof(TypeConstraints.BaseClassOrInterface), "Class2", BlockType.Class);
 		else
-		{
 			return CheckOpeningBracketAndAddTask(nameof(ClassMain), "Class}", BlockType.Class);
-		}
 	}
 
 	private bool Class2()
@@ -930,23 +928,17 @@ public partial class MainParsing : LexemStream
 	private bool AddExtraAndIdentifier()
 	{
 		if (success)
-		{
 			_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
-		}
 		else
 			_TBStack[_Stackpos]?.Add(new("type", pos, pos + 1, container) { Extra = NullType });
 		if (_ExtraStack[_Stackpos - 1] is List<object> list)
-		{
 			list.Add((success ? (UniversalType?)extra : null) ?? NullType);
-		}
 		if (lexems[pos].Type == LexemType.Identifier)
 		{
 			pos++;
 			_TBStack[_Stackpos]?.Add(new(lexems[pos - 1].String, pos - 1, pos, container));
 			if (_ExtraStack[_Stackpos - 1] is List<object> list2)
-			{
 				list2.Add(lexems[pos - 1].String);
-			}
 			return true;
 		}
 		return false;

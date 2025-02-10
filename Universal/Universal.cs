@@ -340,9 +340,7 @@ public struct Universal
 		else if (s[0] == '\"' && s[^1] == '\"')
 			return ((String)s).RemoveQuotes();
 		else if (s[0] == '\'' && s[^1] == '\'')
-		{
 			return s.Length <= 2 ? (Universal)'\0' : (Universal)((String)s).RemoveQuotes()[0];
-		}
 		else if (s.Length >= 3 && s[0] == '@' && s[1] == '\"' && s[^1] == '\"')
 			return ((String)s)[2..^1].Replace("\"\"", "\"");
 		else if (Quotes.IsRawString(s, out var output))
@@ -838,17 +836,11 @@ public struct Universal
 			else if (basic_type == "unsigned int")
 				return ((uint)Number).ToString(InvariantCulture);
 			else if (basic_type == "long int")
-			{
 				return Object == null ? "" : Object is long li ? li.ToString() : "0";
-			}
 			else if (basic_type == "DateTime")
-			{
 				return Object == null ? "" : Object is DateTime dt ? dt.ToString() : new DateTime(0).ToString();
-			}
 			else if (basic_type == "unsigned long int")
-			{
 				return Object == null ? "" : Object is ulong uli ? uli.ToString() : "0";
-			}
 			else if (basic_type == "real")
 			{
 				return Number switch
@@ -860,9 +852,7 @@ public struct Universal
 				};
 			}
 			else if (basic_type == "typename")
-			{
 				return Object == null ? "" : Object is UniversalType UnvType ? UnvType.ToString() : NullType.ToString();
-			}
 			else if (basic_type == "string")
 			{
 				if (String == "")
@@ -1025,9 +1015,7 @@ public struct Universal
 		else if (basic_type == "real")
 			return ToReal();
 		else if (basic_type == "typename")
-		{
 			return TypeIsPrimitive(InnerType.MainType) && InnerType.MainType.Peek().Name == "typename" ? this : new();
-		}
 		else if (basic_type == "string")
 			return ToString();
 		else if (basic_type == "list")
@@ -1111,350 +1099,190 @@ public struct Universal
 
 	public static String GetQuotientType(String leftType, Universal right, String rightType)
 	{
-		if (leftType == "long real" || rightType == "long real")
-		{
-			return "long real";
-		}
-		else if (leftType == "long long" || rightType == "long long")
-		{
-			if (leftType == "real" || rightType == "real")
-			{
-				return "long real";
-			}
-			else
-			{
-				return "long long";
-			}
-		}
-		else if (leftType == "unsigned long long" || rightType == "unsigned long long")
-		{
-			if (new List<String> { "short int", "int", "long int", "real" }.Contains(leftType) || new List<String> { "short int", "int", "long int", "real" }.Contains(rightType))
-			{
-				return "long real";
-			}
-			else
-			{
-				return "unsigned long long";
-			}
-		}
-		else if (leftType == "real" || rightType == "real")
-		{
-			return "real";
-		}
-		else if (rightType == "bool")
-		{
-			return "byte";
-		}
+		if (ValidateRealType(leftType, rightType) is String s)
+			return s;
 		if (leftType == "unsigned long int")
 		{
 			if (right.ToUnsignedLongInt() >= (ulong)1 << 56)
-			{
 				return "byte";
-			}
 			else if (right.ToUnsignedLongInt() >= (ulong)1 << 48)
-			{
 				return "unsigned short int";
-			}
 			else if (right.ToUnsignedLongInt() >= 4294967296)
-			{
 				return "unsigned int";
-			}
 			else if (new List<String> { "short int", "int", "long int" }.Contains(rightType))
-			{
 				return "long long";
-			}
 			else
-			{
 				return "unsigned long int";
-			}
 		}
 		else if (leftType == "long int")
 		{
 			if (right.ToLongInt() >= (long)1 << 48)
-			{
 				return "short int";
-			}
 			else if (right.ToLongInt() >= 4294967296)
-			{
 				return "int";
-			}
 			else if (rightType == "unsigned long int")
-			{
 				return "long long";
-			}
 			else
-			{
 				return "long int";
-			}
 		}
 		else if (leftType == "long char" || rightType == "long char")
 		{
 			if (rightType.ToString() is "short int" or "int")
-			{
 				return "long int";
-			}
 			else
-			{
 				return "long char";
-			}
 		}
 		else if (leftType == "unsigned int")
 		{
 			if (right.ToUnsignedInt() >= 16777216)
-			{
 				return "byte";
-			}
 			else if (right.ToUnsignedInt() >= 65536)
-			{
 				return "unsigned short int";
-			}
 			else if (rightType.ToString() is "short int" or "int")
-			{
 				return "long int";
-			}
 			else
-			{
 				return "unsigned int";
-			}
 		}
 		else if (leftType == "int")
 		{
 			if (rightType == "unsigned int")
-			{
 				return "long int";
-			}
 			else if (right.ToInt() >= 65536)
-			{
 				return "short int";
-			}
 			else
-			{
 				return "int";
-			}
 		}
 		else if (leftType == "char" || rightType == "char")
 		{
 			if (rightType == "short int")
-			{
 				return "int";
-			}
 			else
-			{
 				return "char";
-			}
 		}
 		else if (leftType == "unsigned short int")
-		{
-			if (right.ToUnsignedShortInt() >= 256)
-			{
-				return "byte";
-			}
-			else if (rightType == "short int")
-			{
-				return "int";
-			}
-			else
-			{
-				return "unsigned short int";
-			}
-		}
-		else if (leftType == "short int")
-		{
-			if (rightType == "unsigned short int")
-			{
-				return "int";
-			}
-			else
-			{
-				return "short int";
-			}
-		}
-		else if (leftType == "short char" || rightType == "short char")
-		{
-			return "short char";
-		}
-		else if (leftType.ToString() is "byte" or "bool")
-		{
-			return "byte";
-		}
+			return ValidateUnsignedShortIntType(right.ToUnsignedShortInt() >= 256, rightType);
 		else
-		{
-			return "null";
-		}
+			return ValidatePostUSIType(leftType, rightType);
 	}
 
 	public static String GetRemainderType(String leftType, Universal right, String rightType)
 	{
-		if (leftType == "long real" || rightType == "long real")
-		{
-			return "long real";
-		}
-		else if (leftType == "long long" || rightType == "long long")
-		{
-			if (leftType == "real" || rightType == "real")
-			{
-				return "long real";
-			}
-			else
-			{
-				return "long long";
-			}
-		}
-		else if (leftType == "unsigned long long" || rightType == "unsigned long long")
-		{
-			if (new List<String> { "short int", "int", "long int", "real" }.Contains(leftType) || new List<String> { "short int", "int", "long int", "real" }.Contains(rightType))
-			{
-				return "long real";
-			}
-			else
-			{
-				return "unsigned long long";
-			}
-		}
-		else if (leftType == "real" || rightType == "real")
-		{
-			return "real";
-		}
-		else if (rightType == "bool")
-		{
-			return "byte";
-		}
+		if (ValidateRealType(leftType, rightType) is String s)
+			return s;
 		if (leftType == "unsigned long int")
 		{
 			if (right.ToUnsignedLongInt() <= 256)
-			{
 				return "byte";
-			}
 			else if (right.ToUnsignedLongInt() <= 65536)
-			{
 				return "unsigned short int";
-			}
 			else if (right.ToUnsignedLongInt() <= 4294967296)
-			{
 				return "unsigned int";
-			}
 			else if (new List<String> { "short int", "int", "long int" }.Contains(rightType))
-			{
 				return "long long";
-			}
 			else
-			{
 				return "unsigned long int";
-			}
 		}
 		else if (leftType == "long int")
 		{
 			if (right.ToLongInt() <= 32768)
-			{
 				return "short int";
-			}
 			else if (right.ToLongInt() <= 2147483648)
-			{
 				return "int";
-			}
 			else if (rightType == "unsigned long int")
-			{
 				return "long long";
-			}
 			else
-			{
 				return "long int";
-			}
 		}
 		else if (leftType == "long char" || rightType == "long char")
 		{
 			if (rightType.ToString() is "short int" or "int")
-			{
 				return "long int";
-			}
 			else
-			{
 				return "long char";
-			}
 		}
 		else if (leftType == "unsigned int")
 		{
 			if (right.ToUnsignedInt() <= 256)
-			{
 				return "byte";
-			}
 			else if (right.ToUnsignedInt() <= 65536)
-			{
 				return "unsigned short int";
-			}
 			else if (rightType.ToString() is "short int" or "int")
-			{
 				return "long int";
-			}
 			else
-			{
 				return "unsigned int";
-			}
 		}
 		else if (leftType == "int")
 		{
 			if (rightType == "unsigned int")
-			{
 				return "long int";
-			}
 			else if (right.ToInt() <= 32768)
-			{
 				return "short int";
-			}
 			else
-			{
 				return "int";
-			}
 		}
 		else if (leftType == "char" || rightType == "char")
 		{
 			if (rightType == "short int")
-			{
 				return "int";
-			}
 			else
-			{
 				return "char";
-			}
 		}
 		else if (leftType == "unsigned short int")
+			return ValidateUnsignedShortIntType(right.ToUnsignedShortInt() <= 256, rightType);
+		else
+			return ValidatePostUSIType(leftType, rightType);
+	}
+
+	private static String? ValidateRealType(String leftType, String rightType)
+	{
+		if (leftType == "long real" || rightType == "long real")
+			return "long real";
+		else if (leftType == "long long" || rightType == "long long")
 		{
-			if (right.ToUnsignedShortInt() <= 256)
-			{
-				return "byte";
-			}
-			else if (rightType == "short int")
-			{
-				return "int";
-			}
+			if (leftType == "real" || rightType == "real")
+				return "long real";
 			else
-			{
-				return "unsigned short int";
-			}
+				return "long long";
 		}
-		else if (leftType == "short int")
+		else if (leftType == "unsigned long long" || rightType == "unsigned long long")
+		{
+			if (new List<String> { "short int", "int", "long int", "real" }.Contains(leftType) || new List<String> { "short int", "int", "long int", "real" }.Contains(rightType))
+				return "long real";
+			else
+				return "unsigned long long";
+		}
+		else if (leftType == "real" || rightType == "real")
+			return "real";
+		else if (rightType == "bool")
+			return "byte";
+		return null;
+	}
+
+	private static String ValidateUnsignedShortIntType(bool condition, String rightType)
+	{
+		if (condition)
+			return "byte";
+		else if (rightType == "short int")
+			return "int";
+		else
+			return "unsigned short int";
+	}
+
+	private static String ValidatePostUSIType(String leftType, String rightType)
+	{
+		if (leftType == "short int")
 		{
 			if (rightType == "unsigned short int")
-			{
 				return "int";
-			}
 			else
-			{
 				return "short int";
-			}
 		}
 		else if (leftType == "short char" || rightType == "short char")
-		{
 			return "short char";
-		}
 		else if (leftType.ToString() is "byte" or "bool")
-		{
 			return "byte";
-		}
 		else
-		{
 			return "null";
-		}
 	}
 
 	public override readonly bool Equals(object? obj) => obj != null

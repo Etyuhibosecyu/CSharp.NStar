@@ -38,34 +38,24 @@ public static class TypeHelpers
 	public static UniversalType GetSubtype(UniversalType type, int levels = 1)
 	{
 		if (levels <= 0)
-		{
 			return type;
-		}
 		else if (levels == 1)
 		{
 			if (TypeIsPrimitive(type.MainType))
 			{
 				if (type.MainType.Peek().Name == "list")
-				{
 					return GetListSubtype(type);
-				}
 				else
-				{
 					return NullType;
-				}
 			}
 			else
-			{
 				return NullType;
-			}
 		}
 		else
 		{
 			var t = type;
 			for (var i = 0; i < levels; i++)
-			{
 				t = GetSubtype(t);
-			}
 			return t;
 		}
 	}
@@ -73,21 +63,13 @@ public static class TypeHelpers
 	private static UniversalType GetListSubtype(UniversalType type)
 	{
 		if (type.ExtraTypes.Length == 1)
-		{
 			return (type.ExtraTypes[0].MainType.Type, type.ExtraTypes[0].ExtraTypes);
-		}
 		else if (!(type.ExtraTypes[0].MainType.IsValue && int.TryParse(type.ExtraTypes[0].MainType.Value.ToString(), out var n)))
-		{
 			return NullType;
-		}
 		else if (n <= 2)
-		{
 			return GetListType(type.ExtraTypes[1]);
-		}
 		else
-		{
 			return (ListBlockStack, new GeneralExtraTypes { ((TypeOrValue)(n - 1).ToString(), NoGeneralExtraTypes), type.ExtraTypes[1] });
-		}
 	}
 
 	public static (int Depth, UniversalType LeafType) GetTypeDepthAndLeafType(UniversalType type)
@@ -120,9 +102,7 @@ public static class TypeHelpers
 				LeafType = (LeafType.ExtraTypes[^1].MainType.Type, LeafType.ExtraTypes[^1].ExtraTypes);
 			}
 			else
-			{
 				return (Depth, LeafType);
-			}
 		}
 	}
 
@@ -131,30 +111,20 @@ public static class TypeHelpers
 		try
 		{
 			if (TypesAreEqual(type1, type2))
-			{
 				return type1;
-			}
 			if (TypeIsPrimitive(type1.MainType) && TypeIsPrimitive(type2.MainType))
 			{
 				var left_type = type1.MainType.Peek().Name;
 				var right_type = type2.MainType.Peek().Name;
 				if (type1.ExtraTypes.Length == 0 && type2.ExtraTypes.Length == 0)
-				{
 					return GetPrimitiveType(GetPrimitiveResultType(left_type, right_type));
-				}
 				else if (left_type == "list" || right_type == "list")
-				{
 					return GetListResultType(type1, type2, left_type, right_type);
-				}
 				else
-				{
 					return NullType;
-				}
 			}
 			else
-			{
 				return NullType;
-			}
 		}
 		catch (StackOverflowException)
 		{
@@ -165,150 +135,88 @@ public static class TypeHelpers
 	private static String GetPrimitiveResultType(String left_type, String right_type)
 	{
 		if (left_type == "dynamic" || right_type == "dynamic")
-		{
 			return "dynamic";
-		}
 		else if (left_type == "string" || right_type == "string")
-		{
 			return "string";
-		}
 		else if (left_type == "long complex" || right_type == "long complex")
-		{
 			return "long complex";
-		}
 		else if (left_type == "long real" || right_type == "long real")
-		{
 			return "long real";
-		}
 		else if (left_type == "long long" || right_type == "long long")
 		{
 			if (left_type == "complex" || right_type == "complex")
-			{
 				return "long complex";
-			}
 			else if (left_type == "real" || right_type == "real")
-			{
 				return "long real";
-			}
 			else
-			{
 				return "long long";
-			}
 		}
 		else if (left_type == "unsigned long long" || right_type == "unsigned long long")
 		{
 			if (new List<String> { "short int", "int", "long int", "DateTime", "TimeSpan", "real", "complex" }.Contains(left_type) || new List<String> { "short int", "int", "long int", "DateTime", "TimeSpan", "real", "complex" }.Contains(right_type))
-			{
 				return "long long";
-			}
 			else
-			{
 				return "unsigned long long";
-			}
 		}
 		else if (left_type == "complex" || right_type == "complex")
-		{
 			return "complex";
-		}
 		else if (left_type == "real" || right_type == "real")
-		{
 			return "real";
-		}
 		else if (left_type == "unsigned long int" || right_type == "unsigned long int")
 		{
 			if (new List<String> { "short int", "int", "long int", "DateTime", "TimeSpan" }.Contains(left_type) || new List<String> { "short int", "int", "long int", "DateTime", "TimeSpan" }.Contains(right_type))
-			{
 				return "long long";
-			}
 			else
-			{
 				return "unsigned long int";
-			}
 		}
 		else if (left_type == "TimeSpan" || right_type == "TimeSpan")
-		{
 			return "TimeSpan";
-		}
 		else if (left_type == "DateTime" || right_type == "DateTime")
-		{
 			return "DateTime";
-		}
 		else if (left_type == "long int" || right_type == "long int")
-		{
 			return "long int";
-		}
 		else if (left_type == "long char" || right_type == "long char")
 		{
 			if (left_type == "short int" || right_type == "short int" || left_type == "int" || right_type == "int")
-			{
 				return "long int";
-			}
 			else
-			{
 				return "long char";
-			}
 		}
 		else if (left_type == "unsigned int" || right_type == "unsigned int")
 		{
 			if (left_type == "short int" || right_type == "short int" || left_type == "int" || right_type == "int")
-			{
 				return "long int";
-			}
 			else
-			{
 				return "unsigned int";
-			}
 		}
 		else if (left_type == "int" || right_type == "int")
-		{
 			return "int";
-		}
 		else if (left_type == "char" || right_type == "char")
 		{
 			if (left_type == "short int" || right_type == "short int")
-			{
 				return "int";
-			}
 			else
-			{
 				return "char";
-			}
 		}
 		else if (left_type == "unsigned short int" || right_type == "unsigned short int")
 		{
 			if (left_type == "short int" || right_type == "short int")
-			{
 				return "int";
-			}
 			else
-			{
 				return "unsigned short int";
-			}
 		}
 		else if (left_type == "short int" || right_type == "short int")
-		{
 			return "short int";
-		}
 		else if (left_type == "short char" || right_type == "short char")
-		{
 			return "short char";
-		}
 		else if (left_type == "byte" || right_type == "byte")
-		{
 			return "byte";
-		}
 		else if (left_type == "bool" || right_type == "bool")
-		{
 			return "bool";
-		}
 		else if (left_type == "BaseClass" || right_type == "BaseClass")
-		{
 			return "BaseClass";
-		}
 		else
-		{
 			return "null";
-		}
 	}
 
 	private static UniversalType GetListResultType(UniversalType type1, UniversalType type2, String left_type, String right_type)
@@ -446,9 +354,7 @@ public static class TypeHelpers
 					return true;
 				}
 				else
-				{
 					return false;
-				}
 			}
 			catch (StackOverflowException)
 			{
@@ -513,9 +419,7 @@ public static class TypeHelpers
 			new_types_list = new(new_types2_list);
 			types_list.AddRange(new_types2_list);
 			if (new_types2_list.Length == 0)
-			{
 				break;
-			}
 		}
 		destExpr = null;
 		return false;
