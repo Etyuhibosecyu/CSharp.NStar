@@ -9,7 +9,7 @@ global using System.Text.RegularExpressions;
 global using System.Threading;
 global using System.Threading.Tasks;
 global using G = System.Collections.Generic;
-global using static CSharp.NStar.Constructions;
+global using static CSharp.NStar.Core;
 global using static System.Math;
 global using String = Corlib.NStar.String;
 using System.Diagnostics;
@@ -189,7 +189,7 @@ public class GeneralExtraTypes : Dictionary<String, UniversalTypeOrValue>
 			Add(elem.Key, elem.Value);
 	}
 
-	public override string ToString() => string.Join(", ", [.. Values.Convert(x => x.ToString())]);
+	public override string ToString() => string.Join(", ", Values.ToArray(x => x.ToString()));
 }
 
 public class GeneralArrayParameters : List<(bool ArrayParameterPackage, GeneralExtraTypes ArrayParameterRestrictions, BlockStack ArrayParameterType, String ArrayParameterName)>
@@ -528,7 +528,7 @@ public sealed class TreeBranchComparer : G.IEqualityComparer<TreeBranch>
 	public int GetHashCode(TreeBranch x) => x.GetHashCode();
 }
 
-public static partial class Constructions
+public static partial class Core
 {
 	public static readonly Random globalRandom = new();
 	public static readonly BitList EmptyBoolList = [];

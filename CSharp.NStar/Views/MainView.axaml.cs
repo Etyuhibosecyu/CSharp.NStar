@@ -228,7 +228,8 @@ return Calculate(F);
 ", out errors)) != (targetResult = @"(0.2, 0.125, 0.07692307692307693)") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"list(3) int list = 8;
 list = 123;
 return list;
-", out errors)) != (targetResult = @"(((123)))") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"var x = 5;
+", out errors)) != (targetResult = @"(((123)))") || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"return DateTime.UTCNow.IsSummertime();
+", out errors)) != (targetResult = @"false") && result != @"true" || errors != (targetErrors = @"Ошибок нет") || (result = ExecuteProgram(program = @"var x = 5;
 return 5 pow x += 3;
 ", out errors)) != (targetResult = @"null") || errors != (targetErrors = @"Error in line 2 at position 15: only variables can be assigned
 ") || (result = ExecuteProgram(program = @"return ;

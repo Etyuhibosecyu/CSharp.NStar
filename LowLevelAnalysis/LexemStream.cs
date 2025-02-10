@@ -2632,13 +2632,8 @@ public partial class MainParsing : LexemStream
 	private bool BasicExpr()
 	{
 		var s = lexems[pos].String;
-		if (lexems[pos].Type == LexemType.Keyword && new List<String> { "true", "false", "this", "null" }.Contains(s))
-		{
-			pos++;
-			_TBStack[_Stackpos] = new(s, pos - 1, pos, container);
-			return Default();
-		}
-		else if (lexems[pos].Type == LexemType.Operator && new List<String> { "Infty", "-Infty", "Uncty", "Pi", "E" }.Contains(s))
+		if (lexems[pos].Type == LexemType.Keyword && new List<String> { "true", "false", "this", "null" }.Contains(s)
+			|| lexems[pos].Type == LexemType.Operator && new List<String> { "Infty", "-Infty", "Uncty", "Pi", "E" }.Contains(s))
 		{
 			pos++;
 			_TBStack[_Stackpos] = new(s, pos - 1, pos, container);
@@ -3258,7 +3253,7 @@ public partial class MainParsing : LexemStream
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 			}
 		}
-		else if (IsNotImplementedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), .. s])) || IsNotImplementedType(String.Join(".", [.. container.ToList().Convert(X => X.Name)]), s))
+		else if (IsNotImplementedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), s])) || IsNotImplementedType(String.Join(".", [.. container.ToList().Convert(X => X.Name)]), s))
 		{
 			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 			GenerateError(pos, "identifier \"" + s + "\" is still not implemented, wait for next versions");
@@ -3268,7 +3263,7 @@ public partial class MainParsing : LexemStream
 			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 			GenerateError(pos, "end of identifier \"" + s2 + "\" is still not implemented, wait for next versions");
 		}
-		else if (IsOutdatedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), .. s]), out var useInstead))
+		else if (IsOutdatedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), s]), out var useInstead))
 		{
 			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 			GenerateError(pos, "namespace \"" + s + "\" is outdated, consider using " + useInstead + " instead");
@@ -3283,7 +3278,7 @@ public partial class MainParsing : LexemStream
 			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 			GenerateError(pos, "end of identifier \"" + s2 + "\" is outdated, consider using " + useInstead + " instead");
 		}
-		else if (IsReservedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), .. s])) || IsReservedType(String.Join(".", [.. container.ToList().Convert(X => X.Name)]), s))
+		else if (IsReservedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), s])) || IsReservedType(String.Join(".", [.. container.ToList().Convert(X => X.Name)]), s))
 		{
 			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 			GenerateError(pos, "identifier \"" + s + "\" is reserved for next versions of C#.NStar and cannot be used");

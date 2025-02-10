@@ -332,7 +332,7 @@ public struct Universal
 		}
 		else if (s.Length >= 3 && s[0] == '@' && s[1] == '\"' && s[^1] == '\"')
 			return ((String)s)[2..^1].Replace("\"\"", "\"");
-		else if (Constructions.IsRawString(s, out var output))
+		else if (Core.IsRawString(s, out var output))
 			return output;
 		else
 		{
