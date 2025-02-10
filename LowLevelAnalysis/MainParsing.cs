@@ -2479,42 +2479,14 @@ public partial class MainParsing : LexemStream
 	private bool? ParsePrimitiveType(ref int pos, int end, BlockStack mainContainer, out UniversalType UnvType,
 		ref List<String>? errorsList, string collectionType, TypeConstraints constraints, String s)
 	{
-		if (s == "short")
+		if (constraints != TypeConstraints.None)
 		{
-			if (constraints != TypeConstraints.None)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: non-sealed class or interface");
-				return false;
-			}
-			pos++;
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "char" || lexems[pos].String == "int"))
-			{
-				UnvType = (new([new(BlockType.Primitive, s + " " + lexems[pos].String, 1)]), NoGeneralExtraTypes);
-				pos++;
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "incorrect type with \"short\" or \"long\" word");
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
+			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+			GenerateError(pos, "expected: non-sealed class or interface");
+			return false;
 		}
-		else if (s == "long")
+		if (s.ToString() is "short" or "long")
 		{
-			if (constraints != TypeConstraints.None)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: non-sealed class or interface");
-				return false;
-			}
 			pos++;
 			if (pos >= end)
 			{
@@ -2522,7 +2494,8 @@ public partial class MainParsing : LexemStream
 				GenerateUnexpectedEndOfTypeError(ref errorsList);
 				return false;
 			}
-			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "char" || lexems[pos].String == "int"/* || lexems[pos].input == "long" || lexems[pos].input == "real"*/))
+			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "char" || lexems[pos].String == "int"
+				/*|| s == "long" && (lexems[pos].input == "long" || lexems[pos].input == "real")*/))
 			{
 				UnvType = (new([new(BlockType.Primitive, s + " " + lexems[pos].String, 1)]), NoGeneralExtraTypes);
 				pos++;
@@ -2537,12 +2510,6 @@ public partial class MainParsing : LexemStream
 		}
 		else if (s == "unsigned")
 		{
-			if (constraints != TypeConstraints.None)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: non-sealed class or interface");
-				return false;
-			}
 			String mediumWord = [];
 			pos++;
 			if (pos >= end)
@@ -2577,12 +2544,6 @@ public partial class MainParsing : LexemStream
 		}
 		else if (s == "list")
 		{
-			if (constraints != TypeConstraints.None)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: non-sealed class or interface");
-				return false;
-			}
 			if (collectionType == "list")
 				GenerateMessage("Warning", pos, "two \"list\" modifiers in a row; consider using multi-dimensional list instead");
 			pos++;
