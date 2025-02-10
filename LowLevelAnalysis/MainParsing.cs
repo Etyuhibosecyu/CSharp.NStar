@@ -2259,177 +2259,10 @@ public partial class MainParsing : LexemStream
 		BlockStack container = new(), container2;
 	l0:
 		s = lexems[pos].String;
-		if (s == "short")
-		{
-			if (constraints != TypeConstraints.None)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: non-sealed class or interface");
-				return false;
-			}
-			pos++;
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "char" || lexems[pos].String == "int"))
-			{
-				UnvType = (new([new(BlockType.Primitive, s + " " + lexems[pos].String, 1)]), NoGeneralExtraTypes);
-				pos++;
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "incorrect type with \"short\" or \"long\" word");
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-		}
-		else if (s == "long")
-		{
-			if (constraints != TypeConstraints.None)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: non-sealed class or interface");
-				return false;
-			}
-			pos++;
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "char" || lexems[pos].String == "int"/* || lexems[pos].input == "long" || lexems[pos].input == "real"*/))
-			{
-				UnvType = (new([new(BlockType.Primitive, s + " " + lexems[pos].String, 1)]), NoGeneralExtraTypes);
-				pos++;
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "incorrect type with \"short\" or \"long\" word");
-				return false;
-			}
-		}
-		else if (s == "unsigned")
-		{
-			if (constraints != TypeConstraints.None)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: non-sealed class or interface");
-				return false;
-			}
-			String mediumWord = [];
-			var pos2 = pos;
-			pos++;
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "short" || lexems[pos].String == "long"))
-			{
-				mediumWord = lexems[pos].String + " ";
-				pos++;
-			}
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (lexems[pos].Type == LexemType.Identifier && lexems[pos].String == "int"/* || lexems[pos].input == "long"*/)
-			{
-				UnvType = (new([new(BlockType.Primitive, s + " " + mediumWord + lexems[pos].String, 1)]), NoGeneralExtraTypes);
-				pos++;
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "incorrect type with \"unsigned\" word");
-				return false;
-			}
-		}
-		else if (s == "list")
-		{
-			if (constraints != TypeConstraints.None)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: non-sealed class or interface");
-				return false;
-			}
-			if (collectionType == "list")
-				GenerateMessage("Warning", pos, "two \"list\" modifiers in a row; consider using multi-dimensional list instead");
-			var pos2 = pos;
-			pos++;
-			GeneralExtraTypes typeParts = [];
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (IsCurrentLexemOther("("))
-				pos++;
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: (");
-				goto list0;
-			}
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (lexems[pos].Type == LexemType.Int)
-			{
-				typeParts.Add(((TypeOrValue)lexems[pos].String, NoGeneralExtraTypes));
-				pos++;
-			}
-			else if (!IsCurrentLexemOther(")"))
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: int number or ); variables and complex expressions at this place are under development");
-				goto list0;
-			}
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (IsCurrentLexemOther(")"))
-			{
-				pos++;
-				goto list1;
-			}
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: )");
-				goto list0;
-			}
-		list0:
-			CloseBracket(ref pos, ")", ref errorsList!, end);
-			ParseType(ref pos, end, mainContainer, out var InnerUnvType, ref errorsList, true, "list");
-			typeParts.Add(InnerUnvType);
-			UnvType = (new([new(BlockType.Primitive, "list", 1)]), typeParts);
-			return false;
-		list1:
-			ParseType(ref pos, end, mainContainer, out var InnerUnvType2, ref errorsList, true, "list");
-			typeParts.Add(InnerUnvType2);
-			UnvType = (new([new(BlockType.Primitive, "list", 1)]), typeParts);
-			return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-		}
-		else if (NamespacesList.Contains(namespace_ == "" ? s : namespace_ + "." + s) || UserDefinedNamespacesList.Contains(namespace_ == "" ? s : namespace_ + "." + s))
+		if (ParsePrimitiveType(ref pos, end, mainContainer, out UnvType,
+			ref errorsList, collectionType, constraints, s) is bool b)
+			return b;
+		if (NamespacesList.Contains(namespace_ == "" ? s : namespace_ + "." + s) || UserDefinedNamespacesList.Contains(namespace_ == "" ? s : namespace_ + "." + s))
 		{
 			pos++;
 			if (pos >= end)
@@ -2544,7 +2377,9 @@ public partial class MainParsing : LexemStream
 			UnvType = (new(container2.ToList().Append(new(BlockType.Class, s, 1))), innerArrayParameters);
 			return EndParseType2(ref pos, end, ref UnvType, ref errorsList);
 		}
-		else if (UserDefinedTypesList.TryGetValue((container, s), out var value2))
+		else if (UserDefinedTypesList.TryGetValue((container, s), out var value2)
+			|| container.Length == 0 && CheckContainer(mainContainer, stack =>
+			UserDefinedTypesList.TryGetValue((stack, s), out value2), out container2))
 		{
 			var pos2 = pos;
 			if (constraints != TypeConstraints.None && !IsValidBaseClass(value2.Attributes))
@@ -2563,55 +2398,12 @@ public partial class MainParsing : LexemStream
 			}
 			else
 			{
-				UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-		}
-		else if (container.Length == 0 && CheckContainer(mainContainer, stack => UserDefinedTypesList.TryGetValue((stack, s), out value2), out container2))
-		{
-			var pos2 = pos;
-			if (constraints != TypeConstraints.None && !IsValidBaseClass(value2.Attributes))
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: non-sealed class or interface");
-				return false;
-			}
-			pos++;
-			if (pos < end && IsCurrentLexemOperator("."))
-			{
-				container = new(mainContainer.ToList().Append(new(BlockType.Class, s, 1)));
-				outerClass = outerClass == "" ? s : outerClass + "." + s;
-				pos++;
-				goto l0;
-			}
-			else
-			{
 				UnvType = (new(container2.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 			}
 		}
-		else if (ExtraTypeExists(container, s))
-		{
-			var pos2 = pos;
-			if (constraints != TypeConstraints.None)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "expected: non-sealed class or interface");
-				return false;
-			}
-			pos++;
-			if (pos < end && IsCurrentLexemOperator("."))
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateError(pos, "incorrect construction after type name");
-			}
-			else
-			{
-				UnvType = (new(container.ToList().Append(new(BlockType.Extra, s, 1))), NoGeneralExtraTypes);
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-		}
-		else if (container.Length == 0 && CheckContainer(mainContainer, stack => ExtraTypeExists(stack, s), out container2))
+		else if (ExtraTypeExists(container, s) || container.Length == 0
+			&& CheckContainer(mainContainer, stack => ExtraTypeExists(stack, s), out container2))
 		{
 			var pos2 = pos;
 			if (constraints != TypeConstraints.None)
@@ -2682,6 +2474,181 @@ public partial class MainParsing : LexemStream
 			}
 		}
 		return false;
+	}
+
+	private bool? ParsePrimitiveType(ref int pos, int end, BlockStack mainContainer, out UniversalType UnvType,
+		ref List<String>? errorsList, string collectionType, TypeConstraints constraints, String s)
+	{
+		if (s == "short")
+		{
+			if (constraints != TypeConstraints.None)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "expected: non-sealed class or interface");
+				return false;
+			}
+			pos++;
+			if (pos >= end)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return false;
+			}
+			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "char" || lexems[pos].String == "int"))
+			{
+				UnvType = (new([new(BlockType.Primitive, s + " " + lexems[pos].String, 1)]), NoGeneralExtraTypes);
+				pos++;
+				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
+			}
+			else
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "incorrect type with \"short\" or \"long\" word");
+				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
+			}
+		}
+		else if (s == "long")
+		{
+			if (constraints != TypeConstraints.None)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "expected: non-sealed class or interface");
+				return false;
+			}
+			pos++;
+			if (pos >= end)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return false;
+			}
+			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "char" || lexems[pos].String == "int"/* || lexems[pos].input == "long" || lexems[pos].input == "real"*/))
+			{
+				UnvType = (new([new(BlockType.Primitive, s + " " + lexems[pos].String, 1)]), NoGeneralExtraTypes);
+				pos++;
+				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
+			}
+			else
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "incorrect type with \"short\" or \"long\" word");
+				return false;
+			}
+		}
+		else if (s == "unsigned")
+		{
+			if (constraints != TypeConstraints.None)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "expected: non-sealed class or interface");
+				return false;
+			}
+			String mediumWord = [];
+			pos++;
+			if (pos >= end)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return false;
+			}
+			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "short" || lexems[pos].String == "long"))
+			{
+				mediumWord = lexems[pos].String + " ";
+				pos++;
+			}
+			if (pos >= end)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return false;
+			}
+			else if (lexems[pos].Type == LexemType.Identifier && lexems[pos].String == "int"/* || lexems[pos].input == "long"*/)
+			{
+				UnvType = (new([new(BlockType.Primitive, s + " " + mediumWord + lexems[pos].String, 1)]), NoGeneralExtraTypes);
+				pos++;
+				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
+			}
+			else
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "incorrect type with \"unsigned\" word");
+				return false;
+			}
+		}
+		else if (s == "list")
+		{
+			if (constraints != TypeConstraints.None)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "expected: non-sealed class or interface");
+				return false;
+			}
+			if (collectionType == "list")
+				GenerateMessage("Warning", pos, "two \"list\" modifiers in a row; consider using multi-dimensional list instead");
+			pos++;
+			GeneralExtraTypes typeParts = [];
+			if (pos >= end)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return false;
+			}
+			else if (IsCurrentLexemOther("("))
+				pos++;
+			else
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "expected: (");
+				goto list0;
+			}
+			if (pos >= end)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return false;
+			}
+			else if (lexems[pos].Type == LexemType.Int)
+			{
+				typeParts.Add(((TypeOrValue)lexems[pos].String, NoGeneralExtraTypes));
+				pos++;
+			}
+			else if (!IsCurrentLexemOther(")"))
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "expected: int number or ); variables and complex expressions at this place are under development");
+				goto list0;
+			}
+			if (pos >= end)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return false;
+			}
+			else if (IsCurrentLexemOther(")"))
+			{
+				pos++;
+				goto list1;
+			}
+			else
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "expected: )");
+				goto list0;
+			}
+		list0:
+			CloseBracket(ref pos, ")", ref errorsList!, end);
+			ParseType(ref pos, end, mainContainer, out var InnerUnvType, ref errorsList, true, "list");
+			typeParts.Add(InnerUnvType);
+			UnvType = (new([new(BlockType.Primitive, "list", 1)]), typeParts);
+			return false;
+		list1:
+			ParseType(ref pos, end, mainContainer, out var InnerUnvType2, ref errorsList, true, "list");
+			typeParts.Add(InnerUnvType2);
+			UnvType = (new([new(BlockType.Primitive, "list", 1)]), typeParts);
+			return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
+		}
+		UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+		return null;
 	}
 
 	private bool ParseTupleType(ref int pos, int end, BlockStack mainContainer, out UniversalType UnvType, ref List<String>? errorsList)
