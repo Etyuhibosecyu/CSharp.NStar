@@ -204,7 +204,7 @@ public partial class MainParsing : LexemStream
 			nameof(HypernameIndexes) or "HypernameNotCallIndexes" => HypernameIndexes,
 			"HypernameClosing" or "HypernameNotCallClosing" or "BasicExpr4" => HypernameClosing_BasicExpr4,
 			"Indexes2" => Indexes2,
-			nameof(Type) or nameof(TypeConstraints.BaseClassOrInterface) => Type,
+			nameof(Type) or nameof(TypeConstraints.BaseClassOrInterface) or nameof(TypeConstraints.NotAbstract) => Type,
 			nameof(BasicExpr) => BasicExpr,
 			"BasicExpr2" => BasicExpr2,
 			_ => Default,
@@ -394,7 +394,7 @@ public partial class MainParsing : LexemStream
 		{
 			if (!(success && extra is UniversalType UnvType))
 			{
-				_TBStack[_Stackpos] = new(nameof(Class), new TreeBranch("type", registeredTypes[registeredTypesPos].Start, registeredTypes[registeredTypesPos].End, container) { Extra = NullType }, container);
+				_TBStack[_Stackpos]?.Add(new TreeBranch("type", registeredTypes[registeredTypesPos].Start, registeredTypes[registeredTypesPos].End, container) { Extra = NullType });
 				return;
 			}
 			var t = UserDefinedTypesList[(registeredTypes[registeredTypesPos].Container, registeredTypes[registeredTypesPos].Name)];
@@ -405,7 +405,7 @@ public partial class MainParsing : LexemStream
 		CheckSuccess();
 		TransformErrorMessage2();
 		pos = registeredTypes[registeredTypesPos].End;
-		return CheckOpeningBracketAndAddTask(nameof(ClassMain), "Class}", BlockType.Function, registeredTypes[registeredTypesPos].Name);
+		return CheckOpeningBracketAndAddTask(nameof(ClassMain), "Class}", BlockType.Class, registeredTypes[registeredTypesPos].Name);
 	}
 
 	private bool ClassClosing()
@@ -425,8 +425,8 @@ public partial class MainParsing : LexemStream
 	{
 		if (CheckBlockToJump(nameof(Function)))
 		{
-			if (registeredTypesPos < registeredTypes.Length && registeredTypes[registeredTypesPos].Start >= blocksToJump[blocksToJumpPos].Start && registeredTypes[registeredTypesPos].End <= blocksToJump[blocksToJumpPos].End)
-				return IncreaseStack(nameof(Type), currentTask: "Function2", pos_: registeredTypes[registeredTypesPos].Start, applyCurrentTask: true, start_: registeredTypes[registeredTypesPos].Start, end_: registeredTypes[registeredTypesPos].End, currentExtra: new UniversalType(new BlockStack(), NoGeneralExtraTypes), rtp: registeredTypesPos + 1);
+			if (registeredTypesPos < registeredTypes.Length && blocksToJump[blocksToJumpPos].Start >= pos && blocksToJump[blocksToJumpPos].End <= end)
+				return IncreaseStack(nameof(Type), currentTask: "Function2", pos_: blocksToJump[blocksToJumpPos].Start, applyCurrentTask: true, start_: blocksToJump[blocksToJumpPos].Start, end_: blocksToJump[blocksToJumpPos].End, currentExtra: new UniversalType(new BlockStack(), NoGeneralExtraTypes), rtp: registeredTypesPos + 1);
 			else
 			{
 				_TaskStack[_Stackpos] = "Function2";
@@ -568,9 +568,9 @@ public partial class MainParsing : LexemStream
 	private bool CheckColonAndAddTask(String newTask, String closingString, BlockType blockType)
 	{
 		if (IsCurrentLexemOperator(":"))
-			return IncreaseStack(newTask, currentTask: closingString, pos_: pos + 1, applyPos: true, applyCurrentTask: true, container_: new(container.ToList().Append(new(blockType, blocksToJump[blocksToJumpPos].Name, 1))), btjp: blocksToJumpPos + 1);
+			return IncreaseStack(newTask, currentTask: closingString, pos_: pos + 1, applyPos: true, applyCurrentTask: true, container_: new(container.ToList().Append(new(blockType, blocksToJump[blocksToJumpPos].Name, 1))));
 		else
-			return EndWithError(pos, "expected: :");
+			return EndWithError(pos, "expected: \":\"");
 	}
 
 	private bool CheckOpeningBracketAndAddTask(String newTask, String closingString, BlockType blockType, String? name = null)
@@ -1774,7 +1774,7 @@ public partial class MainParsing : LexemStream
 			else if (IsCurrentLexemOther("("))
 				return EndWithError(pos, "the \"new\" keyword with implicit type is under development", true);
 			else
-				return IncreaseStack(nameof(Type), currentTask: "HypernameNew", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
+				return IncreaseStack(nameof(TypeConstraints.NotAbstract), currentTask: "HypernameNew", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
 		}
 		else
 			return IncreaseStack(nameof(Type), currentTask: task == "HypernameNotCall" ? "HypernameNotCallType" : "HypernameType", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
@@ -1798,7 +1798,11 @@ public partial class MainParsing : LexemStream
 				return EndWithError(pos, "expected: (", true);
 		}
 		else
-			return _SuccessStack[_Stackpos] = false;
+		{
+			if (errorsList != null)
+				_ErLStack[_Stackpos]?.AddRange(errorsList);
+			return Default();
+		}
 	}
 
 	private bool HypernameType()
@@ -1986,7 +1990,12 @@ public partial class MainParsing : LexemStream
 	private bool Type()
 	{
 		var pos2 = pos;
-		if (ParseType(ref pos, end, container, out var UnvType, ref errorsList!, constraints: task == nameof(TypeConstraints.BaseClassOrInterface) ? TypeConstraints.BaseClassOrInterface : TypeConstraints.None))
+		if (ParseType(ref pos, end, container, out var UnvType, ref errorsList!, constraints: task.ToString() switch
+		{
+			nameof(TypeConstraints.BaseClassOrInterface) => TypeConstraints.BaseClassOrInterface,
+			nameof(TypeConstraints.NotAbstract) => TypeConstraints.NotAbstract,
+			_ => TypeConstraints.None,
+		}))
 		{
 			_ErLStack[_Stackpos]?.AddRange(errorsList);
 			_TBStack[_Stackpos] = new("type", pos2, container) { Extra = UnvType };
@@ -2248,7 +2257,7 @@ public partial class MainParsing : LexemStream
 		TypeConstraints constraints = TypeConstraints.None)
 	{
 		String s, namespace_ = [], outerClass = [];
-		BlockStack container = new(), container2;
+		BlockStack container = new(), innerContainer, innerUserDefinedContainer;
 	l0:
 		s = lexems[pos].String;
 		if (ParsePrimitiveType(ref pos, end, mainContainer, out UnvType,
@@ -2278,7 +2287,7 @@ public partial class MainParsing : LexemStream
 		}
 		else if (container.Length == 0 && PrimitiveTypesList.ContainsKey(s))
 		{
-			if (constraints != TypeConstraints.None)
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
 			{
 				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 				GenerateError(pos, "expected: non-sealed class or interface");
@@ -2299,11 +2308,17 @@ public partial class MainParsing : LexemStream
 		else if (ExtraTypesList.TryGetValue((namespace_, s), out var type) || namespace_ == ""
 			&& ExplicitlyConnectedNamespacesList.FindIndex(x => ExtraTypesList.TryGetValue((x, s), out type)) >= 0)
 		{
-			if (constraints != TypeConstraints.None && (!type.IsClass || type.IsSealed))
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
+				&& (!type.IsClass || type.IsSealed))
 			{
 				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 				GenerateError(pos, "expected: non-sealed class or interface");
 				return false;
+			}
+			if (constraints == TypeConstraints.NotAbstract && type.IsAbstract)
+			{
+				UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
+				GenerateError(pos, "cannot create instance of abstract type \"" + UnvType.ToString() + "\"");
 			}
 			var pos2 = pos;
 			pos++;
@@ -2333,22 +2348,31 @@ public partial class MainParsing : LexemStream
 			UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), innerArrayParameters);
 			return EndParseType2(ref pos, end, ref UnvType, ref errorsList);
 		}
-		else if (GeneralTypesList.TryGetValue((container2 = container, s), out var value) || namespace_ == ""
-			&& ExplicitlyConnectedNamespacesList.FindIndex(x => GeneralTypesList.TryGetValue((container2 = new(x.Split('.').Convert(x =>
+		else if (GeneralTypesList.TryGetValue((innerContainer = container, s), out var value) || namespace_ == ""
+			&& ExplicitlyConnectedNamespacesList.FindIndex(x => GeneralTypesList.TryGetValue((innerContainer = new(x.Split('.').Convert(x =>
 			new Block(BlockType.Namespace, x, 1))), s), out value)) >= 0)
 		{
 			var pos2 = pos;
 			var (ArrayParameters, Attributes) = value;
-			if (constraints != TypeConstraints.None && !IsValidBaseClass(Attributes))
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
+				&& !IsValidBaseClass(Attributes))
 			{
 				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 				GenerateError(pos, "expected: non-sealed class or interface");
 				return false;
 			}
+			if (constraints == TypeConstraints.NotAbstract
+				&& (Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) is not 0 or TypeAttributes.Sealed
+				or TypeAttributes.Struct)
+			{
+				UnvType = (new(innerContainer.ToList().Append(new(BlockType.Class, s, 1))),
+					NoGeneralExtraTypes);
+				GenerateError(pos, "cannot create instance of abstract type \"" + UnvType.ToString() + "\"");
+			}
 			pos++;
 			if (ArrayParameters.Length == 0)
 			{
-				UnvType = (new(container2.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
+				UnvType = (new(innerContainer.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 			}
 			if (pos >= end)
@@ -2366,19 +2390,28 @@ public partial class MainParsing : LexemStream
 				return false;
 			}
 			ParseTypeChain(ref pos, end, mainContainer, ArrayParameters, out var innerArrayParameters, ref errorsList, "associativeArray");
-			UnvType = (new(container2.ToList().Append(new(BlockType.Class, s, 1))), innerArrayParameters);
+			UnvType = (new(innerContainer.ToList().Append(new(BlockType.Class, s, 1))), innerArrayParameters);
 			return EndParseType2(ref pos, end, ref UnvType, ref errorsList);
 		}
-		else if (UserDefinedTypesList.TryGetValue((container, s), out var value2)
+		else if (UserDefinedTypesList.TryGetValue((innerUserDefinedContainer = container, s), out var value2)
 			|| container.Length == 0 && CheckContainer(mainContainer, stack =>
-			UserDefinedTypesList.TryGetValue((stack, s), out value2), out container2))
+			UserDefinedTypesList.TryGetValue((stack, s), out value2), out innerUserDefinedContainer))
 		{
 			var pos2 = pos;
-			if (constraints != TypeConstraints.None && !IsValidBaseClass(value2.Attributes))
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
+				&& !IsValidBaseClass(value2.Attributes))
 			{
 				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 				GenerateError(pos, "expected: non-sealed class or interface");
 				return false;
+			}
+			if (constraints == TypeConstraints.NotAbstract
+				&& (value2.Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) is not 0 or TypeAttributes.Sealed
+				or TypeAttributes.Struct)
+			{
+				UnvType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))),
+					NoGeneralExtraTypes);
+				GenerateError(pos, "cannot create instance of abstract type \"" + UnvType.ToString() + "\"");
 			}
 			pos++;
 			if (pos < end && IsCurrentLexemOperator("."))
@@ -2390,15 +2423,15 @@ public partial class MainParsing : LexemStream
 			}
 			else
 			{
-				UnvType = (new(container2.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
+				UnvType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 			}
 		}
 		else if (ExtraTypeExists(container, s) || container.Length == 0
-			&& CheckContainer(mainContainer, stack => ExtraTypeExists(stack, s), out container2))
+			&& CheckContainer(mainContainer, stack => ExtraTypeExists(stack, s), out innerContainer))
 		{
 			var pos2 = pos;
-			if (constraints != TypeConstraints.None)
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
 			{
 				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 				GenerateError(pos, "expected: non-sealed class or interface");
@@ -2412,7 +2445,7 @@ public partial class MainParsing : LexemStream
 			}
 			else
 			{
-				UnvType = (new(container2.ToList().Append(new(BlockType.Extra, s, 1))), NoGeneralExtraTypes);
+				UnvType = (new(innerContainer.ToList().Append(new(BlockType.Extra, s, 1))), NoGeneralExtraTypes);
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 			}
 		}
@@ -2471,14 +2504,14 @@ public partial class MainParsing : LexemStream
 	private bool? ParsePrimitiveType(ref int pos, int end, BlockStack mainContainer, out UniversalType UnvType,
 		ref List<String>? errorsList, string collectionType, TypeConstraints constraints, String s)
 	{
-		if (constraints != TypeConstraints.None)
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateError(pos, "expected: non-sealed class or interface");
-			return false;
-		}
 		if (s.ToString() is "short" or "long")
 		{
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "expected: non-sealed class or interface");
+				return false;
+			}
 			pos++;
 			if (pos >= end)
 			{
@@ -2502,6 +2535,12 @@ public partial class MainParsing : LexemStream
 		}
 		else if (s == "unsigned")
 		{
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "expected: non-sealed class or interface");
+				return false;
+			}
 			String mediumWord = [];
 			pos++;
 			if (pos >= end)
@@ -2536,6 +2575,12 @@ public partial class MainParsing : LexemStream
 		}
 		else if (s == "list")
 		{
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
+			{
+				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
+				GenerateError(pos, "expected: non-sealed class or interface");
+				return false;
+			}
 			if (collectionType == "list")
 				GenerateMessage("Warning", pos, "two \"list\" modifiers in a row; consider using multi-dimensional list instead");
 			pos++;

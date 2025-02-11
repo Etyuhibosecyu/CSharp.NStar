@@ -116,7 +116,7 @@ public sealed class SemanticTree
 			{
 				if (branch.Info == "Main" && x.Info == "Main" && !s.EndsWith('}') && s.Length != 0 && s[..^1].Contains(';'))
 					result.Add('{');
-				if (s == "_")
+				if (s.ToString() is "_" or "default" or "default!" or "_ = default" or "_ = default!")
 					s = [];
 				result.AddRange(s);
 				if (s.Length != 0 && s[^1] is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_')
@@ -137,7 +137,7 @@ public sealed class SemanticTree
 		String result = [];
 		errorsList = [];
 		var name = branch[0].Info;
-		var (_, Attributes, _, _) = UserDefinedTypesList[(branch.Container, name)];
+		var (_, Attributes, BaseType, _) = UserDefinedTypesList[(branch.Container, name)];
 		if ((Attributes & TypeAttributes.Closed) != 0)
 			result.AddRange("private ");
 		if ((Attributes & TypeAttributes.Protected) != 0)
@@ -151,16 +151,15 @@ public sealed class SemanticTree
 			result.AddRange("public ");
 		if ((Attributes & TypeAttributes.Static) == TypeAttributes.Static)
 			result.AddRange("static ");
-		if ((Attributes & TypeAttributes.Abstract) != 0 && (Attributes & TypeAttributes.Static) != TypeAttributes.Static)
-		{
+		else if ((Attributes & TypeAttributes.Abstract) != 0)
 			result.AddRange("abstract ");
-			Add(ref errorsList, "Wreck in line " + lexems[branch.Pos].LineN.ToString() + " at position " + lexems[branch.Pos].Pos.ToString() + ": at present time the word \"abstract\" is forbidden");
-			wreckOccurred = true;
-		}
+		else if ((Attributes & TypeAttributes.Sealed) != 0)
+			result.AddRange("sealed ");
 		result.AddRange("class ");
 		if (EscapedKeywordsList.Contains(name))
 			result.Add('@');
-		result.AddRange(name).AddRange(" : IClass{").AddRange(CalculationParseAction(branch[^1].Info)(branch[^1], out var coreErrorsList).Add('}'));
+		result.AddRange(name).AddRange(" : ").AddRange(TypeIsPrimitive(BaseType.MainType) ? "IClass" : Type(BaseType));
+		result.Add('{').AddRange(CalculationParseAction(branch[^1].Info)(branch[^1], out var coreErrorsList).Add('}'));
 		AddRange(ref errorsList, coreErrorsList);
 		if (IsTypeContext(branch))
 			return result;
@@ -469,6 +468,8 @@ public sealed class SemanticTree
 			else
 			{
 				var innerResult = Hypername2(branch, ref errorsList, ref extra, ref i);
+				if (innerResult.ToString() is "default" or "default!")
+					return "default!";
 				if (innerResult.StartsWith('(') && innerResult.Length > 2)
 				{
 					innerResult.RemoveAt(0);
@@ -799,7 +800,7 @@ public sealed class SemanticTree
 			}
 			else
 			{
-				result.AddRange("new ").AddRange(Type(ConstructingUnvType)).AddRange(CalculationParseAction(branch[index].Info)(branch[index], out var innerErrorsList));
+				result.AddRange("new ").AddRange(Type(ConstructingUnvType)).AddRange(ExprConstructorCall(branch[index], out var innerErrorsList));
 				AddRange(ref errorsList, innerErrorsList);
 				branch.Extra = branch[0].Extra;
 			}
@@ -841,6 +842,8 @@ public sealed class SemanticTree
 		else if (branch[index].Info == ".")
 		{
 			using var innerResult = Hypername(branch[++index], out var innerErrorsList, extra);
+			if (innerResult.ToString() is "default" or "default!")
+				return "default!";
 			if (innerResult.StartsWith('('))
 			{
 				innerResult.RemoveAt(0);

@@ -1,4 +1,4 @@
-﻿#define RELEASE
+﻿#define VERIFY
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -29,6 +29,7 @@ public partial class MainView : UserControl
 	private static readonly string AlphanumericCharactersWithoutDot = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	private static readonly G.SortedSet<String> AutoCompletionList = new(new List<String>("abstract", "break", "case", "Class", "closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypesList.Keys).AddRange(ExtraTypesList.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type))).AddRange(PublicFunctionsList.Keys));
 	private static readonly G.SortedSet<string> AutoCompletionAfterDotList = new(PrimitiveTypesList.Values.ToList().AddRange(ExtraTypesList.Values).ConvertAndJoin(x => x.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).ToList(x => PropertyMappingBack(x.Name)).AddRange(x.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).ToList(x => FunctionMappingBack(x.Name)))).Filter(x => !x.Contains('_')));
+#if VERIFY
 	private static readonly Dictionary<String, (String TargetResult, String? TargetErrors)> testPrograms = new() { { """
 		return ("7" * "2", "7" * 2, 7 * "2", "7" / "2", "7" / 2, 7 / "2", "7" % "2", "7" % 2, 7 % "2", "7" - "2", "7" - 2, 7 - "2");
 
@@ -252,7 +253,67 @@ NList[int] list = new NList[int](3, 1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.Reverse(2, 3);
-", (@"(1, 4, 3, 2, 5, 6, 7)", null) }, { @"return 100000000000000000*100000000000000000000;
+", (@"(1, 4, 3, 2, 5, 6, 7)", null) }, { @"using System.Collections;
+Class MyClass : ListHashSet[string]
+{
+}
+var hs = new MyClass();
+hs.Add(""1"");
+hs.Add(""2"");
+hs.Add(""3"");
+hs.Add(""2"");
+return hs;
+", ("""("1", "2", "3")""", "Ошибок нет") }, { @"using System.Collections;
+Class MyClass : ListHashSet[string]
+{
+}
+MyClass Function F()
+{
+	var hs = new MyClass();
+	hs.Add(""1"");
+	hs.Add(""2"");
+	hs.Add(""3"");
+	hs.Add(""2"");
+	return hs;
+}
+return F();
+", ("""("1", "2", "3")""", "Ошибок нет") }, { @"using System.Collections;
+Class MyClass : ListHashSet[string]
+{
+}
+MyClass Function F()
+{
+	var hs = new MyClass();
+	hs.Add(""1"");
+	hs.Add(""2"");
+	hs.Add(""3"");
+	hs.Add(""2"");
+	return hs;
+}
+return F().Length;
+", ("3", "Ошибок нет") }, { @"using System.Collections;
+abstract Class MyClass : ListHashSet[string]
+{
+}
+MyClass Function F()
+{
+	var hs = new MyClass();
+	hs.Add(""1"");
+	hs.Add(""2"");
+	hs.Add(""3"");
+	hs.Add(""2"");
+	return hs;
+}
+return F();
+", ("null", @"Error in line 7 at position 14: cannot create instance of abstract type ""MyClass""
+Error in line 7 at position 21: internal error
+Error in line 7 at position 1: variable declared with the keyword ""var"" must be assigned explicitly and in the same expression
+Error in line 8 at position 1: identifier ""hs"" is not defined in this location
+Error in line 9 at position 1: identifier ""hs"" is not defined in this location
+Error in line 10 at position 1: identifier ""hs"" is not defined in this location
+Error in line 11 at position 1: identifier ""hs"" is not defined in this location
+Error in line 12 at position 8: identifier ""hs"" is not defined in this location
+") }, { @"return 100000000000000000*100000000000000000000;
 ", (@"null", @"Error in line 1 at position 26: too large number; long long type is under development
 ") }, { """
 return ExecuteString("return args[1];", Q());
@@ -305,6 +366,7 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 	DecomposeSquareTrinomial((-1, -1, -10)), DecomposeSquareTrinomial((0, 11, 5)),
 	DecomposeSquareTrinomial((-1, 0, 0)), DecomposeSquareTrinomial((2, -11, 0)));
 ", ("""("3(x + 5)(x - 2)", "(x + 8)²", "Неразложимо", "Это не квадратный трехчлен", "-x²", "2x(x - 5.5)")""", "Ошибок нет") } };
+#endif
 
 	public MainView()
 	{
@@ -331,6 +393,8 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 		_ = TextBoxInput.TextArea.TextView.GetDocumentLineByVisualTop(TextBoxInput.TextArea.TextView.ScrollOffset.Y).LineNumber;
 #if RELEASE
 		ButtonSaveExe.IsEnabled = false;
+#endif
+#if VERIFY
 		String result;
 		foreach (var (Key, Value) in testPrograms)
 		{
@@ -339,9 +403,9 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 				continue;
 			throw new Exception("Error: @\"" + Key.Replace("\"", "\"\"") + "\"" + (result == Value.TargetResult ? ""
 				: " returned @\"" + result.Replace("\"", "\"\"") + "\" instead of @\""
-				+ Value.TargetResult.Replace("\"", "\"\"") + "\"" + (Value.TargetErrors == null
+				+ Value.TargetResult.Replace("\"", "\"\"") + "\"") + (Value.TargetErrors == null
 				|| errors == Value.TargetErrors ? "" : " and produced errors @\"" + errors.Replace("\"", "\"\"")
-				+ "\" instead of @\"" + Value.TargetErrors.Replace("\"", "\"\"") + "\"") + "!"));
+				+ "\" instead of @\"" + Value.TargetErrors.Replace("\"", "\"\"") + "\"") + "!");
 		}
 #endif
 	}

@@ -214,7 +214,7 @@ public class LexemStream
 		GetBlockStart();
 		var blockStart = pos2;
 		attributes = (TypeAttributes)GetAccessMethod((int)attributes);
-		attributes |= (TypeAttributes)AddAttribute(new G.Dictionary<String, dynamic> { { "static", TypeAttributes.Static }, { "sealed", TypeAttributes.Sealed }, { "abstract", TypeAttributes.Abstract } });
+		attributes |= (TypeAttributes)AddAttribute(new() { { "static", TypeAttributes.Static }, { "sealed", TypeAttributes.Sealed }, { "abstract", TypeAttributes.Abstract } });
 		attributes |= (TypeAttributes)AddAttribute("partial", TypeAttributes.Partial);
 		while (pos2 < pos)
 		{
@@ -506,7 +506,7 @@ public class LexemStream
 		}
 	}
 
-	private dynamic AddAttribute(G.Dictionary<String, dynamic> list)
+	private dynamic AddAttribute(Dictionary<String, dynamic> list)
 	{
 		if (lexems[pos2].Type == LexemType.Keyword && list.TryGetValue(lexems[pos2].String, out var value))
 		{

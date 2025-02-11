@@ -327,9 +327,10 @@ public enum BlockType
 
 public enum TypeConstraints
 {
-	None = 0,
-	BaseClassOrInterface = 1,
-	BaseInterface = 2,
+	None,
+	BaseClassOrInterface,
+	BaseInterface,
+	NotAbstract,
 }
 
 public enum RawStringState

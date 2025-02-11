@@ -197,6 +197,9 @@ public static class DeclaredConstructionChecks
 			property = a;
 			return true;
 		}
+		else if (UserDefinedTypesList.TryGetValue(SplitType(container.MainType), out var userDefinedType)
+			&& PropertyExists(userDefinedType.BaseType, name, out property))
+			return true;
 		var containerType = SplitType(container.MainType);
 		if (!(PrimitiveTypesList.TryGetValue(containerType.Type, out var type)
 			|| ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out type)
@@ -217,17 +220,18 @@ public static class DeclaredConstructionChecks
 		return true;
 	}
 
-	public static bool UserDefinedPropertyExists(BlockStack container, String name, out (UniversalType UnvType, PropertyAttributes Attributes)? property, out BlockStack matchingContainer)
+	public static bool UserDefinedPropertyExists(BlockStack container, String name,
+		out (UniversalType UnvType, PropertyAttributes Attributes)? property, out BlockStack matchingContainer)
 	{
-		if (CheckContainer(container, UserDefinedPropertiesList.ContainsKey, out matchingContainer))
+		if (CheckContainer(container, UserDefinedPropertiesList.ContainsKey, out matchingContainer)
+			&& UserDefinedPropertiesList[matchingContainer].TryGetValue(name, out var value))
 		{
-			var list = UserDefinedPropertiesList[matchingContainer];
-			if (list.TryGetValue(name, out var a))
-			{
-				property = a;
-				return true;
-			}
+			property = value;
+			return true;
 		}
+		else if (UserDefinedTypesList.TryGetValue(SplitType(container), out var userDefinedType)
+			&& PropertyExists(userDefinedType.BaseType, name, out property))
+			return true;
 		property = null;
 		return false;
 	}
@@ -296,19 +300,22 @@ public static class DeclaredConstructionChecks
 		return false;
 	}
 
-	public static bool UserDefinedFunctionExists(BlockStack container, String name, out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function) => UserDefinedFunctionExists(container, name, out function, out _);
+	public static bool UserDefinedFunctionExists(BlockStack container, String name,
+		out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes,
+		GeneralMethodParameters Parameters)? function) => UserDefinedFunctionExists(container, name, out function, out _);
 
-	public static bool UserDefinedFunctionExists(BlockStack container, String name, out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function, out BlockStack matchingContainer)
+	public static bool UserDefinedFunctionExists(BlockStack container, String name,
+		out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes,
+		GeneralMethodParameters Parameters)? function, out BlockStack matchingContainer)
 	{
-		if (CheckContainer(container, UserDefinedFunctionsList.ContainsKey, out matchingContainer))
+		if (CheckContainer(container, UserDefinedFunctionsList.ContainsKey, out matchingContainer) && UserDefinedFunctionsList[matchingContainer].TryGetValue(name, out var method_overloads))
 		{
-			var list = UserDefinedFunctionsList[matchingContainer];
-			if (list.TryGetValue(name, out var method_overloads))
-			{
-				function = method_overloads[0];
-				return true;
-			}
+			function = method_overloads[0];
+			return true;
 		}
+		else if (UserDefinedTypesList.TryGetValue(SplitType(container), out var userDefinedType)
+			&& MethodExists(userDefinedType.BaseType, name, out function))
+			return true;
 		function = null;
 		return false;
 	}
@@ -342,7 +349,10 @@ public static class DeclaredConstructionChecks
 
 	public static bool UserDefinedConstructorsExist(BlockStack type, out GeneralConstructorOverloads? constructors)
 	{
-		if (UserDefinedConstructorsList.TryGetValue(type, out var temp_constructors))
+		if (UserDefinedConstructorsList.TryGetValue(type, out var temp_constructors)
+			&& !(UserDefinedTypesList.TryGetValue(SplitType(type), out var userDefinedType)
+			&& (userDefinedType.Attributes & (TypeAttributes.Struct | TypeAttributes.Static))
+			is not 0 or TypeAttributes.Sealed or TypeAttributes.Struct))
 		{
 			constructors = [.. temp_constructors];
 			if (constructors.Length != 0)

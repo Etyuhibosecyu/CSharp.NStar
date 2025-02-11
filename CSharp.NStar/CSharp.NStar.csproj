@@ -5,8 +5,11 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
-  
-  <ItemGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
+		<DefineConstants>VERIFY</DefineConstants>
+	</PropertyGroup>
+
+	<ItemGroup>
     <AvaloniaResource Include="Assets\**" />
     <EmbeddedResource Update="Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
