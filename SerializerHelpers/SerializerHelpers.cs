@@ -1,5 +1,7 @@
 ﻿using Corlib.NStar;
+using LINQ.NStar;
 using Newtonsoft.Json;
+using RemoveDoubles.NStar;
 using System;
 using System.Collections;
 using System.Reflection;
@@ -52,17 +54,23 @@ public static class SerializerHelpers
 				return;
 			}
 
-			var type = value.GetType();
-			writer.WriteRaw("new " + type.Name + "(");
-			var en = type.GetProperties().GetEnumerator();
+			var netType = value.GetType();
+			writer.WriteRaw("new " + netType.Name + "(");
+			List<Type> types = [];
+			for (var baseType = netType; baseType != null; baseType = baseType.BaseType)
+				types.Add(baseType);
+			ListHashSet<PropertyInfo> hs = new(new EComparer<PropertyInfo>((x, y) => x.Name == y.Name, x => x.Name.GetHashCode()));
+			foreach (var x in types.Reverse())
+				hs.AddRange(x.GetProperties());
+			var en = hs.GetEnumerator();
 			if (!en.MoveNext())
 			{
 				writer.WriteRaw(")");
 				return;
 			}
-			writer.WriteRaw(JsonConvert.SerializeObject(((PropertyInfo)en.Current).GetValue(value), SerializerSettings));
+			writer.WriteRaw(JsonConvert.SerializeObject(en.Current.GetValue(value), SerializerSettings));
 			while (en.MoveNext())
-				writer.WriteRaw(", " + JsonConvert.SerializeObject(((PropertyInfo)en.Current).GetValue(value), SerializerSettings));
+				writer.WriteRaw(", " + JsonConvert.SerializeObject(en.Current.GetValue(value), SerializerSettings));
 			writer.WriteRaw(")");
 		}
 	}

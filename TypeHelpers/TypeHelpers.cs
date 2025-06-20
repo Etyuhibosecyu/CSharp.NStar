@@ -1,4 +1,6 @@
 ﻿global using Corlib.NStar;
+global using Dictionaries.NStar;
+global using LINQ.NStar;
 global using System;
 global using System.Diagnostics;
 global using System.Drawing;
@@ -8,7 +10,10 @@ global using static Corlib.NStar.Extents;
 global using static CSharp.NStar.DeclaredConstructions;
 global using static System.Math;
 global using String = Corlib.NStar.String;
+using ParallelHS.NStar;
+using SortedSets.NStar;
 using System.Text;
+using TreeSets.NStar;
 
 namespace CSharp.NStar;
 
@@ -20,17 +25,17 @@ public static class TypeHelpers
 
 	private static readonly Dictionary<Type, bool> memoizedTypes = [];
 
-	public static bool IsUnmanaged(this Type type)
+	public static bool IsUnmanaged(this Type netType)
 	{
-		if (!memoizedTypes.TryGetValue(type, out var answer))
+		if (!memoizedTypes.TryGetValue(netType, out var answer))
 		{
-			if (!type.IsValueType)
+			if (!netType.IsValueType)
 				answer = false;
-			else if (type.IsPrimitive || type.IsPointer || type.IsEnum)
+			else if (netType.IsPrimitive || netType.IsPointer || netType.IsEnum)
 				answer = true;
 			else
-				answer = type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).All(f => IsUnmanaged(f.FieldType));
-			memoizedTypes[type] = answer;
+				answer = netType.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).All(f => IsUnmanaged(f.FieldType));
+			memoizedTypes[netType] = answer;
 		}
 		return answer;
 	}
@@ -96,7 +101,7 @@ public static class TypeHelpers
 					LeafType = (LeafType.ExtraTypes[1].MainType.Type, LeafType.ExtraTypes[1].ExtraTypes);
 				}
 			}
-			else if (LeafType.MainType.Length != 0 && LeafType.MainType.Peek().Type is BlockType.Class or BlockType.Struct or BlockType.Interface && CollectionTypesList.Contains(LeafType.MainType.ToShortString().ToNString().GetAfterLast(".")))
+			else if (LeafType.MainType.Length != 0 && LeafType.MainType.Peek().BlockType is BlockType.Class or BlockType.Struct or BlockType.Interface && CollectionTypesList.Contains(LeafType.MainType.ToShortString().ToNString().GetAfterLast(".")))
 			{
 				Depth++;
 				LeafType = (LeafType.ExtraTypes[^1].MainType.Type, LeafType.ExtraTypes[^1].ExtraTypes);
@@ -281,7 +286,7 @@ public static class TypeHelpers
 			return sourceType.ExtraTypes.Values.Combine(destinationType.ExtraTypes.Values).All(x => TypesAreCompatible((x.Item1.MainType.Type, x.Item1.ExtraTypes), (x.Item2.MainType.Type, x.Item2.ExtraTypes), out var warning2, null, out _, out _) && !warning2);
 		}
 		if (TypeEqualsToPrimitive(destinationType, "list", false) || destinationType.MainType.Length != 0
-			&& destinationType.MainType.Peek().Type is BlockType.Class or BlockType.Struct or BlockType.Interface
+			&& destinationType.MainType.Peek().BlockType is BlockType.Class or BlockType.Struct or BlockType.Interface
 			&& CollectionTypesList.Contains(destinationType.MainType.ToShortString().ToNString().GetAfterLast(".")))
 		{
 			if (TypeEqualsToPrimitive(sourceType, "tuple", false))
@@ -381,6 +386,10 @@ public static class TypeHelpers
 				return false;
 			}
 		}
+		if (UserDefinedTypesList.TryGetValue(SplitType(sourceType.MainType), out var userDefinedType)
+			&& userDefinedType.BaseType != NullType && TypesAreCompatible(userDefinedType.BaseType, destinationType,
+			out warning, srcExpr, out destExpr, out extraMessage))
+			return true;
 		var index = ImplicitConversionsList.IndexOfKey(sourceType.MainType);
 		if (index == -1)
 		{
@@ -416,7 +425,7 @@ public static class TypeHelpers
 				}
 				new_types2_list.AddRange(new_types3_list);
 			}
-			new_types_list = new(new_types2_list);
+			new_types_list = [.. new_types2_list];
 			types_list.AddRange(new_types2_list);
 			if (new_types2_list.Length == 0)
 				break;

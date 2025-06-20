@@ -1,4 +1,6 @@
 ﻿global using Corlib.NStar;
+global using Dictionaries.NStar;
+global using LINQ.NStar;
 global using System;
 global using G = System.Collections.Generic;
 global using static Corlib.NStar.Extents;
@@ -103,17 +105,17 @@ public class CodeSample(String newString)
 			pos++;
 	}
 
-	private String GetNumber(out LexemType type)
+	private String GetNumber(out LexemType lexemType)
 	{
 		var start = pos;
-		List<String> list = [GetNumber2(out type)];
-		if (CheckOverflow(list[0], ref type) is String s) return s;
+		List<String> list = [GetNumber2(out lexemType)];
+		if (CheckOverflow(list[0], ref lexemType) is String s) return s;
 		if (ValidateChar('.'))
 		{
-			type = LexemType.Real;
+			lexemType = LexemType.Real;
 			list.Add(input[(pos - 1)..pos]);
 			list.Add(GetNumber2(out _));
-			if (CheckOverflow(list[^1], ref type) is String s2) return s2;
+			if (CheckOverflow(list[^1], ref lexemType) is String s2) return s2;
 			if (list[0].Length == 0 && list[2].Length == 0)
 			{
 				pos = start;
@@ -122,23 +124,23 @@ public class CodeSample(String newString)
 		}
 		if (list[0].Length != 0 && ValidateCharList("Ee") && ValidateCharList("+-"))
 		{
-			type = LexemType.Real;
+			lexemType = LexemType.Real;
 			list.Add(input[(pos - 2)..pos]);
 			list.Add(GetNumber2(out _));
-			if (CheckOverflow(list[^1], ref type) is String s2) return s2;
+			if (CheckOverflow(list[^1], ref lexemType) is String s2) return s2;
 		}
 		if (list[0].Length != 0 && ValidateChar('r'))
 		{
-			type = LexemType.Real;
+			lexemType = LexemType.Real;
 			list.Add("r");
 		}
 		return String.Join([], [.. list]);
-		String? CheckOverflow(String s, ref LexemType type)
+		String? CheckOverflow(String s, ref LexemType lexemType)
 		{
 			if (s == "null")
 			{
 				GenerateError(start, "too large number; long long type is under development");
-				type = LexemType.Keyword;
+				lexemType = LexemType.Keyword;
 				return "null";
 			}
 			else
@@ -146,7 +148,7 @@ public class CodeSample(String newString)
 		}
 	}
 
-	private String GetNumber2(out LexemType type)
+	private String GetNumber2(out LexemType lexemType)
 	{
 		var start = pos;
 		while (IsNotEnd() && CheckDigit())
@@ -154,16 +156,16 @@ public class CodeSample(String newString)
 		String s = new(32, FromStart(start));
 		if (s.Length == 0)
 		{
-			type = LexemType.Other;
+			lexemType = LexemType.Other;
 			return s;
 		}
 		if (int.TryParse(s.ToString(), out _))
-			type = LexemType.Int;
+			lexemType = LexemType.Int;
 		else if (long.TryParse(s.ToString(), out _))
-			type = LexemType.LongInt;
+			lexemType = LexemType.LongInt;
 		else
 		{
-			type = LexemType.Keyword;
+			lexemType = LexemType.Keyword;
 			return "null";
 		}
 		return s;
@@ -612,7 +614,7 @@ public class CodeSample(String newString)
 				success = true;
 				goto l1;
 			}
-			void AddLexem(String string_, LexemType type, int offset) => tempLexems.Add(new Lexem(string_, type, lineN, pos - offset - lineStart));
+			void AddLexem(String string_, LexemType lexemType, int offset) => tempLexems.Add(new Lexem(string_, lexemType, lineN, pos - offset - lineStart));
 			void AddOperatorLexem(String string_) => AddLexem(string_, LexemType.Operator, string_.Length);
 			void AddOtherLexem(String string_) => AddLexem(string_, LexemType.Other, string_.Length);
 			String s;
@@ -646,7 +648,7 @@ public class CodeSample(String newString)
 					goto l10;
 				if (KeywordsList.Contains(s))
 					AddLexem(s, LexemType.Keyword, s.Length);
-				else if (s.ToString() is "and" or "or" or "xor" or "is" or "typeof" or "sin" or "cos" or "tan" or "asin" or "acos" or "atan" or "ln" or "Infty" or "Uncty" or "Pi" or "E" or "CombineWith" or "CloseOnReturnWith")
+				else if (s.ToString() is "and" or "or" or "xor" or "is" or "typeof" or "sin" or "cos" or "tan" or "asin" or "acos" or "atan" or "ln" or "Infty" or "Uncty" or "CombineWith" or "CloseOnReturnWith")
 					AddOperatorLexem(s);
 				else if (s.ToString() is "pow" or "tetra" or "penta" or "hexa")
 				{
@@ -678,7 +680,7 @@ public class CodeSample(String newString)
 					pos -= s3.Length + 1;
 			}
 			pos += l;
-			s = new String(32, [.. ValidateLexemTree(new LexemTree('\0', lexemTree), out var success_)]);
+			s = new String(32, ValidateLexemTree(new LexemTree('\0', lexemTree), out var success_));
 			if (s.Length != 0 && success_)
 			{
 				AddOperatorLexem(s);
@@ -730,7 +732,7 @@ public class CodeSample(String newString)
 
 	private void GenerateError(int pos, String text) => GenerateMessage("Error", pos, text);
 
-	private void GenerateMessage(String type, int pos, String text) => errorsList.Add(type + " in line " + lineN.ToString() + " at position " + (pos - lineStart).ToString() + ": " + text);
+	private void GenerateMessage(String typeName, int pos, String text) => errorsList.Add(typeName + " in line " + lineN.ToString() + " at position " + (pos - lineStart).ToString() + ": " + text);
 
 	public static implicit operator (List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred)(CodeSample x) => x.Disassemble();
 }

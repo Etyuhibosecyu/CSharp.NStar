@@ -1,4 +1,6 @@
 ﻿global using Corlib.NStar;
+global using LINQ.NStar;
+global using MathLib.NStar;
 global using System;
 global using System.Diagnostics;
 global using G = System.Collections.Generic;
@@ -10,9 +12,10 @@ global using static CSharp.NStar.DeclaredConstructions;
 global using static CSharp.NStar.TypeHelpers;
 global using static System.Math;
 global using String = Corlib.NStar.String;
-using EasyEvalLib;
+using EasyEvalLib.NStar;
 using System.IO;
 using Newtonsoft.Json;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Reflection;
 
@@ -158,8 +161,17 @@ public sealed class SemanticTree
 		result.AddRange("class ");
 		if (EscapedKeywordsList.Contains(name))
 			result.Add('@');
-		result.AddRange(name).AddRange(" : ").AddRange(TypeIsPrimitive(BaseType.MainType) ? "IClass" : Type(BaseType));
-		result.Add('{').AddRange(CalculationParseAction(branch[^1].Info)(branch[^1], out var coreErrorsList).Add('}'));
+		result.AddRange(name).AddRange(" : ").AddRange(TypeIsPrimitive(BaseType.MainType) ? "IClass" : Type(BaseType)).Add('{');
+		if (!(branch[^1].Info == "ClassMain" && branch[^1].Length != 0 && branch[^1][0].Info == "Properties")
+			&& CreateVar(GetAllProperties(branch[^1].Container), out var propertiesList).Length != 0)
+		{
+			String paramsResult = [], baseResult = [];
+			foreach (var property in propertiesList)
+				PropertiesConstructor(paramsResult, baseResult, property);
+			result.AddRange("public ").AddRange(name).Add('(').AddRange(paramsResult);
+			result.AddRange(") : base(").AddRange(baseResult).AddRange("){}");
+		}
+		result.AddRange(CalculationParseAction(branch[^1].Info)(branch[^1], out var coreErrorsList).Add('}'));
 		AddRange(ref errorsList, coreErrorsList);
 		if (IsTypeContext(branch))
 			return result;
@@ -168,6 +180,24 @@ public sealed class SemanticTree
 			compiledClasses.AddRange(result);
 			return [];
 		}
+	}
+
+	private static void PropertiesConstructor(String paramsResult, String coreResult, G.KeyValuePair<String, UserDefinedProperty> property)
+	{
+		if (coreResult.Length != 0)
+		{
+			paramsResult.AddRange(", ");
+			coreResult.AddRange(", ");
+		}
+		var typeName = Type(property.Value.UnvType);
+		paramsResult.AddRange(typeName).Add(' ');
+		if (EscapedKeywordsList.Contains(property.Key))
+		{
+			paramsResult.Add('@');
+			coreResult.Add('@');
+		}
+		paramsResult.AddRange(property.Key).AddRange(" = default!");
+		coreResult.AddRange(property.Key);
 	}
 
 	private String Function(TreeBranch branch, out List<String>? errorsList)
@@ -274,7 +304,11 @@ public sealed class SemanticTree
 			return value.ToString(true, true);
 		if (branch.Length == 0)
 			return branch.Info;
-		String result = [], result2 = [], result3 = [];
+		String result = [], paramsResult = [], baseResult = [], coreResult = [];
+		if (UserDefinedTypesList.TryGetValue(SplitType(branch.Container), out var userDefinedType)
+			&& CreateVar(GetAllProperties(userDefinedType.BaseType.MainType), out var propertiesList).Length != 0)
+			foreach (var property in propertiesList)
+				PropertiesConstructor(paramsResult, baseResult, property);
 		foreach (var x in branch.Elements)
 		{
 			var s = Property(x, out var innerErrorsList, out var innerResult2, out var innerResult3);
@@ -285,14 +319,16 @@ public sealed class SemanticTree
 			}
 			if (innerResult2.Length != 0)
 			{
-				if (result2.Length != 0)
-					result2.AddRange(", ");
-				result2.AddRange(innerResult2);
+				if (paramsResult.Length != 0)
+					paramsResult.AddRange(", ");
+				paramsResult.AddRange(innerResult2);
 			}
-			result3.AddRange(innerResult3);
+			coreResult.AddRange(innerResult3);
 		}
-		result.AddRange("public ").AddRange(branch.Container.Peek().Name).Add('(').AddRange(result2);
-		result.AddRange("){").AddRange(result3).Add('}');
+		result.AddRange("public ").AddRange(branch.Container.Peek().Name).Add('(').AddRange(paramsResult);
+		if (baseResult.Length != 0)
+			result.AddRange(") : base(").AddRange(baseResult);
+		result.AddRange("){").AddRange(coreResult).Add('}');
 		return result;
 	}
 
@@ -304,7 +340,7 @@ public sealed class SemanticTree
 		if (branch[0].Extra is not UniversalType UnvType)
 			return [];
 		var name = branch[1].Info;
-		var (UnvType2, Attributes) = UserDefinedPropertiesList[branch.Container][name];
+		var (UnvType2, Attributes, DefaultValue) = UserDefinedPropertiesList[branch.Container][name];
 		if (!UnvType.Equals(UnvType2))
 			return [];
 		String result = [];
@@ -315,15 +351,17 @@ public sealed class SemanticTree
 		if ((Attributes & PropertyAttributes.Internal) != 0)
 		{
 			result.AddRange("internal ");
-			Add(ref errorsList, "Warning in line " + lexems[branch.Pos].LineN.ToString() + " at position " + lexems[branch.Pos].Pos.ToString() + ": at present time the word \"internal\" does nothing because C#.NStar does not have multiple assemblies");
+			Add(ref errorsList, "Warning in line " + lexems[branch.Pos].LineN.ToString() + " at position "
+				+ lexems[branch.Pos].Pos.ToString() + ": at present time the word \"internal\""
+				+ " does nothing because C#.NStar does not have multiple assemblies");
 		}
 		if (IsTypeContext(branch) && (Attributes & (PropertyAttributes.Closed | PropertyAttributes.Protected | PropertyAttributes.Internal)) == 0)
 			result.AddRange("public ");
 		if ((Attributes & PropertyAttributes.Static) != 0)
 			result.AddRange("static ");
-		var type = Type(UnvType);
-		result.AddRange(type).Add(' ');
-		result2.AddRange(type).Add(' ');
+		var typeName = Type(UnvType);
+		result.AddRange(typeName).Add(' ');
+		result2.AddRange(typeName).Add(' ');
 		if (EscapedKeywordsList.Contains(name))
 		{
 			result.Add('@');
@@ -334,7 +372,7 @@ public sealed class SemanticTree
 		var expr = CalculationParseAction(branch[^1].Info)(branch[^1], out var innerErrorsList);
 		result.AddRange(expr);
 		result3.AddRange("if (").AddRange(name).AddRange(" is default(");
-		result3.AddRange(type).AddRange("))this.").AddRange(name).AddRange(" = ").AddRange(expr);
+		result3.AddRange(typeName).AddRange("))this.").AddRange(name).AddRange(" = ").AddRange(expr);
 		result3.AddRange(";else this.").AddRange(name).AddRange(" = ").AddRange(name).Add(';');
 		AddRange(ref errorsList, innerErrorsList);
 		result.Add(';');
@@ -515,7 +553,7 @@ public sealed class SemanticTree
 			{
 				if (branch[0].Extra is not UniversalType UnvType)
 					extra = new List<object> { (String)"Constructor", NullType };
-				else if (UserDefinedConstructorsExist(UnvType.MainType, out var constructors) && constructors != null)
+				else if (UserDefinedConstructorsExist(UnvType, out var constructors) && constructors != null)
 					extra = new List<object> { (String)"Constructor", UnvType, (String)"user", constructors };
 				else if (ConstructorsExist(UnvType, out constructors) && constructors != null)
 					extra = new List<object> { (String)"Constructor", UnvType, (String)"typical", constructors };
@@ -541,7 +579,7 @@ public sealed class SemanticTree
 				result.AddRange(TypesAreEqual(UnvType, NullType) ? "default(object)" : info);
 				AddRange(ref errorsList!, variableErrorsList!);
 			}
-			else if (IsPropertyDeclared(branch, info, out var propertyErrorsList, out var property, out _))
+			else if (IsPropertyDeclared(branch, info, out var propertyErrorsList, out var property))
 			{
 				if (property.HasValue)
 				{
@@ -627,7 +665,7 @@ public sealed class SemanticTree
 					extra = new List<object> { (String)"Property", NullType };
 					return "_";
 				}
-				else if ((property.Value.Attributes & PropertyAttributes.Closed) != 0 ^ (property.Value.Attributes & PropertyAttributes.Protected) != 0 && !new List<Block>(branch.Container).StartsWith(new(ContainerUnvType.MainType)))
+				else if ((property.Value.Attributes & PropertyAttributes.Closed) != 0 ^ (property.Value.Attributes & PropertyAttributes.Protected) != 0 && !new List<Block>(branch.Container).StartsWith([.. ContainerUnvType.MainType]))
 				{
 					var otherPos = branch[0].Pos;
 					Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": property \"" + String.Join(".", ContainerUnvType.MainType.Convert(x => x.Name).Append(info).ToArray()) + "\" is inaccessible from here");
@@ -641,7 +679,7 @@ public sealed class SemanticTree
 				}
 				result.AddRange(PropertyMapping(info));
 			}
-			else if (UserDefinedFunctionExists(ContainerUnvType.MainType, info, out var function, out _))
+			else if (UserDefinedFunctionExists(ContainerUnvType.MainType, info, out var function))
 			{
 				if (HypernameGeneralMethod(branch, info, ref extra, ref errorsList, prevIndex, ContainerUnvType.MainType, function, "userMethod") != null || !function.HasValue)
 					return "_";
@@ -742,36 +780,34 @@ public sealed class SemanticTree
 					extra = new List<object> { (String)nameof(Expr), branch.Extra };
 				}
 			}
-			else if (elem2 == "user" && UserDefinedFunctionExists(new(), s, out var function2) && function2.HasValue)
+			else if ((elem2 == "user" && UserDefinedFunctionExists(new(), s, out var function2, out _, out var derived)
+				|| elem2 == "userMethod" && UserDefinedFunctionExists(branch.Container, s, out function2, out _, out derived))
+				&& function2.HasValue)
 			{
-				if (index <= 1)
-					result.AddRange(EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s);
-				result.AddRange(ExprCallUser(branch[index], out var innerErrorsList, extra));
-				AddRange(ref errorsList, innerErrorsList);
-				branch.Extra = function2.Value.ReturnUnvType;
-				extra = new List<object> { (String)nameof(Expr), branch.Extra };
-			}
-			else if (elem2 == "userMethod" && UserDefinedFunctionExists(branch.Container, s, out function2) && function2.HasValue)
-			{
-				if (index <= 1)
-					result.AddRange(EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s);
-				result.AddRange(ExprCallUser(branch[index], out var innerErrorsList, extra));
+				List<String>? innerErrorsList;
+				if (derived)
+					result.AddRange(FunctionMapping(s, ExprCall(branch[index], out innerErrorsList, extra)));
+				else
+				{
+					result.AddRange(index > 1 ? [] : EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s);
+					result.AddRange(ExprCallUser(branch[index], out innerErrorsList, extra));
+				}
 				AddRange(ref errorsList, innerErrorsList);
 				branch.Extra = function2.Value.ReturnUnvType;
 				extra = new List<object> { (String)nameof(Expr), branch.Extra };
 			}
 			else if (elem2 == "userMethod" && branch.Parent?[0].Extra is UniversalType ContainerUnvType2)
 			{
-				if (TypeEqualsToPrimitive(ContainerUnvType2, "typename") && list.Length >= 4 && list[3] is String elem4 && elem4 == "static" && UserDefinedFunctionExists(ContainerUnvType2.MainType, s, out function2, out _) && function2.HasValue)
+				if (TypeEqualsToPrimitive(ContainerUnvType2, "typename") && list.Length >= 4 && list[3] is String elem4 && elem4 == "static" && UserDefinedFunctionExists(ContainerUnvType2.MainType, s, out function2) && function2.HasValue)
 				{
 					result.AddRange(index > 1 ? [] : EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s).AddRange(ExprCallUser(branch[index], out var innerErrorsList, extra));
 					AddRange(ref errorsList, innerErrorsList);
 					branch.Extra = function2.Value.ReturnUnvType;
 					extra = new List<object> { (String)nameof(Expr), branch.Extra };
 				}
-				else if (UserDefinedFunctionExists(ContainerUnvType2.MainType, s, out function2, out _) && function2.HasValue)
+				else if (UserDefinedFunctionExists(ContainerUnvType2.MainType, s, out function2, out _, out derived) && function2.HasValue)
 				{
-					result.AddRange(index > 1 ? [] : EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s).AddRange(ExprCallUser(branch[index], out var innerErrorsList, extra));
+					result.AddRange(derived ? FunctionMapping(s, ExprCall(branch[index], out var innerErrorsList, extra)) : (index > 1 ? [] : EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s).AddRange(ExprCallUser(branch[index], out innerErrorsList, extra)));
 					AddRange(ref errorsList, innerErrorsList);
 					branch.Extra = function2.Value.ReturnUnvType;
 					extra = new List<object> { (String)nameof(Expr), branch.Extra };
@@ -786,7 +822,7 @@ public sealed class SemanticTree
 		}
 		else if (branch[index].Info == "ConstructorCall" && extra is List<object> list2)
 		{
-			if (!(list2.Length >= 3 && list2.Length <= 5 && list2[0] is String elem1 && elem1 == "Constructor" && list2[1] is UniversalType ConstructingUnvType && list2[2] is String elem3 && list2[3] is GeneralConstructorOverloads constructors && constructors.Length != 0))
+			if (!(list2.Length >= 4 && list2.Length <= 5 && list2[0] is String elem1 && elem1 == "Constructor" && list2[1] is UniversalType ConstructingUnvType && list2[2] is String elem3 && list2[3] is ConstructorOverloads constructors && constructors.Length != 0))
 			{
 				var otherPos = branch[index].Pos;
 				Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": internal error");
@@ -794,13 +830,13 @@ public sealed class SemanticTree
 			}
 			if (elem3 == "typical")
 			{
-				result.AddRange("new ").AddRange(Type(ConstructingUnvType)).AddRange(ExprConstructorCall(branch[index], out var innerErrorsList));
+				result.AddRange("new ").AddRange(Type(ConstructingUnvType)).AddRange(ExprConstructorCall(branch[index], out var innerErrorsList, extra));
 				AddRange(ref errorsList, innerErrorsList);
 				branch.Extra = branch[0].Extra;
 			}
 			else
 			{
-				result.AddRange("new ").AddRange(Type(ConstructingUnvType)).AddRange(ExprConstructorCall(branch[index], out var innerErrorsList));
+				result.AddRange("new ").AddRange(Type(ConstructingUnvType)).AddRange(ExprConstructorCall(branch[index], out var innerErrorsList, extra));
 				AddRange(ref errorsList, innerErrorsList);
 				branch.Extra = branch[0].Extra;
 			}
@@ -891,7 +927,7 @@ public sealed class SemanticTree
 			extra = NullType;
 			extra2 = new List<object> { ((String)"Function ").AddRange(s), (String)"method", default! };
 		}
-		else if ((function.Value.Attributes & FunctionAttributes.Closed) != 0 ^ (function.Value.Attributes & FunctionAttributes.Protected) != 0 && !new List<Block>(branch.Container).StartsWith(new(ContainerMainType)))
+		else if ((function.Value.Attributes & FunctionAttributes.Closed) != 0 ^ (function.Value.Attributes & FunctionAttributes.Protected) != 0 && !new List<Block>(branch.Container).StartsWith([.. ContainerMainType]))
 		{
 			var otherPos = branch[0].Pos;
 			Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": function \"" + String.Join(".", [.. ContainerMainType.ToList().Convert(x => x.Name), s]) + "\" is inaccessible from here");
@@ -924,7 +960,7 @@ public sealed class SemanticTree
 			extra = NullType;
 			extra2 = new List<object> { ((String)"Function ").AddRange(s), category, default! };
 		}
-		else if ((function.Value.Attributes & FunctionAttributes.Closed) != 0 ^ (function.Value.Attributes & FunctionAttributes.Protected) != 0 && !new List<Block>(branch.Container).StartsWith(new(ContainerMainType)))
+		else if ((function.Value.Attributes & FunctionAttributes.Closed) != 0 ^ (function.Value.Attributes & FunctionAttributes.Protected) != 0 && !new List<Block>(branch.Container).StartsWith([.. ContainerMainType]))
 		{
 			var otherPos = branch[0].Pos;
 			Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": function \"" + String.Join(".", [.. ContainerMainType.ToList().Convert(x => x.Name), s]) + "\" is inaccessible from here");
@@ -1120,12 +1156,12 @@ public sealed class SemanticTree
 				out adaptedInnerResult, out var extraMessage) || adaptedInnerResult == null)
 				Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position "
 					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage
-					?? "incompatibility between type of parameter of the call \"" + CallParameterUnvType
-					+ "\" and type of parameter of the function \"" + FunctionParameterUnvType + "\""));
+					?? "incompatibility between type of the parameter of the call \"" + CallParameterUnvType
+					+ "\" and type of the parameter of the function \"" + FunctionParameterUnvType + "\""));
 			else if (warning)
 				Add(ref errorsList, "Warning in line " + lexems[otherPos].LineN.ToString() + " at position "
-					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage ?? "type of parameter of the call \""
-					+ CallParameterUnvType + "\" and type of parameter of the function \""
+					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage ?? "type of the parameter of the call \""
+					+ CallParameterUnvType + "\" and type of the parameter of the function \""
 					+ FunctionParameterUnvType + "\" are badly compatible, you may lost data"));
 			if (innerResult != adaptedInnerResult && UnvType.ExtraTypes.Length >= i)
 				innerResult.Replace(adaptedInnerResult ?? "default!");
@@ -1151,12 +1187,12 @@ public sealed class SemanticTree
 				out adaptedInnerResult, out var extraMessage) || adaptedInnerResult == null)
 				Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position "
 					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage
-					?? "incompatibility between type of parameter of the call \"" + CallParameterUnvType
-					+ "\" and type of parameter of the function \"" + FunctionParameterUnvType + "\""));
+					?? "incompatibility between type of the parameter of the call \"" + CallParameterUnvType
+					+ "\" and type of the parameter of the function \"" + FunctionParameterUnvType + "\""));
 			else if (warning)
 				Add(ref errorsList, "Warning in line " + lexems[otherPos].LineN.ToString() + " at position "
-					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage ?? "type of parameter of the call \""
-					+ CallParameterUnvType + "\" and type of parameter of the function \""
+					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage ?? "type of the parameter of the call \""
+					+ CallParameterUnvType + "\" and type of the parameter of the function \""
 					+ FunctionParameterUnvType + "\" are badly compatible, you may lost data"));
 			if (innerResult != adaptedInnerResult && Parameters.Length >= i + 1)
 				innerResult.Replace(adaptedInnerResult ?? "default!");
@@ -1175,12 +1211,12 @@ public sealed class SemanticTree
 				out adaptedInnerResult, out var extraMessage) || adaptedInnerResult == null)
 				Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position "
 					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage
-					?? "incompatibility between type of parameter of the call \"" + CallParameterUnvType
-					+ "\" and type of parameter of the function \"" + FunctionParameterUnvType + "\""));
+					?? "incompatibility between type of the parameter of the call \"" + CallParameterUnvType
+					+ "\" and type of the parameter of the function \"" + FunctionParameterUnvType + "\""));
 			else if (warning)
 				Add(ref errorsList, "Warning in line " + lexems[otherPos].LineN.ToString() + " at position "
-					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage ?? "type of parameter of the call \""
-					+ CallParameterUnvType + "\" and type of parameter of the function \""
+					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessage ?? "type of the parameter of the call \""
+					+ CallParameterUnvType + "\" and type of the parameter of the function \""
 					+ FunctionParameterUnvType + "\" are badly compatible, you may lost data"));
 			if (innerResult != adaptedInnerResult && GeneralParameters.Length >= i + 1)
 				innerResult.Replace(adaptedInnerResult ?? "default!");
@@ -1195,22 +1231,163 @@ public sealed class SemanticTree
 		return true;
 	}
 
-	private String ExprConstructorCall(TreeBranch branch, out List<String>? errorsList)
+	private String ExprConstructorCall(TreeBranch branch, out List<String>? errorsList, object? extra = null)
 	{
 		String result = "(";
 		errorsList = [];
+		List<String> innerResults = [];
 		for (var i = 0; i < branch.Length; i++)
 		{
-			var s = CalculationParseAction(branch[i].Info)(branch[i], out var innerErrorsList);
-			if (s.Length != 0)
+			var innerResult = CalculationParseAction(branch[i].Info)(branch[i], out var innerErrorsList);
+			if (innerResult.Length != 0)
 			{
-				if (result != "(")
-					result.AddRange(", ");
-				result.AddRange(s);
+				innerResults.AddRange(innerResult);
 				AddRange(ref errorsList, innerErrorsList);
 			}
 		}
-		return result.Add(')');
+		if (!ExprConstructorCallCheck(branch, ref errorsList, innerResults, extra))
+			return [];
+		return result.AddRange(String.Join(", ", innerResults)).Add(')');
+	}
+
+	private bool ExprConstructorCallCheck(TreeBranch branch, ref List<String>? errorsList, List<String> innerResults, object? extra = null)
+	{
+		if (innerResults.Length == 0)
+			return true;
+		var otherPos = branch[0].Pos;
+		List<UniversalType> CallParameterUnvTypes = [];
+		for (var i = 0; i < branch.Length; i++)
+			if (branch[i].Extra is UniversalType type)
+				CallParameterUnvTypes.Add(type);
+			else
+			{
+				Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position "
+					+ lexems[otherPos].Pos.ToString() + ": internal compiler error");
+				return false;
+			}
+		if (!(extra is List<object> list
+			&& list.Length >= 4 && list.Length <= 5 && list[0] is String elem1 && elem1 == "Constructor"
+			&& list[1] is UniversalType ConstructingUnvType && list[2] is String elem3 &&
+			list[3] is ConstructorOverloads constructors && constructors.Length != 0))
+		{
+			Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": internal compiler error");
+			return false;
+		}
+		var max = constructors.Any(x => x.Parameters.Length != 0 && (x.Parameters[^1].Attributes
+		& ParameterAttributes.Params) != 0) ? int.MaxValue : constructors.Max(x => x.Parameters.Length);
+		var min = constructors.Min(x => x.Parameters.Count(y => (y.Attributes & ParameterAttributes.Optional) == 0));
+		if (CallParameterUnvTypes.Length > max || CallParameterUnvTypes.Length < min)
+		{
+			Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position "
+				+ lexems[otherPos].Pos.ToString() + ": constructor of the type \"" + ConstructingUnvType.ToString()
+				+ "\" must have " + (max == min ? max.ToString()
+				: "from " + min.ToString() + " to " + max.ToString()) + " parameters");
+			return false;
+		}
+		constructors.FilterInPlace(x => x.Parameters.Length != 0 && (x.Parameters[^1].Attributes
+			& ParameterAttributes.Params) != 0 || x.Parameters.Length >= CallParameterUnvTypes.Length)
+			.FilterInPlace(x => x.Parameters.Count(y => (y.Attributes & ParameterAttributes.Optional) == 0)
+			<= CallParameterUnvTypes.Length);
+		var warnings = new bool[CallParameterUnvTypes.Length];
+		var FunctionParameterUnvTypes = new UniversalType[CallParameterUnvTypes.Length];
+		var adaptedInnerResults = new String[CallParameterUnvTypes.Length];
+		var extraMessages = new String[CallParameterUnvTypes.Length];
+		int index = 0, index2 = 0;
+		if (constructors.Length == 1)
+		{
+			var (Attributes, Parameters) = constructors[0];
+			if (Parameters.Length == 0)
+			{
+				Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position "
+					+ lexems[otherPos].Pos.ToString() + ": the type \"" + ConstructingUnvType.ToString()
+					+ "\" does not have constructors with parameters");
+				return false;
+			}
+			else if (!(CallParameterUnvTypes.Length >= Parameters.Count(y => (y.Attributes & ParameterAttributes.Optional) == 0)
+				&& CallParameterUnvTypes.Combine(Parameters).All((x, i) => TypesAreCompatible(x.Item1,
+				FunctionParameterUnvTypes[i] = (x.Item2.Type, x.Item2.ExtraTypes), out warnings[index2 = index = i],
+				innerResults[i], out adaptedInnerResults[i]!, out extraMessages[i]!) && adaptedInnerResults[i] != null))
+				&& !((Parameters[^1].Attributes & ParameterAttributes.Params) != 0 && index == Parameters.Length - 1
+				&& CallParameterUnvTypes.Skip(index2 = index).All((x, i) => TypesAreCompatible(x,
+				(Parameters[^1].Type, Parameters[^1].ExtraTypes), out warnings[index = index2 + i], innerResults[index],
+				out adaptedInnerResults[index]!, out extraMessages[index]!) && adaptedInnerResults[index] != null)))
+			{
+				Add(ref errorsList, "Error in line " + lexems[otherPos = branch[index].Pos].LineN.ToString() + " at position "
+					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessages[index]
+					?? "incompatibility between type of the parameter of the call \"" + CallParameterUnvTypes[index]
+					+ "\" and type of the parameter of the constructor \""
+					+ FunctionParameterUnvTypes[index2] + "\""));
+				return false;
+			}
+			else if (warnings[index])
+				Add(ref errorsList, "Warning in line " + lexems[otherPos = branch[index].Pos].LineN.ToString() + " at position "
+					+ lexems[otherPos].Pos.ToString() + ": " + (extraMessages[index] ?? "type of the parameter of the call \""
+					+ CallParameterUnvTypes[index] + "\" and type of the parameter of the constructor \""
+					+ FunctionParameterUnvTypes[index2] + "\" are badly compatible, you may lost data"));
+			_ = innerResults.ToList((x, i) => x != adaptedInnerResults[i]
+				? x.Replace(adaptedInnerResults[i] ?? "default!") : "");
+			branch.Extra = ConstructingUnvType;
+			return true;
+		}
+		ListHashSet<int> IncompatibleConstructors = [];
+		ListHashSet<(int ConstructorIndex, int ParameterIndex)> BadlyCompatibleConstructors = [];
+		var indexes = new int[constructors.Length];
+		var indexes2 = new int[constructors.Length];
+		for (var j = 0; j < constructors.Length; j++)
+		{
+			var (Attributes, Parameters) = constructors[j];
+			if (Parameters.Length == 0)
+				continue;
+			else if (!(CallParameterUnvTypes.Length >= Parameters.Count(y => (y.Attributes & ParameterAttributes.Optional) == 0)
+				&& CallParameterUnvTypes.Combine(Parameters).All((x, i) =>
+				TypesAreCompatible(x.Item1, FunctionParameterUnvTypes[i] = (x.Item2.Type, x.Item2.ExtraTypes),
+				out warnings[indexes2[j] = indexes[j] = i], innerResults[i],
+				out adaptedInnerResults[i]!, out extraMessages[i]!) && adaptedInnerResults[i] != null))
+				&& !((Parameters[^1].Attributes & ParameterAttributes.Params) != 0 && indexes[j] == Parameters.Length - 1
+				&& CallParameterUnvTypes.Skip(indexes2[j] = indexes[j]).All((x, i) => TypesAreCompatible(x,
+				(Parameters[^1].Type, Parameters[^1].ExtraTypes), out warnings[indexes[j] = indexes2[j] + i],
+				innerResults[indexes[j]], out adaptedInnerResults[indexes[j]]!, out extraMessages[indexes[j]]!)
+				&& adaptedInnerResults[indexes[j]] != null)))
+				IncompatibleConstructors.Add(j);
+			else if (warnings.Any(x => x))
+				_ = warnings.ToList((x, i) => x ? BadlyCompatibleConstructors.Add((j, i)) : default);
+		}
+		var thresholdIndexes = indexes.IndexesOfMax();
+		var incompatibleLength = IncompatibleConstructors.Length;
+		IncompatibleConstructors.IntersectWith(thresholdIndexes);
+		if (incompatibleLength == constructors.Length)
+		{
+			Add(ref errorsList, "Error in line " + lexems[otherPos = branch[indexes[thresholdIndexes[0]]].Pos].LineN.ToString()
+				+ " at position " + lexems[otherPos].Pos.ToString() + ": "
+				+ "incompatibility between type of the parameter of the call \""
+				+ CallParameterUnvTypes[indexes[thresholdIndexes[0]]]
+				+ "\" and all possible types of the parameter of the constructor (\""
+				+ String.Join("\", \"", IncompatibleConstructors.Convert(j =>
+				new UniversalType(constructors[j].Parameters[indexes2[thresholdIndexes[0]]].Type,
+				constructors[j].Parameters[indexes2[thresholdIndexes[0]]].ExtraTypes).ToString()).ToHashSet()) + "\")");
+			return false;
+		}
+		BadlyCompatibleConstructors.FilterInPlace(x => !IncompatibleConstructors.Contains(x.ConstructorIndex));
+		var groups = BadlyCompatibleConstructors.NGroup(x => x.ParameterIndex);
+		var WellCompatibleConstructors = new Chain(constructors.Length).ToHashSet()
+			.ExceptWith(IncompatibleConstructors).ExceptWith(groups.ConvertAndJoin(x => x).Convert(x => x.ConstructorIndex));
+		if (WellCompatibleConstructors.Length != 0)
+		{
+			branch.Extra = ConstructingUnvType;
+			return true;
+		}
+		foreach (var group in groups)
+			Add(ref errorsList, "Warning in line " + lexems[otherPos = branch[group.Key].Pos].LineN.ToString()
+				+ " at position " + lexems[otherPos].Pos.ToString() + ": " + "type of the parameter of the call \""
+				+ CallParameterUnvTypes[group.Key] + "\" and all possible types of the parameter of the constructor (\""
+				+ String.Join("\", \"", group.Convert(item =>
+				constructors[item.ConstructorIndex].Parameters.Wrap(x => new UniversalType(x[index = Min(group.Key,
+				x.Length - 1)].Type, x[index].ExtraTypes).ToString())).ToHashSet())
+				+ "\") are badly compatible, you may lost data");
+		_ = innerResults.ToList((x, i) => x != adaptedInnerResults[i]
+			? x.Replace(adaptedInnerResults[i] ?? "default!") : "");
+		branch.Extra = ConstructingUnvType;
+		return true;
 	}
 
 	private String ExprValue(Universal value, TreeBranch branch, ref List<String>? errorsList, int i)
@@ -1794,7 +1971,7 @@ public sealed class SemanticTree
 		}
 		else
 		{
-			result.AddRange(TypeMapping(new BlockStack(type.MainType.Skip(type.MainType.FindLastIndex(x => x.Type is not (BlockType.Namespace or BlockType.Class or BlockType.Struct or BlockType.Interface)) + 1)).ToShortString()));
+			result.AddRange(TypeMapping(new BlockStack(type.MainType.Skip(type.MainType.FindLastIndex(x => x.BlockType is not (BlockType.Namespace or BlockType.Class or BlockType.Struct or BlockType.Interface)) + 1)).ToShortString()));
 			if (type.ExtraTypes.Length == 0)
 				return result;
 			result.Add('<');
@@ -1809,15 +1986,15 @@ public sealed class SemanticTree
 		return result;
 	}
 
-	private static String TypeMapping(String type)
+	private static String TypeMapping(String typeName)
 	{
-		var after = type.GetAfter(((String)"System.Collections.").AddRange(nameof(G.LinkedList<bool>)));
+		var after = typeName.GetAfter(((String)"System.Collections.").AddRange(nameof(G.LinkedList<bool>)));
 		if (after.Length != 0)
 			return "G.LinkedList" + after;
-		after = type.GetAfter("System.Collections.");
+		after = typeName.GetAfter("System.Collections.");
 		if (after.Length != 0)
 			return after;
-		return type;
+		return typeName;
 	}
 
 	private static String Parameters(GeneralMethodParameters parameters, out List<String>? errorsList)
@@ -1831,6 +2008,12 @@ public sealed class SemanticTree
 			if (EscapedKeywordsList.Contains(name))
 				result.Add('@');
 			result.AddRange(name);
+			if (parameters[i].DefaultValue.ToString() is not ("" or "no optional"))
+				result.AddRange(" = ").AddRange(parameters[i].DefaultValue == "null"
+					? "default!" : parameters[i].DefaultValue == double.PositiveInfinity.ToString()
+					? "double.PositiveInfinity" : parameters[i].DefaultValue == double.NegativeInfinity.ToString()
+					? "double.NegativeInfinity" : parameters[i].DefaultValue == double.NaN.ToString()
+					? "double.NaN" : parameters[i].DefaultValue);
 			if (i != parameters.Length - 1)
 				result.AddRange(", ");
 		}
@@ -1953,16 +2136,17 @@ public sealed class SemanticTree
 		return false;
 	}
 
-	private bool IsPropertyDeclared(TreeBranch branch, String s, out List<String>? errorsList, out (UniversalType UnvType, PropertyAttributes Attributes)? property, out object? extra)
+	private bool IsPropertyDeclared(TreeBranch branch, String s, out List<String>? errorsList, out UserDefinedProperty? property)
 	{
 		errorsList = default!;
-		if (!UserDefinedPropertyExists(branch.Container, s, out property, out _))
+		if (!UserDefinedPropertyExists(branch.Container, s, out property, out _, out var inBase))
 		{
 			if (errorsList == null || errorsList.Length == 0)
 				Add(ref errorsList, "Error in line " + lexems[branch[0].Pos].LineN.ToString() + " at position " + lexems[branch[0].Pos].Pos.ToString() + ": identifier \"" + s + "\" is not defined in this location");
-			extra = null;
 			return false;
 		}
+		else if (inBase)
+			return true;
 		NList<int> indexes = [];
 		List<TreeBranch> branches = [branch];
 		while (branch.Parent != null)
@@ -1979,13 +2163,11 @@ public sealed class SemanticTree
 				if ((function?.Attributes & FunctionAttributes.Multiconst) != 0)
 				{
 					Add(ref errorsList, "Error in line " + lexems[branch[0].Pos].LineN.ToString() + " at position " + lexems[branch[0].Pos].Pos.ToString() + ": property \"" + s + "\" is not defined in this location; multiconst functions cannot use external properties");
-					extra = null;
 					return false;
 				}
 				else if ((function?.Attributes & FunctionAttributes.Static) != 0 && (property?.Attributes & PropertyAttributes.Static) == 0)
 				{
 					Add(ref errorsList, "Error in line " + lexems[branch[0].Pos].LineN.ToString() + " at position " + lexems[branch[0].Pos].Pos.ToString() + ": property \"" + s + "\" cannot be used from this location; static functions cannot use non-static properties");
-					extra = null;
 					return false;
 				}
 			}
@@ -1995,19 +2177,16 @@ public sealed class SemanticTree
 					continue;
 				if (branches[i][j].Info == "Property" && branches[i][j].Length == 3 && branches[i][j][1].Info == s)
 				{
-					extra = branches[i][j];
 					return true;
 				}
 				else if (new List<String> { "ClassMain", "Properties" }.Contains(branches[i][j].Info) && PropertyExistsInsideExpr(branches[i][j], s, out _, out var innerExtra))
 				{
-					extra = innerExtra;
 					return true;
 				}
 			}
 		}
 		if (errorsList == null || errorsList.Length == 0)
 			Add(ref errorsList, "Error in line " + lexems[branch[0].Pos].LineN.ToString() + " at position " + lexems[branch[0].Pos].Pos.ToString() + ": identifier \"" + s + "\" is not defined in this location");
-		extra = null;
 		return false;
 	}
 
@@ -2033,10 +2212,10 @@ public sealed class SemanticTree
 		return false;
 	}
 
-	private bool IsFunctionDeclared(TreeBranch branch, String s, out List<String>? errorsList, out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function, out BlockStack matchingContainer, out object? extra)
+	private bool IsFunctionDeclared(TreeBranch branch, String s, out List<String>? errorsList, out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function, [MaybeNullWhen(false)] out BlockStack matchingContainer, out object? extra)
 	{
 		errorsList = default!;
-		if (UserDefinedFunctionExists(branch.Container, s, out function, out matchingContainer) == false)
+		if (UserDefinedFunctionExists(branch.Container, s, out function, out matchingContainer, out _) == false)
 		{
 			if (errorsList == null || errorsList.Length == 0)
 				Add(ref errorsList, "Error in line " + lexems[branch[0].Pos].LineN.ToString() + " at position " + lexems[branch[0].Pos].Pos.ToString() + ": identifier \"" + s + "\" is not defined in this location");
@@ -2098,7 +2277,7 @@ public sealed class SemanticTree
 		indexes.Reverse();
 		branches.Reverse();
 		for (var i = indexes.Length - 1; i >= 0; i--)
-			if (branches[i].Info == "Function" && branches[i].Length == 4 && UserDefinedFunctionExists(branch.Container, branches[i][0].Info, out function, out matchingContainer))
+			if (branches[i].Info == "Function" && branches[i].Length == 4 && UserDefinedFunctionExists(branch.Container, branches[i][0].Info, out function, out matchingContainer, out _))
 				return branches[i][0].Info;
 		function = ([], (GetPrimitiveBlockStack("universal"), NoGeneralExtraTypes), FunctionAttributes.None, []);
 		matchingContainer = null;
@@ -2120,7 +2299,7 @@ public sealed class SemanticTree
 		}
 	}
 
-	private static bool IsTypeContext(TreeBranch branch) => branch.Container.TryPeek(out var nearestBlock) && nearestBlock.Type is BlockType.Namespace or BlockType.Class or BlockType.Struct or BlockType.Interface;
+	private static bool IsTypeContext(TreeBranch branch) => branch.Container.TryPeek(out var nearestBlock) && nearestBlock.BlockType is BlockType.Namespace or BlockType.Class or BlockType.Struct or BlockType.Interface;
 
 	public static String ExecuteProgram(String program, out String errors, params dynamic?[] args) => TranslateAndExecuteProgram(program, out errors, out _, args);
 
@@ -2202,7 +2381,7 @@ public sealed class SemanticTree
 		//	"System", "System.Console", "System.Core", "System.Linq.Expressions", "System.Private.CoreLib",
 		//	"System.Runtime", "HighLevelAnalysis.Debug", "LowLevelAnalysis", "MidLayer", "Core", "EasyEval" };
 		var thisList = assemblyArray.ToList(GetAssemblyAsBytes);
-		var depencencyList = assemblyArray.ConvertAndJoin(x => Assembly.Load(x).GetReferencedAssemblies().ToArray(x => x.Name ?? throw new NotSupportedException())).RemoveDoubles();
+		var depencencyList = assemblyArray.ConvertAndJoin(x => Assembly.Load(x).GetReferencedAssemblies().ToArray(x => x.Name ?? throw new NotSupportedException())).ToHashSet().ToList();
 		if (depencencyList.Length == 0)
 			return thisList;
 		return thisList.AddRange(GetNecessaryDependencies(depencencyList));
@@ -2215,7 +2394,12 @@ public sealed class SemanticTree
 		var translateErrors = new StringWriter(sb);
 		var (s, errorsList, translatedClasses) = translated;
 		var bytes = EasyEval.Compile(((String)@"using Corlib.NStar;
+using Dictionaries.NStar;
+using LINQ.NStar;
+using MathLib.NStar;
 using Mpir.NET;
+using RemoveDoubles.NStar;
+using SumCollections.NStar;
 using System;
 using System.Dynamic;
 using System.Threading;
@@ -2227,7 +2411,7 @@ using static CSharp.NStar.").AddRange(nameof(IntermediateFunctions)).AddRange(@"
 using static System.Math;
 using String = Corlib.NStar.String;
 using CSharp.NStar;
-using static EasyEvalLib.EasyEval;
+using static EasyEvalLib.NStar.EasyEval;
 using static CSharp.NStar.SemanticTree;
 ").AddRange(translatedClasses).AddRange(@"
 public static class Program
@@ -2243,7 +2427,7 @@ public static void Main(string[] args)
 Console.WriteLine(F(args));
 }
 }
-"), ["HighLevelAnalysis", "LowLevelAnalysis", "DeclaredConstructionHelpers", "DeclaredConstructions", "QuotesAndTreeBranch", "TypeHelpers", "Universal", "EasyEval"], translateErrors);
+"), ["HighLevelAnalysis", "LowLevelAnalysis", "DeclaredConstructionHelpers", "DeclaredConstructions", "QuotesAndTreeBranch", "TypeHelpers", "Universal", "EasyEval.NStar"], translateErrors);
 		if (bytes == null || bytes.Length <= 2 || sb.ToString() != "Compilation done without any error.\r\n")
 			throw new EvaluationFailedException();
 		return (bytes, errorsList ?? []);

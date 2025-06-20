@@ -8,6 +8,7 @@
 						 mc:Ignorable="d" d:DesignWidth="1024" d:DesignHeight="768"
 						 x:Class="CSharp.NStar.Views.MainView"
 						 x:DataType="vm:MainViewModel"
+						 Loaded="UserControl_Loaded"
 						 SizeChanged="UserControl_SizeChanged"
 						 KeyUp="TextBoxInput_KeyUp">
 	<Design.DataContext>
@@ -16,8 +17,13 @@
 		<vm:MainViewModel />
 	</Design.DataContext>
 
-	<Canvas HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="1024" Height="768">
-		<ScrollViewer Width="1024" Height="768">
+	<Canvas
+		HorizontalAlignment="Stretch"
+		VerticalAlignment="Stretch">
+		<ScrollViewer
+			x:Name="ScrollViewerMain"
+			Width="1024"
+			Height="768">
 			<Grid
 				VerticalAlignment="Stretch">
 				<Grid.RowDefinitions>
@@ -52,6 +58,7 @@
 					<Button
 						x:Name="ButtonExecute"
 						HorizontalAlignment="Stretch"
+						IsEnabled="False"
 						TabIndex="1"
 						VerticalAlignment="Stretch"
 						Click="ButtonExecute_Click">
@@ -67,6 +74,7 @@
 						x:Name="ButtonSaveExe"
 						Grid.Column="1"
 						HorizontalAlignment="Stretch"
+						IsEnabled="False"
 						TabIndex="2"
 						VerticalAlignment="Stretch"
 						Click="ButtonSaveExe_Click">
@@ -91,6 +99,7 @@
 					<Button
 						x:Name="ButtonOpenCode"
 						HorizontalAlignment="Stretch"
+						IsEnabled="False"
 						TabIndex="1"
 						VerticalAlignment="Stretch"
 						Click="ButtonOpenCode_Click">
@@ -106,6 +115,7 @@
 						x:Name="ButtonSaveCode"
 						Grid.Column="1"
 						HorizontalAlignment="Stretch"
+						IsEnabled="False"
 						TabIndex="2"
 						VerticalAlignment="Stretch"
 						Click="ButtonSaveCode_Click">
@@ -170,6 +180,10 @@
 				</StackPanel>
 			</Grid>
 		</ScrollViewer>
-		<views:CopyrightsView x:Name="CopyrightsView" Width="1024" Height="768" IsVisible="False"/>
+		<views:CopyrightsView
+			x:Name="CopyrightsView"
+			Width="1024"
+			Height="768"
+			IsVisible="False"/>
 	</Canvas>
 </UserControl>

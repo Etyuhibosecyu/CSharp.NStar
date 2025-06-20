@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\.NStar\Dictionaries.NStar\Dictionaries.NStar.csproj" />
     <ProjectReference Include="..\TypeHelpers\TypeHelpers.csproj" />
   </ItemGroup>
 </Project>

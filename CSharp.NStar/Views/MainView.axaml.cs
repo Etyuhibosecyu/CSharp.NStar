@@ -23,12 +23,13 @@ public partial class MainView : UserControl
 {
 	private Assembly? compiledAssembly;
 	private readonly String enteredText = [];
+	private readonly Random random = new();
 
 	private static readonly ImmutableArray<string> minorVersions = ["2o"];
 	private static readonly ImmutableArray<string> langs = ["C#"];
 	private static readonly string AlphanumericCharactersWithoutDot = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	private static readonly G.SortedSet<String> AutoCompletionList = new(new List<String>("abstract", "break", "case", "Class", "closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypesList.Keys).AddRange(ExtraTypesList.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type))).AddRange(PublicFunctionsList.Keys));
-	private static readonly G.SortedSet<string> AutoCompletionAfterDotList = new(PrimitiveTypesList.Values.ToList().AddRange(ExtraTypesList.Values).ConvertAndJoin(x => x.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).ToList(x => PropertyMappingBack(x.Name)).AddRange(x.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).ToList(x => FunctionMappingBack(x.Name)))).Filter(x => !x.Contains('_')));
+	private static readonly G.SortedSet<String> AutoCompletionList = [.. new List<String>("abstract", "break", "case", "Class", "closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypesList.Keys).AddRange(ExtraTypesList.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type))).AddRange(PublicFunctionsList.Keys)];
+	private static readonly G.SortedSet<string> AutoCompletionAfterDotList = [.. PrimitiveTypesList.Values.ToList().AddRange(ExtraTypesList.Values).ConvertAndJoin(x => x.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).ToList(x => PropertyMappingBack(x.Name)).AddRange(x.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).ToList(x => FunctionMappingBack(x.Name)))).Filter(x => !x.Contains('_'))];
 #if VERIFY
 	private static readonly Dictionary<String, (String TargetResult, String? TargetErrors)> testPrograms = new() { { """
 		return ("7" * "2", "7" * 2, 7 * "2", "7" / "2", "7" / 2, 7 / "2", "7" % "2", "7" % 2, 7 % "2", "7" - "2", "7" - 2, 7 - "2");
@@ -253,11 +254,148 @@ NList[int] list = new NList[int](3, 1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.Reverse(2, 3);
-", (@"(1, 4, 3, 2, 5, 6, 7)", null) }, { @"using System.Collections;
+", (@"(1, 4, 3, 2, 5, 6, 7)", null) }, { """
+using System.Collections;
+			
 Class MyClass : ListHashSet[string]
 {
 }
 var hs = new MyClass();
+hs.Add("1");
+hs.Add("2");
+hs.Add("3");
+hs.Add("2");
+return hs;
+
+""", ("""("1", "2", "3")""", "Ошибок нет") }, { """
+using System.Collections;
+			
+Class MyClass : ListHashSet[string]
+{
+}
+MyClass Function F()
+{
+	var hs = new MyClass();
+	hs.Add("1");
+	hs.Add("2");
+	hs.Add("3");
+	hs.Add("2");
+	return hs;
+}
+return F();
+
+""", ("""("1", "2", "3")""", "Ошибок нет") }, { """
+using System.Collections;
+			
+Class MyClass : ListHashSet[string]
+{
+}
+MyClass Function F()
+{
+	var hs = new MyClass();
+	hs.Add("1");
+	hs.Add("2");
+	hs.Add("3");
+	hs.Add("2");
+	return hs;
+}
+return F().Length;
+
+""", ("3", "Ошибок нет") }, { """
+using System.Collections;
+			
+Class MyClass : ListHashSet[string]
+{
+}
+MyClass Function F()
+{
+	var hs = new MyClass();
+	hs.Add("1");
+	hs.Add("2");
+	hs.Add("3");
+	hs.Add("2");
+	return hs;
+}
+return F().RemoveAt(2);
+
+""", ("""("1", "3")""", "Ошибок нет") }, { """
+using System.Collections;
+			
+Class MyClass : ListHashSet[string]
+{
+}
+Class MyClass2 : MyClass
+{
+}
+var hs = new MyClass2();
+hs.Add("1");
+hs.Add("2");
+hs.Add("3");
+hs.Add("2");
+return hs;
+
+""", ("""("1", "2", "3")""", "Ошибок нет") }, { """
+using System.Collections;
+			
+Class MyClass : ListHashSet[string]
+{
+}
+Class MyClass2 : MyClass
+{
+}
+MyClass2 Function F()
+{
+	var hs = new MyClass2();
+	hs.Add("1");
+	hs.Add("2");
+	hs.Add("3");
+	hs.Add("2");
+	return hs;
+}
+return F();
+
+""", ("""("1", "2", "3")""", "Ошибок нет") }, { @"using System.Collections;
+Class MyClass : ListHashSet[string]
+{
+}
+Class MyClass2 : MyClass
+{
+}
+MyClass2 Function F()
+{
+	var hs = new MyClass2();
+	hs.Add(""1"");
+	hs.Add(""2"");
+	hs.Add(""3"");
+	hs.Add(""2"");
+	return hs;
+}
+return F().Length;
+", ("3", "Ошибок нет") }, { @"using System.Collections;
+Class MyClass : ListHashSet[string]
+{
+}
+Class MyClass2 : MyClass
+{
+}
+MyClass2 Function F()
+{
+	var hs = new MyClass2();
+	hs.Add(""1"");
+	hs.Add(""2"");
+	hs.Add(""3"");
+	hs.Add(""2"");
+	return hs;
+}
+return F().RemoveAt(2);
+", ("""("1", "3")""", "Ошибок нет") }, { @"using System.Collections;
+Class MyClass : ListHashSet[string]
+{
+}
+Class MyClass2 : ListHashSet[string]
+{
+}
+var hs = new MyClass2();
 hs.Add(""1"");
 hs.Add(""2"");
 hs.Add(""3"");
@@ -267,9 +405,12 @@ return hs;
 Class MyClass : ListHashSet[string]
 {
 }
-MyClass Function F()
+Class MyClass2 : ListHashSet[string]
 {
-	var hs = new MyClass();
+}
+MyClass2 Function F()
+{
+	var hs = new MyClass2();
 	hs.Add(""1"");
 	hs.Add(""2"");
 	hs.Add(""3"");
@@ -281,9 +422,12 @@ return F();
 Class MyClass : ListHashSet[string]
 {
 }
-MyClass Function F()
+Class MyClass2 : ListHashSet[string]
 {
-	var hs = new MyClass();
+}
+MyClass2 Function F()
+{
+	var hs = new MyClass2();
 	hs.Add(""1"");
 	hs.Add(""2"");
 	hs.Add(""3"");
@@ -291,29 +435,139 @@ MyClass Function F()
 	return hs;
 }
 return F().Length;
-", ("3", "Ошибок нет") }, { @"using System.Collections;
+", ("3", "Ошибок нет") }, { """
+using System.Collections;
+Class MyClass : ListHashSet[string]
+{
+}
+Class MyClass2 : ListHashSet[string]
+{
+}
+MyClass2 Function F()
+{
+	var hs = new MyClass2();
+	hs.Add("1");
+	hs.Add("2");
+	hs.Add("3");
+	hs.Add("2");
+	return hs;
+}
+return F().RemoveAt(2);
+
+""", ("""("1", "3")""", "Ошибок нет") }, { """
+using System.Collections;
 abstract Class MyClass : ListHashSet[string]
 {
 }
 MyClass Function F()
 {
 	var hs = new MyClass();
-	hs.Add(""1"");
-	hs.Add(""2"");
-	hs.Add(""3"");
-	hs.Add(""2"");
+	hs.Add("1");
+	hs.Add("2");
+	hs.Add("3");
+	hs.Add("2");
 	return hs;
 }
 return F();
-", ("null", @"Error in line 7 at position 14: cannot create instance of abstract type ""MyClass""
+
+""", ("null", """
+Error in line 7 at position 14: cannot create instance of abstract type "MyClass"
 Error in line 7 at position 21: internal error
-Error in line 7 at position 1: variable declared with the keyword ""var"" must be assigned explicitly and in the same expression
-Error in line 8 at position 1: identifier ""hs"" is not defined in this location
-Error in line 9 at position 1: identifier ""hs"" is not defined in this location
-Error in line 10 at position 1: identifier ""hs"" is not defined in this location
-Error in line 11 at position 1: identifier ""hs"" is not defined in this location
-Error in line 12 at position 8: identifier ""hs"" is not defined in this location
-") }, { @"return 100000000000000000*100000000000000000000;
+Error in line 7 at position 1: variable declared with the keyword "var" must be assigned explicitly and in the same expression
+Error in line 8 at position 1: identifier "hs" is not defined in this location
+Error in line 9 at position 1: identifier "hs" is not defined in this location
+Error in line 10 at position 1: identifier "hs" is not defined in this location
+Error in line 11 at position 1: identifier "hs" is not defined in this location
+Error in line 12 at position 8: identifier "hs" is not defined in this location
+
+""") }, { @"Class MyClass
+{
+	int a = 5;
+	real b = 3.14159;
+	string c = ""A"";
+}
+
+Class MyClass2 : MyClass
+{
+	Constructor(bool bool)
+	{
+		if (bool)
+			a = 12;
+	}
+}
+MyClass2 a1 = new MyClass2();
+MyClass2 a2 = new MyClass2(8, 2.71828, ""$"");
+MyClass2 a3 = new MyClass2(8, 2.71828);
+MyClass2 a4 = new MyClass2(true);
+return (a1, a2, a3, a4);
+", ("""(new MyClass2(5, 3.14159, "A"), new MyClass2(8, 2.71828, "$"), new MyClass2(8, 2.71828, "A"), new MyClass2(12, 3.14159, "A"))""", "Ошибок нет") }, { @"Class MyClass
+{
+	int a = 5;
+	real b = 3.14159;
+	string c = ""A"";
+}
+
+Class MyClass2 : MyClass
+{
+	Constructor(bool bool)
+	{
+		if (bool)
+			a = 12;
+	}
+}
+MyClass a1 = new MyClass2();
+MyClass a2 = new MyClass2(8, 2.71828, ""$"");
+MyClass a3 = new MyClass2(8, 2.71828);
+MyClass a4 = new MyClass2(true);
+return (a1, a2, a3, a4);
+", ("""(new MyClass2(5, 3.14159, "A"), new MyClass2(8, 2.71828, "$"), new MyClass2(8, 2.71828, "A"), new MyClass2(12, 3.14159, "A"))""", "Ошибок нет") }, { @"Namespace MyNamespace
+{
+	Namespace MyNamespace
+	{
+		Class MyClass
+		{
+			int a = 5;
+			real b = 3.14159;
+			string c = ""A"";
+		}
+	}
+}
+
+Class MyClass2 : MyNamespace.MyNamespace.MyClass
+{
+	Constructor(bool bool)
+	{
+		if (bool)
+			a = 12;
+	}
+}
+MyClass2 a1 = new MyClass2();
+MyClass2 a2 = new MyClass2(8, 2.71828, ""$"");
+MyClass2 a3 = new MyClass2(8, 2.71828);
+MyClass2 a4 = new MyClass2(true);
+return (a1, a2, a3, a4);
+", ("""(new MyClass2(5, 3.14159, "A"), new MyClass2(8, 2.71828, "$"), new MyClass2(8, 2.71828, "A"), new MyClass2(12, 3.14159, "A"))""", "Ошибок нет") }, { @"Class MyClass
+{
+	int a = 5;
+	real b = 3.14159;
+}
+
+Class MyClass2 : MyClass
+{
+	string c = ""A"";
+
+	Constructor(bool bool)
+	{
+		if (bool)
+			a = 12;
+	}
+}
+MyClass2 a1 = new MyClass2();
+MyClass2 a2 = new MyClass2(8, 2.71828, ""$"");
+MyClass2 a3 = new MyClass2(8, 2.71828);
+MyClass2 a4 = new MyClass2(true);
+return (a1, a2, a3, a4);
+", ("""(new MyClass2(5, 3.14159, "A"), new MyClass2(8, 2.71828, "$"), new MyClass2(8, 2.71828, "A"), new MyClass2(12, 3.14159, "A"))""", "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
 ", (@"null", @"Error in line 1 at position 26: too large number; long long type is under development
 ") }, { """
 return ExecuteString("return args[1];", Q());
@@ -394,10 +648,18 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 #if RELEASE
 		ButtonSaveExe.IsEnabled = false;
 #endif
-#if VERIFY
+		TextBoxInput.Text = $"Loading ({0:F2}%)\r\n";
+	}
+
+	private void UserControl_Loaded(object? sender, RoutedEventArgs e) => Task.Factory.StartNew(async () =>
+	{
 		String result;
+		var i = 0;
 		foreach (var (Key, Value) in testPrograms)
 		{
+			await Dispatcher.UIThread.InvokeAsync(() =>
+				TextBoxInput.Text = $"Loading ({Clamp((double)(i++ * 100 + random.Next(-64, 64))
+				/ testPrograms.Length, 0, 100):F2}%)\r\n");
 			if ((result = ExecuteProgram(Key, out var errors)) == Value.TargetResult
 				&& (Value.TargetErrors == null || errors == Value.TargetErrors))
 				continue;
@@ -407,7 +669,32 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 				|| errors == Value.TargetErrors ? "" : " and produced errors @\"" + errors.Replace("\"", "\"\"")
 				+ "\" instead of @\"" + Value.TargetErrors.Replace("\"", "\"\"") + "\"") + "!");
 		}
-#endif
+		await Dispatcher.UIThread.InvokeAsync(() =>
+		{
+			TextBoxInput.Text = "return \"Hello, world!\";\r\n";
+			ButtonExecute.IsEnabled = true;
+			ButtonOpenCode.IsEnabled = true;
+			ButtonSaveCode.IsEnabled = true;
+		});
+	}).Wait();
+
+	private void UserControl_SizeChanged(object? sender, SizeChangedEventArgs e)
+	{
+		ScrollViewerMain.Width = TopLevel.GetTopLevel(this)?.Width ?? 1024;
+		ScrollViewerMain.Height = TopLevel.GetTopLevel(this)?.Height ?? 768;
+		CopyrightsView.Width = TopLevel.GetTopLevel(this)?.Width ?? 1024;
+		CopyrightsView.Height = TopLevel.GetTopLevel(this)?.Height ?? 768;
+		TextBoxInput.Height = TextBoxInput.MaxHeight = TextBoxInput.MinHeight
+			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 5 / 13;
+		ButtonExecute.Height = ButtonExecute.MaxHeight = ButtonExecute.MinHeight
+			= ButtonSaveExe.Height = ButtonSaveExe.MaxHeight = ButtonSaveExe.MinHeight
+			= ButtonOpenCode.Height = ButtonOpenCode.MaxHeight = ButtonOpenCode.MinHeight
+			= ButtonSaveCode.Height = ButtonSaveCode.MaxHeight = ButtonSaveCode.MinHeight
+			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 1 / 13;
+		TextBoxOutput.Height = TextBoxOutput.MaxHeight = TextBoxOutput.MinHeight
+			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 2 / 13;
+		TextBoxErrors.Height = TextBoxErrors.MaxHeight = TextBoxErrors.MinHeight
+			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 3 / 13;
 	}
 
 	private static string FunctionMappingBack(String function) => function.ToString() switch
@@ -441,21 +728,6 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 			enteredText.Replace(textBeforeCursor[i..]);
 		else
 			enteredText.Replace(textBeforeCursor[(i + 1)..]);
-	}
-
-	private void UserControl_SizeChanged(object? sender, SizeChangedEventArgs e)
-	{
-		TextBoxInput.Height = TextBoxInput.MaxHeight = TextBoxInput.MinHeight
-			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 5 / 13;
-		ButtonExecute.Height = ButtonExecute.MaxHeight = ButtonExecute.MinHeight
-			= ButtonSaveExe.Height = ButtonSaveExe.MaxHeight = ButtonSaveExe.MinHeight
-			= ButtonOpenCode.Height = ButtonOpenCode.MaxHeight = ButtonOpenCode.MinHeight
-			= ButtonSaveCode.Height = ButtonSaveCode.MaxHeight = ButtonSaveCode.MinHeight
-			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 1 / 13;
-		TextBoxOutput.Height = TextBoxOutput.MaxHeight = TextBoxOutput.MinHeight
-			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 2 / 13;
-		TextBoxErrors.Height = TextBoxErrors.MaxHeight = TextBoxErrors.MinHeight
-			= (TopLevel.GetTopLevel(this)?.Height ?? 768) * 3 / 13;
 	}
 
 	private void TextBoxInput_KeyUp(object? sender, KeyEventArgs e)

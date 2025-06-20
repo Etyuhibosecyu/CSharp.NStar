@@ -4,6 +4,8 @@ global using Avalonia.Markup.Xaml;
 global using Corlib.NStar;
 global using CSharp.NStar.ViewModels;
 global using CSharp.NStar.Views;
+global using Dictionaries.NStar;
+global using LINQ.NStar;
 global using System;
 global using System.Diagnostics;
 global using System.IO;

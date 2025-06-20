@@ -6,7 +6,7 @@
 	</PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\.NStar\EasyEval\EasyEval.csproj" />
+    <ProjectReference Include="..\..\.NStar\EasyEval.NStar\EasyEval.NStar.csproj" />
     <ProjectReference Include="..\LowLevelAnalysis\LowLevelAnalysis.csproj" />
   </ItemGroup>
 

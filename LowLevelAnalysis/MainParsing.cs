@@ -405,7 +405,7 @@ public partial class MainParsing : LexemStream
 		CheckSuccess();
 		TransformErrorMessage2();
 		pos = registeredTypes[registeredTypesPos].End;
-		return CheckOpeningBracketAndAddTask(nameof(ClassMain), "Class}", BlockType.Class, registeredTypes[registeredTypesPos].Name);
+		return CheckOpeningBracketAndAddTask(nameof(ClassMain), "Class}", BlockType.Class, registeredTypes[registeredTypesPos++].Name);
 	}
 
 	private bool ClassClosing()
@@ -795,11 +795,17 @@ public partial class MainParsing : LexemStream
 		list.Insert(0, (ConstructorAttributes.Multiconst, []));
 		var increment = 1;
 		if (UserDefinedPropertiesList.TryGetValue(container, out var propertiesList) && propertiesList.Length != 0 && UserDefinedPropertiesOrder.TryGetValue(container, out var propertiesOrder) && propertiesOrder.Length != 0)
-		{
 			list.Insert(1, (ConstructorAttributes.Multiconst, []));
+		if (UserDefinedTypesList.TryGetValue(SplitType(container), out var userDefinedType)
+			&& CreateVar(GetAllProperties(userDefinedType.BaseType.MainType), out var baseProperties).Length != 0)
+			foreach (var property in baseProperties)
+				if (property.Value.Attributes is PropertyAttributes.None or PropertyAttributes.Internal)
+					list[1].Parameters.Add(new(property.Value.UnvType.MainType, property.Key, property.Value.UnvType.ExtraTypes, ParameterAttributes.Optional, "null"));
+		if (UserDefinedPropertiesList.TryGetValue(container, out propertiesList) && propertiesList.Length != 0 && UserDefinedPropertiesOrder.TryGetValue(container, out propertiesOrder) && propertiesOrder.Length != 0)
+		{
 			foreach (var propertyName in propertiesOrder)
 			{
-				if (propertiesList.TryGetValue(propertyName, out var property) && property.Attributes == PropertyAttributes.None || property.Attributes == PropertyAttributes.Internal)
+				if (propertiesList.TryGetValue(propertyName, out var property) && property.Attributes is PropertyAttributes.None or PropertyAttributes.Internal)
 					list[1].Parameters.Add(new(property.UnvType.MainType, propertyName, property.UnvType.ExtraTypes, ParameterAttributes.Optional, "null"));
 			}
 			increment++;
@@ -970,7 +976,10 @@ public partial class MainParsing : LexemStream
 			}
 			var attributes = (PropertyAttributes)l[0];
 			var name = (String)l[2];
-			list.Add(name, (UnvType, attributes));
+			list.Add(name, new(UnvType, attributes, treeBranch == null ? "" : treeBranch.Length == 0
+				&& Universal.TryParse(treeBranch.Info.ToString(), out var value) ? value.ToString(true)
+				: treeBranch.Info == "Expr" && treeBranch.Length == 1 && treeBranch[0].Length == 0
+				&& Universal.TryParse(treeBranch[0].Info.ToString(), out value) ? value.ToString(true) : ""));
 			var t = UserDefinedTypesList[SplitType(container)];
 			if ((attributes & PropertyAttributes.Static) == 0)
 			{
@@ -1747,7 +1756,7 @@ public partial class MainParsing : LexemStream
 	{
 		if (success)
 		{
-			if (treeBranch != null && treeBranch.Info == nameof(Hypername) && treeBranch.Length == 1 && (!WordRegex().IsMatch(treeBranch[0].Info.ToString()) || new List<String> { "_", "true", "false", "this", "null", "Infty", "Uncty", "Pi", "E" }.Contains(treeBranch[0].Info) || treeBranch[0].Length != 0))
+			if (treeBranch != null && treeBranch.Info == nameof(Hypername) && treeBranch.Length == 1 && (!WordRegex().IsMatch(treeBranch[0].Info.ToString()) || new List<String> { "_", "true", "false", "this", "base", "null", "Infty", "Uncty", "Pi", "E" }.Contains(treeBranch[0].Info) || treeBranch[0].Length != 0))
 			{
 				_ErLStack[_Stackpos]?.AddRange(errorsList ?? []);
 				_TBStack[_Stackpos] = treeBranch[0];
@@ -2305,24 +2314,24 @@ public partial class MainParsing : LexemStream
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 			}
 		}
-		else if (ExtraTypesList.TryGetValue((namespace_, s), out var type) || namespace_ == ""
-			&& ExplicitlyConnectedNamespacesList.FindIndex(x => ExtraTypesList.TryGetValue((x, s), out type)) >= 0)
+		else if (ExtraTypesList.TryGetValue((namespace_, s), out var netType) || namespace_ == ""
+			&& ExplicitlyConnectedNamespacesList.FindIndex(x => ExtraTypesList.TryGetValue((x, s), out netType)) >= 0)
 		{
 			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
-				&& (!type.IsClass || type.IsSealed))
+				&& (!netType.IsClass || netType.IsSealed))
 			{
 				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 				GenerateError(pos, "expected: non-sealed class or interface");
 				return false;
 			}
-			if (constraints == TypeConstraints.NotAbstract && type.IsAbstract)
+			if (constraints == TypeConstraints.NotAbstract && netType.IsAbstract)
 			{
 				UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
 				GenerateError(pos, "cannot create instance of abstract type \"" + UnvType.ToString() + "\"");
 			}
 			var pos2 = pos;
 			pos++;
-			if (type.GetGenericArguments().Length == 0)
+			if (netType.GetGenericArguments().Length == 0)
 			{
 				UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
@@ -2342,7 +2351,7 @@ public partial class MainParsing : LexemStream
 				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 			}
 			GeneralArrayParameters template = [];
-			for (var i = 0; i < type.GetGenericArguments().Length; i++)
+			for (var i = 0; i < netType.GetGenericArguments().Length; i++)
 				template.Add((false, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), ""));
 			ParseTypeChain(ref pos, end, mainContainer, template, out var innerArrayParameters, ref errorsList, "associativeArray");
 			UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), innerArrayParameters);
@@ -2996,12 +3005,12 @@ public partial class MainParsing : LexemStream
 
 	private void GenerateError(Index pos, String text, bool savePrevious = false) => GenerateMessage("Error", pos, text, savePrevious);
 
-	private void GenerateMessage(String type, Index pos, String text, bool savePrevious = false)
+	private void GenerateMessage(String typeName, Index pos, String text, bool savePrevious = false)
 	{
 		if (savePrevious)
 			_ErLStack[_Stackpos]?.AddRange(errorsList ?? []);
-		_ErLStack[_Stackpos]?.Add(type + " in line " + lexems[pos].LineN.ToString() + " at position " + lexems[pos].Pos.ToString() + ": " + text);
-		if (type == "Wreck")
+		_ErLStack[_Stackpos]?.Add(typeName + " in line " + lexems[pos].LineN.ToString() + " at position " + lexems[pos].Pos.ToString() + ": " + text);
+		if (typeName == "Wreck")
 			wreckOccurred = true;
 	}
 

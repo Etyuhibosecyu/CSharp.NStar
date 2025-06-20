@@ -1,27 +1,32 @@
 ﻿global using Corlib.NStar;
+global using Dictionaries.NStar;
+global using LINQ.NStar;
 global using System;
 global using G = System.Collections.Generic;
 global using static System.Math;
 global using String = Corlib.NStar.String;
-using ILGPU.Util;
+using ParallelHS.NStar;
+using SortedSets.NStar;
+using SumCollections.NStar;
 using System.Diagnostics;
 using System.Text;
 using System.Numerics;
+using TreeSets.NStar;
 using static CSharp.NStar.DeclaredConstructions;
 
 namespace CSharp.NStar;
 
-public sealed class Block(BlockType type, String name, int unnamedIndex)
+public sealed class Block(BlockType blockType, String name, int unnamedIndex)
 {
-	public BlockType Type { get; private set; } = type;
+	public BlockType BlockType { get; private set; } = blockType;
 	public String Name { get; private set; } = name;
 	public int UnnamedIndex { get; set; } = unnamedIndex;
 
-	public override bool Equals(object? obj) => obj is not null && obj is Block m && Type == m.Type && Name == m.Name;
+	public override bool Equals(object? obj) => obj is not null && obj is Block m && BlockType == m.BlockType && Name == m.Name;
 
-	public override int GetHashCode() => Type.GetHashCode() ^ Name.GetHashCode();
+	public override int GetHashCode() => BlockType.GetHashCode() ^ Name.GetHashCode();
 
-	public override string ToString() => (Type == BlockType.Unnamed) ? "Unnamed(" + Name + ")" : (ExplicitNameBlockTypes.Contains(Type) ? Type.ToString() : "") + Name;
+	public override string ToString() => (BlockType == BlockType.Unnamed) ? "Unnamed(" + Name + ")" : (ExplicitNameBlockTypes.Contains(BlockType) ? BlockType.ToString() : "") + Name;
 }
 
 public sealed class TypeOrValue
@@ -74,15 +79,14 @@ public class BlockStack : Stack<Block>
 	{
 	}
 
-	public string ToShortString() => string.Join(".", this.ToArray(x => (x.Type == BlockType.Unnamed) ? "Unnamed(" + x.Name + ")" : x.Name.ToString()));
+	public string ToShortString() => string.Join(".", this.ToArray(x => (x.BlockType == BlockType.Unnamed) ? "Unnamed(" + x.Name + ")" : x.Name.ToString()));
 
 	public override string ToString() => string.Join(".", this.ToArray(x => x.ToString()));
 }
 
 public record struct UserDefinedType(GeneralArrayParameters ArrayParameters, TypeAttributes Attributes, UniversalType BaseType, GeneralExtraTypes Decomposition);
-
+public record struct UserDefinedProperty(UniversalType UnvType, PropertyAttributes Attributes, String DefaultValue);
 public record struct MethodParameter(String Type, String Name, List<String> ExtraTypes, ParameterAttributes Attributes, String DefaultValue);
-
 public record struct GeneralMethodParameter(BlockStack Type, String Name, GeneralExtraTypes ExtraTypes, ParameterAttributes Attributes, String DefaultValue);
 
 public sealed class VariablesBlock<T>(IList<T> main, IList<bool> isNull)
@@ -134,7 +138,7 @@ public class TypeVariables : SortedDictionary<String, UniversalType>
 public class TypeProperties : SortedDictionary<String, (UniversalType UnvType, PropertyAttributes Attributes)>
 {
 }
-public class UserDefinedTypeProperties : Dictionary<String, (UniversalType UnvType, PropertyAttributes Attributes)>
+public class UserDefinedTypeProperties : Dictionary<String, UserDefinedProperty>
 {
 }
 public class TypeIndexers : SortedDictionary<String, (BlockStack IndexType, BlockStack Type, List<String> ExtraTypes, PropertyAttributes Attributes)>
@@ -207,15 +211,10 @@ public class GeneralMethods : SortedDictionary<String, GeneralMethodOverloads>
 public class UserDefinedMethods : Dictionary<String, GeneralMethodOverloads>
 {
 }
-public class ConstructorOverloads : List<(ConstructorAttributes Attributes, MethodParameters Parameters)>
+public class ConstructorOverloads : List<(ConstructorAttributes Attributes, GeneralMethodParameters Parameters)>
 {
 	public ConstructorOverloads() : base() { }
-	public ConstructorOverloads(G.IEnumerable<(ConstructorAttributes Attributes, MethodParameters Parameters)> collection) : base(collection) { }
-}
-public class GeneralConstructorOverloads : List<(ConstructorAttributes Attributes, GeneralMethodParameters Parameters)>
-{
-	public GeneralConstructorOverloads() : base() { }
-	public GeneralConstructorOverloads(G.IEnumerable<(ConstructorAttributes Attributes, GeneralMethodParameters Parameters)> collection) : base(collection) { }
+	public ConstructorOverloads(G.IEnumerable<(ConstructorAttributes Attributes, GeneralMethodParameters Parameters)> collection) : base(collection) { }
 }
 public class UnaryOperatorOverloads : List<(bool Postfix, UniversalType ReturnUnvType, UniversalType OpdUnvType)>
 {
@@ -505,7 +504,7 @@ public static class DeclaredConstructions
 	/// <summary>
 	/// Sorted by Container, also contains Attributes, ParameterTypes, ParameterNames, ParameterArrayParameters, ParameterAttributes and ParameterDefaultValues.
 	/// </summary>
-	public static TypeDictionary<GeneralConstructorOverloads> UserDefinedConstructorsList { get; } = [];
+	public static TypeDictionary<ConstructorOverloads> UserDefinedConstructorsList { get; } = [];
 
 	/// <summary>
 	/// Sorted by Container, then by StartPos.
@@ -616,7 +615,7 @@ public static class DeclaredConstructions
 			return false;
 		for (var i = 0; i < type1.MainType.Length; i++)
 		{
-			if (type1.MainType.ElementAt(i).Type != type2.MainType.ElementAt(i).Type || type1.MainType.ElementAt(i).Name != type2.MainType.ElementAt(i).Name)
+			if (type1.MainType.ElementAt(i).BlockType != type2.MainType.ElementAt(i).BlockType || type1.MainType.ElementAt(i).Name != type2.MainType.ElementAt(i).Name)
 				return false;
 		}
 		if (type1.ExtraTypes.Length == 0)
@@ -637,7 +636,7 @@ public static class DeclaredConstructions
 
 	public static bool TypeEqualsToPrimitive(UniversalType type, String primitive, bool noExtra = true) => TypeIsPrimitive(type.MainType) && type.MainType.Peek().Name == primitive && (!noExtra || type.ExtraTypes.Length == 0);
 
-	public static bool TypeIsPrimitive(BlockStack type) => type is null || type.Length == 1 && type.Peek().Type == BlockType.Primitive;
+	public static bool TypeIsPrimitive(BlockStack type) => type is null || type.Length == 1 && type.Peek().BlockType == BlockType.Primitive;
 
 	public static UniversalType GetPrimitiveType(String primitive) => (new([new(BlockType.Primitive, primitive, 1)]), NoGeneralExtraTypes);
 
@@ -650,10 +649,10 @@ public static class DeclaredConstructions
 		var split = namespace_.Split('.');
 		if (PrimitiveTypesList.ContainsKey(basic))
 			return GetPrimitiveBlockStack(basic);
-		else if (ExtraTypesList.TryGetValue((namespace_, typeName), out var type))
+		else if (ExtraTypesList.TryGetValue((namespace_, typeName), out var netType))
 			return new([.. split.Convert(x => new Block(BlockType.Namespace, x, 1)),
-				new(type.IsClass ? BlockType.Class : type.IsValueType
-				? BlockType.Struct : type.IsDelegate() ? BlockType.Delegate
+				new(netType.IsClass ? BlockType.Class : netType.IsValueType
+				? BlockType.Struct : typeof(Delegate).IsAssignableFrom(netType) ? BlockType.Delegate
 				: throw new InvalidOperationException(), typeName, 1)]);
 		else if (InterfacesList.TryGetValue((namespace_, typeName), out var value) && value.DotNetType.IsInterface)
 			return new([.. split.Convert(x => new Block(BlockType.Namespace, x, 1)),
@@ -739,9 +738,9 @@ public sealed class BlockComparer : G.IComparer<Block>
 	{
 		if (x is null || y is null)
 			return (x is null ? 1 : 0) - (y is null ? 1 : 0);
-		if (x.Type < y.Type)
+		if (x.BlockType < y.BlockType)
 			return 1;
-		else if (x.Type > y.Type)
+		else if (x.BlockType > y.BlockType)
 			return -1;
 		return x.Name.ToString().CompareTo(y.Name.ToString());
 	}
@@ -781,9 +780,9 @@ public sealed class BlockStackAndStringComparer : G.IComparer<(BlockStack, Strin
 
 public sealed class BlockEComparer : G.IEqualityComparer<Block>
 {
-	public bool Equals(Block? x, Block? y) => x is null && y is null || x is not null && y is not null && x.Type == y.Type && x.Name == y.Name;
+	public bool Equals(Block? x, Block? y) => x is null && y is null || x is not null && y is not null && x.BlockType == y.BlockType && x.Name == y.Name;
 
-	public int GetHashCode(Block x) => x.Type.GetHashCode() ^ x.Name.GetHashCode();
+	public int GetHashCode(Block x) => x.BlockType.GetHashCode() ^ x.Name.GetHashCode();
 }
 
 public sealed class BlockStackEComparer : G.IEqualityComparer<BlockStack>

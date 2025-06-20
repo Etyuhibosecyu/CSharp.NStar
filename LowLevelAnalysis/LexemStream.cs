@@ -449,10 +449,10 @@ public class LexemStream
 
 	private void GenerateError(Index pos, String text) => GenerateMessage("Error", pos, text);
 
-	private void GenerateMessage(String type, Index pos, String text)
+	private void GenerateMessage(String typeName, Index pos, String text)
 	{
-		(errorsList ??= []).Add(type + " in line " + lexems[pos].LineN.ToString() + " at position " + lexems[pos].Pos.ToString() + ": " + text);
-		if (type == "Wreck")
+		(errorsList ??= []).Add(typeName + " in line " + lexems[pos].LineN.ToString() + " at position " + lexems[pos].Pos.ToString() + ": " + text);
+		if (typeName == "Wreck")
 			wreckOccurred = true;
 	}
 
@@ -460,7 +460,7 @@ public class LexemStream
 
 	public (List<Lexem> Lexems, String String, TreeBranch TopBranch, List<String>? ErrorsList, bool WreckOccurred) EmptySyntaxTree() => (lexems, input, TreeBranch.DoNotAdd(), errorsList, true);
 
-	private bool IsClass() => nestedBlocksChain.Length != 0 && nestedBlocksChain.Peek().Type == BlockType.Class;
+	private bool IsClass() => nestedBlocksChain.Length != 0 && nestedBlocksChain.Peek().BlockType == BlockType.Class;
 
 	private bool IsStatic() => (UserDefinedTypesList[SplitType(nestedBlocksChain)].Attributes & TypeAttributes.Static) != 0;
 
@@ -481,7 +481,7 @@ public class LexemStream
 	{
 		if (IsLexemKeyword(lexems[pos2], ["closed", "protected"]))
 		{
-			if (nestedBlocksChain.Length != 0 && nestedBlocksChain.Peek().Type == BlockType.Class)
+			if (nestedBlocksChain.Length != 0 && nestedBlocksChain.Peek().BlockType == BlockType.Class)
 				attributes |= (lexems[pos2].String == "closed") ? 2 : 4;
 			else
 				GenerateError(pos2, "closed and protected classes are allowed only inside other classes");

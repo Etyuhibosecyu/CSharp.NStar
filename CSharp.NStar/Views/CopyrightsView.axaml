@@ -39,9 +39,6 @@ More exactly, there was used content from the next proprietary sources:&#x0a;
 			<TextBlock Foreground="Blue" Text="https://github.com/dotnet/roslyn" TextDecorations="Underline"/>
 		</Button>
 		<Button Background="Transparent" HorizontalAlignment="Center" Click="Button_Click">
-			<TextBlock Foreground="Blue" Text="https://ilgpu.net/" TextDecorations="Underline"/>
-		</Button>
-		<Button Background="Transparent" HorizontalAlignment="Center" Click="Button_Click">
 			<TextBlock Foreground="Blue" Text="https://wezeku.github.io/Mpir.NET/" TextDecorations="Underline"/>
 		</Button>
 		<Button Background="Transparent" HorizontalAlignment="Center" Click="Button_Click">

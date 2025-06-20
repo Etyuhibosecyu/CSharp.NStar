@@ -1,4 +1,6 @@
 ﻿global using Corlib.NStar;
+global using LINQ.NStar;
+global using MathLib.NStar;
 global using System;
 global using System.Diagnostics;
 global using System.Drawing;
@@ -1075,7 +1077,7 @@ public struct Universal
 		}
 		numbers.Add(1);
 		var old_list = ToList();
-		List<Universal> new_list = new(new Universal[count]);
+		List<Universal> new_list = [.. new Universal[count]];
 		int tpos = 0, tpos2, npos = 0;
 		for (var i = 0; i < count && i < old_list.Length; i++)
 		{

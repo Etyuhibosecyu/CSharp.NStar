@@ -6,61 +6,63 @@ namespace CSharp.NStar;
 public static class DeclaredConstructionMappings
 {
 	public static Type TypeMapping(UniversalTypeOrValue UnvType) =>
-		!UnvType.MainType.IsValue && (PrimitiveTypesList.TryGetValue(UnvType.MainType.Type.ToShortString(), out var innerType)
-		|| ExtraTypesList.TryGetValue((CreateVar(SplitType(UnvType.MainType.Type), out var split).Container.ToShortString(),
-		split.Type), out innerType) || UnvType.MainType.Type.Length == 1
-		&& ExplicitlyConnectedNamespacesList.FindIndex(y => ExtraTypesList.TryGetValue((y,
-		UnvType.MainType.Type.ToShortString()), out innerType)) >= 0) ? innerType : throw new InvalidOperationException();
+		UnvType.MainType.IsValue || !PrimitiveTypesList.TryGetValue(UnvType.MainType.Type.ToShortString(), out var innerType)
+		&& !ExtraTypesList.TryGetValue((CreateVar(SplitType(UnvType.MainType.Type), out var split).Container.ToShortString(),
+		split.Type), out innerType) && (UnvType.MainType.Type.Length != 1
+		|| ExplicitlyConnectedNamespacesList.FindIndex(y => ExtraTypesList.TryGetValue((y,
+		UnvType.MainType.Type.ToShortString()), out innerType)) < 0) ? throw new InvalidOperationException()
+		: innerType.ContainsGenericParameters
+		? innerType.MakeGenericType(UnvType.ExtraTypes.ToArray(x => TypeMapping(x.Value))) : innerType;
 
-	public static UniversalType TypeMappingBack(Type type, Type[] genericArguments, GeneralExtraTypes extraTypes)
+	public static UniversalType TypeMappingBack(Type netType, Type[] genericArguments, GeneralExtraTypes extraTypes)
 	{
-		if (type.IsSZArray || type.IsPointer)
-			type = typeof(List<>);
-		else if (type == typeof(BitArray))
-			type = typeof(BitList);
-		else if (type == typeof(Index))
-			type = typeof(int);
-		var typeGenericArguments = type.GetGenericArguments();
-		if (type.Name.Contains("Func"))
+		if (netType.IsSZArray || netType.IsPointer)
+			netType = typeof(List<>);
+		else if (netType == typeof(BitArray))
+			netType = typeof(BitList);
+		else if (netType == typeof(Index))
+			netType = typeof(int);
+		var typeGenericArguments = netType.GetGenericArguments();
+		if (netType.Name.Contains("Func"))
 		{
 			return new(FuncBlockStack, new([.. typeGenericArguments.GetSlice(..^1).Convert((x, index) =>
 				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes)),
 				typeGenericArguments[^1].Wrap(x => TypeMappingBack(x, genericArguments, extraTypes))]));
 		}
 		int foundIndex;
-		if ((foundIndex = genericArguments.FindIndex(x => x.Name == type.Name)) >= 0)
-			type = TypeMapping(extraTypes[foundIndex]);
+		if ((foundIndex = genericArguments.FindIndex(x => x.Name == netType.Name)) >= 0)
+			netType = TypeMapping(extraTypes[foundIndex]);
 		List<Type> innerTypes = [];
-		foreach (var genericArgument in type.GenericTypeArguments)
+		foreach (var genericArgument in netType.GenericTypeArguments)
 		{
 			if ((foundIndex = genericArguments.IndexOf(genericArgument)) < 0)
 				continue;
 			innerTypes.Add(TypeMapping(extraTypes[foundIndex]));
 		}
-		if (type.IsGenericType)
-			type = type.GetGenericTypeDefinition();
+		if (netType.IsGenericType)
+			netType = netType.GetGenericTypeDefinition();
 		l1:
-		if (CreateVar(PrimitiveTypesList.Find(x => x.Value == type).Key, out var typename) != null)
+		if (CreateVar(PrimitiveTypesList.Find(x => x.Value == netType).Key, out var typename) != null)
 			return typename == "list" ? new(ListBlockStack,
 				new([.. typeGenericArguments.Convert((x, index) =>
 				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))]))
 				: GetPrimitiveType(typename);
-		else if (CreateVar(ExtraTypesList.Find(x => x.Value == type).Key, out var type2) != default)
+		else if (CreateVar(ExtraTypesList.Find(x => x.Value == netType).Key, out var type2) != default)
 			return new(GetBlockStack(type2.Namespace + "." + type2.Type),
 				new([.. typeGenericArguments.Convert((x, index) =>
 				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))]));
-		else if (CreateVar(InterfacesList.Find(x => x.Value.DotNetType == type), out var type3).Key != default)
+		else if (CreateVar(InterfacesList.Find(x => x.Value.DotNetType == netType), out var type3).Key != default)
 			return new(GetBlockStack(type3.Key.Namespace + "." + type3.Key.Interface),
 				new([.. typeGenericArguments.Convert((x, index) =>
 				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))]));
-		else if (type == typeof(string))
+		else if (netType == typeof(string))
 			return StringType;
 		else if (innerTypes.Length != 0)
 		{
-			type = type.MakeGenericType([.. innerTypes]);
-			if (type.Name.Contains("Tuple") || type.Name.Contains("KeyValuePair"))
+			netType = netType.MakeGenericType([.. innerTypes]);
+			if (netType.Name.Contains("Tuple") || netType.Name.Contains("KeyValuePair"))
 			{
-				return new(TupleBlockStack, new(type.GenericTypeArguments.ToList(x =>
+				return new(TupleBlockStack, new(netType.GenericTypeArguments.ToList(x =>
 				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))));
 			}
 			innerTypes.Clear();
@@ -87,11 +89,11 @@ public static class DeclaredConstructionMappings
 			"IsSummertime" => nameof(DateTime.IsDaylightSavingTime),
 			nameof(DateTime.IsDaylightSavingTime) => [],
 			"Log" => ((String)nameof(IntermediateFunctions)).Add('.').AddRange(nameof(Log)),
-			nameof(RedStarLinq.Max) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Max)),
+			nameof(RedStarLinqMath.Max) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinqMath.Max)),
 			"Max3" => [],
-			nameof(RedStarLinq.Mean) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Mean)),
+			nameof(RedStarLinqMath.Mean) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinqMath.Mean)),
 			"Mean3" => [],
-			nameof(RedStarLinq.Min) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Min)),
+			nameof(RedStarLinqMath.Min) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinqMath.Min)),
 			"Min3" => [],
 			"Random" => nameof(RandomNumber),
 			nameof(RandomNumber) => [],
