@@ -24,6 +24,7 @@ public sealed class TreeBranch
 
 	public int Length => Elements.Length;
 	public int FullCount => Elements.Length + Elements.Sum(x => x.FullCount);
+	public int FirstPos => Length == 0 ? Pos : Elements[0].Pos;
 
 	public TreeBranch(String info, int pos, BlockStack container)
 	{

@@ -152,7 +152,8 @@
 					HorizontalAlignment="Stretch"
 					IsReadOnly="True"
 					MaxLength="0"
-					TabIndex="4"/>
+					TabIndex="4"
+					DoubleTapped="TextBoxErrors_DoubleTapped"/>
 				<StackPanel
 					Orientation="Horizontal"
 					Grid.Row="5">

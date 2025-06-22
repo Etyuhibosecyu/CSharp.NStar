@@ -241,6 +241,8 @@ public class LexemStream
 		if (IsEnd()) return;
 		if (IsCurrentLexemOperator(":"))
 		{
+			if ((attributes & TypeAttributes.Static) == TypeAttributes.Static)
+				GenerateError(pos, "a static class cannot be derived");
 			pos++;
 			var pos3 = pos;
 			while (pos < lexems.Length && (lexems[pos].Type == LexemType.Identifier || IsCurrentLexemOperator(".") || IsLexemOther(lexems[pos], ["(", ")", "[", "]", ","])))

@@ -805,7 +805,7 @@ public partial class MainParsing : LexemStream
 		{
 			foreach (var propertyName in propertiesOrder)
 			{
-				if (propertiesList.TryGetValue(propertyName, out var property) && property.Attributes is PropertyAttributes.None or PropertyAttributes.Internal)
+				if (propertiesList.TryGetValue(propertyName, out var property)/* && property.Attributes is PropertyAttributes.None or PropertyAttributes.Internal*/)
 					list[1].Parameters.Add(new(property.UnvType.MainType, propertyName, property.UnvType.ExtraTypes, ParameterAttributes.Optional, "null"));
 			}
 			increment++;
@@ -2371,6 +2371,13 @@ public partial class MainParsing : LexemStream
 				return false;
 			}
 			if (constraints == TypeConstraints.NotAbstract
+				&& (Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) == TypeAttributes.Static)
+			{
+				UnvType = (new(innerContainer.ToList().Append(new(BlockType.Class, s, 1))),
+					NoGeneralExtraTypes);
+				GenerateError(pos, "cannot create instance of static type \"" + UnvType.ToString() + "\"");
+			}
+			else if (constraints == TypeConstraints.NotAbstract
 				&& (Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) is not 0 or TypeAttributes.Sealed
 				or TypeAttributes.Struct)
 			{
@@ -2408,15 +2415,23 @@ public partial class MainParsing : LexemStream
 		{
 			var pos2 = pos;
 			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
-				&& !IsValidBaseClass(value2.Attributes))
+				&& !IsValidBaseClass(value2.Attributes) && !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
 			{
 				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 				GenerateError(pos, "expected: non-sealed class or interface");
 				return false;
 			}
 			if (constraints == TypeConstraints.NotAbstract
+				&& (value2.Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) == TypeAttributes.Static
+				&& !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
+			{
+				UnvType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))),
+					NoGeneralExtraTypes);
+				GenerateError(pos, "cannot create instance of static type \"" + UnvType.ToString() + "\"");
+			}
+			else if (constraints == TypeConstraints.NotAbstract
 				&& (value2.Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) is not 0 or TypeAttributes.Sealed
-				or TypeAttributes.Struct)
+				or TypeAttributes.Struct && !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
 			{
 				UnvType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))),
 					NoGeneralExtraTypes);

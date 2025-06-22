@@ -37,7 +37,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 			"^^" => ExprTranslateTimeSingular(i, Universal.Xor(Value1, Value2)),
 			_ => ExprTranslateTimeDefault(ref i, UnvType1, UnvType2),
 		};
-		Branch.Remove(i - 1, 2);
+		Branch.Remove(Min(i - 1, Branch.Length - 2), 2);
 		i = Max(i - 3, 0);
 		Branch[i].Extra = GetResultType(UnvType1, UnvType2);
 		return result.Length == 0 ? Branch[i].Info : result;

@@ -22,6 +22,7 @@ namespace CSharp.NStar.Views;
 public partial class MainView : UserControl
 {
 	private Assembly? compiledAssembly;
+	private int inputHighlightTarget = -1;
 	private readonly String enteredText = [];
 	private readonly Random random = new();
 
@@ -93,6 +94,52 @@ MyNamespace.MyNamespace.MyClass a1 = new MyNamespace.MyNamespace.MyClass();
 MyNamespace.MyNamespace.MyClass a2 = new MyNamespace.MyNamespace.MyClass(8, 2.71828, ""$"");
 MyNamespace.MyNamespace.MyClass a3 = new MyNamespace.MyNamespace.MyClass(8, 2.71828);
 MyNamespace.MyNamespace.MyClass a4 = new MyNamespace.MyNamespace.MyClass(true);
+return (a1, a2, a3, a4);
+", ("""(new MyClass(5, 3.14159, "A"), new MyClass(8, 2.71828, "$"), new MyClass(8, 2.71828, "A"), new MyClass(12, 3.14159, "A"))""", "Ошибок нет") }, { @"Namespace MyNamespace
+{
+	abstract Class MyNamespace2
+	{
+		Class MyClass
+		{
+			int a = 5;
+			real b = 3.14159;
+			string c = ""A"";
+			
+			Constructor(bool bool)
+			{
+				if (bool)
+					a = 12;
+			}
+		}
+	}
+}
+MyNamespace.MyNamespace2.MyClass a1 = new MyNamespace.MyNamespace2.MyClass();
+MyNamespace.MyNamespace2.MyClass a2 = new MyNamespace.MyNamespace2.MyClass(8, 2.71828, ""$"");
+MyNamespace.MyNamespace2.MyClass a3 = new MyNamespace.MyNamespace2.MyClass(8, 2.71828);
+MyNamespace.MyNamespace2.MyClass a4 = new MyNamespace.MyNamespace2.MyClass(true);
+return (a1, a2, a3, a4);
+", ("""(new MyClass(5, 3.14159, "A"), new MyClass(8, 2.71828, "$"), new MyClass(8, 2.71828, "A"), new MyClass(12, 3.14159, "A"))""", "Ошибок нет") }, { @"Namespace MyNamespace
+{
+	static Class MyNamespace2
+	{
+		Class MyClass
+		{
+			int a = 5;
+			real b = 3.14159;
+			string c = ""A"";
+			
+			Constructor(bool bool)
+			{
+				if (bool)
+					a = 12;
+			}
+		}
+	}
+}
+MyNamespace.MyNamespace2.MyClass a1 = new MyNamespace.MyNamespace2.MyClass();
+MyNamespace.MyNamespace2.MyClass a2 = new MyNamespace.MyNamespace2.MyClass(8, 2.71828, ""$"");
+MyNamespace.MyNamespace2.MyClass a3 = new MyNamespace.MyNamespace2.MyClass(8, 2.71828);
+MyNamespace.MyNamespace2.MyClass a4 = new MyNamespace.MyNamespace2.MyClass(true);
 return (a1, a2, a3, a4);
 ", ("""(new MyClass(5, 3.14159, "A"), new MyClass(8, 2.71828, "$"), new MyClass(8, 2.71828, "A"), new MyClass(12, 3.14159, "A"))""", "Ошибок нет") }, { @"(int, int)[2] Function F()
 {
@@ -546,6 +593,58 @@ MyClass2 a2 = new MyClass2(8, 2.71828, ""$"");
 MyClass2 a3 = new MyClass2(8, 2.71828);
 MyClass2 a4 = new MyClass2(true);
 return (a1, a2, a3, a4);
+", ("""(new MyClass2(5, 3.14159, "A"), new MyClass2(8, 2.71828, "$"), new MyClass2(8, 2.71828, "A"), new MyClass2(12, 3.14159, "A"))""", "Ошибок нет") }, { @"Namespace MyNamespace
+{
+	static Class MyNamespace2
+	{
+		Class MyClass
+		{
+			int a = 5;
+			real b = 3.14159;
+			string c = ""A"";
+		}
+	}
+}
+
+Class MyClass2 : MyNamespace.MyNamespace2.MyClass
+{
+	Constructor(bool bool)
+	{
+		if (bool)
+			a = 12;
+	}
+}
+MyClass2 a1 = new MyClass2();
+MyClass2 a2 = new MyClass2(8, 2.71828, ""$"");
+MyClass2 a3 = new MyClass2(8, 2.71828);
+MyClass2 a4 = new MyClass2(true);
+return (a1, a2, a3, a4);
+", ("""(new MyClass2(5, 3.14159, "A"), new MyClass2(8, 2.71828, "$"), new MyClass2(8, 2.71828, "A"), new MyClass2(12, 3.14159, "A"))""", "Ошибок нет") }, { @"Namespace MyNamespace
+{
+	sealed Class MyNamespace2
+	{
+		Class MyClass
+		{
+			int a = 5;
+			real b = 3.14159;
+			string c = ""A"";
+		}
+	}
+}
+
+Class MyClass2 : MyNamespace.MyNamespace2.MyClass
+{
+	Constructor(bool bool)
+	{
+		if (bool)
+			a = 12;
+	}
+}
+MyClass2 a1 = new MyClass2();
+MyClass2 a2 = new MyClass2(8, 2.71828, ""$"");
+MyClass2 a3 = new MyClass2(8, 2.71828);
+MyClass2 a4 = new MyClass2(true);
+return (a1, a2, a3, a4);
 ", ("""(new MyClass2(5, 3.14159, "A"), new MyClass2(8, 2.71828, "$"), new MyClass2(8, 2.71828, "A"), new MyClass2(12, 3.14159, "A"))""", "Ошибок нет") }, { @"Class MyClass
 {
 	int a = 5;
@@ -567,12 +666,179 @@ MyClass2 a2 = new MyClass2(8, 2.71828, ""$"");
 MyClass2 a3 = new MyClass2(8, 2.71828);
 MyClass2 a4 = new MyClass2(true);
 return (a1, a2, a3, a4);
-", ("""(new MyClass2(5, 3.14159, "A"), new MyClass2(8, 2.71828, "$"), new MyClass2(8, 2.71828, "A"), new MyClass2(12, 3.14159, "A"))""", "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
-", (@"null", @"Error in line 1 at position 26: too large number; long long type is under development
-") }, { """
-return ExecuteString("return args[1];", Q());
+", ("""(new MyClass2(5, 3.14159, "A"), new MyClass2(8, 2.71828, "$"), new MyClass2(8, 2.71828, "A"), new MyClass2(12, 3.14159, "A"))""", "Ошибок нет") }, { @"static Class MyClass
+{
+	int a = 5;
+	real b = 3.14159;
+	string c = ""A"";
+}
 
-""", ("""
+Class MyClass2 : MyClass
+{
+	Constructor(bool bool)
+	{
+		if (bool)
+			a = 12;
+	}
+}
+MyClass2 a1 = new MyClass2();
+MyClass2 a2 = new MyClass2(8, 2.71828, ""$"");
+MyClass2 a3 = new MyClass2(8, 2.71828);
+MyClass2 a4 = new MyClass2(true);
+return (a1, a2, a3, a4);
+", ("""(new MyClass2(), null, null, new MyClass2())""", @"Error in line 8 at position 17: expected: non-sealed class or interface
+Error in line 17 at position 27: constructor of the type ""MyClass2"" must have from 0 to 1 parameters
+Error in line 18 at position 27: constructor of the type ""MyClass2"" must have from 0 to 1 parameters
+") }, { @"Class MyClass
+{
+	int a = 5;
+	real b = 3.14159;
+	string c = ""A"";
+}
+
+static Class MyClass2 : MyClass
+{
+	Constructor(bool bool)
+	{
+		if (bool)
+			a = 12;
+	}
+}
+MyClass2 a1 = new MyClass2();
+MyClass2 a2 = new MyClass2(8, 2.71828, ""$"");
+MyClass2 a3 = new MyClass2(8, 2.71828);
+MyClass2 a4 = new MyClass2(true);
+return (a1, a2, a3, a4);
+", ("null", @"Error in line 8 at position 22: a static class cannot be derived
+Error in line 16 at position 18: cannot create instance of static type ""MyClass2""
+Error in line 17 at position 18: cannot create instance of static type ""MyClass2""
+Error in line 18 at position 18: cannot create instance of static type ""MyClass2""
+Error in line 19 at position 18: cannot create instance of static type ""MyClass2""
+Error in line 16 at position 26: internal error
+Error in line 17 at position 26: internal error
+Error in line 18 at position 26: internal error
+Error in line 19 at position 26: internal error
+Error in line 20 at position 8: identifier ""a1"" is not defined in this location
+Error in line 20 at position 12: identifier ""a2"" is not defined in this location
+Error in line 20 at position 16: identifier ""a3"" is not defined in this location
+Error in line 20 at position 20: identifier ""a4"" is not defined in this location
+") }, { @"Class MyClass
+{
+	static Class N
+	{
+		MyClass S = new MyClass();
+	}
+	int a = 5;
+	real b = 3.14159;
+	string c = ""A"";
+}
+return (MyClass.N.S);
+", (@"new MyClass(5, 3.14159, ""A"")", "Ошибок нет") }, { @"Class MyClass2 : MyClass
+{
+	string c = ""A"";
+
+	Constructor(bool bool)
+	{
+		if (bool)
+			a = 12;
+	}
+}
+
+Class MyClass
+{
+	int a = 5;
+	real b = 3.14159;
+}
+MyClass2 a1 = new MyClass2();
+MyClass2 a2 = new MyClass2(8, 2.71828, ""$"");
+MyClass2 a3 = new MyClass2(8, 2.71828);
+MyClass2 a4 = new MyClass2(true);
+return (a1, a2, a3, a4);
+", (@"(new MyClass2(5, 3.14159, ""A""), null, new MyClass2(8, 2.71828, ""A""), new MyClass2(12, 3.14159, ""A""))",
+	@"Error in line 18 at position 27: constructor of the type ""MyClass2"" must have from 0 to 2 parameters
+") }, { @"Class Person
+{
+	closed string name;
+	closed int age;
+
+	string Function GetName()
+	{
+		return name;
+	}
+
+	int Function GetAge()
+	{
+		return age;
+	}
+}
+
+ Person person = new Person(""Alice"", 30);
+ return (person.GetName(), person.GetAge());
+", (@"(""Alice"", 30)", "Ошибок нет") }, { @"Class Animal
+{
+	protected string species;
+
+	string Function GetSpecies()
+	{
+		return species;
+	}
+
+	string Function Speak()
+	{
+		return ""Animal sound"";
+	}
+}
+
+Class Dog : Animal
+{
+	Constructor()
+	{
+		species = ""Dog"";
+	}
+
+	string Function Bark()
+	{
+		return ""Woof!"";
+	}
+}
+
+Dog dog = new Dog();
+return (dog.GetSpecies(), dog.Speak(), dog.Bark());
+", (@"(""Dog"", ""Animal sound"", ""Woof!"")", "Ошибок нет") }, { @"Class BankAccount
+{
+	closed real balance;
+
+	Constructor(real initialBalance)
+	{
+		balance = initialBalance;
+	}
+
+	null Function Deposit(real amount)
+	{
+		if (amount > 0)
+			balance += amount;
+	}
+
+	null Function Withdraw(real amount)
+	{
+		if (amount > 0 && amount <= balance)
+			balance -= amount;
+	}
+
+	real Function GetBalance()
+	{
+		return balance;
+	}
+}
+
+BankAccount account = new BankAccount(1000);
+account.Deposit(500);
+account.Withdraw(200);
+return account.GetBalance();
+", (@"1300", "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
+", (@"null", @"Error in line 1 at position 26: too large number; long long type is under development
+") }, { @"return ExecuteString(""return args[1];"", Q());
+", ("""
 /"return ExecuteString("return args[1];", Q());
 "\
 """, "Ошибок нет") }, { """var s = /"var s = /""\;return s.Insert(10, s) + Q();"\;return s.Insert(10, s) + Q();""",
@@ -581,24 +847,25 @@ return ExecuteString("return args[1];", Q());
 return x*1;
 ", (@"0", "Ошибок нет") }, { @"return куегкт;
 ", (@"null", @"Error in line 1 at position 7: identifier ""куегкт"" is not defined in this location
-") }, { @"real Function D(real[3] abc)
+") }, { """
+real Function D(real[3] abc)
 {
 	return abc[2] * abc[2] - 4 * abc[1] * abc[3];
 }
 string Function DecomposeSquareTrinomial(real[3] abc)
 {
 	if (abc[1] == 0)
-		return ""Это не квадратный трехчлен"";
+		return "Это не квадратный трехчлен";
 	var d = D(abc);
 	string first;
 	if (abc[1] == 1)
-		first = """";
+		first = "";
 	else if (abc[1] == -1)
-		first = ""-"";
+		first = "-";
 	else
 		first = abc[1];
 	if (d < 0)
-		return ""Неразложимо"";
+		return "Неразложимо";
 	else if (d == 0)
 		return first + Format(abc[2] / (2 * abc[1])) + '²';
 	else
@@ -610,16 +877,17 @@ string Function DecomposeSquareTrinomial(real[3] abc)
 string Function Format(real n)
 {
 	if (n == 0)
-		return ""x"";
+		return "x";
 	else if (n < 0)
-		return ""(x - "" + (-n) + "")"";
+		return "(x - " + (-n) + ")";
 	else
-		return ""(x + "" + n + "")"";
+		return "(x + " + n + ")";
 }
 return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 64)),
 	DecomposeSquareTrinomial((-1, -1, -10)), DecomposeSquareTrinomial((0, 11, 5)),
 	DecomposeSquareTrinomial((-1, 0, 0)), DecomposeSquareTrinomial((2, -11, 0)));
-", ("""("3(x + 5)(x - 2)", "(x + 8)²", "Неразложимо", "Это не квадратный трехчлен", "-x²", "2x(x - 5.5)")""", "Ошибок нет") } };
+
+""", ("""("3(x + 5)(x - 2)", "(x + 8)²", "Неразложимо", "Это не квадратный трехчлен", "-x²", "2x(x - 5.5)")""", "Ошибок нет") } };
 #endif
 
 	public MainView()
@@ -658,7 +926,7 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 		foreach (var (Key, Value) in testPrograms)
 		{
 			await Dispatcher.UIThread.InvokeAsync(() =>
-				TextBoxInput.Text = $"Loading ({Clamp((double)(i++ * 100 + random.Next(-64, 64))
+				TextBoxInput.Text = $"Loading ({Clamp((double)(i++ * 100 + random.Next(-50, 50))
 				/ testPrograms.Length, 0, 100):F2}%)\r\n");
 			if ((result = ExecuteProgram(Key, out var errors)) == Value.TargetResult
 				&& (Value.TargetErrors == null || errors == Value.TargetErrors))
@@ -751,6 +1019,12 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 	{
 		UpdateInputPos();
 		SetupEnteredText();
+		if (inputHighlightTarget >= 0)
+		{
+			TextBoxInput.SelectionStart = inputHighlightTarget;
+			TextBoxInput.SelectionLength = 0;
+			inputHighlightTarget = -1;
+		}
 	}
 
 	private void TextBoxInput_TextChanged(object? sender, EventArgs e)
@@ -795,6 +1069,28 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 		// We still want to insert the character that was typed.
 	}
 
+	private void TextBoxErrors_DoubleTapped(object? sender, TappedEventArgs e)
+	{
+		using var before = TextBoxErrors.Text?.ToNString().RemoveEnd(Min(TextBoxErrors.SelectionStart,
+			TextBoxErrors.Text.Length));
+		using var after = TextBoxErrors.Text?.ToNString().Skip(TextBoxErrors.SelectionStart).GetBefore("\r\n");
+		if (before == null || after == null)
+			return;
+		before.AddRange(after);
+		using var line = before.GetAfterLast("\r\n");
+		if (line.Length == 0)
+			line.Replace(before);
+		line.GetBeforeSetAfter(" in line ");
+		if (line.Length == 0)
+			return;
+		using var lineN = line.GetBeforeSetAfter(" at position ");
+		var position = line.GetBefore(": ");
+		if (!(int.TryParse(lineN.ToString(), out var y) && int.TryParse(position.ToString(), out var x)))
+			return;
+		TextBoxInput.ScrollTo(y, x);
+		inputHighlightTarget = TextBoxInput.Document.Lines[y - 1].Offset + x;
+	}
+
 	private void ButtonExecute_Click(object? sender, RoutedEventArgs e) => Execute();
 
 	private void ButtonOpenCode_Click(object? sender, RoutedEventArgs e) => OpenCode();
@@ -803,7 +1099,7 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 
 	private void ButtonSaveExe_Click(object? sender, RoutedEventArgs e) => SaveExe();
 
-	private void Copyrights_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => CopyrightsView.IsVisible = true;
+	private void Copyrights_Click(object? sender, RoutedEventArgs e) => CopyrightsView.IsVisible = true;
 
 	private void Execute()
 	{
