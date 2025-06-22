@@ -285,6 +285,8 @@ public enum FunctionAttributes
 	Const = 16,
 	Multiconst = 32,
 	Abstract = 64,
+	Sealed = 128,
+	New = 192,
 }
 
 public enum ParameterAttributes

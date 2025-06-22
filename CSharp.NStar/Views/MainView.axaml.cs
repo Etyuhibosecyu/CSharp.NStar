@@ -835,7 +835,158 @@ BankAccount account = new BankAccount(1000);
 account.Deposit(500);
 account.Withdraw(200);
 return account.GetBalance();
-", (@"1300", "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
+", (@"1300", "Ошибок нет") }, { @"Class Vehicle
+{
+	string Function Start()
+	{
+		return ""Vehicle starting"";
+	}
+}
+
+Class Car : Vehicle
+{
+	string Function Start()
+	{
+		return ""Car starting"";
+	}
+}
+
+Vehicle vehicle = new Car();
+return vehicle.Start();
+", (@"""Car starting""", "Ошибок нет") }, { @"Class Engine
+{
+	string Function Start()
+	{
+		return ""Engine starting"";
+	}
+}
+
+Class Car
+{
+	closed Engine engine = new Engine();
+
+	string Function Start()
+	{
+		return engine.Start() + ""\r\nCar is now running"";
+	}
+}
+
+Car car = new Car();
+return car.Start();
+", (@"""Engine starting\r\nCar is now running""", "Ошибок нет") }, { @"Class BaseClass
+{
+	string Function Display()
+	{
+		return ""Display from BaseClass"";
+	}
+
+	string Function Info()
+	{
+		return ""Info from BaseClass"";
+	}
+}
+
+Class DerivedClass : BaseClass
+{
+	string Function Display()
+	{
+		return ""Display from DerivedClass"";
+	}
+
+	new string Function Info()
+	{
+		return ""Info from DerivedClass"";
+	}
+}
+
+BaseClass obj1 = new DerivedClass();
+DerivedClass obj2 = new DerivedClass();
+return (obj1.Display(), obj1.Info(), obj2.Display(), obj2.Info());
+", ("""("Display from DerivedClass", "Info from BaseClass", "Display from DerivedClass", "Info from DerivedClass")""",
+			"Ошибок нет") }, { @"abstract Class Animal
+{
+	abstract string Function Speak();
+	string Function Eat()
+	{
+		return ""Animal is eating"";
+	}
+}
+
+Class Dog : Animal
+{
+	string Function Speak()
+	{
+		return ""Woof"";
+	}
+
+	string Function Eat()
+	{
+		return ""Dog is eating"";
+	}
+}
+
+Class Cat : Animal
+{
+	string Function Speak()
+	{
+		return ""Meow"";
+	}
+
+	// Не переопределяем метод Eat, используем базовую реализацию
+}
+
+Animal myDog = new Dog();
+Animal myCat = new Cat();
+return (myDog.Speak(), myDog.Eat(), myCat.Speak(), myCat.Eat());
+", ("""("Woof", "Dog is eating", "Meow", "Animal is eating")""", "Ошибок нет") }, { @"abstract Class Animal
+{
+	abstract string Function Speak();
+	string Function Eat()
+	{
+		return ""Animal is eating"";
+	}
+}
+
+Class Dog : Animal
+{
+	string Function Speak()
+	{
+		return ""Woof"";
+	}
+
+	string Function Eat()
+	{
+		return ""Dog is eating"";
+	}
+}
+
+Class Cat : Animal
+{
+	string Function Speak()
+	{
+		return ""Meow"";
+	}
+
+	list() string Function Eat()
+	{
+		return ""Cat is eating"";
+	}
+}
+
+Animal myDog = new Dog();
+Animal myCat = new Cat();
+return (myDog.Speak(), myDog.Eat(), myCat.Speak(), myCat.Eat());
+", ("""("Woof", "Dog is eating", "Meow", "Animal is eating")""", "Warning in line 30 at position 1: the method \"Eat\"" +
+			" has the same parameter types as its base method with the same name but it also" +
+			" has the other significant differences such as the access modifier or the return type," +
+			" so it cannot override that base method and creates a new one;" +
+			" if this is intentional, and the \"new\" keyword, otherwise fix the differences\r\n") }, { @"Class MyClass
+{
+	abstract string Function Go();
+}
+", ("null", @"Error in line 3 at position 10: abstract members can be located only inside the abstract classes
+") },
+		{ @"return 100000000000000000*100000000000000000000;
 ", (@"null", @"Error in line 1 at position 26: too large number; long long type is under development
 ") }, { @"return ExecuteString(""return args[1];"", Q());
 ", ("""

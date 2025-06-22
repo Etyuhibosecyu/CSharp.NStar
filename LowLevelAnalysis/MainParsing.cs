@@ -490,7 +490,15 @@ public partial class MainParsing : LexemStream
 			CheckSuccess();
 			TransformErrorMessage2();
 			pos = blocksToJump[blocksToJumpPos].End;
-			return CheckOpeningBracketAndAddTask(nameof(Main), "Function}", BlockType.Function);
+			if (success && (UserDefinedFunctionsList[blocksToJump[blocksToJumpPos].Container]
+				[blocksToJump[blocksToJumpPos].Name][0].Attributes & FunctionAttributes.New) == FunctionAttributes.Abstract)
+			{
+				SkipSemicolonsAndNewLines();
+				blocksToJumpPos++;
+				return EndWithAdding(true);
+			}
+			else
+				return CheckOpeningBracketAndAddTask(nameof(Main), "Function}", BlockType.Function);
 		}
 		else
 			return _SuccessStack[_Stackpos] = false;
@@ -849,9 +857,11 @@ public partial class MainParsing : LexemStream
 		}
 		else
 			AddPropertyAttribute(PropertyAttributes.None, "Property", false);
-		var value = (IsCurrentLexemKeyword("static") ? 2 : 0) + ((UserDefinedTypesList[SplitType(container)].Attributes & TypeAttributes.Static) != 0 ? 1 : 0);
+		var value = (IsCurrentLexemKeyword("static") ? 2 : 0) + ((UserDefinedTypesList[SplitType(container)].Attributes
+			& TypeAttributes.Static) == TypeAttributes.Static ? 1 : 0);
 		if (value == 3)
-			GenerateMessage("Warning", pos, "properties and methods are static in the static class implicitly; word \"static\" is not necessary");
+			GenerateMessage("Warning", pos,
+				"properties and methods are static in the static class implicitly; word \"static\" is not necessary");
 		if (value >= 1)
 			AddPropertyAttribute2(PropertyAttributes.Static);
 		if (value >= 2)

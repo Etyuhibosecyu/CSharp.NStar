@@ -198,9 +198,10 @@ public class LexemStream
 			name = "???" + unknownIndex++.ToString();
 			GenerateError(pos, "expected: identifier");
 		}
-		GetFigureBracketAndSetBlock(BlockType.Namespace, name, () =>
+		GetFigureBracketAndSetBlock(BlockType.Namespace, name, 0, () =>
 		{
-			UserDefinedNamespacesList.Add((container.Length != 0 ? ((String)container.ToShortString()).Add('.') : "").AddRange(name));
+			UserDefinedNamespacesList.Add((container.Length != 0
+				? ((String)container.ToShortString()).Add('.') : "").AddRange(name));
 			blocksToJump.Add((container, "Namespace", name, blockStart, pos));
 		});
 	}
@@ -214,7 +215,8 @@ public class LexemStream
 		GetBlockStart();
 		var blockStart = pos2;
 		attributes = (TypeAttributes)GetAccessMethod((int)attributes);
-		attributes |= (TypeAttributes)AddAttribute(new() { { "static", TypeAttributes.Static }, { "sealed", TypeAttributes.Sealed }, { "abstract", TypeAttributes.Abstract } });
+		attributes |= (TypeAttributes)AddAttribute(new() { { "static", TypeAttributes.Static },
+			{ "sealed", TypeAttributes.Sealed }, { "abstract", TypeAttributes.Abstract } });
 		attributes |= (TypeAttributes)AddAttribute("partial", TypeAttributes.Partial);
 		while (pos2 < pos)
 		{
@@ -228,7 +230,8 @@ public class LexemStream
 		{
 			var s = lexems[pos].String;
 			if (PrimitiveTypesList.ContainsKey(s) || ExtraTypesList.ContainsKey(("", s)))
-				ChangeNameAndGenerateError(out name, "class \"" + s + "\" is standard root C#.NStar type and cannot be redefined");
+				ChangeNameAndGenerateError(out name, "class \"" + s
+					+ "\" is standard root C#.NStar type and cannot be redefined");
 			else if (UserDefinedTypesList.ContainsKey((container, s)))
 				ChangeNameAndGenerateError(out name, "class \"" + s + "\" is already defined in this region");
 			else
@@ -249,7 +252,7 @@ public class LexemStream
 				pos++;
 			registeredTypes.Add((container, name, pos3, pos));
 		}
-		GetFigureBracketAndSetBlock(BlockType.Class, name, () =>
+		GetFigureBracketAndSetBlock(BlockType.Class, name, attributes, () =>
 		{
 			UserDefinedTypesList.Add((container, name), new([], attributes, NullType, []));
 			blocksToJump.Add((container, "Class", name, blockStart, pos2));
@@ -263,7 +266,6 @@ public class LexemStream
 		String name;
 		BlockStack container = new(nestedBlocksChain.ToList());
 		GetBlockStart();
-		var blockStart = pos2;
 		attributes = (FunctionAttributes)GetAccessMethod((int)attributes);
 		if (IsPos2LexemKeyword("const"))
 		{
@@ -283,9 +285,15 @@ public class LexemStream
 		}
 		else
 			CheckKeywordAndGenerateError("static", "static functions are allowed only inside classes");
+		if (IsPos2LexemKeyword("new"))
+			attributes |= (FunctionAttributes)AddAttribute("new", FunctionAttributes.New);
+		else if (IsPos2LexemKeyword("sealed"))
+			attributes |= (FunctionAttributes)AddAttribute("sealed", FunctionAttributes.Sealed);
+		else if (IsPos2LexemKeyword("abstract"))
+			attributes |= (FunctionAttributes)AddAttribute("abstract", FunctionAttributes.Abstract);
 		attributes |= (FunctionAttributes)AddAttribute("multiconst", FunctionAttributes.Multiconst);
 	l0:
-		attributes |= (FunctionAttributes)AddAttribute("abstract", FunctionAttributes.Abstract);
+		var blockStart = pos2;
 		if (IsPos2LexemKeyword("null"))
 		{
 			pos2++;
@@ -325,8 +333,10 @@ public class LexemStream
 				GenerateUnexpectedEndError();
 				return;
 			}
+			else if (!IsCurrentLexemOther((attributes & FunctionAttributes.New) == FunctionAttributes.Abstract ? ";" : "{"))
+				GenerateError(pos, "\";\" must follow the abstract function declaration, \"{\" - the non-abstract one");
 		}
-		GetFigureBracketAndSetBlock(BlockType.Function, name, () =>
+		GetFigureBracketAndSetBlock(BlockType.Function, name, attributes, () =>
 		{
 			UserDefinedFunctionsList.TryAdd(container, []);
 			var list = UserDefinedFunctionsList[container];
@@ -380,7 +390,7 @@ public class LexemStream
 				return;
 			}
 		}
-		GetFigureBracketAndSetBlock(BlockType.Constructor, "", () =>
+		GetFigureBracketAndSetBlock(BlockType.Constructor, "", attributes, () =>
 		{
 			UserDefinedConstructorsList.TryAdd(container, []);
 			UserDefinedConstructorsList[container].Add((attributes, []));
@@ -464,7 +474,7 @@ public class LexemStream
 
 	private bool IsClass() => nestedBlocksChain.Length != 0 && nestedBlocksChain.Peek().BlockType == BlockType.Class;
 
-	private bool IsStatic() => (UserDefinedTypesList[SplitType(nestedBlocksChain)].Attributes & TypeAttributes.Static) != 0;
+	private bool IsStatic() => (UserDefinedTypesList[SplitType(nestedBlocksChain)].Attributes & TypeAttributes.Static) == TypeAttributes.Static;
 
 	private void GetBlockStart()
 	{
@@ -528,20 +538,23 @@ public class LexemStream
 		return 0;
 	}
 
-	private void GetFigureBracketAndSetBlock(BlockType type, String name, Action action)
+	private void GetFigureBracketAndSetBlock(BlockType blockType, String name, dynamic attributes, Action action)
 	{
 		while (IsLexemOtherNoEnd("\r\n"))
 			pos++;
 		if (IsEnd()) return;
-		if (!IsCurrentLexemOther("{"))
+		if (blockType != BlockType.Function && !IsCurrentLexemOther("{"))
 		{
 			GenerateError(pos, "expected: {");
 			while (pos < lexems.Length && !(lexems[pos].Type == LexemType.Other && (lexems[pos].String == "{" || lexems[pos].String == "\r\n")))
 				pos++;
 		}
 		if (IsEnd()) return;
-		nestedBlocksChain.Push(new(type, name, 1));
-		figureBk++;
+		if (!(blockType == BlockType.Function && (attributes & FunctionAttributes.New) == FunctionAttributes.Abstract))
+		{
+			nestedBlocksChain.Push(new(blockType, name, 1));
+			figureBk++;
+		}
 		action();
 		pos++;
 	}

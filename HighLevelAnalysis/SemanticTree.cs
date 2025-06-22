@@ -220,23 +220,63 @@ public sealed class SemanticTree
 		if ((Attributes & FunctionAttributes.Internal) != 0)
 		{
 			result.AddRange("internal ");
-			Add(ref errorsList, "Warning in line " + lexems[branch.Pos].LineN.ToString() + " at position " + lexems[branch.Pos].Pos.ToString() + ": at present time the word \"internal\" does nothing because C#.NStar does not have multiple assemblies");
+			Add(ref errorsList, "Warning in line " + lexems[branch.Pos].LineN.ToString() + " at position "
+				+ lexems[branch.Pos].Pos.ToString()
+				+ ": at present time the word \"internal\" does nothing because C#.NStar does not have multiple assemblies");
 		}
 		if (IsTypeContext(branch) && (Attributes & (FunctionAttributes.Closed | FunctionAttributes.Protected | FunctionAttributes.Internal)) == 0)
 			result.AddRange("public ");
 		if ((Attributes & FunctionAttributes.Static) != 0)
 			result.AddRange("static ");
-		if ((Attributes & FunctionAttributes.Abstract) != 0)
+		else if ((Attributes & FunctionAttributes.New) == FunctionAttributes.Abstract)
 		{
+			if (UserDefinedTypesList.TryGetValue(SplitType(branch.Container), out var userDefinedType)
+				&& (userDefinedType.Attributes & TypeAttributes.Abstract) == 0)
+			{
+				Add(ref errorsList, "Error in line " + lexems[branch.Pos].LineN.ToString() + " at position "
+					+ lexems[branch.Pos].Pos.ToString()
+					+ ": abstract members can be located only inside the abstract classes");
+				return [];
+			}
 			result.AddRange("abstract ");
-			Add(ref errorsList, "Wreck in line " + lexems[branch.Pos].LineN.ToString() + " at position " + lexems[branch.Pos].Pos.ToString() + ": at present time the word \"abstract\" is forbidden");
-			wreckOccurred = true;
+		}
+		else if (branch.Container.Length == 0 || branch.Container.Peek().BlockType
+			is not (BlockType.Class or BlockType.Struct or BlockType.Interface)) { }
+		else if (!(UserDefinedTypesList.TryGetValue(SplitType(branch.Container), out var userDefinedType)
+			&& UserDefinedFunctionExists(userDefinedType.BaseType.MainType, name, out var baseFunction)
+			&& baseFunction.HasValue && (Parameters, baseFunction.Value.Parameters).Combine().All(x =>
+			TypesAreEqual(new(x.Item1.Type, x.Item1.ExtraTypes), new(x.Item2.Type, x.Item2.ExtraTypes)))))
+			result.AddRange("virtual ");
+		else if (TypesAreEqual(ReturnUnvType, baseFunction.Value.ReturnUnvType)
+			&& (Attributes & (FunctionAttributes.Static | FunctionAttributes.Closed | FunctionAttributes.Protected
+			| FunctionAttributes.Internal | FunctionAttributes.Const | FunctionAttributes.Multiconst))
+			== (baseFunction.Value.Attributes & (FunctionAttributes.Static | FunctionAttributes.Closed
+			| FunctionAttributes.Protected | FunctionAttributes.Internal | FunctionAttributes.Const
+			| FunctionAttributes.Multiconst)) && (Parameters, baseFunction.Value.Parameters).Combine().All(x =>
+			(x.Item1.Attributes & (ParameterAttributes.Ref | ParameterAttributes.Out))
+			== (x.Item2.Attributes & (ParameterAttributes.Ref | ParameterAttributes.Out)))
+			&& (Attributes & FunctionAttributes.New) != FunctionAttributes.New
+			&& (baseFunction.Value.Attributes & FunctionAttributes.New) != FunctionAttributes.Sealed)
+			result.AddRange("override ");
+		else
+		{
+			if ((Attributes & FunctionAttributes.New) != FunctionAttributes.New)
+				Add(ref errorsList, "Warning in line " + lexems[branch.Pos].LineN.ToString() + " at position "
+					+ lexems[branch.Pos].Pos.ToString() + ": the method \"" + name
+					+ "\" has the same parameter types as its base method with the same name but it also" +
+					" has the other significant differences such as the access modifier or the return type," +
+					" so it cannot override that base method and creates a new one;" +
+					" if this is intentional, and the \"new\" keyword, otherwise fix the differences");
+			result.AddRange("new virtual ");
 		}
 		result.AddRange(Type(ReturnUnvType)).Add(' ');
 		if (EscapedKeywordsList.Contains(name))
 			result.Add('@');
 		result.AddRange(name).Add('(');
-		result.AddRange(SemanticTree.Parameters(Parameters, out var parametersErrorsList)).AddRange("){");
+		result.AddRange(SemanticTree.Parameters(Parameters, out var parametersErrorsList)).Add(')');
+		if ((Attributes & FunctionAttributes.New) == FunctionAttributes.Abstract)
+			return result.Add(';');
+		result.Add('{');
 		AddRange(ref errorsList, parametersErrorsList);
 		var currentFunction = this.currentFunction;
 		this.currentFunction = t;
