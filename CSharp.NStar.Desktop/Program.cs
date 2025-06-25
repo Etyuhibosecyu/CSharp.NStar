@@ -5,7 +5,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using static CSharp.NStar.SemanticTree;
-using String = Corlib.NStar.String;
+using String = NStar.Core.String;
 
 namespace CSharp.NStar.Desktop;
 

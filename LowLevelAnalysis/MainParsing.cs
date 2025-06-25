@@ -135,79 +135,79 @@ public partial class MainParsing : LexemStream
 
 	private ParseAction MainParseDelegate(string task) => task switch
 	{
-			nameof(Main) => Main,
-			"Main2" => Main2,
-			"Main3" => Main3,
-			"Main4" => Main4,
-			"Main5" => Main5,
-			"Main}" => MainClosing,
-			nameof(Namespace) => Namespace,
-			"Namespace}" => NamespaceClosing,
-			nameof(Class) => Class,
-			"Class2" => Class2,
-			"Class}" => ClassClosing,
-			nameof(Function) => Function,
-			"Function2" => Function2,
-			"Function3" => Function3,
-			"Function}" => FunctionClosing,
-			nameof(Constructor) => Constructor,
-			"Constructor2" => Constructor2,
-			"Constructor}" => ConstructorClosing,
-			"Parameters2" or "Parameters3" => Parameters2_3,
-			"Parameters4" => Parameters4,
-			nameof(Parameter) => Parameter,
-			"Parameter2" => Parameter2,
-			"Parameter3" => Parameter3,
-			nameof(ClassMain) => ClassMain,
-			"ClassMain2" => ClassMain2,
-			"ClassMain3" => ClassMain3,
-			"ClassMain4" => ClassMain4,
-			"Property2" => Property2,
-			"Property3" => Property3,
-			nameof(ClearProperty) => ClearProperty,
-			"ClearProperty2" => ClearProperty2,
-			"ClearProperty3" => ClearProperty3,
-			"Method2" => Method2,
-			"Method3" => Method3,
-			nameof(ActionChain) => ActionChain,
-			"ActionChain5" => ActionChain5,
-			"ActionChain6" => ActionChain6,
-			nameof(Condition) => Condition,
-			"Condition2" or "WhileRepeat2" or "For3" => Condition2_WhileRepeat2_For3,
-			nameof(Cycle) => Cycle,
-			"Cycle2" => Cycle2,
-			"Cycle3" => Cycle3,
-			nameof(WhileRepeat) => WhileRepeat,
-			nameof(For) => For,
-			"For2" => For2,
-			nameof(SpecialAction) => SpecialAction,
-			nameof(Return) => Return,
-			"Return2" => Return2,
-			"Expr2" => Expr2,
-			"List2" => List2,
-			"CommaExpr2" or "AssignedExpr2" or "PowExpr2" or "UnaryExpr4" or "PostfixExpr4" => CommaExpr3_AssignedExpr2_PowExpr2_UnaryExpr4_PostfixExpr4,
-			"SublambdaExpr2" => SublambdaExpr2,
-			"SublambdaExpr3" => SublambdaExpr3,
-			"QuestionExpr2" => QuestionExpr2,
-			"And2Expr2" => And2Expr2,
-			"And2Expr3" => And2Expr3,
-			"ComparedExpr2" => ComparedExpr2,
-			nameof(UnaryExpr) => UnaryExpr,
-			"UnaryExpr2" => UnaryExpr2,
-			"UnaryExpr3" => UnaryExpr3,
-			"PrefixExpr2" => PrefixExpr2,
-			nameof(Hypername) or "HypernameNotCall" => Hypername,
-			"HypernameNew" => HypernameNew,
-			"HypernameType" or "HypernameNotCallType" => HypernameType,
-			nameof(HypernameBasicExpr) or "HypernameNotCallBasicExpr" => HypernameBasicExpr,
-			nameof(HypernameCall) => HypernameCall,
-			nameof(HypernameIndexes) or "HypernameNotCallIndexes" => HypernameIndexes,
-			"HypernameClosing" or "HypernameNotCallClosing" or "BasicExpr4" => HypernameClosing_BasicExpr4,
-			"Indexes2" => Indexes2,
-			nameof(Type) or nameof(TypeConstraints.BaseClassOrInterface) or nameof(TypeConstraints.NotAbstract) => Type,
-			nameof(BasicExpr) => BasicExpr,
-			"BasicExpr2" => BasicExpr2,
-			_ => Default,
+		nameof(Main) => Main,
+		"Main2" => Main2,
+		"Main3" => Main3,
+		"Main4" => Main4,
+		"Main5" => Main5,
+		"Main}" => MainClosing,
+		nameof(Namespace) => Namespace,
+		"Namespace}" => NamespaceClosing,
+		nameof(Class) => Class,
+		"Class2" => Class2,
+		"Class}" => ClassClosing,
+		nameof(Function) => Function,
+		"Function2" => Function2,
+		"Function3" => Function3,
+		"Function}" => FunctionClosing,
+		nameof(Constructor) => Constructor,
+		"Constructor2" => Constructor2,
+		"Constructor}" => ConstructorClosing,
+		"Parameters2" or "Parameters3" => Parameters2_3,
+		"Parameters4" => Parameters4,
+		nameof(Parameter) => Parameter,
+		"Parameter2" => Parameter2,
+		"Parameter3" => Parameter3,
+		nameof(ClassMain) => ClassMain,
+		"ClassMain2" => ClassMain2,
+		"ClassMain3" => ClassMain3,
+		"ClassMain4" => ClassMain4,
+		"Property2" => Property2,
+		"Property3" => Property3,
+		nameof(ClearProperty) => ClearProperty,
+		"ClearProperty2" => ClearProperty2,
+		"ClearProperty3" => ClearProperty3,
+		"Method2" => Method2,
+		"Method3" => Method3,
+		nameof(ActionChain) => ActionChain,
+		"ActionChain5" => ActionChain5,
+		"ActionChain6" => ActionChain6,
+		nameof(Condition) => Condition,
+		"Condition2" or "WhileRepeat2" or "For3" => Condition2_WhileRepeat2_For3,
+		nameof(Cycle) => Cycle,
+		"Cycle2" => Cycle2,
+		"Cycle3" => Cycle3,
+		nameof(WhileRepeat) => WhileRepeat,
+		nameof(For) => For,
+		"For2" => For2,
+		nameof(SpecialAction) => SpecialAction,
+		nameof(Return) => Return,
+		"Return2" => Return2,
+		"Expr2" => Expr2,
+		"List2" => List2,
+		"CommaExpr2" or "AssignedExpr2" or "PowExpr2" or "UnaryExpr4" or "PostfixExpr4" => CommaExpr3_AssignedExpr2_PowExpr2_UnaryExpr4_PostfixExpr4,
+		"SublambdaExpr2" => SublambdaExpr2,
+		"SublambdaExpr3" => SublambdaExpr3,
+		"QuestionExpr2" => QuestionExpr2,
+		"And2Expr2" => And2Expr2,
+		"And2Expr3" => And2Expr3,
+		"ComparedExpr2" => ComparedExpr2,
+		nameof(UnaryExpr) => UnaryExpr,
+		"UnaryExpr2" => UnaryExpr2,
+		"UnaryExpr3" => UnaryExpr3,
+		"PrefixExpr2" => PrefixExpr2,
+		nameof(Hypername) or "HypernameNotCall" => Hypername,
+		"HypernameNew" => HypernameNew,
+		"HypernameType" or "HypernameNotCallType" => HypernameType,
+		nameof(HypernameBasicExpr) or "HypernameNotCallBasicExpr" => HypernameBasicExpr,
+		nameof(HypernameCall) => HypernameCall,
+		nameof(HypernameIndexes) or "HypernameNotCallIndexes" => HypernameIndexes,
+		"HypernameClosing" or "HypernameNotCallClosing" or "BasicExpr4" => HypernameClosing_BasicExpr4,
+		"Indexes2" => Indexes2,
+		nameof(Type) or nameof(TypeConstraints.BaseClassOrInterface) or nameof(TypeConstraints.NotAbstract) => Type,
+		nameof(BasicExpr) => BasicExpr,
+		"BasicExpr2" => BasicExpr2,
+		_ => Default,
 	};
 
 	private bool IncreaseStack(String newTask, String? currentTask = null, int pos_ = -1, bool applyPos = false, bool applyCurrentTask = false, int start_ = -1, int end_ = -1, List<String>? erl = null, bool applyCurrentErl = false, TreeBranch? currentBranch = null, bool addCurrentBranch = false, bool assignCurrentBranch = false, TreeBranch? newBranch = null, object? currentExtra = null, object? newExtra = null, BlockStack? container_ = null, int btjp = -1, int rtp = -1, int plp = -1)
@@ -731,7 +731,7 @@ public partial class MainParsing : LexemStream
 		{
 			CreateObjectList(out var l);
 			var (s, arrayParameters) = (UniversalType)l![1];
-			_ExtraStack[_Stackpos - 1] = new GeneralMethodParameter(s, skipParameterName ? "" : (String)l[2], arrayParameters, (ParameterAttributes)l[0], "null");
+			_ExtraStack[_Stackpos - 1] = new GeneralMethodParameter(s, skipParameterName ? "" : (String)l[2], arrayParameters, (ParameterAttributes)l[0], _TBStack[_Stackpos]?[^1].Info ?? "no optional");
 		}
 		catch
 		{
@@ -898,7 +898,7 @@ public partial class MainParsing : LexemStream
 		}
 		if (!CheckIdentifier("set") || !CheckLexemAndEndWithError("}"))
 			return false;
-	l0:
+		l0:
 		if (IsCurrentLexemOperator("="))
 			return IncreaseStack("Expr", currentTask: "ClearProperty3", pos_: pos + 1, applyPos: true, applyCurrentTask: true);
 		else
@@ -1783,20 +1783,25 @@ public partial class MainParsing : LexemStream
 	{
 		if (pos >= end)
 			return _SuccessStack[_Stackpos] = false;
-		else if (IsCurrentLexemKeyword("new"))
+		if (IsLexemKeyword(lexems[pos], ["ref", "out"]))
+		{
+			pos++;
+			if (pos >= end)
+				return _SuccessStack[_Stackpos] = false;
+			return IncreaseStack(nameof(Type), currentTask: task == "HypernameNotCall" ? "HypernameNotCallType" : "HypernameType", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
+		}
+		if (IsCurrentLexemKeyword("new"))
 		{
 			if (task == "HypernameNotCall" || _TaskStack[_Stackpos - 1] == "HypernameClosing" || _TaskStack[_Stackpos - 1] == "HypernameNotCallClosing")
 				return EndWithError(pos, "the \"new\" keyword is forbidden here", true);
 			pos++;
 			if (pos >= end)
 				return _SuccessStack[_Stackpos] = false;
-			else if (IsCurrentLexemOther("("))
+			if (IsCurrentLexemOther("("))
 				return EndWithError(pos, "the \"new\" keyword with implicit type is under development", true);
-			else
-				return IncreaseStack(nameof(TypeConstraints.NotAbstract), currentTask: "HypernameNew", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
+			return IncreaseStack(nameof(TypeConstraints.NotAbstract), currentTask: "HypernameNew", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
 		}
-		else
-			return IncreaseStack(nameof(Type), currentTask: task == "HypernameNotCall" ? "HypernameNotCallType" : "HypernameType", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
+		return IncreaseStack(nameof(Type), currentTask: task == "HypernameNotCall" ? "HypernameNotCallType" : "HypernameType", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
 	}
 
 	private bool HypernameNew()
@@ -1831,44 +1836,44 @@ public partial class MainParsing : LexemStream
 			_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
 			if (pos >= end)
 				return _SuccessStack[_Stackpos] = false;
-			else if (lexems[pos].Type == LexemType.Identifier)
+			if (lexems[pos].Type == LexemType.Identifier)
 			{
 				pos++;
 				_ErLStack[_Stackpos]?.AddRange(errorsList ?? []);
 				AppendBranch("Declaration", new(lexems[pos - 1].String, pos - 1, pos, container));
 				return HypernameDeclaration();
 			}
-			else if (IsCurrentLexemOperator("."))
+			if (IsCurrentLexemOperator("."))
 				return IncreaseStack(task == "HypernameNotCallType" ? "HypernameNotCall" : nameof(Hypername), currentTask: task == "HypernameNotCallType" ? "HypernameNotCallClosing" : "HypernameClosing", pos_: pos + 1, applyPos: true, applyCurrentTask: true, applyCurrentErl: true, currentBranch: new(".", pos, container), addCurrentBranch: true);
-			else if (extra is UniversalType UnvType)
-			{
-				if (UnvType.MainType.Length == 1 && !UnvType.MainType.Peek().Name.Contains(' ') && UnvType.ExtraTypes.Length == 0)
-				{
-					_ErLStack[_Stackpos]?.AddRange(errorsList ?? []);
-					_TBStack[_Stackpos]![0] = new(UnvType.MainType.Peek().Name, treeBranch?.Pos ?? -1, treeBranch?.Container ?? new());
-				}
-				else
-					return EndWithError(pos, "expected: identifier", true);
-			}
-			else
+			if (extra is not UniversalType UnvType)
 				return EndWithError(pos, "expected: identifier", true);
+			if (UnvType.MainType.Length != 1 || UnvType.MainType.Peek().Name.Contains(' ') || UnvType.ExtraTypes.Length != 0)
+				return EndWithError(pos, "expected: identifier", true);
+			_ErLStack[_Stackpos]?.AddRange(errorsList ?? []);
+			_TBStack[_Stackpos]![0] = new(UnvType.MainType.Peek().Name, treeBranch?.Pos ?? -1, treeBranch?.Container ?? new());
+			return HypernameBracketsAndDot();
 		}
-		else
+		errorsList?.Clear();
+		var @ref = false;
+		if (IsLexemKeyword(lexems[pos], ["ref", "out"]))
 		{
-			errorsList?.Clear();
+			pos++;
+			@ref = true;
 			if (pos >= end)
 				return _SuccessStack[_Stackpos] = false;
-			else if (lexems[pos].Type == LexemType.Identifier)
-			{
-				pos++;
-				AppendBranch(nameof(Hypername), new(lexems[pos - 1].String, pos - 1, pos, container));
-			}
-			else if (_TaskStack[_Stackpos - 1].ToString() is not "HypernameClosing" and not "HypernameNotCallClosing")
-				return IncreaseStack(nameof(BasicExpr), currentTask: nameof(HypernameBasicExpr), applyCurrentTask: true);
-			else
-				return EndWithError(pos, "expected: identifier", true);
 		}
-		return HypernameBracketsAndDot();
+		if (pos >= end)
+			return _SuccessStack[_Stackpos] = false;
+		if (lexems[pos].Type == LexemType.Identifier)
+		{
+			pos++;
+			var newBranch = new TreeBranch(lexems[pos - 1].String, pos - 1, pos, container);
+			AppendBranch(nameof(Hypername), !@ref ? newBranch : new(lexems[pos - 2].String, newBranch, container));
+			return HypernameBracketsAndDot();
+		}
+		if (_TaskStack[_Stackpos - 1].ToString() is not "HypernameClosing" and not "HypernameNotCallClosing")
+			return IncreaseStack(nameof(BasicExpr), currentTask: nameof(HypernameBasicExpr), applyCurrentTask: true);
+		return EndWithError(pos, "expected: identifier", true);
 	}
 
 	private bool HypernameBasicExpr()
@@ -2085,7 +2090,7 @@ public partial class MainParsing : LexemStream
 			return _SuccessStack[_Stackpos] = false;
 		else
 			goto l0;
-	l0:
+		l0:
 		return pos >= end ? (_SuccessStack[_Stackpos] = false) : EndWithAssigning(true);
 	}
 

@@ -1,19 +1,18 @@
-﻿global using Corlib.NStar;
-global using Dictionaries.NStar;
-global using LINQ.NStar;
+﻿global using NStar.Core;
+global using NStar.Dictionaries;
+global using NStar.Linq;
 global using System;
 global using System.Diagnostics;
-global using System.Drawing;
 global using System.Reflection;
 global using G = System.Collections.Generic;
-global using static Corlib.NStar.Extents;
 global using static CSharp.NStar.DeclaredConstructions;
+global using static NStar.Core.Extents;
 global using static System.Math;
-global using String = Corlib.NStar.String;
-using ParallelHS.NStar;
-using SortedSets.NStar;
+global using String = NStar.Core.String;
+using NStar.ParallelHS;
+using NStar.SortedSets;
 using System.Text;
-using TreeSets.NStar;
+using NStar.TreeSets;
 
 namespace CSharp.NStar;
 
@@ -21,7 +20,7 @@ public static class TypeHelpers
 {
 	public static readonly Random globalRandom = new();
 	public static readonly String[] operators = ["or", "and", "^^", "||", "&&", "==", "!=", ">=", "<=", ">", "<", "^=", "|=", "&=", ">>=", "<<=", "+=", "-=", "*=", "/=", "%=", "pow=", "=", "^", "|", "&", ">>", "<<", "+", "-", "*", "/", "%", "pow", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "!", "~", "++", "--", "!!"];
-	public static readonly List<String> CollectionTypesList = [nameof(Dictionary<bool, bool>), nameof(FastDelHashSet<bool>), "HashTable", nameof(Corlib.NStar.ICollection), nameof(G.IEnumerable<bool>), nameof(Corlib.NStar.IList), nameof(IReadOnlyCollection<bool>), nameof(IReadOnlyList<bool>), nameof(LimitedQueue<bool>), nameof(G.LinkedList<bool>), nameof(G.LinkedListNode<bool>), nameof(ListHashSet<bool>), nameof(Mirror<bool, bool>), nameof(NList<bool>), nameof(Queue<bool>), nameof(ParallelHashSet<bool>), nameof(ReadOnlySpan<bool>), nameof(Slice<bool>), nameof(SortedDictionary<bool, bool>), nameof(SortedSet<bool>), nameof(Span<bool>), nameof(Stack<bool>), nameof(TreeHashSet<bool>), nameof(TreeSet<bool>)];
+	public static readonly List<String> CollectionTypesList = [nameof(Dictionary<bool, bool>), nameof(FastDelHashSet<bool>), "HashTable", nameof(ICollection), nameof(G.IEnumerable<bool>), nameof(IList), nameof(IReadOnlyCollection<bool>), nameof(IReadOnlyList<bool>), nameof(LimitedQueue<bool>), nameof(G.LinkedList<bool>), nameof(G.LinkedListNode<bool>), nameof(ListHashSet<bool>), nameof(Mirror<bool, bool>), nameof(NList<bool>), nameof(Queue<bool>), nameof(ParallelHashSet<bool>), nameof(ReadOnlySpan<bool>), nameof(Slice<bool>), nameof(SortedDictionary<bool, bool>), nameof(SortedSet<bool>), nameof(Span<bool>), nameof(Stack<bool>), nameof(TreeHashSet<bool>), nameof(TreeSet<bool>)];
 
 	private static readonly Dictionary<Type, bool> memoizedTypes = [];
 

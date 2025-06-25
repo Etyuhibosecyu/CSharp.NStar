@@ -1,12 +1,12 @@
-﻿global using Corlib.NStar;
-global using LINQ.NStar;
-global using MathLib.NStar;
+﻿global using NStar.Core;
+global using NStar.Linq;
+global using NStar.MathLib;
 global using System;
 global using System.Diagnostics;
 global using System.Text.RegularExpressions;
 global using G = System.Collections.Generic;
 global using static System.Math;
-global using String = Corlib.NStar.String;
+global using String = NStar.Core.String;
 
 namespace CSharp.NStar;
 

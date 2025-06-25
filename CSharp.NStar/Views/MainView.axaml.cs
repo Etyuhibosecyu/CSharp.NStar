@@ -246,7 +246,20 @@ return 5 pow x += 3;
 ", (@"null", @"Error in line 2 at position 15: only variables can be assigned
 ") }, { @"return ;
 ", (@"null", @"Warning in line 1 at position 7: syntax ""return;"" is deprecated; consider using ""return null;"" instead
-") }, { @"using System.Collections;
+") }, { @"null Function F(list() int n)
+{
+	n++;
+}
+int a = 5;
+F(a);
+F(a);
+F(a);
+return a;
+", (@"5", @"Error in line 3 at position 2: cannot apply the operator ""postfix ++"" to the type ""list() int""
+") }, { @"var a = false;
+a++;
+return a;
+", (@"true", "Ошибок нет") }, { @"using System.Collections;
 NList[int] bitList = new NList[int](10, 123, 456, 789, 111, 222, 333, 444, 555, 777);
 return bitList;
 ", (@"(123, 456, 789, 111, 222, 333, 444, 555, 777)", "Ошибок нет") }, { @"list() int list = (1, 2, 3);
@@ -985,8 +998,26 @@ return (myDog.Speak(), myDog.Eat(), myCat.Speak(), myCat.Eat());
 	abstract string Function Go();
 }
 ", ("null", @"Error in line 3 at position 10: abstract members can be located only inside the abstract classes
-") },
-		{ @"return 100000000000000000*100000000000000000000;
+") }, { @"null Function F(ref int n)
+{
+	n++;
+}
+int a = 5;
+F(ref a);
+F(ref a);
+F(ref a);
+return a;
+", ("8", "Ошибок нет") }, { @"null Function F(ref int n)
+{
+	n++;
+}
+int a = 5;
+F(a);
+F(a);
+F(a);
+return a;
+", ("null", @"Wreck in line 6 at position 2: this parameter must pass with the ""ref"" keyword
+") }, { @"return 100000000000000000*100000000000000000000;
 ", (@"null", @"Error in line 1 at position 26: too large number; long long type is under development
 ") }, { @"return ExecuteString(""return args[1];"", Q());
 ", ("""

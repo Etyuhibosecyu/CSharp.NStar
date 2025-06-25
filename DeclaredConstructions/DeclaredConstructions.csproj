@@ -1,15 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\.NStar\Corlib.NStar\Corlib.NStar.csproj" />
-    <ProjectReference Include="..\..\.NStar\Dictionaries.NStar\Dictionaries.NStar.csproj" />
-    <ProjectReference Include="..\..\.NStar\LINQ.NStar\LINQ.NStar.csproj" />
-    <ProjectReference Include="..\..\.NStar\ParallelHS.NStar\ParallelHS.NStar.csproj" />
-    <ProjectReference Include="..\..\.NStar\SumCollections.NStar\SumCollections.NStar.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\.NStar\Sources\NStar.EasyEval\NStar.EasyEval.csproj" />
+	</ItemGroup>
 </Project>

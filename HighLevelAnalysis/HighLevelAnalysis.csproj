@@ -1,13 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+	<PropertyGroup>
+	<TargetFramework>net9.0</TargetFramework>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\.NStar\EasyEval.NStar\EasyEval.NStar.csproj" />
-    <ProjectReference Include="..\LowLevelAnalysis\LowLevelAnalysis.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+	<ProjectReference Include="..\LowLevelAnalysis\LowLevelAnalysis.csproj" />
+	</ItemGroup>
 
 </Project>

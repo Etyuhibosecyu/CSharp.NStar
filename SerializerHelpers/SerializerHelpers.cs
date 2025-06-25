@@ -1,13 +1,12 @@
-﻿using Corlib.NStar;
-using LINQ.NStar;
+﻿using NStar.Core;
+using NStar.Linq;
 using Newtonsoft.Json;
-using RemoveDoubles.NStar;
 using System;
 using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using static System.Math;
-using String = Corlib.NStar.String;
+using String = NStar.Core.String;
 
 namespace CSharp.NStar;
 

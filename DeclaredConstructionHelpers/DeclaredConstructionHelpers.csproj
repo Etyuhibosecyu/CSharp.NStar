@@ -1,12 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+	<TargetFramework>net9.0</TargetFramework>
+	<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\.NStar\Dictionaries.NStar\Dictionaries.NStar.csproj" />
-    <ProjectReference Include="..\TypeHelpers\TypeHelpers.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+	<ProjectReference Include="..\TypeHelpers\TypeHelpers.csproj" />
+	</ItemGroup>
 </Project>

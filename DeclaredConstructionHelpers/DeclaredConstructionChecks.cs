@@ -1,15 +1,15 @@
-﻿global using Corlib.NStar;
-global using LINQ.NStar;
-global using MathLib.NStar;
+﻿global using NStar.Core;
+global using NStar.Linq;
+global using NStar.MathLib;
 global using System;
 global using G = System.Collections.Generic;
-global using static Corlib.NStar.Extents;
 global using static CSharp.NStar.DeclaredConstructionMappings;
 global using static CSharp.NStar.DeclaredConstructions;
 global using static CSharp.NStar.IntermediateFunctions;
 global using static CSharp.NStar.TypeHelpers;
+global using static NStar.Core.Extents;
 global using static System.Math;
-global using String = Corlib.NStar.String;
+global using String = NStar.Core.String;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CSharp.NStar;
