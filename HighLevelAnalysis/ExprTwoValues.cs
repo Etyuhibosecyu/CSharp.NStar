@@ -3,7 +3,7 @@ using static CSharp.NStar.SemanticTree;
 
 namespace CSharp.NStar;
 
-internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBranch Branch, List<Lexem> Lexems)
+internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBranch Branch, List<Lexem> Lexems, String Default)
 {
 	public String Calculate(ref List<String>? errorsList, ref int i)
 	{
@@ -22,7 +22,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 			"*" => ExprTranslateTimeMul(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
 			"/" => ExprTranslateTimeDiv(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
 			"%" => ExprTranslateTimeMod(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
-			"+" => ExprTranslateTimePlus(ref i, UnvType1, UnvType2, PrevUnvType),
+			"+" => ExprTranslateTimePlus(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
 			"-" => ExprTranslateTimeMinus(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
 			">>" => ExprTranslateTimeRightShift(ref i, UnvType1, UnvType2),
 			"<<" => ExprTranslateTimeLeftShift(ref i, UnvType1, UnvType2),
@@ -102,9 +102,27 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 
 	private String ExprTranslateTimeMul(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
 	{
+		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex" or "string"
+			&& TypeIsPrimitive(UnvType2.MainType) && UnvType2.MainType.Peek().Name.ToString() is "null"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex" or "string"))
+		{
+			Add(ref errorsList, "Error in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position "
+				+ Lexems[Branch[i].Pos].Pos.ToString() + ": cannot cannot apply the operator \"" + Branch[i].Info
+				+ "\" to the types \"" + UnvType1.ToString() + "\" and \"" + UnvType2.ToString() + "\"");
+			return Default;
+		}
 		String result = [];
 		if (TypeEqualsToPrimitive(UnvType1, "string") && TypeEqualsToPrimitive(UnvType2, "string"))
-			Add(ref errorsList, "Warning in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position " + Lexems[Branch[i].Pos].Pos.ToString() + ": the string cannot be multiplied by string; one of them can be converted to number but this is not recommended and can cause data loss");
+		{
+			Add(ref errorsList, "Error in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position "
+				+ Lexems[Branch[i].Pos].Pos.ToString() + ": the string cannot be multiplied by string");
+			return Default;
+		}
 		if (i == 2)
 			Branch[Max(i - 3, 0)] = new((Value1 * Value2).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 		else if (i >= 4 && TypeEqualsToPrimitive(PrevUnvType, "string") && Branch[i - 2].Info == "*")
@@ -120,9 +138,27 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 
 	private String ExprTranslateTimeDiv(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
 	{
+		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex" or "string"
+			&& TypeIsPrimitive(UnvType2.MainType) && UnvType2.MainType.Peek().Name.ToString() is "byte"
+			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex" or "string"))
+		{
+			Add(ref errorsList, "Error in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position "
+				+ Lexems[Branch[i].Pos].Pos.ToString() + ": cannot cannot apply the operator \"" + Branch[i].Info
+				+ "\" to the types \"" + UnvType1.ToString() + "\" and \"" + UnvType2.ToString() + "\"");
+			return Default;
+		}
 		String result = [];
 		if (TypeEqualsToPrimitive(UnvType1, "string") || TypeEqualsToPrimitive(UnvType2, "string"))
-			Add(ref errorsList, "Warning in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position " + Lexems[Branch[i].Pos].Pos.ToString() + ": the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss");
+		{
+			Add(ref errorsList, "Error in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position "
+				+ Lexems[Branch[i].Pos].Pos.ToString() + ": the strings cannot be divided or give remainder (%)");
+			return Default;
+		}
 		if (!TypeEqualsToPrimitive(UnvType1, "real") && !TypeEqualsToPrimitive(UnvType2, "real") && Value2 == 0)
 		{
 			Add(ref errorsList, "Error in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position " + Lexems[Branch[i].Pos].Pos.ToString() + ": division by integer zero is forbidden");
@@ -143,9 +179,27 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 
 	private String ExprTranslateTimeMod(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
 	{
+		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex" or "string"
+			&& TypeIsPrimitive(UnvType2.MainType) && UnvType2.MainType.Peek().Name.ToString() is "byte"
+			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex" or "string"))
+		{
+			Add(ref errorsList, "Error in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position "
+				+ Lexems[Branch[i].Pos].Pos.ToString() + ": cannot cannot apply the operator \"" + Branch[i].Info
+				+ "\" to the types \"" + UnvType1.ToString() + "\" and \"" + UnvType2.ToString() + "\"");
+			return Default;
+		}
 		String result = [];
 		if (TypeEqualsToPrimitive(UnvType1, "string") || TypeEqualsToPrimitive(UnvType2, "string"))
-			Add(ref errorsList, "Warning in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position " + Lexems[Branch[i].Pos].Pos.ToString() + ": the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss");
+		{
+			Add(ref errorsList, "Error in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position "
+				+ Lexems[Branch[i].Pos].Pos.ToString() + ": the strings cannot be divided or give remainder (%)");
+			return Default;
+		}
 		if (!TypeEqualsToPrimitive(UnvType1, "real") && !TypeEqualsToPrimitive(UnvType2, "real") && Value2 == 0)
 		{
 			Add(ref errorsList, "Error in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position " + Lexems[Branch[i].Pos].Pos.ToString() + ": division by integer zero is forbidden");
@@ -164,8 +218,22 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String ExprTranslateTimePlus(ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
+	private String ExprTranslateTimePlus(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
 	{
+		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null" or "bool"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex" or "string"
+			&& TypeIsPrimitive(UnvType2.MainType) && UnvType2.MainType.Peek().Name.ToString() is "null" or "bool"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex" or "string"))
+		{
+			Add(ref errorsList, "Error in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position "
+				+ Lexems[Branch[i].Pos].Pos.ToString() + ": cannot cannot apply the operator \"" + Branch[i].Info
+				+ "\" to the types \"" + UnvType1.ToString() + "\" and \"" + UnvType2.ToString() + "\"");
+			return Default;
+		}
 		String result = [];
 		bool isString1 = TypeEqualsToPrimitive(UnvType1, "string"), isString2 = TypeEqualsToPrimitive(UnvType2, "string");
 		if (i == 2)
@@ -191,9 +259,27 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 
 	private String ExprTranslateTimeMinus(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
 	{
+		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null" or "bool"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex" or "string"
+			&& TypeIsPrimitive(UnvType2.MainType) && UnvType2.MainType.Peek().Name.ToString() is "null" or "bool"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex" or "string"))
+		{
+			Add(ref errorsList, "Error in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position "
+				+ Lexems[Branch[i].Pos].Pos.ToString() + ": cannot cannot apply the operator \"" + Branch[i].Info
+				+ "\" to the types \"" + UnvType1.ToString() + "\" and \"" + UnvType2.ToString() + "\"");
+			return Default;
+		}
 		String result = [];
 		if (TypeEqualsToPrimitive(UnvType1, "string") || TypeEqualsToPrimitive(UnvType2, "string"))
-			Add(ref errorsList, "Warning in line " + Lexems[Branch[i].Pos].LineN.ToString() + " at position " + Lexems[Branch[i].Pos].Pos.ToString() + ": the strings cannot be subtracted; they can be converted to number but this is not recommended and can cause data loss");
+		{
+			Add(ref errorsList, "Error in line " + Lexems[Branch[i].Pos].LineN.ToString()
+				+ " at position " + Lexems[Branch[i].Pos].Pos.ToString() + ": the strings cannot be subtracted");
+			return Default;
+		}
 		if (i == 2)
 			Branch[Max(i - 3, 0)] = new((Value1 - Value2).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 		else if (i >= 4 && TypeEqualsToPrimitive(PrevUnvType, "string") && Branch[i - 2].Info == "+")

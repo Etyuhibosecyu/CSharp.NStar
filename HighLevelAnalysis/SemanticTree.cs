@@ -124,7 +124,7 @@ public sealed class SemanticTree
 					result.Add('{');
 				if (s.ToString() is "_" or "default" or "default!" or "_ = default" or "_ = default!")
 					s = [];
-				if (s.StartsWith('(') && ExprTypesList.Contains(x.Info))
+				if (s.StartsWith('(') && ExprTypesList.Contains(x.Info) && x.Info != "Assignment")
 					s.Insert(0, "_ = ");
 				result.AddRange(s);
 				if (s.Length != 0 && s[^1] is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_')
@@ -479,10 +479,10 @@ public sealed class SemanticTree
 	{
 		String result = branch.Info.ToString() switch
 		{
-			"if" => "if (((Universal)",
-			"else if" => "else if (((Universal)",
-			"if!" => "if ((!((Universal)",
-			"else if!" => "else if ((!((Universal)",
+			"if" => "if (",
+			"else if" => "else if (",
+			"if!" => "if (!(",
+			"else if!" => "else if (!(",
 			_ => throw new InvalidOperationException(),
 		};
 		errorsList = [];
@@ -494,7 +494,7 @@ public sealed class SemanticTree
 		}
 		if (branch.Info.EndsWith('!'))
 			result.Add(')');
-		return result.AddRange(").ToBool())");
+		return result.Add(')');
 	}
 
 	private String Loop(TreeBranch branch, out List<String>? errorsList)
@@ -505,7 +505,7 @@ public sealed class SemanticTree
 
 	private String While(TreeBranch branch, out List<String>? errorsList)
 	{
-		String result = "while (((Universal)";
+		String result = "while (";
 		errorsList = [];
 		var s = ParseAction(branch[0].Info)(branch[0], out var innerErrorsList);
 		if (s.Length != 0)
@@ -513,7 +513,7 @@ public sealed class SemanticTree
 			result.AddRange(s);
 			AddRange(ref errorsList, innerErrorsList);
 		}
-		return result.AddRange(").ToBool())");
+		return result.Add(')');
 	}
 
 	private String Repeat(TreeBranch branch, out List<String>? errorsList)
@@ -688,7 +688,7 @@ public sealed class SemanticTree
 				}
 				if (EscapedKeywordsList.Contains(info))
 					result.Add('@');
-				result.AddRange(TypesAreEqual(UnvType, NullType) ? "default(object)" : info);
+				result.AddRange(TypesAreEqual(UnvType, NullType) ? "default(dynamic)" : info);
 				AddRange(ref errorsList, variableErrorsList!);
 			}
 			else if (IsPropertyDeclared(branch, info, out var propertyErrorsList, out var property))
@@ -1118,7 +1118,7 @@ public sealed class SemanticTree
 		errorsList = [];
 		if (branch.Info == "Call")
 			return ExprCallUser(branch, branch.Elements.ToList((x, index) =>
-			ParseAction(x.Info)(x, out _)), out errorsList);
+				ParseAction(x.Info)(x, out _)), out errorsList);
 		if (branch.Info == "ConstructorCall")
 			return ExprConstructorCall(branch, out errorsList);
 		var innerResults = new List<String>();
@@ -1145,21 +1145,34 @@ public sealed class SemanticTree
 			}
 			else if (i > 0 && i % 2 == 0)
 			{
+				if (branch[i - 2].Extra is not UniversalType UnvType1)
+					UnvType1 = NullType;
+				if (branch[i - 1].Extra is not UniversalType UnvType2)
+					UnvType2 = NullType;
+				var resultType = GetResultType(UnvType1, UnvType2, innerResults[^2].Copy(), innerResults[^1].Copy());
+				String @default = "default";
+				if (!(branch.Parent?.Info == "return"
+					|| branch.Parent?.Info == nameof(List) && branch.Parent?.Parent?.Info == "return"))
+				{
+					@default.Add('(');
+					@default.AddRange(TypeEqualsToPrimitive(resultType, "null") ? "String" : Type(resultType)).Add(')');
+				}
+				@default.Add('!');
 				if (!TryReadValue(branch[i].Info, out _) && branch[i].Info.ToString() is not ("pow" or "tetra" or "penta"
 					or "hexa" or "=" or "+=" or "-=" or "*=" or "/=" or "%=" or "pow=" or "tetra=" or "penta=" or "hexa="
 					or "&=" or "|=" or "^=" or ">>=" or "<<=") && TryReadValue(branch[Max(i - 3, 0)].Info, out var value1)
 					&& TryReadValue(branch[i - 1].Info, out var value2))
 				{
-					var innerResult = new ExprTwoValues(value1, value2, branch, lexems).Calculate(ref errorsList, ref i);
+					var innerResult = new ExprTwoValues(value1, value2, branch, lexems, @default).Calculate(ref errorsList, ref i);
 					innerResults.SetOrAdd(i, innerResult);
 					continue;
 				}
 				innerResults.SetOrAdd(i, branch[i].Info.ToString() switch
 				{
-					"*" or "/" or "%" => ExprMulDiv(branch, innerResults, ref errorsList, ref i),
 					"+" or "-" => ExprPM(branch, innerResults, ref errorsList, ref i),
+					"*" or "/" or "%" => ExprMulDiv(branch, innerResults, ref errorsList, ref i),
 					"pow" or "tetra" or "penta" or "hexa" => ExprPow(branch, innerResults, ref errorsList, i),
-					"==" or ">" or "<" or ">=" or "<=" or "!=" or "&&" or "||" or "^^" => ExprBool(branch, innerResults, i),
+					"==" or ">" or "<" or ">=" or "<=" or "!=" or "&&" or "||" or "^^" => ExprBool(branch, innerResults, ref errorsList, i),
 					"=" or "+=" or "-=" or "*=" or "/=" or "%=" or "pow=" or "tetra=" or "penta=" or "hexa=" or "&=" or "|=" or "^=" or ">>=" or "<<=" => ExprAssignment(branch, innerResults, ref errorsList, i),
 					"?" or "?=" or "?>" or "?<" or "?>=" or "?<=" or "?!=" or ":" => ExprTernary(branch, i),
 					"CombineWith" => ExprCombineWith(branch, innerResults, i),
@@ -1612,42 +1625,114 @@ public sealed class SemanticTree
 		return "default!";
 	}
 
-	private String ExprMulDiv(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, ref int i)
+	private String ExprPM(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, ref int i)
 	{
 		if (branch[i - 2].Extra is not UniversalType UnvType1)
 			UnvType1 = NullType;
 		if (branch[i - 1].Extra is not UniversalType UnvType2)
 			UnvType2 = NullType;
-		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "byte"
-			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+		var resultType = GetResultType(UnvType1, UnvType2, innerResults[^2], innerResults[^1]);
+		String @default = "default";
+		if (!(branch.Parent?.Info == "return"
+			|| branch.Parent?.Info == nameof(List) && branch.Parent?.Parent?.Info == "return"))
+			@default.Add('(').AddRange(TypeEqualsToPrimitive(resultType, "null") ? "String" : Type(resultType)).Add(')');
+		@default.Add('!');
+		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null" or "bool"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
 			or "real" or "long real" or "complex" or "long complex" or "string"
-			&& TypeIsPrimitive(UnvType2.MainType) && UnvType2.MainType.Peek().Name.ToString() is "byte"
-			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			&& TypeIsPrimitive(UnvType2.MainType) && UnvType2.MainType.Peek().Name.ToString() is "null" or "bool"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
 			or "real" or "long real" or "complex" or "long complex" or "string"))
 		{
 			Add(ref errorsList, "Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position "
 				+ lexems[branch[i].Pos].Pos.ToString() + ": cannot cannot apply the operator \"" + branch[i].Info
 				+ "\" to the types \"" + UnvType1.ToString() + "\" and \"" + UnvType2.ToString() + "\"");
-			return "default!";
+			return @default;
 		}
 		if (!(i >= 4 && branch[i - 4].Extra is UniversalType PrevUnvType))
 			PrevUnvType = NullType;
 		var isString1 = TypeEqualsToPrimitive(UnvType1, "string");
-		var isString2 = TypeEqualsToPrimitive(UnvType2, "string");
-		if (branch[i].Info == "*" && isString1 && isString2)
+		var isString2 = TypeEqualsToPrimitive(UnvType2, "string") || TypeEqualsToPrimitive(UnvType2, "char");
+		var isStringPrev = TypeEqualsToPrimitive(PrevUnvType, "string");
+		var isNull1 = TypeEqualsToPrimitive(UnvType1, "null");
+		var isNull2 = TypeEqualsToPrimitive(UnvType2, "null");
+		if (isNull1 && !isNull2)
+			innerResults[^2].ReplaceInPlace("(dynamic)", "").Insert(^(innerResults[^2].EndsWith('!') ? 1 : 0),
+				((String)'(').AddRange(Type(UnvType2)).Add(')'));
+		else if (!isNull1 && isNull2)
+			innerResults[^1].ReplaceInPlace("(dynamic)", "").Insert(^(innerResults[^1].EndsWith('!') ? 1 : 0),
+				((String)'(').AddRange(Type(UnvType1)).Add(')'));
+		if (branch[i].Info == "-" && (isString1 || isString2))
 		{
 			Add(ref errorsList, "Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position "
-				+ lexems[branch[i].Pos].Pos.ToString() + ": the string cannot be multiplied by string");
-			return "default!";
+				+ lexems[branch[i].Pos].Pos.ToString() + ": the strings cannot be subtracted");
+			return @default;
 		}
-		else if (branch[i].Info != "*" && (isString1 || isString2))
+		if (isStringPrev && isString2 == false)
 		{
-			Add(ref errorsList, "Warning in line " + lexems[branch[i].Pos].LineN.ToString() + " at position "
-				+ lexems[branch[i].Pos].Pos.ToString() + ": the strings cannot be divided or give remainder (%)");
-			return "default!";
+			if (branch[Max(i - 3, 0)].Info == "PMExpr")
+				branch[Max(i - 3, 0)].AddRange(branch.GetRange(i - 1, 2));
+			else
+			{
+				var tempBranch = branch[Max(i - 3, 0)];
+				branch[Max(i - 3, 0)] = new("PMExpr", [tempBranch, branch[i - 1], branch[i]], branch[i].Container)
+				{ Extra = resultType };
+			}
+			branch[Max(i - 3, 0)][^1].Extra = resultType;
+			branch.Remove(i - 1, 2);
+			i -= 2;
 		}
+		else if (branch[i].Info == "-" && (isString1 || isString2))
+		{
+			if (branch[Max(i - 3, 0)].Info == "PMExpr")
+				branch[Max(i - 3, 0)].AddRange(branch.GetRange(i - 1, 2));
+			else
+			{
+				var tempBranch = branch[Max(i - 3, 0)];
+				branch[Max(i - 3, 0)] = new("PMExpr", [tempBranch, branch[i - 1], branch[i]], branch[i].Container)
+				{ Extra = resultType };
+			}
+			branch[Max(i - 3, 0)][^1].Extra = resultType;
+			branch.Remove(i - 1, 2);
+			i -= 2;
+		}
+		else if (i >= 4 && isString1 == false && isString2)
+		{
+			TreeBranch tempBranch = new("PMExpr", branch.GetRange(0, i - 1), branch[i - 2].Container);
+			branch[0] = tempBranch;
+			branch.Remove(1, i - 2);
+			i = 2;
+		}
+		else if (branch.Info == "Expr" && isString1 && isString2)
+			branch.Info = "StringConcatenation";
+		branch[i].Extra = resultType;
+		if (isString1 && isString2)
+		{
+			var result = innerResults[^2].Copy();
+			if (isStringPrev)
+				result.AddRange((String)".Copy()");
+			return result.AddRange(".AddRange(").AddRange(innerResults[^1]).Add(')');
+		}
+		else if (isString1 || isString2)
+			return ((String)"((").AddRange(nameof(Universal)).Add(')').AddRange(innerResults[^2]).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]).AddRange(").ToString()");
+		else
+		{
+			if (innerResults[^2].ContainsAnyExcluding(AlphanumericCharacters))
+				innerResults[^2].Insert(0, '(').Add(')');
+			if (innerResults[^1].ContainsAnyExcluding(AlphanumericCharacters))
+				innerResults[^1].Insert(0, '(').Add(')');
+			return i < 2 ? branch[i][^1].Info : innerResults[^2].Copy().Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]);
+		}
+	}
+
+	private String ExprMulDiv(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, ref int i)
+	{
+		if (branch[i - 2].Extra is not UniversalType UnvType1)
+			UnvType1 = NullType;
+		if (branch[i - 1].Extra is not UniversalType UnvType2)
+			UnvType2 = NullType;
 		var resultType = (branch[i].Info == "/" && TypeIsPrimitive(UnvType1.MainType) && TypeIsPrimitive(UnvType2.MainType))
 			? GetPrimitiveType(Universal.GetQuotientType(UnvType1.MainType.Peek().Name,
 			TryReadValue(branch[i - 1].Info, out var value) ? value : 5, UnvType2.MainType.Peek().Name))
@@ -1655,6 +1740,50 @@ public sealed class SemanticTree
 			? GetPrimitiveType(Universal.GetRemainderType(UnvType1.MainType.Peek().Name,
 			TryReadValue(branch[i - 1].Info, out var value2) ? value2 : new(12345678901234567890, UnsignedLongIntType),
 			UnvType2.MainType.Peek().Name)) : GetResultType(UnvType1, UnvType2, innerResults[^2], innerResults[^1]);
+		String @default = "default";
+		if (!(branch.Parent?.Info == "return"
+			|| branch.Parent?.Info == nameof(List) && branch.Parent?.Parent?.Info == "return"))
+			@default.Add('(').AddRange(TypeEqualsToPrimitive(resultType, "null") ? "String" : Type(resultType)).Add(')');
+		@default.Add('!');
+		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex" or "string"
+			&& TypeIsPrimitive(UnvType2.MainType) && (UnvType2.MainType.Peek().Name.ToString() is "byte"
+			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex" or "string"
+			|| branch[i].Info == "*" && UnvType2.MainType.Peek().Name == "null")))
+		{
+			Add(ref errorsList, "Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position "
+				+ lexems[branch[i].Pos].Pos.ToString() + ": cannot cannot apply the operator \"" + branch[i].Info
+				+ "\" to the types \"" + UnvType1.ToString() + "\" and \"" + UnvType2.ToString() + "\"");
+			return @default;
+		}
+		if (!(i >= 4 && branch[i - 4].Extra is UniversalType PrevUnvType))
+			PrevUnvType = NullType;
+		var isString1 = TypeEqualsToPrimitive(UnvType1, "string");
+		var isString2 = TypeEqualsToPrimitive(UnvType2, "string");
+		var isNull1 = TypeEqualsToPrimitive(UnvType1, "null");
+		var isNull2 = TypeEqualsToPrimitive(UnvType2, "null");
+		if (isNull1 && !isNull2)
+			innerResults[^2].ReplaceInPlace("(dynamic)", "").Insert(^(innerResults[^2].EndsWith('!') ? 1 : 0),
+				((String)'(').AddRange(Type(UnvType2)).Add(')'));
+		else if (!isNull1 && isNull2)
+			innerResults[^1].ReplaceInPlace("(dynamic)", "").Insert(^(innerResults[^1].EndsWith('!') ? 1 : 0),
+				((String)'(').AddRange(Type(UnvType1)).Add(')'));
+		if (branch[i].Info == "*" && isString1 && isString2)
+		{
+			Add(ref errorsList, "Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position "
+				+ lexems[branch[i].Pos].Pos.ToString() + ": the string cannot be multiplied by string");
+			return @default;
+		}
+		else if (branch[i].Info != "*" && (isString1 || isString2))
+		{
+			Add(ref errorsList, "Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position "
+				+ lexems[branch[i].Pos].Pos.ToString() + ": the strings cannot be divided or give remainder (%)");
+			return @default;
+		}
 		if (TypeEqualsToPrimitive(PrevUnvType, "string") && isString2 == false)
 		{
 			if (branch[Max(i - 3, 0)].Info == "MulDivExpr")
@@ -1676,102 +1805,20 @@ public sealed class SemanticTree
 		{
 			Add(ref errorsList, "Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position "
 				+ lexems[branch[i].Pos].Pos.ToString() + ": division by integer zero is forbidden");
-			branch[Max(i - 3, 0)] = new("default!", branch.Pos, branch.EndPos, branch.Container);
+			branch[Max(i - 3, 0)] = new(@default, branch.Pos, branch.EndPos, branch.Container);
 		}
 		if (innerResults[^2].ContainsAnyExcluding(AlphanumericCharacters))
 			innerResults[^2].Insert(0, '(').Add(')');
 		if (innerResults[^1].ContainsAnyExcluding(AlphanumericCharacters))
 			innerResults[^1].Insert(0, '(').Add(')');
-		if (branch[i].Info.ToString() is "/" or "%" && TypeEqualsToPrimitive(UnvType1, "real") && !TypeEqualsToPrimitive(UnvType2, "real"))
+		if (isString1)
+			return innerResults[^2].Add('.').AddRange(nameof(Repeat)).Add('(').AddRange(innerResults[^1]).Add(')');
+		if (isString2)
+			return innerResults[^1].Add('.').AddRange(nameof(Repeat)).Add('(').AddRange(innerResults[^2]).Add(')');
+		if (branch[i].Info.ToString() is "/" or "%" && TypeEqualsToPrimitive(UnvType1, "real")
+			&& !TypeEqualsToPrimitive(UnvType2, "real"))
 			innerResults[^2].Insert(0, "(double)(").Add(')');
 		return i < 2 ? branch[i].Info : new String(innerResults[^2]).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]);
-	}
-
-	private String ExprPM(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, ref int i)
-	{
-		if (branch[i - 2].Extra is not UniversalType UnvType1)
-			UnvType1 = NullType;
-		if (branch[i - 1].Extra is not UniversalType UnvType2)
-			UnvType2 = NullType;
-		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "bool" or "byte"
-			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
-			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex" or "string"
-			&& TypeIsPrimitive(UnvType2.MainType) && UnvType2.MainType.Peek().Name.ToString() is "bool" or "byte"
-			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
-			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex" or "string"))
-		{
-			Add(ref errorsList, "Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position "
-				+ lexems[branch[i].Pos].Pos.ToString() + ": cannot cannot apply the operator \"" + branch[i].Info
-				+ "\" to the types \"" + UnvType1.ToString() + "\" and \"" + UnvType2.ToString() + "\"");
-			return "default!";
-		}
-		if (!(i >= 4 && branch[i - 4].Extra is UniversalType PrevUnvType))
-			PrevUnvType = NullType;
-		bool isString1 = TypeEqualsToPrimitive(UnvType1, "string"), isString2 = TypeEqualsToPrimitive(UnvType2, "string")
-			|| TypeEqualsToPrimitive(UnvType2, "char"), isStringPrev = TypeEqualsToPrimitive(PrevUnvType, "string");
-		if (branch[i].Info == "-" && (isString1 || isString2))
-		{
-			Add(ref errorsList, "Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position "
-				+ lexems[branch[i].Pos].Pos.ToString() + ": the strings cannot be subtracted");
-			return "default!";
-		}
-		if (isStringPrev && isString2 == false)
-		{
-			if (branch[Max(i - 3, 0)].Info == "PMExpr")
-				branch[Max(i - 3, 0)].AddRange(branch.GetRange(i - 1, 2));
-			else
-			{
-				var tempBranch = branch[Max(i - 3, 0)];
-				branch[Max(i - 3, 0)] = new("PMExpr", [tempBranch, branch[i - 1], branch[i]], branch[i].Container)
-				{ Extra = GetResultType(UnvType1, UnvType2, innerResults[^2], innerResults[^1]) };
-			}
-			branch[Max(i - 3, 0)][^1].Extra = GetResultType(UnvType1, UnvType2, innerResults[^2], innerResults[^1]);
-			branch.Remove(i - 1, 2);
-			i -= 2;
-		}
-		else if (branch[i].Info == "-" && (isString1 || isString2))
-		{
-			if (branch[Max(i - 3, 0)].Info == "PMExpr")
-				branch[Max(i - 3, 0)].AddRange(branch.GetRange(i - 1, 2));
-			else
-			{
-				var tempBranch = branch[Max(i - 3, 0)];
-				branch[Max(i - 3, 0)] = new("PMExpr", [tempBranch, branch[i - 1], branch[i]], branch[i].Container)
-				{ Extra = GetResultType(UnvType1, UnvType2, innerResults[^2], innerResults[^1]) };
-			}
-			branch[Max(i - 3, 0)][^1].Extra = GetResultType(UnvType1, UnvType2, innerResults[^2], innerResults[^1]);
-			branch.Remove(i - 1, 2);
-			i -= 2;
-		}
-		else if (i >= 4 && isString1 == false && isString2)
-		{
-			TreeBranch tempBranch = new("PMExpr", branch.GetRange(0, i - 1), branch[i - 2].Container);
-			branch[0] = tempBranch;
-			branch.Remove(1, i - 2);
-			i = 2;
-		}
-		else if (branch.Info == "Expr" && isString1 && isString2)
-			branch.Info = "StringConcatenation";
-		branch[i].Extra = GetResultType(UnvType1, UnvType2, innerResults[^2], innerResults[^1]);
-		if (isString1 && isString2)
-		{
-			var result = innerResults[^2].Copy();
-			if (isStringPrev)
-				result.AddRange((String)".Copy()");
-			return result.AddRange(".AddRange(").AddRange(innerResults[^1]).Add(')');
-		}
-		else if (isString1 || isString2)
-			return ((String)"((").AddRange(nameof(Universal)).Add(')').AddRange(innerResults[^2]).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]).AddRange(").ToString()");
-		else
-		{
-			if (innerResults[^2].ContainsAnyExcluding(AlphanumericCharacters))
-				innerResults[^2].Insert(0, '(').Add(')');
-			if (innerResults[^1].ContainsAnyExcluding(AlphanumericCharacters))
-				innerResults[^1].Insert(0, '(').Add(')');
-			return i < 2 ? branch[i][^1].Info : innerResults[^2].Copy().Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]);
-		}
 	}
 
 	private String ExprPow(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, int i)
@@ -1792,8 +1839,16 @@ public sealed class SemanticTree
 			Add(ref errorsList, "Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position "
 				+ lexems[branch[i].Pos].Pos.ToString() + ": cannot cannot apply the operator \"" + branch[i].Info
 				+ "\" to the types \"" + UnvType1.ToString() + "\" and \"" + UnvType2.ToString() + "\"");
-			return "default!";
+			return "default(double)!";
 		}
+		var isNull1 = TypeEqualsToPrimitive(UnvType1, "null");
+		var isNull2 = TypeEqualsToPrimitive(UnvType2, "null");
+		if (isNull1 && !isNull2)
+			innerResults[^2].ReplaceInPlace("(dynamic)", "").Insert(^(innerResults[^2].EndsWith('!') ? 1 : 0),
+				((String)'(').AddRange(Type(UnvType2)).Add(')'));
+		else if (!isNull1 && isNull2)
+			innerResults[^1].ReplaceInPlace("(dynamic)", "").Insert(^(innerResults[^1].EndsWith('!') ? 1 : 0),
+				((String)'(').AddRange(Type(UnvType1)).Add(')'));
 		branch[i].Extra = GetResultType(UnvType2, UnvType1, innerResults[^2], innerResults[^1]);
 		return i < 2 ? branch[i].Info : ((String)"Pow(").AddRange(innerResults[^1]).AddRange(", ").AddRange(innerResults[^2]).Add(')');
 	}
@@ -1862,26 +1917,47 @@ public sealed class SemanticTree
 		return innerResults[^1];
 	}
 
-	private String ExprBool(TreeBranch branch, List<String> innerResults, int i)
+	private String ExprBool(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, int i)
 	{
+		if (branch[i - 2].Extra is not UniversalType UnvType1)
+			UnvType1 = NullType;
+		if (branch[i - 1].Extra is not UniversalType UnvType2)
+			UnvType2 = NullType;
+		if (!((branch[i].Info.ToString() is "==" or ">" or "<" or ">=" or "<=" or "!="
+			&& TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null" or "bool"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex"
+			|| branch[i].Info.ToString() is "&&" or "||" or "&" or "|" or "^"
+			&& TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name == "bool")
+			&& (branch[i].Info.ToString() is "==" or ">" or "<" or ">=" or "<=" or "!="
+			&& TypeIsPrimitive(UnvType2.MainType) && UnvType2.MainType.Peek().Name.ToString() is "null" or "bool"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex"
+			|| branch[i].Info.ToString() is "&&" or "||" or "&" or "|" or "^"
+			&& TypeIsPrimitive(UnvType2.MainType) && UnvType2.MainType.Peek().Name == "bool")))
+		{
+			Add(ref errorsList, "Error in line " + lexems[branch[i].Pos].LineN.ToString() + " at position "
+				+ lexems[branch[i].Pos].Pos.ToString() + ": cannot cannot apply the operator \"" + branch[i].Info
+				+ "\" to the types \"" + UnvType1.ToString() + "\" and \"" + UnvType2.ToString() + "\"");
+			return "false";
+		}
+		var isNull1 = TypeEqualsToPrimitive(UnvType1, "null");
+		var isNull2 = TypeEqualsToPrimitive(UnvType2, "null");
+		if (isNull1 && !isNull2)
+			innerResults[^2].ReplaceInPlace("(dynamic)", "").Insert(^(innerResults[^2].EndsWith('!') ? 1 : 0),
+				((String)'(').AddRange(Type(UnvType2)).Add(')'));
+		else if (!isNull1 && isNull2)
+			innerResults[^1].ReplaceInPlace("(dynamic)", "").Insert(^(innerResults[^1].EndsWith('!') ? 1 : 0),
+				((String)'(').AddRange(Type(UnvType1)).Add(')'));
 		branch[i].Extra = BoolType;
 		if (innerResults[^2].ContainsAnyExcluding(AlphanumericCharacters))
 			innerResults[^2].Insert(0, '(').Add(')');
 		if (innerResults[^1].ContainsAnyExcluding(AlphanumericCharacters))
 			innerResults[^1].Insert(0, '(').Add(')');
-		return i < 2 ? branch[i].Info : ((String)nameof(Universal)).Add('.').AddRange(branch[i].Info.ToString() switch
-		{
-			"==" => nameof(Universal.Eq),
-			">" => nameof(Universal.Gt),
-			"<" => nameof(Universal.Lt),
-			">=" => nameof(Universal.Goe),
-			"<=" => nameof(Universal.Loe),
-			"!=" => nameof(Universal.Neq),
-			"&&" => nameof(Universal.And),
-			"||" => nameof(Universal.Or),
-			"^^" => nameof(Universal.Xor),
-			_ => throw new InvalidOperationException(),
-		}).Add('(').AddRange(innerResults[^2]).AddRange(", ").AddRange(innerResults[^1]).AddRange(")");
+		return i < 2 ? branch[i].Info : innerResults[^2].Copy().Add(' ')
+			.AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]);
 	}
 
 	private static String ExprBinaryNotList(TreeBranch branch, List<String> innerResults, int i)

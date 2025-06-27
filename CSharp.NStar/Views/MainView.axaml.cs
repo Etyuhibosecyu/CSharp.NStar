@@ -35,16 +35,78 @@ public partial class MainView : UserControl
 	private static readonly Dictionary<String, (String TargetResult, String? TargetErrors)> testPrograms = new() { { """
 		return ("7" * "2", "7" * 2, 7 * "2", "7" / "2", "7" / 2, 7 / "2", "7" % "2", "7" % 2, 7 % "2", "7" - "2", "7" - 2, 7 - "2");
 
-		""", ("""("77", "77", "2222222", 3, 3, 3, 1, 1, 1, 5, 5, 5)""", @"Warning in line 1 at position 12: the string cannot be multiplied by string; one of them can be converted to number but this is not recommended and can cause data loss
-Warning in line 1 at position 41: the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss
-Warning in line 1 at position 52: the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss
-Warning in line 1 at position 59: the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss
-Warning in line 1 at position 70: the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss
-Warning in line 1 at position 81: the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss
-Warning in line 1 at position 88: the strings cannot be divided or give remainder (%); they can be converted to number but this is not recommended and can cause data loss
-Warning in line 1 at position 99: the strings cannot be subtracted; they can be converted to number but this is not recommended and can cause data loss
-Warning in line 1 at position 110: the strings cannot be subtracted; they can be converted to number but this is not recommended and can cause data loss
-Warning in line 1 at position 117: the strings cannot be subtracted; they can be converted to number but this is not recommended and can cause data loss
+		""", ("""(null, "77", "2222222", null, null, null, null, null, null, null, null, null)""", @"Error in line 1 at position 12: the string cannot be multiplied by string
+Error in line 1 at position 41: the strings cannot be divided or give remainder (%)
+Error in line 1 at position 52: the strings cannot be divided or give remainder (%)
+Error in line 1 at position 59: the strings cannot be divided or give remainder (%)
+Error in line 1 at position 70: the strings cannot be divided or give remainder (%)
+Error in line 1 at position 81: the strings cannot be divided or give remainder (%)
+Error in line 1 at position 88: the strings cannot be divided or give remainder (%)
+Error in line 1 at position 99: the strings cannot be subtracted
+Error in line 1 at position 110: the strings cannot be subtracted
+Error in line 1 at position 117: the strings cannot be subtracted
+") }, { """
+		var a = 7;
+		var b = 2;
+		var aq = "7";
+		var bq = "2";
+		return (aq * bq, aq * b, a * bq, aq / bq, aq / b, a / bq, aq % bq, aq % b, a % bq, aq - bq, aq - b, a - bq);
+
+		""", ("""(null, "77", "2222222", null, null, 0, null, null, 0, null, null, null)""", @"Error in line 5 at position 11: the string cannot be multiplied by string
+Error in line 5 at position 36: the strings cannot be divided or give remainder (%)
+Error in line 5 at position 45: the strings cannot be divided or give remainder (%)
+Error in line 5 at position 52: the strings cannot be divided or give remainder (%)
+Error in line 5 at position 61: the strings cannot be divided or give remainder (%)
+Error in line 5 at position 70: the strings cannot be divided or give remainder (%)
+Error in line 5 at position 77: the strings cannot be divided or give remainder (%)
+Error in line 5 at position 86: the strings cannot be subtracted
+Error in line 5 at position 95: the strings cannot be subtracted
+Error in line 5 at position 102: the strings cannot be subtracted
+") }, { """
+		return (("A", 77777, 3.14159) + 5, ("A", 77777, 3.14159) - 5, ("A", 77777, 3.14159) * 5, ("A", 77777, 3.14159) / 5, ("A", 77777, 3.14159) % 5);
+		
+		""", ("""(null, null, null, null, null)""", @"Error in line 1 at position 30: cannot cannot apply the operator ""+"" to the types ""(string, int, real)"" and ""byte""
+Error in line 1 at position 57: cannot cannot apply the operator ""-"" to the types ""(string, int, real)"" and ""byte""
+Error in line 1 at position 84: cannot cannot apply the operator ""*"" to the types ""(string, int, real)"" and ""byte""
+Error in line 1 at position 111: cannot cannot apply the operator ""/"" to the types ""(string, int, real)"" and ""byte""
+Error in line 1 at position 138: cannot cannot apply the operator ""%"" to the types ""(string, int, real)"" and ""byte""
+") }, { """
+		return (5 + ("A", 77777, 3.14159), 5 - ("A", 77777, 3.14159), 5 * ("A", 77777, 3.14159), 5 / ("A", 77777, 3.14159), 5 % ("A", 77777, 3.14159));
+				
+		""", ("""(null, null, null, 0, 0)""", """
+			Error in line 1 at position 10: cannot cannot apply the operator "+" to the types "byte" and "(string, int, real)"
+			Error in line 1 at position 37: cannot cannot apply the operator "-" to the types "byte" and "(string, int, real)"
+			Error in line 1 at position 64: cannot cannot apply the operator "*" to the types "byte" and "(string, int, real)"
+			Error in line 1 at position 91: cannot cannot apply the operator "/" to the types "byte" and "(string, int, real)"
+			Error in line 1 at position 118: cannot cannot apply the operator "%" to the types "byte" and "(string, int, real)"
+
+			""") }, { """
+		return (5 + null, 5 - null, 5 * null, 5 / null, 5 % null, null + 5, null - 5, null * 5, null / 5, null % 5);
+						
+		""", ("""(5, 5, 0, 0, 0, 5, -5, 0, 0, 0)""", @"Error in line 1 at position 40: cannot cannot apply the operator ""/"" to the types ""byte"" and ""null""
+Error in line 1 at position 50: cannot cannot apply the operator ""%"" to the types ""byte"" and ""null""
+") }, { """
+		var a = ("A", 77777, 3.14159);
+		var b = 5;
+		return (a + b, a - b, a * b, a / b, a % b, b + a, b - a, b * a, b / a, b % a);
+								
+		""", ("""(null, null, null, null, null, null, null, null, 0, 0)""", @"Error in line 3 at position 10: cannot cannot apply the operator ""+"" to the types ""(string, int, real)"" and ""byte""
+Error in line 3 at position 17: cannot cannot apply the operator ""-"" to the types ""(string, int, real)"" and ""byte""
+Error in line 3 at position 24: cannot cannot apply the operator ""*"" to the types ""(string, int, real)"" and ""byte""
+Error in line 3 at position 31: cannot cannot apply the operator ""/"" to the types ""(string, int, real)"" and ""byte""
+Error in line 3 at position 38: cannot cannot apply the operator ""%"" to the types ""(string, int, real)"" and ""byte""
+Error in line 3 at position 45: cannot cannot apply the operator ""+"" to the types ""byte"" and ""(string, int, real)""
+Error in line 3 at position 52: cannot cannot apply the operator ""-"" to the types ""byte"" and ""(string, int, real)""
+Error in line 3 at position 59: cannot cannot apply the operator ""*"" to the types ""byte"" and ""(string, int, real)""
+Error in line 3 at position 66: cannot cannot apply the operator ""/"" to the types ""byte"" and ""(string, int, real)""
+Error in line 3 at position 73: cannot cannot apply the operator ""%"" to the types ""byte"" and ""(string, int, real)""
+") }, { """
+		var a = 5;
+		var b = null;
+		return (a + b, a - b, a * b, a / b, a % b, b + a, b - a, b * a, b / a, b % a);
+								
+		""", ("""(5, 5, 0, 0, 0, 5, -5, 0, 0, 0)""", @"Error in line 3 at position 31: cannot cannot apply the operator ""/"" to the types ""byte"" and ""null""
+Error in line 3 at position 38: cannot cannot apply the operator ""%"" to the types ""byte"" and ""null""
 ") }, { @"real Function F(real x, real y)
 {
 	return x * x + x * y + y * y;
@@ -1012,8 +1074,13 @@ F(a);
 F(a);
 return a;
 ", ("null", @"Wreck in line 6 at position 2: this parameter must pass with the ""ref"" keyword
-") }, { @"return 100000000000000000*100000000000000000000;
-", (@"null", @"Error in line 1 at position 26: too large number; long long type is under development
+") }, { @"int Function F(real n)
+{
+	return Truncate(n * n);
+}
+return Fill(F(3.14159) >= 10, 1000);
+", ('(' + string.Join(", ", RedStarLinq.FillArray("false", 1000)) + ')', "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
+", (@"0", @"Error in line 1 at position 26: too large number; long long type is under development
 ") }, { @"return ExecuteString(""return args[1];"", Q());
 ", ("""
 /"return ExecuteString("return args[1];", Q());

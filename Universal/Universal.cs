@@ -1418,6 +1418,10 @@ public struct Universal
 		{
 			var left_type = left.InnerType.MainType.Peek().Name;
 			var right_type = right.InnerType.MainType.Peek().Name;
+			if (left_type == "null")
+				left_type = right_type;
+			else if (right_type == "null")
+				right_type = left_type;
 			if (ConvertibleTypesList.Contains(left_type) && ConvertibleTypesList.Contains(right_type))
 			{
 				string t;
@@ -1457,6 +1461,10 @@ public struct Universal
 		{
 			var left_type = left.InnerType.MainType.Peek().Name;
 			var right_type = right.InnerType.MainType.Peek().Name;
+			if (left_type == "null")
+				left_type = right_type;
+			else if (right_type == "null")
+				right_type = left_type;
 			if (ConvertibleTypesList.Contains(left_type) && ConvertibleTypesList.Contains(right_type))
 			{
 				string t;
@@ -1518,6 +1526,10 @@ public struct Universal
 		{
 			var left_type = left.InnerType.MainType.Peek().Name;
 			var right_type = right.InnerType.MainType.Peek().Name;
+			if (left_type == "null")
+				left_type = right_type;
+			else if (right_type == "null")
+				right_type = left_type;
 			if (ConvertibleTypesList.Contains(left_type) && ConvertibleTypesList.Contains(right_type))
 			{
 				string t;
@@ -1572,6 +1584,10 @@ public struct Universal
 		{
 			var left_type = left.InnerType.MainType.Peek().Name;
 			var right_type = right.InnerType.MainType.Peek().Name;
+			if (left_type == "null")
+				left_type = right_type;
+			else if (right_type == "null")
+				right_type = left_type;
 			if (ConvertibleTypesList.Contains(left_type) && ConvertibleTypesList.Contains(right_type))
 			{
 				var t = GetQuotientType(left_type, right, right_type);
@@ -1634,6 +1650,10 @@ public struct Universal
 		{
 			var left_type = left.InnerType.MainType.Peek().Name;
 			var right_type = right.InnerType.MainType.Peek().Name;
+			if (left_type == "null")
+				left_type = right_type;
+			else if (right_type == "null")
+				right_type = left_type;
 			if (ConvertibleTypesList.Contains(left_type) && ConvertibleTypesList.Contains(right_type))
 			{
 				var t = GetRemainderType(left_type, right, right_type);

@@ -293,10 +293,15 @@ public static class DeclaredConstructionChecks
 	{
 		if (PublicFunctionsList.TryGetValue(name, out var functionOverload))
 		{
-			function = new([new(true, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), "")],
-				PartialTypeToGeneralType(functionOverload.ReturnType, functionOverload.ReturnExtraTypes),
-				functionOverload.Attributes, [.. functionOverload.Parameters.Convert(x =>
-				new GeneralMethodParameter(PartialTypeToGeneralType(x.Type, x.ExtraTypes),
+			function = new([], PartialTypeToGeneralType(functionOverload.ExtraTypes.Contains(functionOverload.ReturnType)
+				? parameterTypes[functionOverload.Parameters.FindIndex(x =>
+				functionOverload.ReturnType == x.Type || x.ExtraTypes.Contains(functionOverload.ReturnType))].ToString()
+				: functionOverload.ReturnType, functionOverload.ReturnExtraTypes.ToList(t =>
+				functionOverload.ExtraTypes.Contains(t) ? parameterTypes[functionOverload.Parameters.FindIndex(x =>
+				t == x.Type || x.ExtraTypes.Contains(t))].ToString() : t)),
+				functionOverload.Attributes, [.. functionOverload.Parameters.Convert((x, index) =>
+				new GeneralMethodParameter(functionOverload.ExtraTypes.Contains(x.Type)
+				? parameterTypes[index] : PartialTypeToGeneralType(x.Type, x.ExtraTypes),
 				x.Name, x.Attributes, x.DefaultValue))]);
 			user = false;
 			return true;
