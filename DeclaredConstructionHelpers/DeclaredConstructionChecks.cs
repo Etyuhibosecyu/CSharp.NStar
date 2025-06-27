@@ -258,26 +258,15 @@ public static class DeclaredConstructionChecks
 		return result;
 	}
 
-	public static bool PublicFunctionExists(String name, out (List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters)? function)
-	{
-		if (PublicFunctionsList.TryGetValue(name, out var function2))
-		{
-			function = function2;
-			return true;
-		}
-		function = null;
-		return false;
-	}
-
 	public static bool MethodExists(UniversalType container, String name, [MaybeNullWhen(false)]
-	out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes,
-		GeneralMethodParameters Parameters)? function)
+	out GeneralMethodOverload? function)
 	{
 		var containerType = SplitType(container.MainType);
 		if (!(PrimitiveTypesList.TryGetValue(containerType.Type, out var netType)
 			|| ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out netType)
 			|| containerType.Container.Length == 0
-			&& ExplicitlyConnectedNamespacesList.FindIndex(x => ExtraTypesList.TryGetValue((x, containerType.Type), out netType)) >= 0))
+			&& ExplicitlyConnectedNamespacesList.FindIndex(x =>
+			ExtraTypesList.TryGetValue((x, containerType.Type), out netType)) >= 0))
 		{
 			function = null;
 			return false;
@@ -289,37 +278,40 @@ public static class DeclaredConstructionChecks
 			function = null;
 			return false;
 		}
-		function = ([], TypeMappingBack(method.ReturnType, netType.GetGenericArguments(), container.ExtraTypes),
+		function = new([], TypeMappingBack(method.ReturnType, netType.GetGenericArguments(), container.ExtraTypes),
 			(method.IsAbstract ? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
-			new(method.GetParameters().ToList(x => new GeneralMethodParameter(CreateVar(TypeMappingBack(x.ParameterType,
-			netType.GetGenericArguments(), container.ExtraTypes), out var UnvType).MainType,
-			x.Name ?? "x", UnvType.ExtraTypes,
+			new(method.GetParameters().ToList(x => new GeneralMethodParameter(TypeMappingBack(x.ParameterType,
+			netType.GetGenericArguments(), container.ExtraTypes),
+			x.Name ?? "x",
 			(x.IsOptional ? ParameterAttributes.Optional : 0) | (x.ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
 			| (x.IsOut ? ParameterAttributes.Out : 0), x.DefaultValue?.ToString() ?? "null"))));
 		return true;
 	}
 
-	public static bool GeneralMethodExists(BlockStack container, String name, [MaybeNullWhen(false)]
-	out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType, FunctionAttributes Attributes,
-		GeneralMethodParameters Parameters)? function, out bool user)
+	public static bool GeneralMethodExists(BlockStack container, String name, List<UniversalType> parameterTypes,
+		[MaybeNullWhen(false)] out GeneralMethodOverload? function, out bool user)
 	{
+		if (PublicFunctionsList.TryGetValue(name, out var functionOverload))
+		{
+			function = new([new(true, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), "")],
+				PartialTypeToGeneralType(functionOverload.ReturnType, functionOverload.ReturnExtraTypes),
+				functionOverload.Attributes, [.. functionOverload.Parameters.Convert(x =>
+				new GeneralMethodParameter(PartialTypeToGeneralType(x.Type, x.ExtraTypes),
+				x.Name, x.Attributes, x.DefaultValue))]);
+			user = false;
+			return true;
+		}
 		if (UserDefinedFunctionsList.TryGetValue(container, out var methods) && methods.TryGetValue(name, out var method_overloads))
 		{
 			function = method_overloads[0];
 			user = true;
 			return true;
 		}
-		var index = GeneralMethodsList.IndexOfKey(container);
-		if (index != -1)
+		if (GeneralMethodsList.TryGetValue(container, out var list) && list.TryGetValue(name, out var overloads))
 		{
-			var list = GeneralMethodsList.Values[index];
-			var index2 = list.IndexOfKey(name);
-			if (index2 != -1)
-			{
-				function = list.Values[index2][0];
-				user = false;
-				return true;
-			}
+			function = overloads[0];
+			user = false;
+			return true;
 		}
 		function = null;
 		user = false;
@@ -327,13 +319,11 @@ public static class DeclaredConstructionChecks
 	}
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name,
-		[MaybeNullWhen(false)] out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType,
-		FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function) =>
+		[MaybeNullWhen(false)] out GeneralMethodOverload? function) =>
 		UserDefinedFunctionExists(container, name, out function, out _, out _);
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name,
-		[MaybeNullWhen(false)] out (GeneralArrayParameters ArrayParameters, UniversalType ReturnUnvType,
-		FunctionAttributes Attributes, GeneralMethodParameters Parameters)? function,
+		[MaybeNullWhen(false)] out GeneralMethodOverload? function,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer, out bool derived)
 	{
 		if (CheckContainer(container, UserDefinedFunctionsList.ContainsKey, out matchingContainer) && UserDefinedFunctionsList[matchingContainer].TryGetValue(name, out var method_overloads))
@@ -377,11 +367,11 @@ public static class DeclaredConstructionChecks
 		}
 		constructors = [.. typeConstructors.ToList(x => ((x.IsAbstract ? ConstructorAttributes.Abstract : 0)
 			| (x.IsStatic ? ConstructorAttributes.Static : 0), new GeneralMethodParameters(x.GetParameters().ToList(y =>
-			new GeneralMethodParameter(CreateVar(TypeMappingBack(!CreateVar(y.GetCustomAttributes(typeof(ParamArrayAttribute),
+			new GeneralMethodParameter(TypeMappingBack(!CreateVar(y.GetCustomAttributes(typeof(ParamArrayAttribute),
 			false).Length > 0, out var @params) ? y.ParameterType : y.ParameterType.IsSZArray
 			? y.ParameterType.GetElementType() ?? typeof(object) : y.ParameterType.GetGenericArguments()[0],
-			netType.GetGenericArguments(), container.ExtraTypes),
-			out var UnvType).MainType, y.Name ?? "x", UnvType.ExtraTypes, (y.IsOptional ? ParameterAttributes.Optional : 0)
+			netType.GetGenericArguments(), container.ExtraTypes), y.Name ?? "x",
+			(y.IsOptional ? ParameterAttributes.Optional : 0)
 			| (y.ParameterType.IsByRef ? ParameterAttributes.Ref : 0) | (y.IsOut ? ParameterAttributes.Out : 0)
 			| (@params ? ParameterAttributes.Params : 0), y.DefaultValue?.ToString() ?? "null")))))];
 		return true;

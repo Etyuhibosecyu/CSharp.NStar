@@ -39,7 +39,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		};
 		Branch.Remove(Min(i - 1, Branch.Length - 2), 2);
 		i = Max(i - 3, 0);
-		Branch[i].Extra = GetResultType(UnvType1, UnvType2);
+		Branch[i].Extra = GetResultType(UnvType1, UnvType2, Value1.ToString(true), Value2.ToString(true));
 		return result.Length == 0 ? Branch[i].Info : result;
 	}
 
@@ -73,7 +73,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		if (i + 2 >= Branch.Length)
 		{
 			var i2 = i;
-			Branch[i].Extra = Branch.Elements.Filter((_, index) => index == i2 - 1 || index % 4 == 1).Convert(x => x.Extra is UniversalType ElemType ? ElemType : NullType).Progression(GetResultType);
+			Branch[i].Extra = Branch.Elements.Filter((_, index) => index == i2 - 1 || index % 4 == 1).Convert(x => x.Extra is UniversalType ElemType ? ElemType : NullType).Progression((x, y) => GetResultType(x, y, "default!", "default!"));
 			i++;
 			result = new String(Branch[i - 2].Info).Add(' ').AddRange(Branch[i].Info).Add(' ').AddRange(Branch[i - 1].Info);
 		}
@@ -90,7 +90,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 	{
 		try
 		{
-			Branch[Max(i - 3, 0)] = new(((Universal)Math.Pow(Value2.ToReal(), Value1.ToReal())).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
+			Branch[Max(i - 3, 0)] = new(((Universal)Pow(Value2.ToReal(), Value1.ToReal())).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 		}
 		catch
 		{
@@ -111,7 +111,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 			Branch[Max(i - 3, 0)] = new((Value1 * Value2).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 		else
 		{
-			Branch[i].Extra = GetResultType(UnvType1, UnvType2);
+			Branch[i].Extra = GetResultType(UnvType1, UnvType2, Value1.ToString(true), Value2.ToString(true));
 			i++;
 			result = new String(Branch[i - 2].Info).Add(' ').AddRange(Branch[i].Info).Add(' ').AddRange(Branch[i - 1].Info);
 		}
@@ -134,7 +134,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 			Branch[Max(i - 3, 0)] = new((Value1 / Value2).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 		else
 		{
-			Branch[i].Extra = GetResultType(UnvType1, UnvType2);
+			Branch[i].Extra = GetResultType(UnvType1, UnvType2, Value1.ToString(true), Value2.ToString(true));
 			i++;
 			result = new String(Branch[i - 2].Info).Add(' ').AddRange(Branch[i].Info).Add(' ').AddRange(Branch[i - 1].Info);
 		}
@@ -157,7 +157,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 			Branch[Max(i - 3, 0)] = new((Value1 % Value2).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 		else
 		{
-			Branch[i].Extra = GetResultType(UnvType1, UnvType2);
+			Branch[i].Extra = GetResultType(UnvType1, UnvType2, Value1.ToString(true), Value2.ToString(true));
 			i++;
 			result = new String(Branch[i - 2].Info).Add(' ').AddRange(Branch[i].Info).Add(' ').AddRange(Branch[i - 1].Info);
 		}
@@ -173,7 +173,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 			Branch[Max(i - 3, 0)] = new((Value1 + Value2).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 			return result;
 		}
-		Branch[i].Extra = GetResultType(UnvType1, UnvType2);
+		Branch[i].Extra = GetResultType(UnvType1, UnvType2, Value1.ToString(true), Value2.ToString(true));
 		if (isString1 && isString2)
 		{
 			i++;
@@ -200,7 +200,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 			Branch[Max(i - 3, 0)] = new((Value1 - Value2).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 		else
 		{
-			Branch[i].Extra = GetResultType(UnvType1, UnvType2);
+			Branch[i].Extra = GetResultType(UnvType1, UnvType2, Value1.ToString(true), Value2.ToString(true));
 			i++;
 			result = new String(Branch[i - 2].Info).Add(' ').AddRange(Branch[i].Info).Add(' ').AddRange(Branch[i - 1].Info);
 		}
@@ -214,7 +214,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 			Branch[Max(i - 3, 0)] = new((Value1 >> Value2.ToInt()).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 		else
 		{
-			Branch[i].Extra = GetResultType(UnvType1, UnvType2);
+			Branch[i].Extra = GetResultType(UnvType1, UnvType2, Value1.ToString(true), Value2.ToString(true));
 			i++;
 			result = new String(Branch[i - 2].Info).Add(' ').AddRange(Branch[i].Info).Add(' ').AddRange(Branch[i - 1].Info);
 		}
@@ -228,7 +228,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 			Branch[Max(i - 3, 0)] = new((Value1 << Value2.ToInt()).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 		else
 		{
-			Branch[i].Extra = GetResultType(UnvType1, UnvType2);
+			Branch[i].Extra = GetResultType(UnvType1, UnvType2, Value1.ToString(true), Value2.ToString(true));
 			i++;
 			result = new String(Branch[i - 2].Info).Add(' ').AddRange(Branch[i].Info).Add(' ').AddRange(Branch[i - 1].Info);
 		}
@@ -239,7 +239,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 
 	private String ExprTranslateTimeDefault(ref int i, UniversalType UnvType1, UniversalType UnvType2)
 	{
-		Branch[i].Extra = GetResultType(UnvType1, UnvType2);
+		Branch[i].Extra = GetResultType(UnvType1, UnvType2, Value1.ToString(true), Value2.ToString(true));
 		return new String(Branch[Max(i - 3, 0)].Info).Add(' ').AddRange(Branch[i - 1].Info).Add(' ').AddRange(Branch[i++ - 1].Info);
 	}
 }

@@ -698,8 +698,8 @@ public partial class MainParsing : LexemStream
 		try
 		{
 			CreateObjectList(out var l);
-			var (s, arrayParameters) = (UniversalType)l![1];
-			_ExtraStack[_Stackpos - 1] = new GeneralMethodParameter(s, (String)l[2], arrayParameters, (ParameterAttributes)l[0], "null");
+			var UnvType = (UniversalType)l![1];
+			_ExtraStack[_Stackpos - 1] = new GeneralMethodParameter(UnvType, (String)l[2], (ParameterAttributes)l[0], "null");
 			var index = VariablesList.IndexOfKey(container);
 			if (index == -1)
 			{
@@ -707,7 +707,7 @@ public partial class MainParsing : LexemStream
 				index = VariablesList.IndexOfKey(container);
 			}
 			var list = VariablesList.Values[index];
-			list.Add((String)l[2], (s, arrayParameters));
+			list.Add((String)l[2], UnvType);
 			parameterValues.Add((parameterLists[parameterListsPos - 1].Container, parameterLists[parameterListsPos - 1].Name, ((GeneralMethodParameters?)_ExtraStack[_Stackpos - 2] ?? []).Length + 1, (int)l[3], pos));
 		}
 		catch
@@ -730,8 +730,8 @@ public partial class MainParsing : LexemStream
 		try
 		{
 			CreateObjectList(out var l);
-			var (s, arrayParameters) = (UniversalType)l![1];
-			_ExtraStack[_Stackpos - 1] = new GeneralMethodParameter(s, skipParameterName ? "" : (String)l[2], arrayParameters, (ParameterAttributes)l[0], _TBStack[_Stackpos]?[^1].Info ?? "no optional");
+			var UnvType = (UniversalType)l![1];
+			_ExtraStack[_Stackpos - 1] = new GeneralMethodParameter(UnvType, skipParameterName ? "" : (String)l[2], (ParameterAttributes)l[0], _TBStack[_Stackpos]?[^1].Info ?? "no optional");
 		}
 		catch
 		{
@@ -808,13 +808,13 @@ public partial class MainParsing : LexemStream
 			&& CreateVar(GetAllProperties(userDefinedType.BaseType.MainType), out var baseProperties).Length != 0)
 			foreach (var property in baseProperties)
 				if (property.Value.Attributes is PropertyAttributes.None or PropertyAttributes.Internal)
-					list[1].Parameters.Add(new(property.Value.UnvType.MainType, property.Key, property.Value.UnvType.ExtraTypes, ParameterAttributes.Optional, "null"));
+					list[1].Parameters.Add(new(property.Value.UnvType, property.Key, ParameterAttributes.Optional, "null"));
 		if (UserDefinedPropertiesList.TryGetValue(container, out propertiesList) && propertiesList.Length != 0 && UserDefinedPropertiesOrder.TryGetValue(container, out propertiesOrder) && propertiesOrder.Length != 0)
 		{
 			foreach (var propertyName in propertiesOrder)
 			{
 				if (propertiesList.TryGetValue(propertyName, out var property)/* && property.Attributes is PropertyAttributes.None or PropertyAttributes.Internal*/)
-					list[1].Parameters.Add(new(property.UnvType.MainType, propertyName, property.UnvType.ExtraTypes, ParameterAttributes.Optional, "null"));
+					list[1].Parameters.Add(new(property.UnvType, propertyName, ParameterAttributes.Optional, "null"));
 			}
 			increment++;
 		}
@@ -2367,7 +2367,7 @@ public partial class MainParsing : LexemStream
 			}
 			GeneralArrayParameters template = [];
 			for (var i = 0; i < netType.GetGenericArguments().Length; i++)
-				template.Add((false, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), ""));
+				template.Add(new(false, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), ""));
 			ParseTypeChain(ref pos, end, mainContainer, template, out var innerArrayParameters, ref errorsList, "associativeArray");
 			UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), innerArrayParameters);
 			return EndParseType2(ref pos, end, ref UnvType, ref errorsList);
@@ -2691,7 +2691,7 @@ public partial class MainParsing : LexemStream
 	private bool ParseTupleType(ref int pos, int end, BlockStack mainContainer, out UniversalType UnvType, ref List<String>? errorsList)
 	{
 		pos++;
-		if (ParseTypeChain(ref pos, end, mainContainer, [(true, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), "")], out var innerArrayParameters, ref errorsList, "tuple") == false)
+		if (ParseTypeChain(ref pos, end, mainContainer, [new(true, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), "")], out var innerArrayParameters, ref errorsList, "tuple") == false)
 		{
 			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
 			return false;
@@ -3021,7 +3021,7 @@ public partial class MainParsing : LexemStream
 			block = new(BlockType.Class, @string, 1);
 			return true;
 		}
-		else if (PublicFunctionExists(@string, out _) || MethodExists((parentContainer, NoGeneralExtraTypes), @string, out _) || (parentContainer.Length == 0 || recursion) && UserDefinedFunctionExists(parentContainer, @string, out _))
+		else if (MethodExists((parentContainer, NoGeneralExtraTypes), @string, out _) || (parentContainer.Length == 0 || recursion) && UserDefinedFunctionExists(parentContainer, @string, out _))
 		{
 			block = new(BlockType.Function, @string, 1);
 			return true;

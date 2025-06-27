@@ -126,7 +126,7 @@ public struct Universal
 		String = [];
 		NextList = nextList;
 		Object = null;
-		InnerType = nextList.Length == 0 ? GetListType(NullType) : GetListType(nextList.Skip(1).Progression(nextList[0].InnerType, (x, y) => GetResultType(x, y.InnerType)));
+		InnerType = nextList.Length == 0 ? GetListType(NullType) : GetListType(nextList.Skip(1).Progression(nextList[0].InnerType, (x, y) => GetResultType(x, y.InnerType, "default!", "default!")));
 		OuterType = null;
 		Fixed = false;
 	}
@@ -138,7 +138,7 @@ public struct Universal
 		String = [];
 		NextList = null;
 		Object = list;
-		InnerType = BoolListType;
+		InnerType = BitListType;
 		OuterType = null;
 		Fixed = false;
 	}
@@ -411,13 +411,13 @@ public struct Universal
 
 	public static Universal Eq(Universal x, Universal y)
 	{
-		var result_type = GetResultType(x.InnerType, y.InnerType);
+		var result_type = GetResultType(x.InnerType, y.InnerType, x.ToString(true), y.ToString(true));
 		return x.ToType(result_type, x.Fixed) == y.ToType(result_type, y.Fixed);
 	}
 
 	public static Universal Neq(Universal x, Universal y)
 	{
-		var result_type = GetResultType(x.InnerType, y.InnerType);
+		var result_type = GetResultType(x.InnerType, y.InnerType, x.ToString(true), y.ToString(true));
 		return x.ToType(result_type, x.Fixed) != y.ToType(result_type, y.Fixed);
 	}
 

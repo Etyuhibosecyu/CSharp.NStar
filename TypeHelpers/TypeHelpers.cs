@@ -11,8 +11,8 @@ global using static System.Math;
 global using String = NStar.Core.String;
 using NStar.ParallelHS;
 using NStar.SortedSets;
-using System.Text;
 using NStar.TreeSets;
+using System.Text;
 
 namespace CSharp.NStar;
 
@@ -110,7 +110,7 @@ public static class TypeHelpers
 		}
 	}
 
-	public static UniversalType GetResultType(UniversalType type1, UniversalType type2)
+	public static UniversalType GetResultType(UniversalType type1, UniversalType type2, String value1, String value2)
 	{
 		try
 		{
@@ -121,9 +121,9 @@ public static class TypeHelpers
 				var left_type = type1.MainType.Peek().Name;
 				var right_type = type2.MainType.Peek().Name;
 				if (type1.ExtraTypes.Length == 0 && type2.ExtraTypes.Length == 0)
-					return GetPrimitiveType(GetPrimitiveResultType(left_type, right_type));
+					return GetPrimitiveType(GetPrimitiveResultType(left_type, right_type, value1, value2));
 				else if (left_type == "list" || right_type == "list")
-					return GetListResultType(type1, type2, left_type, right_type);
+					return GetListResultType(type1, type2, left_type, right_type, value1, value2);
 				else
 					return NullType;
 			}
@@ -136,8 +136,18 @@ public static class TypeHelpers
 		}
 	}
 
-	private static String GetPrimitiveResultType(String left_type, String right_type)
+	private static String GetPrimitiveResultType(String left_type, String right_type, String value1, String value2)
 	{
+		if (left_type == "bool" && right_type.ToString() is "byte"
+			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex")
+			value1.Insert(0, '(').AddRange(" ? 1 : 0)");
+		else if (right_type == "bool" && left_type.ToString() is "byte"
+			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex")
+			value2.Insert(0, '(').AddRange(" ? 1 : 0)");
 		if (left_type == "dynamic" || right_type == "dynamic")
 			return "dynamic";
 		else if (left_type == "string" || right_type == "string")
@@ -157,7 +167,9 @@ public static class TypeHelpers
 		}
 		else if (left_type == "unsigned long long" || right_type == "unsigned long long")
 		{
-			if (new List<String> { "short int", "int", "long int", "DateTime", "TimeSpan", "real", "complex" }.Contains(left_type) || new List<String> { "short int", "int", "long int", "DateTime", "TimeSpan", "real", "complex" }.Contains(right_type))
+			if (left_type.ToString() is "short int" or "int" or "long int" or "DateTime" or "TimeSpan" or "real" or "complex"
+				|| right_type.ToString() is "short int" or "int" or "long int"
+				or "DateTime" or "TimeSpan" or "real" or "complex")
 				return "long long";
 			else
 				return "unsigned long long";
@@ -168,7 +180,8 @@ public static class TypeHelpers
 			return "real";
 		else if (left_type == "unsigned long int" || right_type == "unsigned long int")
 		{
-			if (new List<String> { "short int", "int", "long int", "DateTime", "TimeSpan" }.Contains(left_type) || new List<String> { "short int", "int", "long int", "DateTime", "TimeSpan" }.Contains(right_type))
+			if (left_type.ToString() is "short int" or "int" or "long int" or "DateTime" or "TimeSpan"
+				|| right_type.ToString() is "short int" or "int" or "long int" or "DateTime" or "TimeSpan")
 				return "long long";
 			else
 				return "unsigned long int";
@@ -223,14 +236,15 @@ public static class TypeHelpers
 			return "null";
 	}
 
-	private static UniversalType GetListResultType(UniversalType type1, UniversalType type2, String left_type, String right_type)
+	private static UniversalType GetListResultType(UniversalType type1, UniversalType type2,
+		String left_type, String right_type, String value1, String value2)
 	{
 		if (CollectionTypesList.Contains(left_type) || CollectionTypesList.Contains(right_type))
-			return GetListType(GetResultType(GetSubtype(type1), GetSubtype(type2)));
+			return GetListType(GetResultType(GetSubtype(type1), GetSubtype(type2), value1, value2));
 		else if (left_type == "list")
-			return GetListType(GetResultType(GetSubtype(type1), (right_type == "list") ? GetSubtype(type2) : type2));
+			return GetListType(GetResultType(GetSubtype(type1), (right_type == "list") ? GetSubtype(type2) : type2, value1, value2));
 		else
-			return GetListType(GetResultType(type1, GetSubtype(type2)));
+			return GetListType(GetResultType(type1, GetSubtype(type2), value1, value2));
 	}
 
 	public static UniversalType PartialTypeToGeneralType(String mainType, List<String> extraTypes) => (GetBlockStack(mainType), GetGeneralExtraTypes(extraTypes));

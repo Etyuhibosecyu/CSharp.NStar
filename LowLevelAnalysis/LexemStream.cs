@@ -341,7 +341,7 @@ public class LexemStream
 			UserDefinedFunctionsList.TryAdd(container, []);
 			var list = UserDefinedFunctionsList[container];
 			list.Add(name, []);
-			list[name].Add(([], (new([new(BlockType.Primitive, "???", 1)]), NoGeneralExtraTypes), attributes, []));
+			list[name].Add(new([], (new([new(BlockType.Primitive, "???", 1)]), NoGeneralExtraTypes), attributes, []));
 			blocksToJump.Add((container, "Function", name, blockStart, pos));
 		});
 	}
