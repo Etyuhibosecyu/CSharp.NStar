@@ -1,18 +1,83 @@
-﻿using System.Collections;
+﻿using Mpir.NET;
+using System.Collections;
 using System.Text;
 
 namespace CSharp.NStar;
 
 public static class DeclaredConstructionMappings
 {
-	public static Type TypeMapping(UniversalTypeOrValue UnvType) =>
-		UnvType.MainType.IsValue || !PrimitiveTypesList.TryGetValue(UnvType.MainType.Type.ToShortString(), out var innerType)
-		&& !ExtraTypesList.TryGetValue((CreateVar(SplitType(UnvType.MainType.Type), out var split).Container.ToShortString(),
-		split.Type), out innerType) && (UnvType.MainType.Type.Length != 1
-		|| ExplicitlyConnectedNamespacesList.FindIndex(y => ExtraTypesList.TryGetValue((y,
-		UnvType.MainType.Type.ToShortString()), out innerType)) < 0) ? throw new InvalidOperationException()
-		: innerType.ContainsGenericParameters
-		? innerType.MakeGenericType(UnvType.ExtraTypes.ToArray(x => TypeMapping(x.Value))) : innerType;
+	public static Type TypeMapping(UniversalTypeOrValue UnvType)
+	{
+		if (UnvType.MainType.IsValue)
+			throw new InvalidOperationException();
+		if (new BlockStackEComparer().Equals(UnvType.MainType.Type, FuncBlockStack))
+		{
+			List<Type> funcComponents = [];
+			var returnType = TypeMapping(new(UnvType.ExtraTypes[0].MainType.Type, UnvType.ExtraTypes[0].ExtraTypes));
+			for (var i = 1; i < UnvType.ExtraTypes.Length; i++)
+			{
+				if (UnvType.ExtraTypes[i].MainType.IsValue)
+					throw new InvalidOperationException();
+				funcComponents.Add(TypeMapping(new(UnvType.ExtraTypes[i].MainType.Type, UnvType.ExtraTypes[i].ExtraTypes)));
+			}
+			return ConstructFuncType(returnType, funcComponents.GetSlice());
+		}
+		if (!TypeEqualsToPrimitive(new(UnvType.MainType.Type, UnvType.ExtraTypes), "tuple", false))
+		{
+			if (!TypeExists(SplitType(UnvType.MainType.Type), out var netType))
+				throw new InvalidOperationException();
+			else if (netType.ContainsGenericParameters)
+				return netType.MakeGenericType(UnvType.ExtraTypes.ToArray(x => TypeMapping(x.Value)));
+			else
+				return netType;
+		}
+		if (UnvType.ExtraTypes.Length == 0)
+			return typeof(void);
+		List<Type> tupleComponents = [];
+		var first = TypeMapping(new(UnvType.ExtraTypes[0].MainType.Type, UnvType.ExtraTypes[0].ExtraTypes));
+		if (UnvType.ExtraTypes.Length == 1)
+			return first;
+		var innerResult = first;
+		for (var i = 1; i < UnvType.ExtraTypes.Length; i++)
+		{
+			if (!UnvType.ExtraTypes[i].MainType.IsValue)
+			{
+				tupleComponents.Add(innerResult);
+				first = TypeMapping(new(UnvType.ExtraTypes[i].MainType.Type, UnvType.ExtraTypes[i].ExtraTypes));
+				continue;
+			}
+			innerResult = ConstructTupleType(RedStarLinq.FillArray(innerResult,
+				int.TryParse(UnvType.ExtraTypes[i].MainType.Value.ToString(), out var n) ? n : 1).GetSlice());
+		}
+		return ConstructTupleType(tupleComponents.Add(innerResult).GetSlice());
+	}
+
+	public static Type ConstructFuncType(Type returnType, Slice<Type> netTypes) => netTypes.Length switch
+	{
+		0 => typeof(Func<>).MakeGenericType(returnType),
+		1 => typeof(Func<,>).MakeGenericType(netTypes[0], returnType),
+		2 => typeof(Func<,,>).MakeGenericType(netTypes[0], netTypes[1], returnType),
+		3 => typeof(Func<,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], returnType),
+		4 => typeof(Func<,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], returnType),
+		5 => typeof(Func<,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], returnType),
+		6 => typeof(Func<,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], returnType),
+		7 => typeof(Func<,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], returnType),
+		8 => typeof(Func<,,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], netTypes[7], returnType),
+		_ => throw new InvalidOperationException(),
+	};
+
+	public static Type ConstructTupleType(Slice<Type> netTypes) => netTypes.Length switch
+	{
+		0 => throw new InvalidOperationException(),
+		1 => typeof(ValueTuple<>).MakeGenericType(netTypes[0]),
+		2 => typeof(ValueTuple<,>).MakeGenericType(netTypes[0], netTypes[1]),
+		3 => typeof(ValueTuple<,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2]),
+		4 => typeof(ValueTuple<,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3]),
+		5 => typeof(ValueTuple<,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4]),
+		6 => typeof(ValueTuple<,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5]),
+		7 => typeof(ValueTuple<,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6]),
+		_ => typeof(ValueTuple<,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], ConstructTupleType(netTypes[7..])),
+	};
 
 	public static UniversalType TypeMappingBack(Type netType, Type[] genericArguments, GeneralExtraTypes extraTypes)
 	{
@@ -39,6 +104,7 @@ public static class DeclaredConstructionMappings
 				continue;
 			innerTypes.Add(TypeMapping(extraTypes[foundIndex]));
 		}
+		var oldNetType = netType;
 		if (netType.IsGenericType)
 			netType = netType.GetGenericTypeDefinition();
 		l1:
@@ -68,8 +134,82 @@ public static class DeclaredConstructionMappings
 			innerTypes.Clear();
 			goto l1;
 		}
-		else
+		else if (!typeof(ITuple).IsAssignableFrom(oldNetType))
 			throw new InvalidOperationException();
+		GeneralExtraTypes result = [];
+		var tupleTypes = new Queue<Type>();
+		tupleTypes.Enqueue(oldNetType);
+		while (tupleTypes.Length != 0 && tupleTypes.Dequeue() is Type tupleType)
+			foreach (var field in tupleType.GetFields())
+				if (field.Name == "Rest")
+					tupleTypes.Enqueue(tupleType);
+				else
+					result.Add(TypeMappingBack(field.FieldType, genericArguments, extraTypes));
+		return new(TupleBlockStack, result);
+	}
+
+	public static bool IsAssignableFromExt(this Type destination, Type source) =>
+		destination.IsAssignableFrom(source) || destination == typeof(MpzT) && new[] { typeof(byte), typeof(short),
+		typeof(ushort), typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(MpzT) }.Contains(source)
+		|| destination == typeof(long) && new[] { typeof(byte),
+		typeof(short), typeof(ushort), typeof(int), typeof(uint), typeof(long) }.Contains(source)
+		|| destination == typeof(int) && new[] { typeof(byte), typeof(short), typeof(ushort), typeof(int) }.Contains(source)
+		|| destination == typeof(short) && new[] { typeof(byte), typeof(short) }.Contains(source)
+		|| destination == typeof(ulong) && new[] { typeof(byte), typeof(ushort), typeof(uint), typeof(ulong) }.Contains(source)
+		|| destination == typeof(uint) && new[] { typeof(byte), typeof(ushort), typeof(uint) }.Contains(source)
+		|| destination == typeof(ushort) && new[] { typeof(byte), typeof(ushort) }.Contains(source);
+
+	public static UniversalType ReplaceExtraType(UniversalType originalType, String extraType, UniversalType typeToInsert)
+	{
+		if (originalType.MainType.Length == 1 && originalType.MainType.Peek().BlockType == BlockType.Extra
+			&& originalType.MainType.Peek().Name == extraType && originalType.ExtraTypes.Length == 0)
+			return typeToInsert;
+		else
+		{
+			return new(originalType.MainType, [.. originalType.ExtraTypes.Convert(x =>
+				new G.KeyValuePair<String, UniversalTypeOrValue>(x.Key, x.Value.MainType.IsValue
+				? new UniversalTypeOrValue((TypeOrValue)x.Value.MainType.Value, [])
+				: ReplaceExtraType(new(x.Value.MainType.Type, x.Value.ExtraTypes), extraType, typeToInsert)))]);
+		}
+	}
+
+	public static Type ReplaceExtraNetType(Type originalType, (Type ExtraType, Type TypeToInsert) pattern)
+	{
+		if (originalType.Equals(pattern.ExtraType))
+			return pattern.TypeToInsert;
+		else
+		{
+			var genericArguments = originalType.GetGenericArguments();
+			if (genericArguments.Length == 0)
+				return originalType;
+			else
+				return originalType.GetGenericTypeDefinition().MakeGenericType([.. genericArguments.Convert(x =>
+				ReplaceExtraNetType(x, pattern))]);
+		}
+	}
+
+	public static List<(Type ExtraType, Type TypeToInsert)> GetReplacementPatterns(Type[] genericArguments,
+		Type[] parameterTypes)
+	{
+		var length = Min(genericArguments.Length, parameterTypes.Length);
+		List<(Type ExtraType, Type TypeToInsert)> result = [];
+		for (var i = 0; i < length; i++)
+		{
+			var genericArgument = genericArguments[i];
+			var parameterType = parameterTypes[i];
+			if (!parameterType.IsGenericType)
+				continue;
+			var parameterGenericArguments = parameterType.GetGenericTypeDefinition().GetGenericArguments();
+			var index = parameterGenericArguments.FindIndex(x => x.Name == genericArgument.Name);
+			if (index != -1)
+			{
+				result.Add((genericArgument, parameterType.GenericTypeArguments[index]));
+				continue;
+			}
+			result.AddRange(GetReplacementPatterns(genericArgument.GetGenericArguments(),
+				parameterType.GetGenericArguments()));
+		}
+		return result;
 	}
 
 	public static String FunctionMapping(String function, List<String>? parameters)

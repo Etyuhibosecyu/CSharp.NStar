@@ -185,7 +185,8 @@ public partial class MainParsing : LexemStream
 		"Return2" => Return2,
 		"Expr2" => Expr2,
 		"List2" => List2,
-		"CommaExpr2" or "AssignedExpr2" or "PowExpr2" or "UnaryExpr4" or "PostfixExpr4" => CommaExpr3_AssignedExpr2_PowExpr2_UnaryExpr4_PostfixExpr4,
+		nameof(CommaExpr2) => CommaExpr2,
+		"CommaExpr3" or "AssignedExpr2" or "PowExpr2" or "UnaryExpr4" or "PostfixExpr4" => CommaExpr3_AssignedExpr2_PowExpr2_UnaryExpr4_PostfixExpr4,
 		"SublambdaExpr2" => SublambdaExpr2,
 		"SublambdaExpr3" => SublambdaExpr3,
 		"QuestionExpr2" => QuestionExpr2,
@@ -1509,9 +1510,20 @@ public partial class MainParsing : LexemStream
 	private bool CommaExpr2()
 	{
 		if (success)
-			return EndWithAssigning(true);
-		else
+		{
+			if (pos < end && IsLexemOperator(lexems[pos], "=>"))
+			{
+				pos++;
+				_TaskStack[_Stackpos] = "CommaExpr3";
+				_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
+				_TBStack[_Stackpos]?.Add(new(lexems[pos - 1].String, pos - 1, pos, container));
+			}
+			else
+				return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
 			return IncreaseStack("SublambdaExpr", currentTask: "CommaExpr3", pos_: pos, applyPos: true, applyCurrentTask: true);
+		}
+		else
+			return _SuccessStack[_Stackpos] = false;
 	}
 
 	private bool CommaExpr3_AssignedExpr2_PowExpr2_UnaryExpr4_PostfixExpr4() => success ? EndWithAssigning(true) : (_SuccessStack[_Stackpos] = false);
@@ -3021,7 +3033,7 @@ public partial class MainParsing : LexemStream
 			block = new(BlockType.Class, @string, 1);
 			return true;
 		}
-		else if (MethodExists((parentContainer, NoGeneralExtraTypes), @string, out _) || (parentContainer.Length == 0 || recursion) && UserDefinedFunctionExists(parentContainer, @string, out _))
+		else if (MethodExists((parentContainer, NoGeneralExtraTypes), @string) || (parentContainer.Length == 0 || recursion) && UserDefinedFunctionExists(parentContainer, @string))
 		{
 			block = new(BlockType.Function, @string, 1);
 			return true;

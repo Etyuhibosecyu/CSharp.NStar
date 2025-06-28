@@ -329,7 +329,8 @@ public static class TypeHelpers
 				destExpr = srcExpr == null ? null : DestinationDepth == 0 ? ((String)"(").AddRange(srcExpr).AddRange(").ToString()") : srcExpr;
 				return true;
 			}
-			else if (SourceDepth <= DestinationDepth && TypesAreCompatible(SourceLeafType, DestinationLeafType, out warning, null, out _, out _) && !warning)
+			else if (SourceDepth <= DestinationDepth
+				&& TypesAreCompatible(SourceLeafType, DestinationLeafType, out warning, null, out _, out _) && !warning)
 			{
 				if (srcExpr == null)
 					destExpr = null;
@@ -337,6 +338,19 @@ public static class TypeHelpers
 				{
 					srcExpr.Insert(0, ((String)nameof(TypeHelpers)).Add('.').AddRange(nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth));
 					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth));
+					destExpr = srcExpr;
+				}
+				return true;
+			}
+			else if (SourceDepth <= DestinationDepth + 1
+				&& TypesAreEqual(SourceLeafType, StringType) && TypesAreEqual(DestinationLeafType, CharType))
+			{
+				if (srcExpr == null)
+					destExpr = null;
+				else
+				{
+					srcExpr.Insert(0, ((String)nameof(TypeHelpers)).Add('.').AddRange(nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth - 1));
+					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth - 1));
 					destExpr = srcExpr;
 				}
 				return true;

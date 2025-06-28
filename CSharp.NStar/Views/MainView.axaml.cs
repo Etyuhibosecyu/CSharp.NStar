@@ -1079,7 +1079,20 @@ return a;
 	return Truncate(n * n);
 }
 return Fill(F(3.14159) >= 10, 1000);
-", ('(' + string.Join(", ", RedStarLinq.FillArray("false", 1000)) + ')', "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
+", ('(' + string.Join(", ", RedStarLinq.FillArray("false", 1000)) + ')', "Ошибок нет") }, { @"using System;
+list() int list = (2, 2, 3, 1, 1, 2, 1);
+return RedStarLinqExtras.FrequencyTable(list);
+", (@"((2, 3), (3, 1), (1, 3))", "Ошибок нет") }, { @"using System;
+list() int list = (2, 2, 3, 1, 1, 2, 1);
+return RedStarLinqExtras.GroupIndexes(list);
+", (@"((0, 1, 5), (2), (3, 4, 6))", "Ошибок нет") }, { @"using System;
+real Function Reciproc(int x)
+{
+	return 1r / x;
+}
+list() int list = (2, 2, 3, 1, 1, 2, 1);
+return RedStarLinqExtras.GroupIndexes(list, Reciproc);
+", (@"((0, 1, 5), (2), (3, 4, 6))", "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
 ", (@"0", @"Error in line 1 at position 26: too large number; long long type is under development
 ") }, { @"return ExecuteString(""return args[1];"", Q());
 ", ("""
