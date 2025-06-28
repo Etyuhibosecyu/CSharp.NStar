@@ -248,7 +248,20 @@ loop
 return a;
 ", ("12", "Ошибок нет") }, { @"list(3) int a = (((1, 2, 3), (4, 5, 6), (7, 8, 9)), ((10, 11, 12), (13, 14, 15), (16, 17, 18)), ((19, 20, 21), (22, 23, 24), (25, 26, 27)));
 return a[1, 2, 3];
-", ("6", "Ошибок нет") }, { @"bool bool=bool;
+", ("6", "Ошибок нет") }, { @"list() (string, int, real) a = Fill((""A"", 77777, 3.14159), 3);
+list() (list() (string, int, real), list() (string, int, real),
+	list() (string, int, real)) b = ((a, a, a), (a, a, a), (a, a, a));
+list() (list() (list() (string, int, real), list() (string, int, real), list() (string, int, real)),
+	list() (list() (string, int, real), list() (string, int, real), list() (string, int, real)),
+	list() (list() (string, int, real), list() (string, int, real), list() (string, int, real))) c
+	= ((b, b, b), (b, b, b), (b, b, b));
+return c[1, 2, 3];
+", ("""((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)))""", "Ошибок нет") },
+		{ @"using System.Collections;
+ListHashSet[string] hs = new ListHashSet[string](3, ""A"", ""B"", ""C"");
+hs.Add(""B"");
+return hs[2];
+", (@"""B""", "Ошибок нет") }, { @"bool bool=bool;
 ", ("null", @"Error in line 1 at position 10: one cannot use the local variable ""bool"" before it is declared or inside such declaration in line 1 at position 0
 ") }, { @"bool Function One()
 {

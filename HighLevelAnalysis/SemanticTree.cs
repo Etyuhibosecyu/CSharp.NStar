@@ -966,19 +966,18 @@ public sealed class SemanticTree
 		{
 			if (branch[index - 1].Extra is not UniversalType CollectionUnvType)
 				return [];
-			if (!TypeEqualsToPrimitive(CollectionUnvType, "tuple", false))
-			{
-				foreach (var x in branch[index].Elements)
-				{
-					result.AddRange("[(").AddRange(ParseAction(x.Info)(x, out var innerErrorsList)).AddRange(TypeEqualsToPrimitive(CollectionUnvType, "list", false) ? ") - 1]" : ")]");
-					AddRange(ref errorsList, innerErrorsList);
-				}
-				branch.Extra = GetSubtype(CollectionUnvType, branch[index].Length);
-				return result;
-			}
 			foreach (var x in branch[index].Elements)
 			{
-				if (!int.TryParse(ParseAction(x.Info)(x, out var innerErrorsList).ToString(), out var value))
+				List<String>? innerErrorsList;
+				if (!TypeEqualsToPrimitive(CollectionUnvType, "tuple", false))
+				{
+					var trivialIndex = IsTrivialIndexType(CollectionUnvType);
+					result.AddRange("[(").AddRange(ParseAction(x.Info)(x, out innerErrorsList)).AddRange(trivialIndex ? ") - 1]" : ")]");
+					AddRange(ref errorsList, innerErrorsList);
+					CollectionUnvType = GetSubtype(CollectionUnvType);
+					continue;
+				}
+				if (!int.TryParse(ParseAction(x.Info)(x, out innerErrorsList).ToString(), out var value))
 				{
 					var otherPos = branch[index].Pos;
 					Add(ref errorsList, "Error in line " + lexems[otherPos].LineN.ToString() + " at position " + lexems[otherPos].Pos.ToString() + ": at present time index in the tuple must be compilation-time constant");
@@ -1018,6 +1017,30 @@ public sealed class SemanticTree
 		}
 		Debug.Assert(branch.Extra != null);
 		return result;
+		static bool IsTrivialIndexType(UniversalType CollectionUnvType)
+		{
+			if (TypeEqualsToPrimitive(CollectionUnvType, "list", false))
+				return true;
+			if (CollectionUnvType.ExtraTypes.Length == 1 && TypesAreCompatible(CollectionUnvType,
+				new(new([new(BlockType.Namespace, "System", 0), new(BlockType.Namespace, "Collections", 0),
+				new(BlockType.Interface, nameof(G.IEnumerable<bool>), 0)]), CollectionUnvType.ExtraTypes),
+				out var warning, null, out _, out _) && !warning)
+				return true;
+			if (CollectionUnvType.ExtraTypes.Length != 2)
+				return false;
+			if (!new BlockStackEComparer().Equals(CollectionUnvType.MainType, CollectionUnvType.ExtraTypes[1].MainType.Type))
+				return false;
+			if (CollectionUnvType.ExtraTypes[1].ExtraTypes.Length != 1)
+				return false;
+			if (!TypesAreEqual(new(CollectionUnvType.ExtraTypes[0].MainType.Type, CollectionUnvType.ExtraTypes[0].ExtraTypes),
+				new(CollectionUnvType.ExtraTypes[1].ExtraTypes[0].MainType.Type,
+				CollectionUnvType.ExtraTypes[1].ExtraTypes[0].ExtraTypes)))
+				return false;
+			return TypesAreCompatible(CollectionUnvType,
+				new(new([new(BlockType.Namespace, "System", 0), new(BlockType.Namespace, "Collections", 0),
+				new(BlockType.Interface, nameof(BaseIndexable<bool>), 0)]), CollectionUnvType.ExtraTypes),
+				out warning, null, out _, out _) && !warning;
+		}
 	}
 
 	private bool? HypernameMethod(TreeBranch branch, String s, List<String> innerResults, ref object? refExtra, ref List<String>? errorsList, int prevIndex, BlockStack ContainerMainType, GeneralMethodOverload? function)

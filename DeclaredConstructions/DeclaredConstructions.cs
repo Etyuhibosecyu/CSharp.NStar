@@ -699,7 +699,7 @@ public readonly record struct UniversalType(BlockStack MainType, GeneralExtraTyp
 			var repeats = 1;
 			for (var i = 1; i < ExtraTypes.Length; i++)
 			{
-				var current = (ExtraTypes[i].MainType.Type, ExtraTypes[i].ExtraTypes);
+				var current = new UniversalType(ExtraTypes[i].MainType.Type, ExtraTypes[i].ExtraTypes);
 				if (TypesAreEqual(prev, current))
 				{
 					repeats++;

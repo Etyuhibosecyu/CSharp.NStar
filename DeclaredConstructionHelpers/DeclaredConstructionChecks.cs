@@ -376,12 +376,13 @@ public static class DeclaredConstructionChecks
 	{
 		if (PublicFunctionsList.TryGetValue(name, out var functionOverload))
 		{
-			function = new([], PartialTypeToGeneralType(functionOverload.ExtraTypes.Contains(functionOverload.ReturnType)
-				? parameterTypes[functionOverload.Parameters.FindIndex(x =>
-				functionOverload.ReturnType == x.Type || x.ExtraTypes.Contains(functionOverload.ReturnType))].ToString()
-				: functionOverload.ReturnType, functionOverload.ReturnExtraTypes.ToList(t =>
-				functionOverload.ExtraTypes.Contains(t) ? parameterTypes[functionOverload.Parameters.FindIndex(x =>
-				t == x.Type || x.ExtraTypes.Contains(t))].ToString() : t)),
+			BlockStack? mainType;
+			if (functionOverload.ExtraTypes.Contains(functionOverload.ReturnType))
+				mainType = FindParameter(functionOverload.ReturnType).MainType;
+			else
+				mainType = GetBlockStack(functionOverload.ReturnType);
+			GeneralExtraTypes extraTypes = new(functionOverload.ReturnExtraTypes.ToList(GetUniversalType));
+			function = new([], new(mainType, extraTypes),
 				functionOverload.Attributes, [.. functionOverload.Parameters.Convert((x, index) =>
 				new GeneralMethodParameter(functionOverload.ExtraTypes.Contains(x.Type)
 				? parameterTypes[index] : PartialTypeToGeneralType(x.Type, x.ExtraTypes),
@@ -417,6 +418,10 @@ public static class DeclaredConstructionChecks
 		}
 		user = true;
 		return true;
+		UniversalType FindParameter(String typeName) => parameterTypes[functionOverload.Parameters.FindIndex(x =>
+			typeName == x.Type || x.ExtraTypes.Contains(typeName))];
+		UniversalTypeOrValue GetUniversalType(String typeName) => functionOverload.ExtraTypes.Contains(typeName)
+			? (UniversalTypeOrValue)FindParameter(typeName) : new(GetBlockStack(typeName), []);
 	}
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name)
