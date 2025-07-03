@@ -90,9 +90,10 @@ public static class DeclaredConstructionMappings
 		var typeGenericArguments = netType.GetGenericArguments();
 		if (netType.Name.Contains("Func"))
 		{
-			return new(FuncBlockStack, new([.. typeGenericArguments.GetSlice(..^1).Convert((x, index) =>
-				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes)),
-				typeGenericArguments[^1].Wrap(x => TypeMappingBack(x, genericArguments, extraTypes))]));
+			return new(FuncBlockStack, new([typeGenericArguments[^1].Wrap(x =>
+			TypeMappingBack(x, genericArguments, extraTypes)),
+				.. typeGenericArguments.GetSlice(..^1).Convert((x, index) =>
+				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))]));
 		}
 		int foundIndex;
 		if ((foundIndex = genericArguments.FindIndex(x => x.Name == netType.Name)) >= 0)

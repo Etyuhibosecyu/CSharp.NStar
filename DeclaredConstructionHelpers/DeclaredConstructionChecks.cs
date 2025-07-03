@@ -12,6 +12,7 @@ global using static CSharp.NStar.TypeHelpers;
 global using static NStar.Core.Extents;
 global using static System.Math;
 global using String = NStar.Core.String;
+using NStar.MathLib.Extras;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
@@ -289,65 +290,76 @@ public static class DeclaredConstructionChecks
 	}
 
 	public static bool MethodExists(UniversalType container, String name, List<UniversalType> callParameterTypes,
-		[MaybeNullWhen(false)] out GeneralMethodOverload? function)
+		[MaybeNullWhen(false)] out GeneralMethodOverloads functions)
 	{
 		var containerType = SplitType(container.MainType);
 		if (!TypeExists(containerType, out var netType))
 		{
-			function = null;
+			functions = [];
 			return false;
 		}
 		var callParameterNetTypes = callParameterTypes.ToArray(x => TypeMapping(x));
-		if (!(netType.TryWrap(x => x.GetMethod(name.ToString(), callParameterNetTypes), out var method) && method != null))
-			method = netType.GetMethods().Find(x => IsValidMethod(name, x, callParameterNetTypes));
-		if (method == null)
+		var validity = int.MinValue;
+		var methods = netType.GetMethods().FindAllMax(x =>
 		{
-			function = null;
+			var currentValidity = GetMethodValidity(name, x, callParameterNetTypes);
+			if (currentValidity > validity)
+				validity = currentValidity;
+			return currentValidity;
+		});
+		functions = [];
+		if (validity < 0)
 			return false;
-		}
-		var genericArguments = method.GetGenericArguments();
-		var patterns = GetReplacementPatterns(genericArguments, callParameterNetTypes);
-		var returnNetType = method.ReturnType;
-		var parameters = method.GetParameters();
-		var functionParameterTypes = parameters.ToArray(x => x.ParameterType);
-		for (var i = 0; i < patterns.Length; i++)
+		foreach (var method in methods)
 		{
-			returnNetType = ReplaceExtraNetType(returnNetType, patterns[i]);
-			for (var j = 0; j < functionParameterTypes.Length; j++)
-				functionParameterTypes[j] = ReplaceExtraNetType(functionParameterTypes[j], patterns[i]);
+			var genericArguments = method.GetGenericArguments();
+			var patterns = GetReplacementPatterns(genericArguments, callParameterNetTypes);
+			var returnNetType = method.ReturnType;
+			var parameters = method.GetParameters();
+			var functionParameterTypes = parameters.ToArray(x => x.ParameterType);
+			for (var i = 0; i < patterns.Length; i++)
+			{
+				returnNetType = ReplaceExtraNetType(returnNetType, patterns[i]);
+				for (var j = 0; j < functionParameterTypes.Length; j++)
+					functionParameterTypes[j] = ReplaceExtraNetType(functionParameterTypes[j], patterns[i]);
+			}
+			functions.Add(new([], TypeMappingBack(returnNetType, netType.GetGenericArguments(), container.ExtraTypes),
+				(method.IsAbstract ? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
+				new(functionParameterTypes.ToList((x, index) => new GeneralMethodParameter(TypeMappingBack(x,
+				netType.GetGenericArguments(), container.ExtraTypes), parameters[index].Name ?? "x",
+				(parameters[index].IsOptional ? ParameterAttributes.Optional : 0)
+				| (parameters[index].ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
+				| (parameters[index].IsOut ? ParameterAttributes.Out : 0),
+				parameters[index].DefaultValue?.ToString() ?? "null")))));
 		}
-		function = new([], TypeMappingBack(returnNetType, netType.GetGenericArguments(), container.ExtraTypes),
-			(method.IsAbstract ? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
-			new(functionParameterTypes.ToList((x, index) => new GeneralMethodParameter(TypeMappingBack(x,
-			netType.GetGenericArguments(), container.ExtraTypes), parameters[index].Name ?? "x",
-			(parameters[index].IsOptional ? ParameterAttributes.Optional : 0)
-			| (parameters[index].ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
-			| (parameters[index].IsOut ? ParameterAttributes.Out : 0),
-			parameters[index].DefaultValue?.ToString() ?? "null"))));
 		return true;
 	}
 
-	private static bool IsValidMethod(String name, MethodInfo x, Type[] callParameterNetTypes)
+	private static int GetMethodValidity(String name, MethodInfo x, Type[] callParameterNetTypes)
 	{
 		if (x.Name != name.ToString())
-			return false;
+			return int.MinValue;
+		var obsolete = x.GetCustomAttribute<ObsoleteAttribute>(false);
+		if (obsolete != null && obsolete.IsError)
+			return 0;
 		if (CreateVar(x.GetParameters(), out var functionParameters).Length < callParameterNetTypes.Length)
-			return false;
+			return 0;
 		if (!functionParameters.Skip(callParameterNetTypes.Length).All(y => y.IsOptional))
-			return false;
+			return 0;
 		if (x.Name == nameof(name.AddRange) && functionParameters.Length == 1)
 		{
 			if (functionParameters[0].ParameterType.Name != "List`1")
-				return false;
+				return 0;
 			var genericArguments = functionParameters[0].ParameterType.GetGenericArguments();
 			if (genericArguments.Length != 1)
-				return false;
+				return 0;
 			var listType = typeof(List<>).MakeGenericType(genericArguments);
 			if (!functionParameters[0].ParameterType.Equals(listType))
-				return false;
-			return true;
+				return 0;
+			return functionParameters.Length;
 		}
-		return (functionParameters, callParameterNetTypes).Combine().All(IsValidParameter);
+		var index = (functionParameters, callParameterNetTypes).Combine().FindIndex(x => !IsValidParameter(x));
+		return index >= 0 ? index : functionParameters.Length;
 	}
 
 	private static bool IsValidParameter((ParameterInfo, Type) y)
@@ -362,6 +374,8 @@ public static class DeclaredConstructionChecks
 		{
 			if (genericArguments.Length == 0 || typeof(ITuple).IsAssignableFrom(y.Item2))
 				genericArguments = [y.Item2];
+			if (y.Item1.ParameterType.GetGenericArguments().Length != genericArguments.Length)
+				return false;
 			destType = y.Item1.ParameterType.GetGenericTypeDefinition().MakeGenericType(genericArguments);
 		}
 		else
@@ -372,7 +386,7 @@ public static class DeclaredConstructionChecks
 	}
 
 	public static bool GeneralMethodExists(BlockStack container, String name, List<UniversalType> parameterTypes,
-		[MaybeNullWhen(false)] out GeneralMethodOverload? function, out bool user)
+		[MaybeNullWhen(false)] out GeneralMethodOverloads functions, out bool user)
 	{
 		if (PublicFunctionsList.TryGetValue(name, out var functionOverload))
 		{
@@ -382,11 +396,11 @@ public static class DeclaredConstructionChecks
 			else
 				mainType = GetBlockStack(functionOverload.ReturnType);
 			GeneralExtraTypes extraTypes = new(functionOverload.ReturnExtraTypes.ToList(GetUniversalType));
-			function = new([], new(mainType, extraTypes),
+			functions = [new([], new(mainType, extraTypes),
 				functionOverload.Attributes, [.. functionOverload.Parameters.Convert((x, index) =>
 				new GeneralMethodParameter(functionOverload.ExtraTypes.Contains(x.Type)
 				? parameterTypes[index] : PartialTypeToGeneralType(x.Type, x.ExtraTypes),
-				x.Name, x.Attributes, x.DefaultValue))]);
+				x.Name, x.Attributes, x.DefaultValue))])];
 			user = false;
 			return true;
 		}
@@ -395,26 +409,29 @@ public static class DeclaredConstructionChecks
 		{
 			if (GeneralMethodsList.TryGetValue(container, out var list) && list.TryGetValue(name, out var overloads))
 			{
-				function = overloads[0];
+				functions = overloads;
 				user = false;
 				return true;
 			}
-			function = null;
+			functions = null;
 			user = false;
 			return false;
 		}
-		function = method_overloads[0];
-		var arrayParameters = function.Value.ArrayParameters;
-		for (var i = 0; i < arrayParameters.Length; i++)
+		functions = method_overloads;
+		for (var i = 0; i < functions.Length; i++)
 		{
-			var x = arrayParameters[i];
-			if (!(!x.ArrayParameterPackage && x.ArrayParameterType.Length == 1
-				&& x.ArrayParameterType.Peek().BlockType == BlockType.Extra && parameterTypes.Length > i))
-				continue;
-			function = new([], ReplaceExtraType(function.Value.ReturnUnvType, x.ArrayParameterType.Peek().Name,
-				parameterTypes[i]), function.Value.Attributes, [.. function.Value.Parameters.Convert(y =>
+			var arrayParameters = functions[i].ArrayParameters;
+			for (var j = 0; j < arrayParameters.Length; j++)
+			{
+				var x = arrayParameters[j];
+				if (!(!x.ArrayParameterPackage && x.ArrayParameterType.Length == 1
+					&& x.ArrayParameterType.Peek().BlockType == BlockType.Extra && parameterTypes.Length > j))
+					continue;
+				functions[i] = new([], ReplaceExtraType(functions[i].ReturnUnvType, x.ArrayParameterType.Peek().Name,
+					parameterTypes[j]), functions[i].Attributes, [.. functions[i].Parameters.Convert(y =>
 				new GeneralMethodParameter(ReplaceExtraType(y.Type, x.ArrayParameterType.Peek().Name,
-				parameterTypes[i]), y.Name, y.Attributes, y.DefaultValue))]);
+				parameterTypes[j]), y.Name, y.Attributes, y.DefaultValue))]);
+			}
 		}
 		user = true;
 		return true;
@@ -439,46 +456,46 @@ public static class DeclaredConstructionChecks
 	}
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name, List<UniversalType> parameterTypes,
-		[MaybeNullWhen(false)] out GeneralMethodOverload? function) =>
-		UserDefinedFunctionExists(container, name, parameterTypes, out function, out _, out _);
+		[MaybeNullWhen(false)] out GeneralMethodOverloads functions) =>
+		UserDefinedFunctionExists(container, name, parameterTypes, out functions, out _, out _);
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name, List<UniversalType> parameterTypes,
-		[MaybeNullWhen(false)] out GeneralMethodOverload? function,
+		[MaybeNullWhen(false)] out GeneralMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer, out bool derived)
 	{
 		if (CheckContainer(container, UserDefinedFunctionsList.ContainsKey, out matchingContainer)
 			&& UserDefinedFunctionsList[matchingContainer].TryGetValue(name, out var method_overloads))
 		{
-			function = method_overloads[0];
+			functions = method_overloads;
 			derived = false;
 			return true;
 		}
 		else if (UserDefinedTypesList.TryGetValue(SplitType(container), out var userDefinedType))
 		{
-			if (MethodExists(userDefinedType.BaseType, name, parameterTypes, out function))
+			if (MethodExists(userDefinedType.BaseType, name, parameterTypes, out functions))
 			{
 				derived = true;
 				return true;
 			}
 			else if (UserDefinedFunctionExists(userDefinedType.BaseType.MainType, name, parameterTypes,
-				out function, out matchingContainer, out derived))
+				out functions, out matchingContainer, out derived))
 				return true;
 		}
-		function = null;
+		functions = null;
 		derived = false;
 		return false;
 	}
 
 	public static bool UserDefinedNonDerivedFunctionExists(BlockStack container, String name,
-		[MaybeNullWhen(false)] out GeneralMethodOverload? function,
+		[MaybeNullWhen(false)] out GeneralMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer)
 	{
 		if (CheckContainer(container, UserDefinedFunctionsList.ContainsKey, out matchingContainer) && UserDefinedFunctionsList[matchingContainer].TryGetValue(name, out var method_overloads))
 		{
-			function = method_overloads[0];
+			functions = method_overloads;
 			return true;
 		}
-		function = null;
+		functions = null;
 		return false;
 	}
 

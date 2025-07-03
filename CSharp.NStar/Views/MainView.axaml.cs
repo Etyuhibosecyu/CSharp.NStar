@@ -213,7 +213,49 @@ return (a1, a2, a3, a4);
 	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
 }
 return F();
-", ("((5, 8), (5, 8))", "Ошибок нет") }, { @"real Function Factorial (int x)
+", ("((5, 8), (5, 8))", "Ошибок нет") }, { @"Class MyClass
+{
+	int Function F1()
+	{
+		return 0;
+	}
+	
+	int Function F2(int n)
+	{
+		return n * n;
+	}
+	
+	static int Function G1()
+	{
+		return 0;
+	}
+	
+	static int Function G2(int n)
+	{
+		return n * n;
+	}
+}
+int Function F1()
+{
+	return 0;
+}
+
+int Function F2(int n)
+{
+	return n * n;
+}
+var a = new MyClass();
+return (F1(10), F2(10, 10), F2(10.01), a.F1(10), a.F2(10, 10), a.F2(10.01), MyClass.G1(10), MyClass.G2(10, 10), MyClass.G2(10.01));
+", ("null", @"Error in line 33 at position 11: the function ""F1"" does not have overloads with parameters
+Error in line 33 at position 19: incorrect number of parameters of the call
+Error in line 33 at position 31: conversion from type ""real"" to type ""int"" is possible only in function return, not in the direct assignment and not in the call
+Error in line 33 at position 44: the function ""F1"" does not have overloads with parameters
+Error in line 33 at position 54: incorrect number of parameters of the call
+Error in line 33 at position 68: conversion from type ""real"" to type ""int"" is possible only in function return, not in the direct assignment and not in the call
+Error in line 33 at position 87: the function ""G1"" does not have overloads with parameters
+Error in line 33 at position 103: incorrect number of parameters of the call
+Error in line 33 at position 123: conversion from type ""real"" to type ""int"" is possible only in function return, not in the direct assignment and not in the call
+") }, { @"real Function Factorial (int x)
 {
 	if (x <= 0)
 		return 1;
@@ -261,7 +303,33 @@ return c[1, 2, 3];
 ListHashSet[string] hs = new ListHashSet[string](3, ""A"", ""B"", ""C"");
 hs.Add(""B"");
 return hs[2];
-", (@"""B""", "Ошибок нет") }, { @"bool bool=bool;
+", (@"""B""", "Ошибок нет") }, { @"int a = 3.14159;
+byte b = 77777;
+real c = ""2.71828"";
+return (a, b, c);
+", (@"null", @"Error in line 1 at position 6: conversion from type ""real"" to type ""int"" is possible only in function return, not in the direct assignment and not in the call
+Error in line 2 at position 7: conversion from type ""int"" to type ""byte"" is possible only in function return, not in the direct assignment and not in the call
+Error in line 3 at position 7: cannot convert from type ""string"" to type ""real""
+Error in line 4 at position 8: identifier ""a"" is not defined in this location
+Error in line 4 at position 11: identifier ""b"" is not defined in this location
+Error in line 4 at position 14: identifier ""c"" is not defined in this location
+") }, { @"int a = 0;
+byte b = 0;
+real c = 0;
+a = 3.14159;
+b = 77777;
+c = ""2.71828"";
+return (a, b, c);
+", (@"(0, 0, 0)", @"Error in line 4 at position 2: conversion from type ""real"" to type ""int"" is possible only in function return, not in the direct assignment and not in the call
+Error in line 5 at position 2: conversion from type ""int"" to type ""byte"" is possible only in function return, not in the direct assignment and not in the call
+Error in line 6 at position 2: cannot convert from type ""string"" to type ""real""
+") }, { @"list() int list = (0);
+return (list.Dispose(10), Fibonacci(10, 10), Fibonacci(""10""), Fibonacci(10.01));
+", (@"null", @"Error in line 2 at position 21: the function ""Dispose"" does not have overloads with parameters
+Error in line 2 at position 36: incorrect number of parameters of the call
+Error in line 2 at position 55: incompatibility between type of the parameter of the call ""string"" and type of the parameter of the function ""int""
+Error in line 2 at position 72: conversion from type ""real"" to type ""int"" is possible only in function return, not in the direct assignment and not in the call
+") }, { @"bool bool=bool;
 ", ("null", @"Error in line 1 at position 10: one cannot use the local variable ""bool"" before it is declared or inside such declaration in line 1 at position 0
 ") }, { @"bool Function One()
 {
@@ -364,27 +432,77 @@ return dic;
 list.Add(4);
 list.Add((5, 6, 7));
 return list.IndexOf(2, 2);
-", (@"2", null) }, { @"list() int list = (1, 2, 3);
+", (@"2", "Ошибок нет") }, { @"list() int list = (1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.LastIndexOf(2, 1);
-", (@"0", null) }, { @"list() int list = (1, 2, 3);
+", (@"0", "Ошибок нет") }, { @"list() int list = (1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.Remove(2, 3);
-", (@"(1, 5, 6, 7)", null) }, { @"list() int list = (1, 2, 3);
+", (@"(1, 5, 6, 7)", "Ошибок нет") }, { @"list() int list = (1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.RemoveAt(5);
-", (@"(1, 2, 3, 4, 6, 7)", null) }, { @"list() int list = (1, 2, 3);
+", (@"(1, 2, 3, 4, 6, 7)", "Ошибок нет") }, { @"list() int list = (1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.RemoveEnd(5);
-", (@"(1, 2, 3, 4)", null) }, { @"list() int list = (1, 2, 3);
+", (@"(1, 2, 3, 4)", "Ошибок нет") }, { @"list() int list = (1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.Reverse(2, 3);
-", (@"(1, 4, 3, 2, 5, 6, 7)", null) }, { """
+", (@"(1, 4, 3, 2, 5, 6, 7)", "Ошибок нет") }, { @"using System.Collections;
+Buffer[int] list = new Buffer[int](16, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list.IndexOf(2, 2);
+", (@"2", "Ошибок нет") }, { @"using System.Collections;
+Buffer[int] list = new Buffer[int](16, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list.LastIndexOf(2, 1);
+", (@"0", "Ошибок нет") }, { @"using System.Collections;
+Buffer[int] list = new Buffer[int](16, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list.Remove(2, 3);
+", (@"(1, 5, 6, 7)", "Ошибок нет") }, { @"using System.Collections;
+Buffer[int] list = new Buffer[int](16, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list.RemoveAt(5);
+", (@"(1, 2, 3, 4, 6, 7)", "Ошибок нет") }, { @"using System.Collections;
+Buffer[int] list = new Buffer[int](16, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list.RemoveEnd(5);
+", (@"(1, 2, 3, 4)", "Ошибок нет") }, { @"using System.Collections;
+Buffer[int] list = new Buffer[int](16, 1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list.Reverse(2, 3);
+", (@"(1, 4, 3, 2, 5, 6, 7)", "Ошибок нет") }, { @"using System.Collections;
+Class MyClass
+{
+	Constructor(string s) {}
+}
+string Function F()
+{
+	return 5;
+}
+int Function G(string s)
+{
+	return 0;
+}
+string a = 8;
+return (G(12), new ListHashSet[string](1, ""A"", 10), new MyClass(77777));
+", (@"null", @"Error in line 8 at position 8: incompatibility between type of the returning value ""byte"" and the function return type ""string"" - use an addition of zero-length string for this
+Error in line 14 at position 9: cannot convert from type ""byte"" to type ""string"" - use an addition of zero-length string for this
+Error in line 15 at position 10: incompatibility between type of the parameter of the call ""byte"" and type of the parameter of the function ""string"" - use an addition of zero-length string for this
+Error in line 15 at position 47: incompatibility between type of the parameter of the call ""byte"" and all possible types of the parameter of the constructor (""string"", ""System.Collections.IEnumerable[string]"")
+Error in line 15 at position 64: incompatibility between type of the parameter of the call ""int"" and type of the parameter of the constructor ""string"" - use an addition of zero-length string for this
+") }, { """
 using System.Collections;
 			
 Class MyClass : ListHashSet[string]
@@ -1133,7 +1251,7 @@ string Function DecomposeSquareTrinomial(real[3] abc)
 	else if (abc[1] == -1)
 		first = "-";
 	else
-		first = abc[1];
+		first = abc[1] + "";
 	if (d < 0)
 		return "Неразложимо";
 	else if (d == 0)
@@ -1347,7 +1465,7 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 		if (before == null || after == null)
 			return;
 		before.AddRange(after);
-		using var line = before.GetAfterLast("\r\n");
+		var line = before.GetAfterLast("\r\n");
 		if (line.Length == 0)
 			line.Replace(before);
 		line.GetBeforeSetAfter(" in line ");

@@ -552,7 +552,7 @@ public static class DeclaredConstructions
 	/// <summary>
 	/// Sorted by tuple, contains DestType and DestUnvType.ExtraTypes.
 	/// </summary>
-	public static List<UniversalType> ImplicitConversionsFromAnythingList { get; } = [(GetPrimitiveBlockStack("universal"), NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes), (GetPrimitiveBlockStack("null"), NoGeneralExtraTypes), (GeneralTypeList, [new(new BlockStack([new(BlockType.Primitive, "[this]", 1)]), NoGeneralExtraTypes)])];
+	public static List<UniversalType> ImplicitConversionsFromAnythingList { get; } = [(GetPrimitiveBlockStack("universal"), NoGeneralExtraTypes), (GetPrimitiveBlockStack("null"), NoGeneralExtraTypes), (GeneralTypeList, [new(new BlockStack([new(BlockType.Primitive, "[this]", 1)]), NoGeneralExtraTypes)])];
 
 	public static G.SortedSet<String> NotImplementedNamespacesList { get; } = ["System.Diagnostics", "System.Globalization", "System.IO", "System.Runtime", "System.Text", "System.Threading", "System.Windows", "System.Windows.Forms"];
 
