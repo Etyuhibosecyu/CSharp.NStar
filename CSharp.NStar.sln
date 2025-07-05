@@ -3,13 +3,29 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34902.65
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaEdit", "..\AvaloniaEdit\AvaloniaEdit.csproj", "{D000A339-72D0-4605-9136-0C1BAE78A628}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSharp.NStar", "CSharp.NStar\CSharp.NStar.csproj", "{14D98B0C-51E6-454A-BA03-9265490C1EA9}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSharp.NStar.Desktop", "CSharp.NStar.Desktop\CSharp.NStar.Desktop.csproj", "{A4E18563-1CF6-4A2F-AD17-4E5B85EEDB86}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharp.NStar.Tests", "CSharp.NStar.Tests\CSharp.NStar.Tests.csproj", "{7D6AB9E4-BED0-BD8D-EAEC-F56042B81612}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeclaredConstructionHelpers", "DeclaredConstructionHelpers\DeclaredConstructionHelpers.csproj", "{F718EA8C-A9C6-46E7-B2EE-37E4469C181C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeclaredConstructions", "DeclaredConstructions\DeclaredConstructions.csproj", "{E1A27804-8080-4755-9D70-EB4866AE649C}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HighLevelAnalysis", "HighLevelAnalysis\HighLevelAnalysis.csproj", "{5539C599-1CC0-4799-B57C-DF6BEF67CFA7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LowLevelAnalysis", "LowLevelAnalysis\LowLevelAnalysis.csproj", "{C775FC4E-A552-4839-8B0F-C568A5D8DA31}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuotesAndTreeBranch", "QuotesAndTreeBranch\QuotesAndTreeBranch.csproj", "{FE09F28C-176E-4EDA-A65C-7D6D4DA85642}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SerializerHelpers", "SerializerHelpers\SerializerHelpers.csproj", "{929F50E9-15A2-4C92-A13E-2DBCBAA243C3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypeHelpers", "TypeHelpers\TypeHelpers.csproj", "{36526CE8-9512-41A1-A86F-51EF3E40A579}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Universal", "Universal\Universal.csproj", "{8A55065B-4095-418B-A4D5-A26315315F5F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решения", "Элементы решения", "{88119428-69CA-4CBB-BAA5-06CB57105135}"
 	ProjectSection(SolutionItems) = preProject
@@ -17,20 +33,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решен
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mpir.NET", "..\.NStar\Sources\Mpir.NET\Mpir.NET.csproj", "{46445AD7-52C5-4A52-854D-56BD3D15D926}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaEdit", "..\AvaloniaEdit\AvaloniaEdit.csproj", "{D000A339-72D0-4605-9136-0C1BAE78A628}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeclaredConstructions", "DeclaredConstructions\DeclaredConstructions.csproj", "{E1A27804-8080-4755-9D70-EB4866AE649C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuotesAndTreeBranch", "QuotesAndTreeBranch\QuotesAndTreeBranch.csproj", "{FE09F28C-176E-4EDA-A65C-7D6D4DA85642}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeclaredConstructionHelpers", "DeclaredConstructionHelpers\DeclaredConstructionHelpers.csproj", "{F718EA8C-A9C6-46E7-B2EE-37E4469C181C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypeHelpers", "TypeHelpers\TypeHelpers.csproj", "{36526CE8-9512-41A1-A86F-51EF3E40A579}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SerializerHelpers", "SerializerHelpers\SerializerHelpers.csproj", "{929F50E9-15A2-4C92-A13E-2DBCBAA243C3}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Universal", "Universal\Universal.csproj", "{8A55065B-4095-418B-A4D5-A26315315F5F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStar.BufferLib", "..\.NStar\Sources\NStar.BufferLib\NStar.BufferLib.csproj", "{F28891E2-C77E-0B93-EF74-A7CB68E4F426}"
 EndProject
@@ -164,6 +166,10 @@ Global
 		{8A9CA20F-F351-42D7-AF5F-C13B0C273966}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8A9CA20F-F351-42D7-AF5F-C13B0C273966}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8A9CA20F-F351-42D7-AF5F-C13B0C273966}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D6AB9E4-BED0-BD8D-EAEC-F56042B81612}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D6AB9E4-BED0-BD8D-EAEC-F56042B81612}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D6AB9E4-BED0-BD8D-EAEC-F56042B81612}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D6AB9E4-BED0-BD8D-EAEC-F56042B81612}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

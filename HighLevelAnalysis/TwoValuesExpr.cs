@@ -3,7 +3,7 @@ using static CSharp.NStar.SemanticTree;
 
 namespace CSharp.NStar;
 
-internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBranch Branch, List<Lexem> Lexems, String Default)
+internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBranch Branch, List<Lexem> Lexems, String Default)
 {
 	public String Calculate(ref List<String>? errorsList, ref int i)
 	{
@@ -16,26 +16,26 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 			PrevUnvType = NullType;
 		var result = Branch[i].Info.ToString() switch
 		{
-			"?" or "?=" or "?>" or "?<" or "?>=" or "?<=" or "?!=" => ExprTranslateTimeTernary(ref i),
-			":" => ExprTranslateTimeColon(ref i, UnvType2),
-			"pow" => ExprTranslateTimePow(errorsList, i, otherPos),
-			"*" => ExprTranslateTimeMul(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
-			"/" => ExprTranslateTimeDiv(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
-			"%" => ExprTranslateTimeMod(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
-			"+" => ExprTranslateTimePlus(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
-			"-" => ExprTranslateTimeMinus(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
-			">>" => ExprTranslateTimeRightShift(ref i, UnvType1, UnvType2),
-			"<<" => ExprTranslateTimeLeftShift(ref i, UnvType1, UnvType2),
-			"==" => ExprTranslateTimeSingular(i, Universal.Eq(Value1, Value2)),
-			">" => ExprTranslateTimeSingular(i, Universal.Gt(Value1, Value2)),
-			"<" => ExprTranslateTimeSingular(i, Universal.Lt(Value1, Value2)),
-			">=" => ExprTranslateTimeSingular(i, Universal.Goe(Value1, Value2)),
-			"<=" => ExprTranslateTimeSingular(i, Universal.Loe(Value1, Value2)),
-			"!=" => ExprTranslateTimeSingular(i, Universal.Neq(Value1, Value2)),
-			"&&" => ExprTranslateTimeSingular(i, Universal.And(Value1, Value2)),
-			"||" => ExprTranslateTimeSingular(i, Universal.Or(Value1, Value2)),
-			"^^" => ExprTranslateTimeSingular(i, Universal.Xor(Value1, Value2)),
-			_ => ExprTranslateTimeDefault(ref i, UnvType1, UnvType2),
+			"?" or "?=" or "?>" or "?<" or "?>=" or "?<=" or "?!=" => TranslateTimeTernaryExpr(ref i),
+			":" => TranslateTimeColonExpr(ref i, UnvType2),
+			"pow" => TranslateTimePowExpr(errorsList, i, otherPos),
+			"*" => TranslateTimeMulExpr(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
+			"/" => TranslateTimeDivExpr(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
+			"%" => TranslateTimeModExpr(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
+			"+" => TranslateTimePlusExpr(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
+			"-" => TranslateTimeMinusExpr(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
+			">>" => TranslateTimeRightShiftExpr(ref i, UnvType1, UnvType2),
+			"<<" => TranslateTimeLeftShiftExpr(ref i, UnvType1, UnvType2),
+			"==" => TranslateTimeSingularExpr(i, Universal.Eq(Value1, Value2)),
+			">" => TranslateTimeSingularExpr(i, Universal.Gt(Value1, Value2)),
+			"<" => TranslateTimeSingularExpr(i, Universal.Lt(Value1, Value2)),
+			">=" => TranslateTimeSingularExpr(i, Universal.Goe(Value1, Value2)),
+			"<=" => TranslateTimeSingularExpr(i, Universal.Loe(Value1, Value2)),
+			"!=" => TranslateTimeSingularExpr(i, Universal.Neq(Value1, Value2)),
+			"&&" => TranslateTimeSingularExpr(i, Universal.And(Value1, Value2)),
+			"||" => TranslateTimeSingularExpr(i, Universal.Or(Value1, Value2)),
+			"^^" => TranslateTimeSingularExpr(i, Universal.Xor(Value1, Value2)),
+			_ => TranslateTimeDefaultExpr(ref i, UnvType1, UnvType2),
 		};
 		Branch.Remove(Min(i - 1, Branch.Length - 2), 2);
 		i = Max(i - 3, 0);
@@ -43,7 +43,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		return result.Length == 0 ? Branch[i].Info : result;
 	}
 
-	private String ExprTranslateTimeTernary(ref int i)
+	private String TranslateTimeTernaryExpr(ref int i)
 	{
 		String result;
 		var s = Branch[i].Info;
@@ -67,7 +67,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String ExprTranslateTimeColon(ref int i, UniversalType UnvType2)
+	private String TranslateTimeColonExpr(ref int i, UniversalType UnvType2)
 	{
 		String result;
 		if (i + 2 >= Branch.Length)
@@ -86,7 +86,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String ExprTranslateTimePow(List<String>? errorsList, int i, int otherPos)
+	private String TranslateTimePowExpr(List<String>? errorsList, int i, int otherPos)
 	{
 		try
 		{
@@ -100,7 +100,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		return [];
 	}
 
-	private String ExprTranslateTimeMul(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
+	private String TranslateTimeMulExpr(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
 	{
 		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
@@ -136,7 +136,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String ExprTranslateTimeDiv(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
+	private String TranslateTimeDivExpr(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
 	{
 		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
@@ -177,7 +177,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String ExprTranslateTimeMod(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
+	private String TranslateTimeModExpr(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
 	{
 		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
@@ -218,7 +218,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String ExprTranslateTimePlus(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
+	private String TranslateTimePlusExpr(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
 	{
 		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null" or "bool"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
@@ -257,7 +257,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String ExprTranslateTimeMinus(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
+	private String TranslateTimeMinusExpr(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
 	{
 		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null" or "bool"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
@@ -293,7 +293,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String ExprTranslateTimeRightShift(ref int i, UniversalType UnvType1, UniversalType UnvType2)
+	private String TranslateTimeRightShiftExpr(ref int i, UniversalType UnvType1, UniversalType UnvType2)
 	{
 		String result = [];
 		if (i == 2)
@@ -307,7 +307,7 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String ExprTranslateTimeLeftShift(ref int i, UniversalType UnvType1, UniversalType UnvType2)
+	private String TranslateTimeLeftShiftExpr(ref int i, UniversalType UnvType1, UniversalType UnvType2)
 	{
 		String result = [];
 		if (i == 2)
@@ -321,9 +321,9 @@ internal record class ExprTwoValues(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String ExprTranslateTimeSingular(int i, Universal resultValue) => (Branch[Max(i - 3, 0)] = new(resultValue.ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container)).Info;
+	private String TranslateTimeSingularExpr(int i, Universal resultValue) => (Branch[Max(i - 3, 0)] = new(resultValue.ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container)).Info;
 
-	private String ExprTranslateTimeDefault(ref int i, UniversalType UnvType1, UniversalType UnvType2)
+	private String TranslateTimeDefaultExpr(ref int i, UniversalType UnvType1, UniversalType UnvType2)
 	{
 		Branch[i].Extra = GetResultType(UnvType1, UnvType2, Value1.ToString(true), Value2.ToString(true));
 		return new String(Branch[Max(i - 3, 0)].Info).Add(' ').AddRange(Branch[i - 1].Info).Add(' ').AddRange(Branch[i++ - 1].Info);

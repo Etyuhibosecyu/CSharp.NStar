@@ -107,7 +107,11 @@ Error in line 3 at position 73: cannot cannot apply the operator ""%"" to the ty
 								
 		""", ("""(5, 5, 0, 0, 0, 5, -5, 0, 0, 0)""", @"Error in line 3 at position 31: cannot cannot apply the operator ""/"" to the types ""byte"" and ""null""
 Error in line 3 at position 38: cannot cannot apply the operator ""%"" to the types ""byte"" and ""null""
-") }, { @"real Function F(real x, real y)
+") }, { @"return (IntToReal(5), IntToReal(77777), IntToReal(777777777777));
+", (@"(5, 77777, 777777777777)", "Ошибок нет") }, { @"var a = 5;
+var b = 3;
+return (a / b, IntToReal(a) / b);
+", (@"(1, 1.6666666666666667)", "Ошибок нет") }, { @"real Function F(real x, real y)
 {
 	return x * x + x * y + y * y;
 }
@@ -303,7 +307,11 @@ return c[1, 2, 3];
 ListHashSet[string] hs = new ListHashSet[string](3, ""A"", ""B"", ""C"");
 hs.Add(""B"");
 return hs[2];
-", (@"""B""", "Ошибок нет") }, { @"int a = 3.14159;
+", (@"""B""", "Ошибок нет") }, { @"using System.Collections;
+ListHashSet[int] hs = new ListHashSet[int](3, 5, 10, 15);
+hs.Add(10);
+return hs[2];
+", (@"10", "Ошибок нет") }, { @"int a = 3.14159;
 byte b = 77777;
 real c = ""2.71828"";
 return (a, b, c);
@@ -423,6 +431,13 @@ hs.Add(""3"");
 hs.Add(""2"");
 return hs;
 ", ("""("1", "2", "3")""", "Ошибок нет") }, { @"using System.Collections;
+var hs = new ListHashSet[int]();
+hs.Add(1);
+hs.Add(2);
+hs.Add(3);
+hs.Add(2);
+return hs;
+", ("""(1, 2, 3)""", "Ошибок нет") }, { @"using System.Collections;
 var dic = new Dictionary[string, int]();
 dic.TryAdd(""1"", 1);
 dic.TryAdd(""2"", 2);
@@ -714,6 +729,232 @@ MyClass Function F()
 	hs.Add("2");
 	hs.Add("3");
 	hs.Add("2");
+	return hs;
+}
+return F();
+
+""", ("null", """
+Error in line 7 at position 14: cannot create instance of abstract type "MyClass"
+Error in line 7 at position 21: internal error
+Error in line 7 at position 1: variable declared with the keyword "var" must be assigned explicitly and in the same expression
+Error in line 8 at position 1: identifier "hs" is not defined in this location
+Error in line 9 at position 1: identifier "hs" is not defined in this location
+Error in line 10 at position 1: identifier "hs" is not defined in this location
+Error in line 11 at position 1: identifier "hs" is not defined in this location
+Error in line 12 at position 8: identifier "hs" is not defined in this location
+
+""") }, { """
+using System.Collections;
+			
+Class MyClass : ListHashSet[int]
+{
+}
+var hs = new MyClass();
+hs.Add(1);
+hs.Add(2);
+hs.Add(3);
+hs.Add(2);
+return hs;
+
+""", ("""(1, 2, 3)""", "Ошибок нет") }, { """
+using System.Collections;
+			
+Class MyClass : ListHashSet[int]
+{
+}
+MyClass Function F()
+{
+	var hs = new MyClass();
+	hs.Add(1);
+	hs.Add(2);
+	hs.Add(3);
+	hs.Add(2);
+	return hs;
+}
+return F();
+
+""", ("""(1, 2, 3)""", "Ошибок нет") }, { """
+using System.Collections;
+			
+Class MyClass : ListHashSet[int]
+{
+}
+MyClass Function F()
+{
+	var hs = new MyClass();
+	hs.Add(1);
+	hs.Add(2);
+	hs.Add(3);
+	hs.Add(2);
+	return hs;
+}
+return F().Length;
+
+""", ("3", "Ошибок нет") }, { """
+using System.Collections;
+			
+Class MyClass : ListHashSet[int]
+{
+}
+MyClass Function F()
+{
+	var hs = new MyClass();
+	hs.Add(1);
+	hs.Add(2);
+	hs.Add(3);
+	hs.Add(2);
+	return hs;
+}
+return F().RemoveAt(2);
+
+""", ("""(1, 3)""", "Ошибок нет") }, { """
+using System.Collections;
+			
+Class MyClass : ListHashSet[int]
+{
+}
+Class MyClass2 : MyClass
+{
+}
+var hs = new MyClass2();
+hs.Add(1);
+hs.Add(2);
+hs.Add(3);
+hs.Add(2);
+return hs;
+
+""", ("""(1, 2, 3)""", "Ошибок нет") }, { """
+using System.Collections;
+			
+Class MyClass : ListHashSet[int]
+{
+}
+Class MyClass2 : MyClass
+{
+}
+MyClass2 Function F()
+{
+	var hs = new MyClass2();
+	hs.Add(1);
+	hs.Add(2);
+	hs.Add(3);
+	hs.Add(2);
+	return hs;
+}
+return F();
+
+""", ("""(1, 2, 3)""", "Ошибок нет") }, { @"using System.Collections;
+Class MyClass : ListHashSet[int]
+{
+}
+Class MyClass2 : MyClass
+{
+}
+MyClass2 Function F()
+{
+	var hs = new MyClass2();
+	hs.Add(1);
+	hs.Add(2);
+	hs.Add(3);
+	hs.Add(2);
+	return hs;
+}
+return F().Length;
+", ("3", "Ошибок нет") }, { @"using System.Collections;
+Class MyClass : ListHashSet[int]
+{
+}
+Class MyClass2 : MyClass
+{
+}
+MyClass2 Function F()
+{
+	var hs = new MyClass2();
+	hs.Add(1);
+	hs.Add(2);
+	hs.Add(3);
+	hs.Add(2);
+	return hs;
+}
+return F().RemoveAt(2);
+", ("""(1, 3)""", "Ошибок нет") }, { @"using System.Collections;
+Class MyClass : ListHashSet[int]
+{
+}
+Class MyClass2 : ListHashSet[int]
+{
+}
+var hs = new MyClass2();
+hs.Add(1);
+hs.Add(2);
+hs.Add(3);
+hs.Add(2);
+return hs;
+", ("""(1, 2, 3)""", "Ошибок нет") }, { @"using System.Collections;
+Class MyClass : ListHashSet[int]
+{
+}
+Class MyClass2 : ListHashSet[int]
+{
+}
+MyClass2 Function F()
+{
+	var hs = new MyClass2();
+	hs.Add(1);
+	hs.Add(2);
+	hs.Add(3);
+	hs.Add(2);
+	return hs;
+}
+return F();
+", ("""(1, 2, 3)""", "Ошибок нет") }, { @"using System.Collections;
+Class MyClass : ListHashSet[int]
+{
+}
+Class MyClass2 : ListHashSet[int]
+{
+}
+MyClass2 Function F()
+{
+	var hs = new MyClass2();
+	hs.Add(1);
+	hs.Add(2);
+	hs.Add(3);
+	hs.Add(2);
+	return hs;
+}
+return F().Length;
+", ("3", "Ошибок нет") }, { """
+using System.Collections;
+Class MyClass : ListHashSet[int]
+{
+}
+Class MyClass2 : ListHashSet[int]
+{
+}
+MyClass2 Function F()
+{
+	var hs = new MyClass2();
+	hs.Add(1);
+	hs.Add(2);
+	hs.Add(3);
+	hs.Add(2);
+	return hs;
+}
+return F().RemoveAt(2);
+
+""", ("""(1, 3)""", "Ошибок нет") }, { """
+using System.Collections;
+abstract Class MyClass : ListHashSet[int]
+{
+}
+MyClass Function F()
+{
+	var hs = new MyClass();
+	hs.Add(1);
+	hs.Add(2);
+	hs.Add(3);
+	hs.Add(2);
 	return hs;
 }
 return F();
@@ -1210,7 +1451,11 @@ return a;
 	return Truncate(n * n);
 }
 return Fill(F(3.14159) >= 10, 1000);
-", ('(' + string.Join(", ", RedStarLinq.FillArray("false", 1000)) + ')', "Ошибок нет") }, { @"using System;
+", ('(' + string.Join(", ", RedStarLinq.FillArray("false", 1000)) + ')', "Ошибок нет") }, { @"string s = """";
+repeat (1000000)
+	s += 'A';
+return s;
+", ('\"' + new string('A', 1000000) + '\"', "Ошибок нет") }, { @"using System;
 list() int list = (2, 2, 3, 1, 1, 2, 1);
 return RedStarLinqExtras.FrequencyTable(list);
 ", (@"((2, 3), (3, 1), (1, 3))", "Ошибок нет") }, { @"using System;

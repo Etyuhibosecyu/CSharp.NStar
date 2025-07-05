@@ -7,6 +7,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Include="..\..\.NStar\Sources\NStar.Core\Misc\HashHelpers.cs" Link="HashHelpers.cs" />
 		<ProjectReference Include="..\..\.NStar\Sources\NStar.EasyEval\NStar.EasyEval.csproj" />
 	</ItemGroup>
 </Project>
