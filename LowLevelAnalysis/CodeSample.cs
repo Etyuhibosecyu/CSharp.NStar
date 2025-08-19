@@ -139,7 +139,7 @@ public class CodeSample(String newString)
 		{
 			if (s == "null")
 			{
-				GenerateError(start, "too large number; long long type is under development");
+				GenerateMessage(0x0001, start);
 				lexemType = LexemType.Keyword;
 				return "null";
 			}
@@ -230,7 +230,7 @@ public class CodeSample(String newString)
 			}
 			return false;
 		}
-		void GenerateEscapeSequenceError(int posDiff) => GenerateMessage("Error", pos++ - posDiff - lineStart, "unrecognized escape-sequence");
+		void GenerateEscapeSequenceError(int posDiff) => GenerateMessage(0x0002, pos++ - posDiff - lineStart);
 		String AddAndReturn(out String s2, char toAdd)
 		{
 			result.Add(toAdd);
@@ -242,7 +242,7 @@ public class CodeSample(String newString)
 			if (condition)
 				return [];
 			else if (!IsNotEnd())
-				return GenerateQuoteWreck(out s2);
+				return GenerateQuoteWreck(out s2, 0x9000);
 			else if (flag)
 			{
 				if (!CheckChar('\''))
@@ -250,7 +250,7 @@ public class CodeSample(String newString)
 				return [];
 			}
 			{
-				return GenerateQuoteWreck(out s2, "there must be a single character or a single escape-sequence in the single quotes");
+				return GenerateQuoteWreck(out s2, 0x9001);
 			}
 		}
 		bool ValidateCharOrEscapeSequence()
@@ -288,13 +288,13 @@ public class CodeSample(String newString)
 				}
 			}
 		}
-		String GenerateQuoteWreck(out String s2, string text = "unexpected end of code reached; expected: single quote", bool double_ = false)
+		String GenerateQuoteWreck(out String s2, ushort code, string text = "unexpected end of code reached; expected: single quote", bool double_ = false)
 		{
-			GenerateMessage("Wreck", pos, text);
+			GenerateMessage(code, pos, text);
 			wreckOccurred = true;
 			return AddAndReturn(out s2, double_ ? '\"' : '\'');
 		}
-		String GenerateDoubleQuoteWreck(out String s2) => GenerateQuoteWreck(out s2, "unexpected end of code reached; expected: double quote", true);
+		String GenerateDoubleQuoteWreck(out String s2) => GenerateQuoteWreck(out s2, 0x9002, "unexpected end of code reached; expected: double quote", true);
 		if (ValidateAndAdd('\"'))
 		{
 			while (IsNotEnd() && input[pos] is not ('\r' or '\n') && !IsCharAfterBackslash('\"', false))
@@ -303,7 +303,7 @@ public class CodeSample(String newString)
 					AddChar(result);
 			}
 			if (IsNotEnd() && input[pos] is '\r' or '\n')
-				return GenerateQuoteWreck(out s2, "classic string (not raw or verbatim) must be single-line; expected: double quote");
+				return GenerateQuoteWreck(out s2, 0x9003);
 			if (!IsCharAfterBackslash('\"'))
 				return GenerateDoubleQuoteWreck(out s2);
 		}
@@ -364,8 +364,7 @@ public class CodeSample(String newString)
 			}
 			else if (pos >= input.Length)
 			{
-				GenerateMessage("Wreck", pos, "unexpected end of code reached; expected: " + (depth + 1)
-					+ " pairs \"double quote - reverse slash\" (starting with quote)");
+				GenerateMessage(0x9004, pos, depth + 1);
 				wreckOccurred = true;
 				s2 = input[start..pos];
 				return result.AddRange(((String)"\"\\").Repeat(depth + 1));
@@ -397,7 +396,7 @@ public class CodeSample(String newString)
 					pos++;
 				else
 				{
-					GenerateMessage("Wreck", pos, "unclosed comment in the end of code");
+					GenerateMessage(0x9005, pos);
 					wreckOccurred = true;
 					s2 = input[start..pos];
 					return result.AddRange("*/").AddRange(((String)"\"\\").Repeat(depth + 1));
@@ -478,7 +477,7 @@ public class CodeSample(String newString)
 			}
 			else if (!IsNotEnd())
 			{
-				GenerateMessage("Wreck", pos, "unexpected end of code reached; expected: double quote");
+				GenerateMessage(0x9002, pos);
 				wreckOccurred = true;
 				return result.Add('\"');
 			}
@@ -528,7 +527,7 @@ public class CodeSample(String newString)
 					pos++;
 				else
 				{
-					GenerateMessage("Wreck", pos, "unclosed comment in the end of code");
+					GenerateMessage(0x9005, pos);
 					wreckOccurred = true;
 					return;
 				}
@@ -576,7 +575,7 @@ public class CodeSample(String newString)
 				state = 0;
 			IncreasePosSmoothly();
 		}
-		GenerateMessage("Wreck", pos, "unclosed " + (depth + 1) + " nested comments in the end of code");
+		GenerateMessage(0x9006, pos, depth + 1);
 		wreckOccurred = true;
 	}
 
@@ -689,7 +688,7 @@ public class CodeSample(String newString)
 			s = GetUnformatted();
 			if (s.Length != 0)
 			{
-				GenerateError(pos - s.Length, "unrecognized sequence of symbols");
+				GenerateMessage(0x0003, pos - s.Length);
 				goto l0;
 			}
 		l1:
@@ -730,9 +729,9 @@ public class CodeSample(String newString)
 		}
 	}
 
-	private void GenerateError(int pos, String text) => GenerateMessage("Error", pos, text);
+	private void GenerateMessage(ushort code, int pos, params dynamic[] parameters) =>
+		DeclaredConstructions.GenerateMessage(errorsList, code, lineN, pos - lineStart, parameters);
 
-	private void GenerateMessage(String typeName, int pos, String text) => errorsList.Add(typeName + " in line " + lineN.ToString() + " at position " + (pos - lineStart).ToString() + ": " + text);
-
-	public static implicit operator (List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred)(CodeSample x) => x.Disassemble();
+	public static implicit operator (List<Lexem> Lexems, String String, List<String> ErrorsList,
+		bool WreckOccurred)(CodeSample x) => x.Disassemble();
 }

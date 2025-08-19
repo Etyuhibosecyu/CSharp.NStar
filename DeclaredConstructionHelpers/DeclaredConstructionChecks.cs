@@ -335,9 +335,9 @@ public static class DeclaredConstructionChecks
 		return true;
 	}
 
-	private static int GetMethodValidity(String name, MethodInfo x, Type[] callParameterNetTypes)
+	private static int GetMethodValidity(String? name, MethodBase x, Type[] callParameterNetTypes)
 	{
-		if (x.Name != name.ToString())
+		if (name != null && x.Name != name.ToString())
 			return int.MinValue;
 		var obsolete = x.GetCustomAttribute<ObsoleteAttribute>(false);
 		if (obsolete != null && obsolete.IsError)
@@ -362,25 +362,43 @@ public static class DeclaredConstructionChecks
 		return index >= 0 ? index : functionParameters.Length;
 	}
 
-	private static bool IsValidParameter((ParameterInfo, Type) y)
+	private static bool IsValidParameter((ParameterInfo, Type) x)
 	{
-		var genericArguments = y.Item2.GetGenericArguments();
+		var genericArguments = x.Item2.GetGenericArguments();
 		Type destType;
-		if (y.Item1.ParameterType.IsGenericParameter)
-			destType = genericArguments.Length == 0 ? y.Item2 : genericArguments[0];
-		else if (y.Item1.ParameterType.IsSZArray)
-			destType = (genericArguments.Length == 0 ? y.Item2 : genericArguments[0]).MakeArrayType();
-		else if (y.Item1.ParameterType.ContainsGenericParameters)
+		if (x.Item1.ParameterType.IsGenericParameter)
 		{
-			if (genericArguments.Length == 0 || typeof(ITuple).IsAssignableFrom(y.Item2))
-				genericArguments = [y.Item2];
-			if (y.Item1.ParameterType.GetGenericArguments().Length != genericArguments.Length)
+			if (genericArguments.Length != 0)
+				destType = genericArguments[0];
+			else if (x.Item2 == typeof(void))
+				return true;
+			else
+				destType = x.Item2;
+		}
+		else if (x.Item1.ParameterType.IsSZArray)
+		{
+			if (genericArguments.Length != 0)
+				destType = genericArguments[0].MakeArrayType();
+			else if (x.Item2 == typeof(void))
+				return true;
+			else
+				destType = x.Item2.MakeArrayType();
+		}
+		else if (x.Item1.ParameterType.ContainsGenericParameters)
+		{
+			if (x.Item2 == typeof(void))
+				return true;
+			else if (genericArguments.Length == 0 || typeof(ITuple).IsAssignableFrom(x.Item2))
+				genericArguments = [x.Item2];
+			if (x.Item1.ParameterType.GetGenericArguments().Length != genericArguments.Length)
 				return false;
-			destType = y.Item1.ParameterType.GetGenericTypeDefinition().MakeGenericType(genericArguments);
+			destType = x.Item1.ParameterType.GetGenericTypeDefinition().MakeGenericType(genericArguments);
 		}
 		else
-			destType = y.Item1.ParameterType;
-		if (destType.IsAssignableFromExt(y.Item2))
+			destType = x.Item1.ParameterType;
+		if (x.Item2 == typeof(void))
+			return true;
+		if (destType.IsAssignableFromExt(x.Item2))
 			return true;
 		return false;
 	}
@@ -499,41 +517,61 @@ public static class DeclaredConstructionChecks
 		return false;
 	}
 
-	public static bool ConstructorsExist(UniversalType container, [MaybeNullWhen(false)] out ConstructorOverloads constructors)
+	public static bool ConstructorsExist(UniversalType container, List<UniversalType> callParameterTypes, [MaybeNullWhen(false)] out ConstructorOverloads constructors)
 	{
 		var containerType = SplitType(container.MainType);
 		if (!TypeExists(containerType, out var netType))
 		{
-			constructors = null;
+			constructors = [];
 			return false;
 		}
-		var typeConstructors = netType.GetConstructors();
-		if (typeConstructors == null)
+		var callParameterNetTypes = callParameterTypes.ToArray(x => TypeMapping(x));
+		var validity = int.MinValue;
+		var methods = netType.GetConstructors().FindAllMax(x =>
 		{
-			constructors = null;
+			var currentValidity = GetMethodValidity(null, x, callParameterNetTypes);
+			if (currentValidity > validity)
+				validity = currentValidity;
+			return currentValidity;
+		});
+		constructors = [];
+		if (validity < 0)
 			return false;
+		foreach (var method in methods)
+		{
+			var genericArguments = netType.GetGenericArguments();
+			var patterns = GetReplacementPatterns(genericArguments, callParameterNetTypes);
+			var parameters = method.GetParameters();
+			var functionParameterTypes = parameters.ToArray(x => x.ParameterType);
+			for (var i = 0; i < patterns.Length; i++)
+			{
+				for (var j = 0; j < functionParameterTypes.Length; j++)
+					functionParameterTypes[j] = ReplaceExtraNetType(functionParameterTypes[j], patterns[i]);
+			}
+			constructors.Add(new((method.IsAbstract ? ConstructorAttributes.Abstract : 0)
+				| (method.IsStatic ? ConstructorAttributes.Static : 0),
+				new(functionParameterTypes.ToList((x, index) => new GeneralMethodParameter(TypeMappingBack(x,
+				netType.GetGenericArguments(), container.ExtraTypes).Wrap(y =>
+				Attribute.IsDefined(parameters[index], typeof(ParamArrayAttribute)) ? GetSubtype(y) : y),
+				parameters[index].Name ?? "x",
+				(parameters[index].IsOptional ? ParameterAttributes.Optional : 0)
+				| (parameters[index].ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
+				| (parameters[index].IsOut ? ParameterAttributes.Out : 0)
+				| (Attribute.IsDefined(parameters[index], typeof(ParamArrayAttribute)) ? ParameterAttributes.Params : 0),
+				parameters[index].DefaultValue?.ToString() ?? "null")))));
 		}
-		constructors = [.. typeConstructors.ToList(x => ((x.IsAbstract ? ConstructorAttributes.Abstract : 0)
-			| (x.IsStatic ? ConstructorAttributes.Static : 0), new GeneralMethodParameters(x.GetParameters().ToList(y =>
-			new GeneralMethodParameter(TypeMappingBack(!CreateVar(y.GetCustomAttributes(typeof(ParamArrayAttribute),
-			false).Length > 0, out var @params) ? y.ParameterType : y.ParameterType.IsSZArray
-			? y.ParameterType.GetElementType() ?? typeof(object) : y.ParameterType.GetGenericArguments()[0],
-			netType.GetGenericArguments(), container.ExtraTypes), y.Name ?? "x",
-			(y.IsOptional ? ParameterAttributes.Optional : 0)
-			| (y.ParameterType.IsByRef ? ParameterAttributes.Ref : 0) | (y.IsOut ? ParameterAttributes.Out : 0)
-			| (@params ? ParameterAttributes.Params : 0), y.DefaultValue?.ToString() ?? "null")))))];
 		return true;
 	}
 
-	public static bool UserDefinedConstructorsExist(UniversalType container, [MaybeNullWhen(false)] out ConstructorOverloads constructors)
+	public static bool UserDefinedConstructorsExist(UniversalType container, List<UniversalType> parameterTypes, [MaybeNullWhen(false)] out ConstructorOverloads constructors)
 	{
 		if (UserDefinedConstructorsList.TryGetValue(container.MainType, out var temp_constructors)
 			&& !(UserDefinedTypesList.TryGetValue(SplitType(container.MainType), out var userDefinedType)
 			&& (userDefinedType.Attributes & (TypeAttributes.Struct | TypeAttributes.Static))
 			is not 0 or TypeAttributes.Sealed or TypeAttributes.Struct))
 		{
-			constructors = [.. temp_constructors, .. ConstructorsExist(userDefinedType.BaseType, out var baseConstructors)
-				? baseConstructors : [], .. UserDefinedConstructorsExist(userDefinedType.BaseType, out baseConstructors)
+			constructors = [.. temp_constructors, .. ConstructorsExist(userDefinedType.BaseType, parameterTypes, out var baseConstructors)
+				? baseConstructors : [], .. UserDefinedConstructorsExist(userDefinedType.BaseType, parameterTypes, out baseConstructors)
 				? baseConstructors : []];
 			if (constructors.Length != 0)
 				return true;

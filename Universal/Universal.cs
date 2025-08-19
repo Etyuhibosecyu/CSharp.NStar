@@ -305,7 +305,7 @@ public struct Universal
 			return PI;
 		else if (s == "E")
 			return E;
-		else if ((uint)(s[0] - '0') > 9 && s[^1] is not ('\"' or '\'' or '\\'))
+		else if (s[0] is not (>= '0' and <= '9' or '+' or '-') && s[^1] is not ('\"' or '\'' or '\\'))
 			throw new FormatException();
 		else if (s[^1] == 'i')
 			return int.Parse(s[..^1], InvariantCulture);
@@ -588,7 +588,7 @@ public struct Universal
 			"DateTime" => (byte)(Object is not DateTime dt ? 0 : dt.Ticks > 255 ? 0 : dt.Ticks),
 			"unsigned long int" => (byte)(Object is not ulong uli ? 0 : uli > 255 ? 0 : uli),
 			"real" => (byte)(Number is < (-255) or > 255 ? 0 : Floor(Abs(Number))),
-			"string" => (byte)(String == "" ? 0 : byte.TryParse(String.ToString(), out var a) ? a : 0),
+			"string" => 0,
 			"list" => (byte)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToByte()),
 			_ => 0
 		};
@@ -613,7 +613,7 @@ public struct Universal
 			"DateTime" => (short)(Object is not DateTime dt ? 0 : dt.Ticks > 32767 ? 0 : dt.Ticks),
 			"unsigned long int" => (short)(Object is not ulong uli ? 0 : uli > 32767 ? 0 : uli),
 			"real" => (short)(Number is < (-32768) or > 32767 ? 0 : Floor(Number)),
-			"string" => (short)(String == "" ? 0 : short.TryParse(String.ToString(), out var a) ? a : 0),
+			"string" => 0,
 			"list" => (short)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToShortInt()),
 			_ => 0
 		};
@@ -638,7 +638,7 @@ public struct Universal
 			"DateTime" => (ushort)(Object is not DateTime dt ? 0 : dt.Ticks > 65535 ? 0 : dt.Ticks),
 			"unsigned long int" => (ushort)(Object is not ulong uli ? 0 : uli > 65535 ? 0 : uli),
 			"real" => (ushort)(Number is < (-65535) or > 65535 ? 0 : Floor(Abs(Number))),
-			"string" => (ushort)(String == "" ? 0 : ushort.TryParse(String.ToString(), out var a) ? a : 0),
+			"string" => 0,
 			"list" => (ushort)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedShortInt()),
 			_ => 0
 		};
@@ -663,7 +663,7 @@ public struct Universal
 			"DateTime" => (char)(Object is not DateTime dt ? 0 : dt.Ticks > 65535 ? 0 : dt.Ticks),
 			"unsigned long int" => (char)(Object is not ulong uli ? 0 : uli > 65535 ? 0 : uli),
 			"real" => (char)(Number is < (-65535) or > 65535 ? 0 : Floor(Abs(Number))),
-			"string" => (char)(String == "" ? 0 : char.TryParse(String.ToString(), out var a) ? a : 0),
+			"string" => (char)0,
 			"list" => (char)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToChar()),
 			_ => '\0'
 		};
@@ -688,7 +688,7 @@ public struct Universal
 			"DateTime" => (int)(Object is not DateTime dt ? 0 : dt.Ticks > 2147483647 ? 0 : dt.Ticks),
 			"unsigned long int" => (int)(Object is not ulong uli ? 0 : uli > 2147483647 ? 0 : uli),
 			"real" => (int)(Number is < (-2147483648) or > 2147483647 ? 0 : Floor(Number)),
-			"string" => String == "" ? 0 : int.TryParse(String.ToString(), out var a) ? a : 0,
+			"string" => 0,
 			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToInt(),
 			_ => 0
 		};
@@ -713,7 +713,7 @@ public struct Universal
 			"DateTime" => (uint)(Object is not DateTime dt ? 0 : dt.Ticks > 4294967295 ? 0 : dt.Ticks),
 			"unsigned long int" => (uint)(Object is not ulong uli ? 0 : uli > 4294967295 ? 0 : uli),
 			"real" => (uint)(Number is < (-4294967295) or > 4294967295 ? 0 : Floor(Abs(Number))),
-			"string" => String == "" ? 0 : uint.TryParse(String.ToString(), out var a) ? a : 0,
+			"string" => 0,
 			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedInt(),
 			_ => 0
 		};
@@ -738,7 +738,7 @@ public struct Universal
 			"DateTime" => (Object is not DateTime dt) ? 0 : dt.Ticks,
 			"unsigned long int" => (long)((Object is not ulong uli) ? 0 : uli),
 			"real" => (long)((Number is < (-(double)9223372036854775808) or > 9223372036854775807) ? 0 : Floor(Number)),
-			"string" => (String == "") ? 0 : long.TryParse(String.ToString(), out var a) ? a : 0,
+			"string" => 0,
 			"list" => (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToLongInt(),
 			_ => 0
 		};
@@ -765,7 +765,7 @@ public struct Universal
 			"DateTime" => (ulong)(Object is not DateTime dt ? 0 : dt.Ticks),
 			"unsigned long int" => Object is not ulong uli ? 0 : uli,
 			"real" => (ulong)(Number is < (-(double)18446744073709551615) or > 18446744073709551615 ? 0 : Floor(Abs(Number))),
-			"string" => String == "" ? 0 : ulong.TryParse(String.ToString(), out var a) ? a : 0,
+			"string" => 0,
 			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedLongInt(),
 			_ => 0
 		};
@@ -790,7 +790,7 @@ public struct Universal
 			"DateTime" => Object is not DateTime dt ? 0 : dt.Ticks,
 			"unsigned long int" => Object is not ulong uli ? 0 : uli,
 			"real" => Number,
-			"string" => (double)(String == "" ? 0 : double.TryParse(String.ToString(), out var a) ? a : 0),
+			"string" => 0,
 			"list" => (double)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToReal()),
 			_ => 0
 		};
@@ -853,9 +853,7 @@ public struct Universal
 				return Object == null ? "" : Object is UniversalType UnvType ? UnvType.ToString() : NullType.ToString();
 			else if (basic_type == "string")
 			{
-				if (String == "")
-					return (String)(takeIntoQuotes ? "\"\"" : "");
-				else if (!takeIntoQuotes)
+				if (!takeIntoQuotes)
 					return String;
 				else if (addCasting)
 					return ((String)"((").AddRange(nameof(String)).Add(')').AddRange(String.TakeIntoQuotes(true)).Add(')');
@@ -1330,7 +1328,7 @@ public struct Universal
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
 			var basic_type = x.InnerType.MainType.Peek().Name;
-			if (new List<String> { "short int", "unsigned short int", "int", "unsigned int", "real" }.Contains(basic_type))
+			if (new List<String> { "byte", "short int", "unsigned short int", "int", "unsigned int", "real" }.Contains(basic_type))
 			{
 				if (basic_type == "real")
 					return ValidateFixing(+x.ToReal(), RealType, x.Fixed);
@@ -1344,8 +1342,12 @@ public struct Universal
 					return ValidateFixing(+x.ToInt(), IntType, x.Fixed);
 				else if (basic_type == "unsigned short int")
 					return ValidateFixing(+x.ToUnsignedShortInt(), UnsignedShortIntType, x.Fixed);
+				else if (basic_type == "short int")
+					return ValidateFixing(+x.ToShortInt(), ShortIntType, x.Fixed);
+				else if (basic_type == "byte")
+					return ValidateFixing(+x.ToByte(), ByteType, x.Fixed);
 				else
-					return basic_type == "short int" ? ValidateFixing(+x.ToShortInt(), ShortIntType, x.Fixed) : new();
+					return new();
 			}
 			else
 				return new();
@@ -1359,7 +1361,7 @@ public struct Universal
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
 			var basic_type = x.InnerType.MainType.Peek().Name;
-			if (new List<String> { "short int", "unsigned short int", "int", "unsigned int", "real" }.Contains(basic_type))
+			if (new List<String> { "byte", "short int", "unsigned short int", "int", "unsigned int", "real" }.Contains(basic_type))
 			{
 				if (basic_type == "real")
 					return ValidateFixing(-x.ToReal(), RealType, x.Fixed);
@@ -1373,8 +1375,12 @@ public struct Universal
 					return ValidateFixing(-x.ToInt(), IntType, x.Fixed);
 				else if (basic_type == "unsigned short int")
 					return ValidateFixing(-x.ToShortInt(), UnsignedShortIntType, x.Fixed);
+				else if (basic_type == "short int")
+					return ValidateFixing(-x.ToShortInt(), ShortIntType, x.Fixed);
+				else if (basic_type == "byte")
+					return ValidateFixing(-x.ToByte(), ByteType, x.Fixed);
 				else
-					return basic_type == "short int" ? ValidateFixing(-x.ToShortInt(), ShortIntType, x.Fixed) : new();
+					return new();
 			}
 			else
 				return new();
@@ -1402,8 +1408,12 @@ public struct Universal
 					return ValidateFixing(~x.ToInt(), IntType, x.Fixed);
 				else if (basic_type == "unsigned short int")
 					return ValidateFixing(~x.ToUnsignedShortInt(), UnsignedShortIntType, x.Fixed);
+				else if (basic_type == "short int")
+					return ValidateFixing(~x.ToShortInt(), ShortIntType, x.Fixed);
+				else if (basic_type == "byte")
+					return ValidateFixing(~x.ToByte(), ByteType, x.Fixed);
 				else
-					return basic_type == "short int" ? ValidateFixing(~x.ToShortInt(), ShortIntType, x.Fixed) : new();
+					return new();
 			}
 			else
 				return new();

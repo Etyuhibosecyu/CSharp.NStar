@@ -81,8 +81,16 @@ public static class DeclaredConstructionMappings
 
 	public static UniversalType TypeMappingBack(Type netType, Type[] genericArguments, GeneralExtraTypes extraTypes)
 	{
+		if (netType.IsGenericParameter)
+		{
+			var genericArgumentsIndex = Array.IndexOf(genericArguments, netType);
+			if (genericArgumentsIndex < 0 || extraTypes.Length <= genericArgumentsIndex)
+				return new(new([new(BlockType.Extra, netType.Name, 0)]), []);
+			else
+				return new(extraTypes[genericArgumentsIndex].MainType.Type, extraTypes[genericArgumentsIndex].ExtraTypes);
+		}
 		if (netType.IsSZArray || netType.IsPointer)
-			netType = typeof(List<>);
+			netType = typeof(List<>).MakeGenericType(netType.GetElementType() ?? throw new InvalidOperationException());
 		else if (netType == typeof(BitArray))
 			netType = typeof(BitList);
 		else if (netType == typeof(Index))

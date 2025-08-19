@@ -58,14 +58,15 @@ public class LexemStream
 			}
 			if (figureBk != 0)
 			{
-				GenerateMessage("Wreck", pos - 1, "unpaired bracket; expected: }");
+				GenerateMessage(0x9007, pos - 1);
 				return;
 			}
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException)
 		{
 			var pos2 = (pos >= lexems.Length) ? pos - 1 : pos;
-			GenerateMessage("Wreck", pos2, "compilation failed because of internal compiler error");
+			GenerateMessage(0xF000, pos2);
+			wreckOccurred = true;
 			return;
 		}
 	}
@@ -92,7 +93,7 @@ public class LexemStream
 		{
 			if (figureBk == 0)
 			{
-				GenerateMessage("Wreck", pos, "unpaired closing bracket");
+				GenerateMessage(0x9008, pos);
 				return;
 			}
 			else
@@ -110,7 +111,7 @@ public class LexemStream
 	{
 		if (pos != 0)
 		{
-			GenerateMessage("Wreck", pos, "using namespace is declared not at the beginning of the code");
+			GenerateMessage(0x9009, pos);
 			wreckOccurred = true;
 			return;
 		}
@@ -130,43 +131,43 @@ public class LexemStream
 		}
 		else
 		{
-			GenerateMessage("Wreck", pos, "expected: identifier");
+			GenerateMessage(0x900A, pos);
 			wreckOccurred = true;
 			return;
 		}
 		if (NotImplementedNamespacesList.Contains(name))
 		{
-			GenerateMessage("Wreck", pos, "namespace \"" + name + "\" is still not implemented, wait for next versions");
+			GenerateMessage(0x900B, pos, name);
 			wreckOccurred = true;
 			return;
 		}
 		else if (OutdatedNamespacesList.TryGetValue(name, out var useInstead))
 		{
-			GenerateMessage("Wreck", pos, "namespace \"" + name + "\" is outdated, consider using " + useInstead + " instead");
+			GenerateMessage(0x900C, pos, name, useInstead);
 			wreckOccurred = true;
 			return;
 		}
 		else if (ReservedNamespacesList.Contains(name))
 		{
-			GenerateMessage("Wreck", pos, "namespace \"" + name + "\" is reserved for next versions of C#.NStar and cannot be used");
+			GenerateMessage(0x900D, pos, name);
 			wreckOccurred = true;
 			return;
 		}
 		else if (!NamespacesList.Contains(name))
 		{
-			GenerateMessage("Wreck", pos, "\"" + name + "\" is not a valid namespace");
+			GenerateMessage(0x900E, pos, name);
 			wreckOccurred = true;
 			return;
 		}
 		else if (!ExplicitlyConnectedNamespacesList.Add(name))
 		{
-			GenerateMessage("Wreck", pos, "using \"" + name + "\" is already declared");
+			GenerateMessage(0x900F, pos, name);
 			wreckOccurred = true;
 			return;
 		}
 		else if (!IsCurrentLexemOther(";"))
 		{
-			GenerateMessage("Wreck", pos, "expected: \";\"");
+			GenerateMessage(0x9010, pos);
 			wreckOccurred = true;
 			return;
 		}
@@ -196,7 +197,7 @@ public class LexemStream
 		else
 		{
 			name = "???" + unknownIndex++.ToString();
-			GenerateError(pos, "expected: identifier");
+			GenerateMessage(0x0004, pos);
 		}
 		GetFigureBracketAndSetBlock(BlockType.Namespace, name, 0, () =>
 		{
@@ -220,7 +221,7 @@ public class LexemStream
 		attributes |= (TypeAttributes)AddAttribute("partial", TypeAttributes.Partial);
 		while (pos2 < pos)
 		{
-			GenerateError(pos2, "incorrect word or order of words in construction declaration");
+			GenerateMessage(0x0005, pos2, "incorrect word or order of words in construction declaration");
 			pos2++;
 		}
 		if (IsEnd()) return;
@@ -230,22 +231,21 @@ public class LexemStream
 		{
 			var s = lexems[pos].String;
 			if (PrimitiveTypesList.ContainsKey(s) || ExtraTypesList.ContainsKey(("", s)))
-				ChangeNameAndGenerateError(out name, "class \"" + s
-					+ "\" is standard root C#.NStar type and cannot be redefined");
+				ChangeNameAndGenerateError(0x0006, out name, s);
 			else if (UserDefinedTypesList.ContainsKey((container, s)))
-				ChangeNameAndGenerateError(out name, "class \"" + s + "\" is already defined in this region");
+				ChangeNameAndGenerateError(0x0007, out name, s);
 			else
-				CheckAdditionalNameConditions(out name, s, "class \"" + s + "\" is nearest to this outer class");
+				CheckAdditionalNameConditions(0x0008, out name, s, s);
 		}
 		else
-			ChangeNameAndGenerateError(out name, "expected: identifier");
+			ChangeNameAndGenerateError(0x0004, out name);
 		pos++;
 		pos2 = pos;
 		if (IsEnd()) return;
 		if (IsCurrentLexemOperator(":"))
 		{
 			if ((attributes & TypeAttributes.Static) == TypeAttributes.Static)
-				GenerateError(pos, "a static class cannot be derived");
+				GenerateMessage(0x0009, pos);
 			pos++;
 			var pos3 = pos;
 			while (pos < lexems.Length && (lexems[pos].Type == LexemType.Identifier || IsCurrentLexemOperator(".") || IsLexemOther(lexems[pos], ["(", ")", "[", "]", ","])))
@@ -277,14 +277,14 @@ public class LexemStream
 		{
 			var value = (IsPos2LexemKeyword("static") ? 2 : 0) + (IsStatic() ? 1 : 0);
 			if (value == 3)
-				GenerateMessage("Warning", pos2, "properties and methods are static in the static class implicitly; word \"static\" is not necessary");
+				GenerateMessage(0x8000, pos2);
 			if (value >= 1)
 				attributes |= FunctionAttributes.Static;
 			if (value >= 2)
 				pos2++;
 		}
 		else
-			CheckKeywordAndGenerateError("static", "static functions are allowed only inside classes");
+			CheckKeywordAndGenerateError(0x000A, "static", "static functions are allowed only inside classes");
 		if (IsPos2LexemKeyword("new"))
 			attributes |= (FunctionAttributes)AddAttribute("new", FunctionAttributes.New);
 		else if (IsPos2LexemKeyword("sealed"))
@@ -308,14 +308,14 @@ public class LexemStream
 		{
 			var s = lexems[pos].String;
 			if (PublicFunctionsList.ContainsKey(s))
-				ChangeNameAndGenerateError(out name, "function\"" + s + "\" is standard root C#.NStar function and cannot be redefined");
+				ChangeNameAndGenerateError(0x000B, out name, s);
 			else if (UserDefinedFunctionsList.TryGetValue(container, out var methods) && methods.ContainsKey(s))
-				ChangeNameAndGenerateError(out name, "function\"" + s + "\" is already defined in this region; overloaded functions are under development");
+				ChangeNameAndGenerateError(0x000C, out name, s);
 			else
-				CheckAdditionalNameConditions(out name, s, "function cannot have same name as its container class");
+				CheckAdditionalNameConditions(0x000D, out name, s);
 		}
 		else
-			ChangeNameAndGenerateError(out name, "expected: identifier");
+			ChangeNameAndGenerateError(0x0004, out name);
 		var t = registeredTypes[^1];
 		t.Name = name;
 		registeredTypes[^1] = t;
@@ -334,7 +334,7 @@ public class LexemStream
 				return;
 			}
 			else if (!IsCurrentLexemOther((attributes & FunctionAttributes.New) == FunctionAttributes.Abstract ? ";" : "{"))
-				GenerateError(pos, "\";\" must follow the abstract function declaration, \"{\" - the non-abstract one");
+				GenerateMessage(0x000E, pos);
 		}
 		GetFigureBracketAndSetBlock(BlockType.Function, name, attributes, () =>
 		{
@@ -350,7 +350,7 @@ public class LexemStream
 	{
 		if (!IsClass())
 		{
-			GenerateError(pos, "constructors are allowed only inside classes");
+			GenerateMessage(0x000F, pos);
 			pos++;
 			return;
 		}
@@ -362,7 +362,7 @@ public class LexemStream
 		attributes = (ConstructorAttributes)GetAccessMethod((int)attributes);
 		var value = (IsPos2LexemKeyword("static") ? 2 : 0) + (IsStatic() ? 1 : 0);
 		if (value == 3)
-			GenerateMessage("Warning", pos2, "properties and methods are static in the static class implicitly; word \"static\" is not necessary");
+			GenerateMessage(0x8000, pos2);
 		if (value >= 1)
 			attributes |= ConstructorAttributes.Static;
 		if (value >= 2)
@@ -371,7 +371,7 @@ public class LexemStream
 		attributes |= (ConstructorAttributes)AddAttribute("abstract", ConstructorAttributes.Abstract);
 		while (pos2 < pos)
 		{
-			GenerateError(pos2, "incorrect word or order of words in construction declaration");
+			GenerateMessage(0x0005, pos2);
 			pos2++;
 		}
 		if (IsEnd()) return;
@@ -408,12 +408,12 @@ public class LexemStream
 		});
 	}
 
-	private void CheckAdditionalNameConditions(out String name, String s, String error)
+	private void CheckAdditionalNameConditions(ushort code, out String name, String s, params dynamic[] parameters)
 	{
 		if (nestedBlocksChain.Length >= 1 && nestedBlocksChain.Peek().Name == s)
-			ChangeNameAndGenerateError(out name, error);
+			ChangeNameAndGenerateError(code, out name, parameters);
 		else if (IsReservedNamespaceOrType(s, out var errorPrefix))
-			ChangeNameAndGenerateError(out name, errorPrefix + "\" is reserved for next versions of C#.NStar and cannot be used");
+			ChangeNameAndGenerateError(0x0010, out name, errorPrefix);
 		else
 			name = s;
 	}
@@ -437,7 +437,7 @@ public class LexemStream
 				}
 				else if (new List<String> { ")", "]", "}" }.Contains(s) || bracket != "}" && (s == ";" || s == "\r\n"))
 				{
-					GenerateError(pos, "unpaired brackets; expected: " + bracket + "");
+					GenerateMessage(0x9011, pos, bracket);
 					return false;
 				}
 				else
@@ -459,16 +459,14 @@ public class LexemStream
 		return false;
 	}
 
-	private void GenerateError(Index pos, String text) => GenerateMessage("Error", pos, text);
-
-	private void GenerateMessage(String typeName, Index pos, String text)
+	private void GenerateMessage(ushort code, Index pos, params dynamic[] parameters)
 	{
-		(errorsList ??= []).Add(typeName + " in line " + lexems[pos].LineN.ToString() + " at position " + lexems[pos].Pos.ToString() + ": " + text);
-		if (typeName == "Wreck")
+		DeclaredConstructions.GenerateMessage(ref errorsList, code, lexems[pos].LineN, lexems[pos].Pos, parameters);
+		if (code >> 12 == 0x9)
 			wreckOccurred = true;
 	}
 
-	private void GenerateUnexpectedEndError() => (errorsList ??= []).Add("Error in line " + lexems[pos - 1].LineN.ToString() + " at position " + (lexems[pos - 1].Pos + lexems[pos - 1].String.Length).ToString() + ": unexpected end of code reached");
+	private void GenerateUnexpectedEndError() => DeclaredConstructions.GenerateMessage(ref errorsList, 0x0000, lexems[pos - 1].LineN, lexems[pos - 1].Pos + lexems[pos - 1].String.Length);
 
 	public (List<Lexem> Lexems, String String, TreeBranch TopBranch, List<String>? ErrorsList, bool WreckOccurred) EmptySyntaxTree() => (lexems, input, TreeBranch.DoNotAdd(), errorsList, true);
 
@@ -496,7 +494,7 @@ public class LexemStream
 			if (nestedBlocksChain.Length != 0 && nestedBlocksChain.Peek().BlockType == BlockType.Class)
 				attributes |= (lexems[pos2].String == "closed") ? 2 : 4;
 			else
-				GenerateError(pos2, "closed and protected classes are allowed only inside other classes");
+				GenerateMessage(0x0014, pos2, "closed and protected classes are allowed only inside other classes");
 			pos2++;
 		}
 		else if (IsPos2LexemKeyword("internal"))
@@ -505,15 +503,15 @@ public class LexemStream
 			pos2++;
 		}
 		else
-			CheckKeywordAndGenerateError("public", "public access is under development");
+			CheckKeywordAndGenerateError(0x0015, "public", "public access is under development");
 		return attributes;
 	}
 
-	private void CheckKeywordAndGenerateError(String string_, String error)
+	private void CheckKeywordAndGenerateError(ushort code, String string_, String error)
 	{
 		if (IsPos2LexemKeyword(string_))
 		{
-			GenerateError(pos2, error);
+			GenerateMessage(code, pos2, error);
 			pos2++;
 		}
 	}
@@ -545,7 +543,7 @@ public class LexemStream
 		if (IsEnd()) return;
 		if (blockType != BlockType.Function && !IsCurrentLexemOther("{"))
 		{
-			GenerateError(pos, "expected: {");
+			GenerateMessage(0x0011, pos);
 			while (pos < lexems.Length && !(lexems[pos].Type == LexemType.Other && (lexems[pos].String == "{" || lexems[pos].String == "\r\n")))
 				pos++;
 		}
@@ -559,10 +557,10 @@ public class LexemStream
 		pos++;
 	}
 
-	private void ChangeNameAndGenerateError(out String name, String error)
+	private void ChangeNameAndGenerateError(ushort code, out String name, params dynamic[] parameters)
 	{
 		name = "???" + unknownIndex++.ToString();
-		GenerateError(pos, error);
+		GenerateMessage(code, pos, parameters);
 	}
 
 	private static bool IsReservedNamespaceOrType(String s, out String errorPrefix)

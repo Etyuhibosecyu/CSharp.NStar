@@ -35,16 +35,16 @@ public partial class MainView : UserControl
 	private static readonly Dictionary<String, (String TargetResult, String? TargetErrors)> testPrograms = new() { { """
 		return ("7" * "2", "7" * 2, 7 * "2", "7" / "2", "7" / 2, 7 / "2", "7" % "2", "7" % 2, 7 % "2", "7" - "2", "7" - 2, 7 - "2");
 
-		""", ("""(null, "77", "2222222", null, null, null, null, null, null, null, null, null)""", @"Error in line 1 at position 12: the string cannot be multiplied by string
-Error in line 1 at position 41: the strings cannot be divided or give remainder (%)
-Error in line 1 at position 52: the strings cannot be divided or give remainder (%)
-Error in line 1 at position 59: the strings cannot be divided or give remainder (%)
-Error in line 1 at position 70: the strings cannot be divided or give remainder (%)
-Error in line 1 at position 81: the strings cannot be divided or give remainder (%)
-Error in line 1 at position 88: the strings cannot be divided or give remainder (%)
-Error in line 1 at position 99: the strings cannot be subtracted
-Error in line 1 at position 110: the strings cannot be subtracted
-Error in line 1 at position 117: the strings cannot be subtracted
+		""", ("""(null, "77", "2222222", null, null, null, null, null, null, null, null, null)""", @"Error 4008 in line 1 at position 12: the string cannot be multiplied by the string
+Error 4009 in line 1 at position 41: the strings cannot be divided or give the remainder (%)
+Error 4009 in line 1 at position 52: the strings cannot be divided or give the remainder (%)
+Error 4009 in line 1 at position 59: the strings cannot be divided or give the remainder (%)
+Error 4009 in line 1 at position 70: the strings cannot be divided or give the remainder (%)
+Error 4009 in line 1 at position 81: the strings cannot be divided or give the remainder (%)
+Error 4009 in line 1 at position 88: the strings cannot be divided or give the remainder (%)
+Error 4007 in line 1 at position 99: the strings cannot be subtracted
+Error 4007 in line 1 at position 110: the strings cannot be subtracted
+Error 4007 in line 1 at position 117: the strings cannot be subtracted
 ") }, { """
 		var a = 7;
 		var b = 2;
@@ -52,61 +52,70 @@ Error in line 1 at position 117: the strings cannot be subtracted
 		var bq = "2";
 		return (aq * bq, aq * b, a * bq, aq / bq, aq / b, a / bq, aq % bq, aq % b, a % bq, aq - bq, aq - b, a - bq);
 
-		""", ("""(null, "77", "2222222", null, null, 0, null, null, 0, null, null, null)""", @"Error in line 5 at position 11: the string cannot be multiplied by string
-Error in line 5 at position 36: the strings cannot be divided or give remainder (%)
-Error in line 5 at position 45: the strings cannot be divided or give remainder (%)
-Error in line 5 at position 52: the strings cannot be divided or give remainder (%)
-Error in line 5 at position 61: the strings cannot be divided or give remainder (%)
-Error in line 5 at position 70: the strings cannot be divided or give remainder (%)
-Error in line 5 at position 77: the strings cannot be divided or give remainder (%)
-Error in line 5 at position 86: the strings cannot be subtracted
-Error in line 5 at position 95: the strings cannot be subtracted
-Error in line 5 at position 102: the strings cannot be subtracted
+		""", ("""(null, "77", "2222222", null, null, 0, null, null, 0, null, null, null)""", @"Error 4008 in line 5 at position 11: the string cannot be multiplied by the string
+Error 4009 in line 5 at position 36: the strings cannot be divided or give the remainder (%)
+Error 4009 in line 5 at position 45: the strings cannot be divided or give the remainder (%)
+Error 4009 in line 5 at position 52: the strings cannot be divided or give the remainder (%)
+Error 4009 in line 5 at position 61: the strings cannot be divided or give the remainder (%)
+Error 4009 in line 5 at position 70: the strings cannot be divided or give the remainder (%)
+Error 4009 in line 5 at position 77: the strings cannot be divided or give the remainder (%)
+Error 4007 in line 5 at position 86: the strings cannot be subtracted
+Error 4007 in line 5 at position 95: the strings cannot be subtracted
+Error 4007 in line 5 at position 102: the strings cannot be subtracted
 ") }, { """
 		return (("A", 77777, 3.14159) + 5, ("A", 77777, 3.14159) - 5, ("A", 77777, 3.14159) * 5, ("A", 77777, 3.14159) / 5, ("A", 77777, 3.14159) % 5);
 		
-		""", ("""(null, null, null, null, null)""", @"Error in line 1 at position 30: cannot cannot apply the operator ""+"" to the types ""(string, int, real)"" and ""byte""
-Error in line 1 at position 57: cannot cannot apply the operator ""-"" to the types ""(string, int, real)"" and ""byte""
-Error in line 1 at position 84: cannot cannot apply the operator ""*"" to the types ""(string, int, real)"" and ""byte""
-Error in line 1 at position 111: cannot cannot apply the operator ""/"" to the types ""(string, int, real)"" and ""byte""
-Error in line 1 at position 138: cannot cannot apply the operator ""%"" to the types ""(string, int, real)"" and ""byte""
+		""", ("""(null, null, null, null, null)""", @"Error 4006 in line 1 at position 30: cannot apply the operator ""+"" to the types ""(string, int, real)"" and ""byte""
+Error 4006 in line 1 at position 57: cannot apply the operator ""-"" to the types ""(string, int, real)"" and ""byte""
+Error 4006 in line 1 at position 84: cannot apply the operator ""*"" to the types ""(string, int, real)"" and ""byte""
+Error 4006 in line 1 at position 111: cannot apply the operator ""/"" to the types ""(string, int, real)"" and ""byte""
+Error 4006 in line 1 at position 138: cannot apply the operator ""%"" to the types ""(string, int, real)"" and ""byte""
 ") }, { """
 		return (5 + ("A", 77777, 3.14159), 5 - ("A", 77777, 3.14159), 5 * ("A", 77777, 3.14159), 5 / ("A", 77777, 3.14159), 5 % ("A", 77777, 3.14159));
 				
 		""", ("""(null, null, null, 0, 0)""", """
-			Error in line 1 at position 10: cannot cannot apply the operator "+" to the types "byte" and "(string, int, real)"
-			Error in line 1 at position 37: cannot cannot apply the operator "-" to the types "byte" and "(string, int, real)"
-			Error in line 1 at position 64: cannot cannot apply the operator "*" to the types "byte" and "(string, int, real)"
-			Error in line 1 at position 91: cannot cannot apply the operator "/" to the types "byte" and "(string, int, real)"
-			Error in line 1 at position 118: cannot cannot apply the operator "%" to the types "byte" and "(string, int, real)"
+			Error 4006 in line 1 at position 10: cannot apply the operator "+" to the types "byte" and "(string, int, real)"
+			Error 4006 in line 1 at position 37: cannot apply the operator "-" to the types "byte" and "(string, int, real)"
+			Error 4006 in line 1 at position 64: cannot apply the operator "*" to the types "byte" and "(string, int, real)"
+			Error 4006 in line 1 at position 91: cannot apply the operator "/" to the types "byte" and "(string, int, real)"
+			Error 4006 in line 1 at position 118: cannot apply the operator "%" to the types "byte" and "(string, int, real)"
 
 			""") }, { """
 		return (5 + null, 5 - null, 5 * null, 5 / null, 5 % null, null + 5, null - 5, null * 5, null / 5, null % 5);
 						
-		""", ("""(5, 5, 0, 0, 0, 5, -5, 0, 0, 0)""", @"Error in line 1 at position 40: cannot cannot apply the operator ""/"" to the types ""byte"" and ""null""
-Error in line 1 at position 50: cannot cannot apply the operator ""%"" to the types ""byte"" and ""null""
+		""", ("""(5, 5, 0, 0, 0, 5, -5, 0, 0, 0)""", @"Error 4006 in line 1 at position 40: cannot apply the operator ""/"" to the types ""byte"" and ""null""
+Error 4006 in line 1 at position 50: cannot apply the operator ""%"" to the types ""byte"" and ""null""
 ") }, { """
 		var a = ("A", 77777, 3.14159);
 		var b = 5;
 		return (a + b, a - b, a * b, a / b, a % b, b + a, b - a, b * a, b / a, b % a);
 								
-		""", ("""(null, null, null, null, null, null, null, null, 0, 0)""", @"Error in line 3 at position 10: cannot cannot apply the operator ""+"" to the types ""(string, int, real)"" and ""byte""
-Error in line 3 at position 17: cannot cannot apply the operator ""-"" to the types ""(string, int, real)"" and ""byte""
-Error in line 3 at position 24: cannot cannot apply the operator ""*"" to the types ""(string, int, real)"" and ""byte""
-Error in line 3 at position 31: cannot cannot apply the operator ""/"" to the types ""(string, int, real)"" and ""byte""
-Error in line 3 at position 38: cannot cannot apply the operator ""%"" to the types ""(string, int, real)"" and ""byte""
-Error in line 3 at position 45: cannot cannot apply the operator ""+"" to the types ""byte"" and ""(string, int, real)""
-Error in line 3 at position 52: cannot cannot apply the operator ""-"" to the types ""byte"" and ""(string, int, real)""
-Error in line 3 at position 59: cannot cannot apply the operator ""*"" to the types ""byte"" and ""(string, int, real)""
-Error in line 3 at position 66: cannot cannot apply the operator ""/"" to the types ""byte"" and ""(string, int, real)""
-Error in line 3 at position 73: cannot cannot apply the operator ""%"" to the types ""byte"" and ""(string, int, real)""
+		""", ("""(null, null, null, null, null, null, null, null, 0, 0)""", @"Error 4006 in line 3 at position 10: cannot apply the operator ""+"" to the types ""(string, int, real)"" and ""byte""
+Error 4006 in line 3 at position 17: cannot apply the operator ""-"" to the types ""(string, int, real)"" and ""byte""
+Error 4006 in line 3 at position 24: cannot apply the operator ""*"" to the types ""(string, int, real)"" and ""byte""
+Error 4006 in line 3 at position 31: cannot apply the operator ""/"" to the types ""(string, int, real)"" and ""byte""
+Error 4006 in line 3 at position 38: cannot apply the operator ""%"" to the types ""(string, int, real)"" and ""byte""
+Error 4006 in line 3 at position 45: cannot apply the operator ""+"" to the types ""byte"" and ""(string, int, real)""
+Error 4006 in line 3 at position 52: cannot apply the operator ""-"" to the types ""byte"" and ""(string, int, real)""
+Error 4006 in line 3 at position 59: cannot apply the operator ""*"" to the types ""byte"" and ""(string, int, real)""
+Error 4006 in line 3 at position 66: cannot apply the operator ""/"" to the types ""byte"" and ""(string, int, real)""
+Error 4006 in line 3 at position 73: cannot apply the operator ""%"" to the types ""byte"" and ""(string, int, real)""
+") }, { """return (sin "Infty", tan "Uncty", asin "2.71828", acos "-42", ln "-5", 1000000000000!, Infty!, 2.5!);""",
+			("null", @"Error 4002 in line 1 at position 8: cannot apply this operator to this constant
+Error 4002 in line 1 at position 21: cannot apply this operator to this constant
+Error 4002 in line 1 at position 34: cannot apply this operator to this constant
+Error 4002 in line 1 at position 50: cannot apply this operator to this constant
+Error 4002 in line 1 at position 62: cannot apply this operator to this constant
+Error 4003 in line 1 at position 84: cannot compute factorial of this constant
+Error 4003 in line 1 at position 92: cannot compute factorial of this constant
+Error 4003 in line 1 at position 98: cannot compute factorial of this constant
 ") }, { """
 		var a = 5;
 		var b = null;
 		return (a + b, a - b, a * b, a / b, a % b, b + a, b - a, b * a, b / a, b % a);
 								
-		""", ("""(5, 5, 0, 0, 0, 5, -5, 0, 0, 0)""", @"Error in line 3 at position 31: cannot cannot apply the operator ""/"" to the types ""byte"" and ""null""
-Error in line 3 at position 38: cannot cannot apply the operator ""%"" to the types ""byte"" and ""null""
+		""", ("""(5, 5, 0, 0, 0, 5, -5, 0, 0, 0)""", @"Error 4006 in line 3 at position 31: cannot apply the operator ""/"" to the types ""byte"" and ""null""
+Error 4006 in line 3 at position 38: cannot apply the operator ""%"" to the types ""byte"" and ""null""
 ") }, { @"return (IntToReal(5), IntToReal(77777), IntToReal(777777777777));
 ", (@"(5, 77777, 777777777777)", "Ошибок нет") }, { @"var a = 5;
 var b = 3;
@@ -250,15 +259,15 @@ int Function F2(int n)
 }
 var a = new MyClass();
 return (F1(10), F2(10, 10), F2(10.01), a.F1(10), a.F2(10, 10), a.F2(10.01), MyClass.G1(10), MyClass.G2(10, 10), MyClass.G2(10.01));
-", ("null", @"Error in line 33 at position 11: the function ""F1"" does not have overloads with parameters
-Error in line 33 at position 19: incorrect number of parameters of the call
-Error in line 33 at position 31: conversion from type ""real"" to type ""int"" is possible only in function return, not in the direct assignment and not in the call
-Error in line 33 at position 44: the function ""F1"" does not have overloads with parameters
-Error in line 33 at position 54: incorrect number of parameters of the call
-Error in line 33 at position 68: conversion from type ""real"" to type ""int"" is possible only in function return, not in the direct assignment and not in the call
-Error in line 33 at position 87: the function ""G1"" does not have overloads with parameters
-Error in line 33 at position 103: incorrect number of parameters of the call
-Error in line 33 at position 123: conversion from type ""real"" to type ""int"" is possible only in function return, not in the direct assignment and not in the call
+", ("null", @"Error 4022 in line 33 at position 11: the function ""F1"" must have 0 parameters
+Error 4022 in line 33 at position 19: the function ""F2"" must have 1 parameters
+Error 4027 in line 33 at position 31: the conversion from the type ""real"" to the type ""int"" is possible only in the function return, not in the direct assignment and not in the call
+Error 4022 in line 33 at position 44: the function ""F1"" must have 0 parameters
+Error 4022 in line 33 at position 54: the function ""F2"" must have 1 parameters
+Error 4027 in line 33 at position 68: the conversion from the type ""real"" to the type ""int"" is possible only in the function return, not in the direct assignment and not in the call
+Error 4022 in line 33 at position 87: the function ""G1"" must have 0 parameters
+Error 4022 in line 33 at position 103: the function ""G2"" must have 1 parameters
+Error 4027 in line 33 at position 123: the conversion from the type ""real"" to the type ""int"" is possible only in the function return, not in the direct assignment and not in the call
 ") }, { @"real Function Factorial (int x)
 {
 	if (x <= 0)
@@ -315,12 +324,12 @@ return hs[2];
 byte b = 77777;
 real c = ""2.71828"";
 return (a, b, c);
-", (@"null", @"Error in line 1 at position 6: conversion from type ""real"" to type ""int"" is possible only in function return, not in the direct assignment and not in the call
-Error in line 2 at position 7: conversion from type ""int"" to type ""byte"" is possible only in function return, not in the direct assignment and not in the call
-Error in line 3 at position 7: cannot convert from type ""string"" to type ""real""
-Error in line 4 at position 8: identifier ""a"" is not defined in this location
-Error in line 4 at position 11: identifier ""b"" is not defined in this location
-Error in line 4 at position 14: identifier ""c"" is not defined in this location
+", (@"null", @"Error 4027 in line 1 at position 6: the conversion from the type ""real"" to the type ""int"" is possible only in the function return, not in the direct assignment and not in the call
+Error 4027 in line 2 at position 7: the conversion from the type ""int"" to the type ""byte"" is possible only in the function return, not in the direct assignment and not in the call
+Error 4014 in line 3 at position 7: cannot convert from the type ""string"" to the type ""real""
+Error 4001 in line 4 at position 8: the identifier ""a"" is not defined in this location
+Error 4001 in line 4 at position 11: the identifier ""b"" is not defined in this location
+Error 4001 in line 4 at position 14: the identifier ""c"" is not defined in this location
 ") }, { @"int a = 0;
 byte b = 0;
 real c = 0;
@@ -328,17 +337,17 @@ a = 3.14159;
 b = 77777;
 c = ""2.71828"";
 return (a, b, c);
-", (@"(0, 0, 0)", @"Error in line 4 at position 2: conversion from type ""real"" to type ""int"" is possible only in function return, not in the direct assignment and not in the call
-Error in line 5 at position 2: conversion from type ""int"" to type ""byte"" is possible only in function return, not in the direct assignment and not in the call
-Error in line 6 at position 2: cannot convert from type ""string"" to type ""real""
+", (@"(0, 0, 0)", @"Error 4027 in line 4 at position 2: the conversion from the type ""real"" to the type ""int"" is possible only in the function return, not in the direct assignment and not in the call
+Error 4027 in line 5 at position 2: the conversion from the type ""int"" to the type ""byte"" is possible only in the function return, not in the direct assignment and not in the call
+Error 4014 in line 6 at position 2: cannot convert from the type ""string"" to the type ""real""
 ") }, { @"list() int list = (0);
 return (list.Dispose(10), Fibonacci(10, 10), Fibonacci(""10""), Fibonacci(10.01));
-", (@"null", @"Error in line 2 at position 21: the function ""Dispose"" does not have overloads with parameters
-Error in line 2 at position 36: incorrect number of parameters of the call
-Error in line 2 at position 55: incompatibility between type of the parameter of the call ""string"" and type of the parameter of the function ""int""
-Error in line 2 at position 72: conversion from type ""real"" to type ""int"" is possible only in function return, not in the direct assignment and not in the call
+", (@"null", @"Error 4022 in line 2 at position 21: the function ""Dispose"" must have 0 parameters
+Error 4022 in line 2 at position 36: the function ""Fibonacci"" must have 1 parameters
+Error 4026 in line 2 at position 55: incompatibility between the type of the parameter of the call ""string"" and the type of the parameter of the function ""int""
+Error 4027 in line 2 at position 72: the conversion from the type ""real"" to the type ""int"" is possible only in the function return, not in the direct assignment and not in the call
 ") }, { @"bool bool=bool;
-", ("null", @"Error in line 1 at position 10: one cannot use the local variable ""bool"" before it is declared or inside such declaration in line 1 at position 0
+", ("null", @"Error 4012 in line 1 at position 10: one cannot use the local variable ""bool"" before it is declared or inside such declaration in line 1 at position 0
 ") }, { @"bool Function One()
 {
 	int Function Two()
@@ -348,7 +357,7 @@ Error in line 2 at position 72: conversion from type ""real"" to type ""int"" is
 	return Two();
 }
 return One();
-", ("false", @"Warning in line 7 at position 8: type of the returning value ""int"" and the function return type ""bool"" are badly compatible, you may lost data
+", ("false", @"Warning 800A in line 7 at position 8: the type of the returning value ""int"" and the function return type ""bool"" are badly compatible, you may lost data
 ") }, { @"System.Func[int] Function F()
 {
 	int Function F2()
@@ -370,9 +379,9 @@ return F()();
 	  return null; //Просто ""return;"" не катит
    }
 }
-", ("null", @"Wreck in line 13 at position 0: unclosed 2 nested comments in the end of code
+", ("null", @"Wreck 9006 in line 13 at position 0: unclosed 2 nested comments in the end of code
 ") }, { @"return /""Hello, world!""ssssssssssssssss\;
-", ("null", @"Wreck in line 2 at position 0: unexpected end of code reached; expected: 1 pairs ""double quote - reverse slash"" (starting with quote)
+", ("null", @"Wreck 9004 in line 2 at position 0: unexpected end of code reached; expected: 1 pairs ""double quote - reverse slash"" (starting with quote)
 ") }, { @"return /""Hello, world!/""\;
 ", (@"""Hello, world!/""", "Ошибок нет") }, { @"return /""Hell@""/""o, world!""\;
 ", (@"/""Hell@""/""o, world!""\", "Ошибок нет") }, { @"return /""Hell@""/{""o, world!""\;
@@ -394,9 +403,9 @@ return list;
 return x ^ x;
 ", (@"false", "Ошибок нет") }, { @"var x = 5;
 return 5 pow x += 3;
-", (@"null", @"Error in line 2 at position 15: only variables can be assigned
+", (@"null", @"Error 201D in line 2 at position 15: only the variables can be assigned
 ") }, { @"return ;
-", (@"null", @"Warning in line 1 at position 7: syntax ""return;"" is deprecated; consider using ""return null;"" instead
+", (@"null", @"Warning 8002 in line 1 at position 7: the syntax ""return;"" is deprecated; consider using ""return null;"" instead
 ") }, { @"null Function F(list() int n)
 {
 	n++;
@@ -406,7 +415,7 @@ F(a);
 F(a);
 F(a);
 return a;
-", (@"5", @"Error in line 3 at position 2: cannot apply the operator ""postfix ++"" to the type ""list() int""
+", (@"5", @"Error 4005 in line 3 at position 2: cannot apply the operator ""postfix ++"" to the type ""list() int""
 ") }, { @"var a = false;
 a++;
 return a;
@@ -422,7 +431,7 @@ return a + b;
 ", (@"5", "Ошибок нет") }, { @"var a = false;
 var b = 5;
 return a * b;
-", (@"null", @"Error in line 3 at position 9: cannot cannot apply the operator ""*"" to the types ""bool"" and ""byte""
+", (@"null", @"Error 4006 in line 3 at position 9: cannot apply the operator ""*"" to the types ""bool"" and ""byte""
 ") }, { @"using System.Collections;
 var hs = new ListHashSet[string]();
 hs.Add(""1"");
@@ -467,7 +476,17 @@ return list.RemoveEnd(5);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.Reverse(2, 3);
-", (@"(1, 4, 3, 2, 5, 6, 7)", "Ошибок нет") }, { @"using System.Collections;
+", (@"(1, 4, 3, 2, 5, 6, 7)", "Ошибок нет") }, { @"list() string list = ""1"";
+list.Add(""2"");
+list.Add("""");
+list.Add(""2"");
+return list;
+", ("""("1", "2", "", "2")""", "Ошибок нет") }, { @"list() string list = """";
+list.Add(""1"");
+list.Add("""");
+list.Add(""2"");
+return list;
+", ("""("", "1", "", "2")""", "Ошибок нет") }, { @"using System.Collections;
 Buffer[int] list = new Buffer[int](16, 1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
@@ -498,6 +517,13 @@ list.Add(4);
 list.Add((5, 6, 7));
 return list.Reverse(2, 3);
 ", (@"(1, 4, 3, 2, 5, 6, 7)", "Ошибок нет") }, { @"using System.Collections;
+var hs = new ListHashSet[string]();
+hs.Add(""1"");
+hs.Add(""2"");
+hs.Add("""");
+hs.Add(""2"");
+return hs;
+", ("""("1", "2", "")""", "Ошибок нет") }, { @"using System.Collections;
 Class MyClass
 {
 	Constructor(string s) {}
@@ -512,11 +538,11 @@ int Function G(string s)
 }
 string a = 8;
 return (G(12), new ListHashSet[string](1, ""A"", 10), new MyClass(77777));
-", (@"null", @"Error in line 8 at position 8: incompatibility between type of the returning value ""byte"" and the function return type ""string"" - use an addition of zero-length string for this
-Error in line 14 at position 9: cannot convert from type ""byte"" to type ""string"" - use an addition of zero-length string for this
-Error in line 15 at position 10: incompatibility between type of the parameter of the call ""byte"" and type of the parameter of the function ""string"" - use an addition of zero-length string for this
-Error in line 15 at position 47: incompatibility between type of the parameter of the call ""byte"" and all possible types of the parameter of the constructor (""string"", ""System.Collections.IEnumerable[string]"")
-Error in line 15 at position 64: incompatibility between type of the parameter of the call ""int"" and type of the parameter of the constructor ""string"" - use an addition of zero-length string for this
+", (@"null", @"Error 4039 in line 8 at position 8: incompatibility between the type of the returning value ""byte"" and the function return type ""string"" - use an addition of zero-length string for this
+Error 4014 in line 14 at position 9: cannot convert from the type ""byte"" to the type ""string"" - use an addition of zero-length string for this
+Error 4026 in line 15 at position 10: incompatibility between the type of the parameter of the call ""byte"" and the type of the parameter of the function ""string"" - use an addition of zero-length string for this
+Error 4036 in line 15 at position 47: incompatibility between the type of the parameter of the call ""byte"" and the type of the parameter of the constructor ""System.Collections.IEqualityComparer[string]""
+Error 4036 in line 15 at position 64: incompatibility between the type of the parameter of the call ""int"" and the type of the parameter of the constructor ""string"" - use an addition of zero-length string for this
 ") }, { """
 using System.Collections;
 			
@@ -734,14 +760,14 @@ MyClass Function F()
 return F();
 
 """, ("null", """
-Error in line 7 at position 14: cannot create instance of abstract type "MyClass"
-Error in line 7 at position 21: internal error
-Error in line 7 at position 1: variable declared with the keyword "var" must be assigned explicitly and in the same expression
-Error in line 8 at position 1: identifier "hs" is not defined in this location
-Error in line 9 at position 1: identifier "hs" is not defined in this location
-Error in line 10 at position 1: identifier "hs" is not defined in this location
-Error in line 11 at position 1: identifier "hs" is not defined in this location
-Error in line 12 at position 8: identifier "hs" is not defined in this location
+Error 2023 in line 7 at position 14: cannot create an instance of the abstract type "MyClass"
+Error 4000 in line 7 at position 21: internal compiler error
+Error 4011 in line 7 at position 1: the variable declared with the keyword "var" must be assigned explicitly and in the same expression
+Error 4001 in line 8 at position 1: the identifier "hs" is not defined in this location
+Error 4001 in line 9 at position 1: the identifier "hs" is not defined in this location
+Error 4001 in line 10 at position 1: the identifier "hs" is not defined in this location
+Error 4001 in line 11 at position 1: the identifier "hs" is not defined in this location
+Error 4001 in line 12 at position 8: the identifier "hs" is not defined in this location
 
 """) }, { """
 using System.Collections;
@@ -960,14 +986,14 @@ MyClass Function F()
 return F();
 
 """, ("null", """
-Error in line 7 at position 14: cannot create instance of abstract type "MyClass"
-Error in line 7 at position 21: internal error
-Error in line 7 at position 1: variable declared with the keyword "var" must be assigned explicitly and in the same expression
-Error in line 8 at position 1: identifier "hs" is not defined in this location
-Error in line 9 at position 1: identifier "hs" is not defined in this location
-Error in line 10 at position 1: identifier "hs" is not defined in this location
-Error in line 11 at position 1: identifier "hs" is not defined in this location
-Error in line 12 at position 8: identifier "hs" is not defined in this location
+Error 2023 in line 7 at position 14: cannot create an instance of the abstract type "MyClass"
+Error 4000 in line 7 at position 21: internal compiler error
+Error 4011 in line 7 at position 1: the variable declared with the keyword "var" must be assigned explicitly and in the same expression
+Error 4001 in line 8 at position 1: the identifier "hs" is not defined in this location
+Error 4001 in line 9 at position 1: the identifier "hs" is not defined in this location
+Error 4001 in line 10 at position 1: the identifier "hs" is not defined in this location
+Error 4001 in line 11 at position 1: the identifier "hs" is not defined in this location
+Error 4001 in line 12 at position 8: the identifier "hs" is not defined in this location
 
 """) }, { @"Class MyClass
 {
@@ -1128,9 +1154,9 @@ MyClass2 a2 = new MyClass2(8, 2.71828, ""$"");
 MyClass2 a3 = new MyClass2(8, 2.71828);
 MyClass2 a4 = new MyClass2(true);
 return (a1, a2, a3, a4);
-", ("""(new MyClass2(), null, null, new MyClass2())""", @"Error in line 8 at position 17: expected: non-sealed class or interface
-Error in line 17 at position 27: constructor of the type ""MyClass2"" must have from 0 to 1 parameters
-Error in line 18 at position 27: constructor of the type ""MyClass2"" must have from 0 to 1 parameters
+", ("""(new MyClass2(), null, null, new MyClass2())""", @"Error 2015 in line 8 at position 17: expected: non-sealed class or interface
+Error 4035 in line 17 at position 27: the constructor of the type ""MyClass2"" must have from 0 to 1 parameters
+Error 4035 in line 18 at position 27: the constructor of the type ""MyClass2"" must have from 0 to 1 parameters
 ") }, { @"Class MyClass
 {
 	int a = 5;
@@ -1151,19 +1177,19 @@ MyClass2 a2 = new MyClass2(8, 2.71828, ""$"");
 MyClass2 a3 = new MyClass2(8, 2.71828);
 MyClass2 a4 = new MyClass2(true);
 return (a1, a2, a3, a4);
-", ("null", @"Error in line 8 at position 22: a static class cannot be derived
-Error in line 16 at position 18: cannot create instance of static type ""MyClass2""
-Error in line 17 at position 18: cannot create instance of static type ""MyClass2""
-Error in line 18 at position 18: cannot create instance of static type ""MyClass2""
-Error in line 19 at position 18: cannot create instance of static type ""MyClass2""
-Error in line 16 at position 26: internal error
-Error in line 17 at position 26: internal error
-Error in line 18 at position 26: internal error
-Error in line 19 at position 26: internal error
-Error in line 20 at position 8: identifier ""a1"" is not defined in this location
-Error in line 20 at position 12: identifier ""a2"" is not defined in this location
-Error in line 20 at position 16: identifier ""a3"" is not defined in this location
-Error in line 20 at position 20: identifier ""a4"" is not defined in this location
+", ("null", @"Error 0009 in line 8 at position 22: a static class cannot be derived
+Error 2024 in line 16 at position 18: cannot create an instance of the static type ""MyClass2""
+Error 2024 in line 17 at position 18: cannot create an instance of the static type ""MyClass2""
+Error 2024 in line 18 at position 18: cannot create an instance of the static type ""MyClass2""
+Error 2024 in line 19 at position 18: cannot create an instance of the static type ""MyClass2""
+Error 4000 in line 16 at position 26: internal compiler error
+Error 4000 in line 17 at position 26: internal compiler error
+Error 4000 in line 18 at position 26: internal compiler error
+Error 4000 in line 19 at position 26: internal compiler error
+Error 4001 in line 20 at position 8: the identifier ""a1"" is not defined in this location
+Error 4001 in line 20 at position 12: the identifier ""a2"" is not defined in this location
+Error 4001 in line 20 at position 16: the identifier ""a3"" is not defined in this location
+Error 4001 in line 20 at position 20: the identifier ""a4"" is not defined in this location
 ") }, { @"Class MyClass
 {
 	static Class N
@@ -1197,7 +1223,7 @@ MyClass2 a3 = new MyClass2(8, 2.71828);
 MyClass2 a4 = new MyClass2(true);
 return (a1, a2, a3, a4);
 ", (@"(new MyClass2(5, 3.14159, ""A""), null, new MyClass2(8, 2.71828, ""A""), new MyClass2(12, 3.14159, ""A""))",
-	@"Error in line 18 at position 27: constructor of the type ""MyClass2"" must have from 0 to 2 parameters
+	@"Error 4035 in line 18 at position 27: the constructor of the type ""MyClass2"" must have from 0 to 2 parameters
 ") }, { @"Class Person
 {
 	closed string name;
@@ -1418,7 +1444,7 @@ Class Cat : Animal
 Animal myDog = new Dog();
 Animal myCat = new Cat();
 return (myDog.Speak(), myDog.Eat(), myCat.Speak(), myCat.Eat());
-", ("""("Woof", "Dog is eating", "Meow", "Animal is eating")""", "Warning in line 30 at position 1: the method \"Eat\"" +
+", ("""("Woof", "Dog is eating", "Meow", "Animal is eating")""", "Warning 8008 in line 30 at position 1: the method \"Eat\"" +
 			" has the same parameter types as its base method with the same name but it also" +
 			" has the other significant differences such as the access modifier or the return type," +
 			" so it cannot override that base method and creates a new one;" +
@@ -1426,7 +1452,7 @@ return (myDog.Speak(), myDog.Eat(), myCat.Speak(), myCat.Eat());
 {
 	abstract string Function Go();
 }
-", ("null", @"Error in line 3 at position 10: abstract members can be located only inside the abstract classes
+", ("null", @"Error 400A in line 3 at position 10: the abstract members can be located only inside the abstract classes
 ") }, { @"null Function F(ref int n)
 {
 	n++;
@@ -1445,7 +1471,7 @@ F(a);
 F(a);
 F(a);
 return a;
-", ("null", @"Wreck in line 6 at position 2: this parameter must pass with the ""ref"" keyword
+", ("null", @"Wreck 9013 in line 6 at position 2: this parameter must pass with the ""ref"" keyword
 ") }, { @"int Function F(real n)
 {
 	return Truncate(n * n);
@@ -1468,8 +1494,11 @@ real Function Reciproc(int x)
 }
 list() int list = (2, 2, 3, 1, 1, 2, 1);
 return RedStarLinqExtras.GroupIndexes(list, Reciproc);
-", (@"((0, 1, 5), (2), (3, 4, 6))", "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
-", (@"0", @"Error in line 1 at position 26: too large number; long long type is under development
+", (@"((0, 1, 5), (2), (3, 4, 6))", "Ошибок нет") }, { @"using System;
+list() int list = (5, 10, 15, 20, 25);
+return RedStarLinq.ToList(list, x => x * x);
+", (@"(25, 100, 225, 400, 625)", "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
+", (@"0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
 ") }, { @"return ExecuteString(""return args[1];"", Q());
 ", ("""
 /"return ExecuteString("return args[1];", Q());
@@ -1479,7 +1508,7 @@ return RedStarLinqExtras.GroupIndexes(list, Reciproc);
 			"Ошибок нет") }, { @"int x=null;
 return x*1;
 ", (@"0", "Ошибок нет") }, { @"return куегкт;
-", (@"null", @"Error in line 1 at position 7: identifier ""куегкт"" is not defined in this location
+", (@"null", @"Error 4001 in line 1 at position 7: the identifier ""куегкт"" is not defined in this location
 ") }, { """
 real Function D(real[3] abc)
 {
@@ -1541,7 +1570,7 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 			var rules = TextBoxInput.SyntaxHighlighting.MainRuleSet.Rules;
 			var stringRule = rules.Find(x => x.Color.Foreground.ToString()?.Contains("#ffbf4000") ?? false);
 			var stringSpans = spans.FindAll(x => x.SpanColor.Foreground.ToString()?.Contains("#ffbf4000") ?? false);
-			stringSpans[^1].RuleSet.Rules.Add(stringRule);
+			stringSpans[^1].RuleSet.Rules.Add(stringRule ?? throw new InvalidOperationException());
 			stringSpans[^1].RuleSet.Spans.AddRange(stringSpans);
 			stringSpans[^1].RuleSet.Spans.AddRange(nestedCommentSpans);
 		}
@@ -1550,6 +1579,7 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 		ButtonSaveExe.IsEnabled = false;
 #endif
 		TextBoxInput.Text = $"Loading ({0:F2}%)\r\n";
+
 	}
 
 	private void UserControl_Loaded(object? sender, RoutedEventArgs e) => Task.Factory.StartNew(async () =>
@@ -1902,7 +1932,7 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 
 	private class MyCompletionData(string text, int offset) : ICompletionData
 	{
-		public IImage? Image => null;
+		public IImage Image => null!;
 
 		public string Text { get; private set; } = text;
 
