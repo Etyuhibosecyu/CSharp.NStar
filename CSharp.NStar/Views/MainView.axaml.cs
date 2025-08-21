@@ -120,7 +120,41 @@ Error 4006 in line 3 at position 38: cannot apply the operator ""%"" to the type
 ", (@"(5, 77777, 777777777777)", "Ошибок нет") }, { @"var a = 5;
 var b = 3;
 return (a / b, IntToReal(a) / b);
-", (@"(1, 1.6666666666666667)", "Ошибок нет") }, { @"real Function F(real x, real y)
+", (@"(1, 1.6666666666666667)", "Ошибок нет") }, { @"var x = 5;
+var y = 3;
+var a = x > y;
+var b = x < y + 2;
+var c = x > y && x < y + 2;
+var d = x > y || x < y + 2;
+return (a, b, c, d);
+", (@"(true, false, false, true)", "Ошибок нет") }, { @"return DateTime.IsLeapYear(2025) ? -1234567890 : 2345678901;
+", ("2345678901", "Ошибок нет") }, { @"var a = DateTime.IsLeapYear(2025) ? -1234567890 : 2345678901;
+return a;
+", ("null", @"Error 4041 in line 1 at position 48: there is no implicit conversion between the types ""int"" and ""unsigned int""
+") }, { @"list() int list = (5, 8);
+var a = DateTime.IsLeapYear(2025) ? list : DateTime.IsLeapYear(2024) ? 12 : 20;
+return a;
+", (@"(12)", "Ошибок нет") }, { @"list() int list = (5, 8);
+var a = DateTime.IsLeapYear(2025) ? (DateTime.IsLeapYear(2024) ? 12 : 20) : list;
+return a;
+", (@"(5, 8)", "Ошибок нет") }, { @"var a = 1 ?> 2 : 3 ?> 2 : 1;
+return a;
+", ("3", "Ошибок нет") }, { @"return ""A"" ?= ""B"" : ""C"";
+", (@"""C""", "Ошибок нет") }, { @"var a = ""A"" ?= ""B"" : ""C"";
+return a;
+", (@"""C""", "Ошибок нет") }, { @"return ""A"" ?!= ""B"" : ""C"";
+", (@"""A""", "Ошибок нет") }, { @"var a = ""A"" ?!= ""B"" : ""C"";
+return a;
+", (@"""A""", "Ошибок нет") }, { @"return ""A"" ?> ""B"" : ""C"";
+", ("null", @"Error 4006 in line 1 at position 11: cannot apply the operator ""?>"" to the types ""string"" and ""string""
+") }, { @"var a = ""A"" ?> ""B"" : ""C"";
+return a;
+", ("null", @"Error 4006 in line 1 at position 12: cannot apply the operator ""?>"" to the types ""string"" and ""string""
+") }, { @"return 3 ?> 2 : ""A"";
+", ("3", "Ошибок нет") }, { @"var a = 3 ?> 2 : ""A"";
+return a;
+", ("null", @"Error 4041 in line 1 at position 15: there is no implicit conversion between the types ""byte"" and ""string""
+") }, { @"real Function F(real x, real y)
 {
 	return x * x + x * y + y * y;
 }
@@ -320,11 +354,11 @@ return hs[2];
 ListHashSet[int] hs = new ListHashSet[int](3, 5, 10, 15);
 hs.Add(10);
 return hs[2];
-", (@"10", "Ошибок нет") }, { @"int a = 3.14159;
+", ("10", "Ошибок нет") }, { @"int a = 3.14159;
 byte b = 77777;
 real c = ""2.71828"";
 return (a, b, c);
-", (@"null", @"Error 4027 in line 1 at position 6: the conversion from the type ""real"" to the type ""int"" is possible only in the function return, not in the direct assignment and not in the call
+", ("null", @"Error 4027 in line 1 at position 6: the conversion from the type ""real"" to the type ""int"" is possible only in the function return, not in the direct assignment and not in the call
 Error 4027 in line 2 at position 7: the conversion from the type ""int"" to the type ""byte"" is possible only in the function return, not in the direct assignment and not in the call
 Error 4014 in line 3 at position 7: cannot convert from the type ""string"" to the type ""real""
 Error 4001 in line 4 at position 8: the identifier ""a"" is not defined in this location
@@ -342,7 +376,7 @@ Error 4027 in line 5 at position 2: the conversion from the type ""int"" to the 
 Error 4014 in line 6 at position 2: cannot convert from the type ""string"" to the type ""real""
 ") }, { @"list() int list = (0);
 return (list.Dispose(10), Fibonacci(10, 10), Fibonacci(""10""), Fibonacci(10.01));
-", (@"null", @"Error 4022 in line 2 at position 21: the function ""Dispose"" must have 0 parameters
+", ("null", @"Error 4022 in line 2 at position 21: the function ""Dispose"" must have 0 parameters
 Error 4022 in line 2 at position 36: the function ""Fibonacci"" must have 1 parameters
 Error 4026 in line 2 at position 55: incompatibility between the type of the parameter of the call ""string"" and the type of the parameter of the function ""int""
 Error 4027 in line 2 at position 72: the conversion from the type ""real"" to the type ""int"" is possible only in the function return, not in the direct assignment and not in the call
@@ -403,9 +437,9 @@ return list;
 return x ^ x;
 ", (@"false", "Ошибок нет") }, { @"var x = 5;
 return 5 pow x += 3;
-", (@"null", @"Error 201D in line 2 at position 15: only the variables can be assigned
+", ("null", @"Error 201D in line 2 at position 15: only the variables can be assigned
 ") }, { @"return ;
-", (@"null", @"Warning 8002 in line 1 at position 7: the syntax ""return;"" is deprecated; consider using ""return null;"" instead
+", ("null", @"Warning 8002 in line 1 at position 7: the syntax ""return;"" is deprecated; consider using ""return null;"" instead
 ") }, { @"null Function F(list() int n)
 {
 	n++;
@@ -415,7 +449,7 @@ F(a);
 F(a);
 F(a);
 return a;
-", (@"5", @"Error 4005 in line 3 at position 2: cannot apply the operator ""postfix ++"" to the type ""list() int""
+", ("5", @"Error 4005 in line 3 at position 2: cannot apply the operator ""postfix ++"" to the type ""list() int""
 ") }, { @"var a = false;
 a++;
 return a;
@@ -428,10 +462,10 @@ return list;
 ", (@"(1, 2, 3, 4, 5, 6, 7)", "Ошибок нет") }, { @"var a = false;
 var b = 5;
 return a + b;
-", (@"5", "Ошибок нет") }, { @"var a = false;
+", ("5", "Ошибок нет") }, { @"var a = false;
 var b = 5;
 return a * b;
-", (@"null", @"Error 4006 in line 3 at position 9: cannot apply the operator ""*"" to the types ""bool"" and ""byte""
+", ("null", @"Error 4006 in line 3 at position 9: cannot apply the operator ""*"" to the types ""bool"" and ""byte""
 ") }, { @"using System.Collections;
 var hs = new ListHashSet[string]();
 hs.Add(""1"");
@@ -456,11 +490,11 @@ return dic;
 list.Add(4);
 list.Add((5, 6, 7));
 return list.IndexOf(2, 2);
-", (@"2", "Ошибок нет") }, { @"list() int list = (1, 2, 3);
+", ("2", "Ошибок нет") }, { @"list() int list = (1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.LastIndexOf(2, 1);
-", (@"0", "Ошибок нет") }, { @"list() int list = (1, 2, 3);
+", ("0", "Ошибок нет") }, { @"list() int list = (1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.Remove(2, 3);
@@ -491,12 +525,12 @@ Buffer[int] list = new Buffer[int](16, 1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.IndexOf(2, 2);
-", (@"2", "Ошибок нет") }, { @"using System.Collections;
+", ("2", "Ошибок нет") }, { @"using System.Collections;
 Buffer[int] list = new Buffer[int](16, 1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.LastIndexOf(2, 1);
-", (@"0", "Ошибок нет") }, { @"using System.Collections;
+", ("0", "Ошибок нет") }, { @"using System.Collections;
 Buffer[int] list = new Buffer[int](16, 1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
@@ -538,7 +572,7 @@ int Function G(string s)
 }
 string a = 8;
 return (G(12), new ListHashSet[string](1, ""A"", 10), new MyClass(77777));
-", (@"null", @"Error 4039 in line 8 at position 8: incompatibility between the type of the returning value ""byte"" and the function return type ""string"" - use an addition of zero-length string for this
+", ("null", @"Error 4039 in line 8 at position 8: incompatibility between the type of the returning value ""byte"" and the function return type ""string"" - use an addition of zero-length string for this
 Error 4014 in line 14 at position 9: cannot convert from the type ""byte"" to the type ""string"" - use an addition of zero-length string for this
 Error 4026 in line 15 at position 10: incompatibility between the type of the parameter of the call ""byte"" and the type of the parameter of the function ""string"" - use an addition of zero-length string for this
 Error 4036 in line 15 at position 47: incompatibility between the type of the parameter of the call ""byte"" and the type of the parameter of the constructor ""System.Collections.IEqualityComparer[string]""
@@ -1303,7 +1337,7 @@ BankAccount account = new BankAccount(1000);
 account.Deposit(500);
 account.Withdraw(200);
 return account.GetBalance();
-", (@"1300", "Ошибок нет") }, { @"Class Vehicle
+", ("1300", "Ошибок нет") }, { @"Class Vehicle
 {
 	string Function Start()
 	{
@@ -1497,8 +1531,29 @@ return RedStarLinqExtras.GroupIndexes(list, Reciproc);
 ", (@"((0, 1, 5), (2), (3, 4, 6))", "Ошибок нет") }, { @"using System;
 list() int list = (5, 10, 15, 20, 25);
 return RedStarLinq.ToList(list, x => x * x);
-", (@"(25, 100, 225, 400, 625)", "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
-", (@"0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
+", (@"(25, 100, 225, 400, 625)", "Ошибок нет") }, { @"using System;
+Func[real, real] f = x => x * x;
+return f(100);
+", ("10000", "Ошибок нет") }, { @"using System;
+list() Func[real, real] list = (x => x * x, x => 1 / x, x => E pow x);
+return (list[1](3.14), list[2](3.14), list[3](3.14), list[1](-5), list[2](-5), list[3](-5));
+", (@"(9.8596, 0.3184713375796178, 23.10386685872218, 25, -0.2, 0.006737946999085469)", "Ошибок нет") }, { @"using System;
+Func[real, real] f = x =>
+{
+	return x * x;
+};
+return f(100);
+", ("10000", "Ошибок нет") }, { @"using System;
+Func[real, real] f = x =>
+{
+	if (x >= 0)
+		return x * x;
+	else
+		return -x * x;
+};
+return (f(100), f(-5));
+", (@"(10000, -25)", "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
+", ("0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
 ") }, { @"return ExecuteString(""return args[1];"", Q());
 ", ("""
 /"return ExecuteString("return args[1];", Q());
@@ -1507,8 +1562,8 @@ return RedStarLinq.ToList(list, x => x * x);
 			("""/"var s = /"var s = /""\;return s.Insert(10, s) + Q();"\;return s.Insert(10, s) + Q();var s = /"var s = /""\;return s.Insert(10, s) + Q();"\;return s.Insert(10, s) + Q();"\""",
 			"Ошибок нет") }, { @"int x=null;
 return x*1;
-", (@"0", "Ошибок нет") }, { @"return куегкт;
-", (@"null", @"Error 4001 in line 1 at position 7: the identifier ""куегкт"" is not defined in this location
+", ("0", "Ошибок нет") }, { @"return куегкт;
+", ("null", @"Error 4001 in line 1 at position 7: the identifier ""куегкт"" is not defined in this location
 ") }, { """
 real Function D(real[3] abc)
 {

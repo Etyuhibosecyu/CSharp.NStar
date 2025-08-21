@@ -16,7 +16,9 @@ namespace CSharp.NStar;
 public enum LexemType
 {
 	Int,
+	UnsignedInt,
 	LongInt,
+	UnsignedLongInt,
 	Real,
 	Identifier,
 	Keyword,
@@ -161,8 +163,12 @@ public class CodeSample(String newString)
 		}
 		if (int.TryParse(s.ToString(), out _))
 			lexemType = LexemType.Int;
+		else if (uint.TryParse(s.ToString(), out _))
+			lexemType = LexemType.UnsignedInt;
 		else if (long.TryParse(s.ToString(), out _))
 			lexemType = LexemType.LongInt;
+		else if (ulong.TryParse(s.ToString(), out _))
+			lexemType = LexemType.UnsignedLongInt;
 		else
 		{
 			lexemType = LexemType.Keyword;

@@ -17,7 +17,7 @@ public class LexemStream
 	private int unknownIndex = 1;
 	private int figureBk;
 
-	private protected static readonly List<String> StopLexemsList = ["\r\n", ";", "{", "}"];
+	private protected static readonly ListHashSet<String> StopLexemsList = ["\r\n", ";", "{", "}"];
 
 	private protected LexemStream(List<Lexem> lexems, String input, List<String>? errorsList, bool wreckOccurred, BlockStack? rootContainer = null)
 	{
@@ -159,7 +159,7 @@ public class LexemStream
 			wreckOccurred = true;
 			return;
 		}
-		else if (!ExplicitlyConnectedNamespacesList.Add(name))
+		else if (!ExplicitlyConnectedNamespacesList.TryAdd(name))
 		{
 			GenerateMessage(0x900F, pos, name);
 			wreckOccurred = true;
@@ -585,11 +585,11 @@ public class LexemStream
 
 	public static bool IsLexemOther(Lexem lexem, String @string) => lexem.Type == LexemType.Other && lexem.String == @string;
 
-	public static bool IsLexemKeyword(Lexem lexem, List<String> strings) => lexem.Type == LexemType.Keyword && strings.Contains(lexem.String);
+	public static bool IsLexemKeyword(Lexem lexem, ListHashSet<String> strings) => lexem.Type == LexemType.Keyword && strings.Contains(lexem.String);
 
-	public static bool IsLexemOperator(Lexem lexem, List<String> strings) => lexem.Type == LexemType.Operator && strings.Contains(lexem.String);
+	public static bool IsLexemOperator(Lexem lexem, ListHashSet<String> strings) => lexem.Type == LexemType.Operator && strings.Contains(lexem.String);
 
-	public static bool IsLexemOther(Lexem lexem, List<String> strings) => lexem.Type == LexemType.Other && strings.Contains(lexem.String);
+	public static bool IsLexemOther(Lexem lexem, ListHashSet<String> strings) => lexem.Type == LexemType.Other && strings.Contains(lexem.String);
 
 	public bool IsLexemKeywordNoEnd(String @string) => pos < lexems.Length && IsLexemKeyword(lexems[pos], @string);
 

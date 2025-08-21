@@ -537,6 +537,8 @@ public static class TypeHelpers
 			return new List<T>(item);
 	}
 
+	public static NList<char> RandomVarName() => RedStarLinq.NFill(32, _ => (char)(globalRandom.Next(2) == 1 ? globalRandom.Next('A', 'Z' + 1) : globalRandom.Next('a', 'z' + 1)));
+
 	private sealed class FullTypeEComparer : G.IEqualityComparer<UniversalType>
 	{
 		public bool Equals(UniversalType x, UniversalType y) => new BlockStackEComparer().Equals(x.MainType, y.MainType) && new GeneralExtraTypesEComparer().Equals(x.ExtraTypes, y.ExtraTypes);

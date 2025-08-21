@@ -25,7 +25,7 @@ public partial class MainParsing : LexemStream
 	private int globalUnnamedIndex = 1;
 	private int _Stackpos;
 
-	private static readonly G.Dictionary<String, (String Next, String TreeLabel, List<String> Operators)> operatorsMapping = new() { { "Properties", ("Property", "Properties", []) }, { "Methods", ("Method", "Methods", []) }, { "Expr", ("List", "Expr", []) }, { "List", ("LambdaExpr", "List", []) }, { "LambdaExpr", ("QuestionExpr", "Expr", []) }, { "QuestionExpr", ("XorExpr", "Expr", []) }, { "XorExpr", ("OrExpr", "xorList", []) }, { "OrExpr", ("AndExpr", "Expr", new("or")) }, { "AndExpr", ("Xor2Expr", "Expr", new("and")) }, { "Xor2Expr", ("Or2Expr", "Expr", new("^^")) }, { "Or2Expr", ("And2Expr", "Expr", new("||")) }, { "And2Expr", ("EquatedExpr", "Expr", new("&&")) }, { "EquatedExpr", ("ComparedExpr", "Expr", []) }, { "ComparedExpr", ("AssignedExpr", "Expr", new(">", "<", ">=", "<=")) }, { "AssignedExpr", ("HawaytennExpr", "Expr", []) }, { "HawaytennExpr", ("BitwiseXorExpr", "Expr", []) }, { "BitwiseXorExpr", ("BitwiseOrExpr", "Expr", new("^")) }, { "BitwiseOrExpr", ("BitwiseAndExpr", "Expr", new("|")) }, { "BitwiseAndExpr", ("BitwiseShiftExpr", "Expr", new("&")) }, { "BitwiseShiftExpr", ("PMExpr", "Expr", new(">>", "<<")) }, { "PMExpr", ("MulDivExpr", "Expr", new("+", "-")) }, { "MulDivExpr", ("PowExpr", "Expr", new("*", "/", "%")) }, { "PowExpr", ("TetraExpr", "Expr", new("pow")) }, { "TetraExpr", ("UnaryExpr", "Expr", []) }, { "PrefixExpr", ("PostfixExpr", "Expr", []) } };
+	private static readonly G.Dictionary<String, (String Next, String TreeLabel, List<String> Operators)> operatorsMapping = new() { { "Properties", ("Property", "Properties", []) }, { "Methods", ("Method", "Methods", []) }, { "Expr", ("List", "Expr", []) }, { "List", ("LambdaExpr", "List", []) }, { "LambdaExpr", ("AssignedExpr", "Expr", []) }, { "AssignedExpr", ("QuestionExpr", "Expr", []) }, { "QuestionExpr", ("XorExpr", "Expr", []) }, { "XorExpr", ("OrExpr", "xorList", []) }, { "OrExpr", ("AndExpr", "Expr", new("or")) }, { "AndExpr", ("Xor2Expr", "Expr", new("and")) }, { "Xor2Expr", ("Or2Expr", "Expr", new("^^")) }, { "Or2Expr", ("And2Expr", "Expr", new("||")) }, { "And2Expr", ("EquatedExpr", "Expr", new("&&")) }, { "EquatedExpr", ("ComparedExpr", "Expr", []) }, { "ComparedExpr", ("BitwiseXorExpr", "Expr", new(">", "<", ">=", "<=")) }, { "BitwiseXorExpr", ("BitwiseOrExpr", "Expr", new("^")) }, { "BitwiseOrExpr", ("BitwiseAndExpr", "Expr", new("|")) }, { "BitwiseAndExpr", ("BitwiseShiftExpr", "Expr", new("&")) }, { "BitwiseShiftExpr", ("PMExpr", "Expr", new(">>", "<<")) }, { "PMExpr", ("MulDivExpr", "Expr", new("+", "-")) }, { "MulDivExpr", ("PowExpr", "Expr", new("*", "/", "%")) }, { "PowExpr", ("TetraExpr", "Expr", new("pow")) }, { "TetraExpr", ("UnaryExpr", "Expr", []) }, { "PrefixExpr", ("PostfixExpr", "Expr", []) } };
 	private static readonly G.Dictionary<String, dynamic> attributesMapping = new() { { "ref", ParameterAttributes.Ref }, { "out", ParameterAttributes.Out }, { "params", ParameterAttributes.Params }, { "closed", PropertyAttributes.Closed }, { "protected", PropertyAttributes.Protected }, { "internal", PropertyAttributes.Internal }, { "public", PropertyAttributes.None } };
 
 	public MainParsing(LexemStream lexemStream, bool wreckOccurred) : base(lexemStream)
@@ -112,7 +112,7 @@ public partial class MainParsing : LexemStream
 		return task switch
 		{
 			"Parameters" => IncreaseStack(nameof(Parameter), currentTask: "Parameters2", applyCurrentTask: true, currentExtra: new List<object>()),
-			"Properties" or "Methods" or "Expr" or "List" or "LambdaExpr" or "QuestionExpr" or "XorExpr" or "OrExpr" or "AndExpr" or "Xor2Expr" or "Or2Expr" or "And2Expr" or "EquatedExpr" or "ComparedExpr" or "AssignedExpr" or "HawaytennExpr" or "BitwiseXorExpr" or "BitwiseOrExpr" or "BitwiseAndExpr" or "BitwiseShiftExpr" or "PMExpr" or "MulDivExpr" or "PowExpr" or "TetraExpr" or "PrefixExpr" => IncreaseStack(operatorsMapping[this.task].Next, currentTask: this.task + "2", applyCurrentTask: true, currentBranch: new(operatorsMapping[this.task].TreeLabel, pos, pos + 1, container), assignCurrentBranch: true),
+			"Properties" or "Methods" or "Expr" or "List" or "LambdaExpr" or "AssignedExpr" or "QuestionExpr" or "XorExpr" or "OrExpr" or "AndExpr" or "Xor2Expr" or "Or2Expr" or "And2Expr" or "EquatedExpr" or "ComparedExpr" or "BitwiseXorExpr" or "BitwiseOrExpr" or "BitwiseAndExpr" or "BitwiseShiftExpr" or "PMExpr" or "MulDivExpr" or "PowExpr" or "TetraExpr" or "PrefixExpr" => IncreaseStack(operatorsMapping[this.task].Next, currentTask: this.task + "2", applyCurrentTask: true, currentBranch: new(operatorsMapping[this.task].TreeLabel, pos, pos + 1, container), assignCurrentBranch: true),
 			"Properties2" => Properties2_Methods2("Property", PropertiesAction),
 			"Property" => IncreaseStack(nameof(ClearProperty), currentTask: "Property2", applyCurrentTask: true, currentExtra: new List<object>()),
 			"Methods2" => Properties2_Methods2("Method", () =>
@@ -187,14 +187,14 @@ public partial class MainParsing : LexemStream
 		nameof(Expr2) => Expr2,
 		nameof(List2) => List2,
 		nameof(LambdaExpr2) => LambdaExpr2,
-		nameof(LambdaExpr3) => LambdaExpr3,
-		"HawaytennExpr2" or "TetraExpr2" or "UnaryExpr4" or "PostfixExpr4" => HawaytennExpr2_TetraExpr2_UnaryExpr4_PostfixExpr4,
+		"LambdaExpr3" or "LambdaExpr4" => LambdaExpr3_4,
+		nameof(AssignedExpr2) => AssignedExpr2,
 		nameof(QuestionExpr2) => QuestionExpr2,
 		nameof(QuestionExpr3) => QuestionExpr3,
 		nameof(XorExpr2) => XorExpr2,
 		nameof(EquatedExpr2) => EquatedExpr2,
 		nameof(EquatedExpr3) => EquatedExpr3,
-		nameof(AssignedExpr2) => AssignedExpr2,
+		"TetraExpr2" or "UnaryExpr4" or "PostfixExpr4" => TetraExpr2_UnaryExpr4_PostfixExpr4,
 		nameof(UnaryExpr) => UnaryExpr,
 		nameof(UnaryExpr2) => UnaryExpr2,
 		nameof(UnaryExpr3) => UnaryExpr3,
@@ -909,15 +909,12 @@ public partial class MainParsing : LexemStream
 
 	private bool ClearProperty3()
 	{
-		if (success)
-		{
-			if (IsCurrentLexemOther(";"))
-				pos++;
-			else
-				return EndWithError(0x2002, pos, false);
-		}
-		else
+		if (!success)
 			return _SuccessStack[_Stackpos] = false;
+		if (IsCurrentLexemOther(";"))
+			pos++;
+		else
+			return EndWithError(0x2002, pos, false);
 		_ErLStack[_Stackpos].AddRange(errorsList ?? []);
 		_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
 		return AddUserDefinedProperty();
@@ -1065,34 +1062,28 @@ public partial class MainParsing : LexemStream
 
 	private bool ActionChain2_3_4(String newTask, String currentTask)
 	{
-		if (success)
-		{
-			_TaskStack[_Stackpos] = nameof(ActionChain);
-			TransformErrorMessage();
-			if (treeBranch != null && (treeBranch.Info != "" || treeBranch.Length != 0))
-				AppendBranch(nameof(ActionChain));
-			_TBStack[_Stackpos + 1] = null;
-			return true;
-		}
-		else
+		if (!success)
 			return IncreaseStack(newTask, currentTask: currentTask, applyCurrentTask: true);
+		_TaskStack[_Stackpos] = nameof(ActionChain);
+		TransformErrorMessage();
+		if (treeBranch != null && (treeBranch.Info != "" || treeBranch.Length != 0))
+			AppendBranch(nameof(ActionChain));
+		_TBStack[_Stackpos + 1] = null;
+		return true;
 	}
 
 	private bool ActionChain5()
 	{
-		if (success)
+		if (!success)
+			return IncreaseStack("Expr", currentTask: nameof(ActionChain6), pos_: pos, applyPos: true, applyCurrentTask: true, currentExtra: new List<object>());
+		_ErLStack[_Stackpos].AddRange(errorsList ?? []);
+		if (treeBranch != null && treeBranch.Length != 0)
 		{
-			_ErLStack[_Stackpos].AddRange(errorsList ?? []);
-			if (treeBranch != null && treeBranch.Length != 0)
-			{
-				AppendBranch(nameof(ActionChain));
-				return Default();
-			}
-			else
-				return EndActionChain();
+			AppendBranch(nameof(ActionChain));
+			return Default();
 		}
 		else
-			return IncreaseStack("Expr", currentTask: nameof(ActionChain6), pos_: pos, applyPos: true, applyCurrentTask: true, currentExtra: new List<object>());
+			return EndActionChain();
 	}
 
 	private bool ActionChain6()
@@ -1336,38 +1327,35 @@ public partial class MainParsing : LexemStream
 
 	private bool For2()
 	{
-		if (success)
+		if (!success)
+			return EndWithEmpty(true);
+		if (pos >= end)
 		{
-			if (pos >= end)
-			{
-				GenerateUnexpectedEndError(true);
-				return EndWithEmpty();
-			}
-			else if (lexems[pos].Type == LexemType.Identifier)
-			{
-				pos++;
-				_TBStack[_Stackpos]?.Add(new("Declaration", [treeBranch ?? TreeBranch.DoNotAdd(), new(lexems[pos - 1].String, pos - 1, pos, container)], container));
-			}
-			else
-			{
-				GenerateMessage(0x2001, pos, true);
-				return EndWithEmpty();
-			}
-			if (pos >= end)
-			{
-				GenerateUnexpectedEndError(true);
-				return EndWithEmpty();
-			}
-			else if (lexems[pos].Type == LexemType.Identifier && lexems[pos].String == "in")
-				pos++;
-			else
-			{
-				GenerateMessage(0x2013, pos, true);
-				return EndWithEmpty();
-			}
+			GenerateUnexpectedEndError(true);
+			return EndWithEmpty();
+		}
+		else if (lexems[pos].Type == LexemType.Identifier)
+		{
+			pos++;
+			_TBStack[_Stackpos]?.Add(new("Declaration", [treeBranch ?? TreeBranch.DoNotAdd(), new(lexems[pos - 1].String, pos - 1, pos, container)], container));
 		}
 		else
-			return EndWithEmpty(true);
+		{
+			GenerateMessage(0x2001, pos, true);
+			return EndWithEmpty();
+		}
+		if (pos >= end)
+		{
+			GenerateUnexpectedEndError(true);
+			return EndWithEmpty();
+		}
+		else if (lexems[pos].Type == LexemType.Identifier && lexems[pos].String == "in")
+			pos++;
+		else
+		{
+			GenerateMessage(0x2013, pos, true);
+			return EndWithEmpty();
+		}
 		return IncreaseStack("Expr", currentTask: "For3", pos_: pos, applyPos: true, applyCurrentTask: true);
 	}
 
@@ -1433,41 +1421,35 @@ public partial class MainParsing : LexemStream
 
 	private bool Return2()
 	{
-		if (success)
+		if (!success)
+			return _SuccessStack[_Stackpos] = false;
+		if (pos >= end)
+			return _SuccessStack[_Stackpos] = false;
+		else if (IsCurrentLexemOther(";"))
 		{
-			if (pos >= end)
-				return _SuccessStack[_Stackpos] = false;
-			else if (IsCurrentLexemOther(";"))
-			{
-				pos++;
-				return EndWithAdding(true);
-			}
-			else
-			{
-				GenerateMessage(0x2002, pos, true);
-				return EndWithEmpty();
-			}
+			pos++;
+			return EndWithAdding(true);
 		}
 		else
-			return _SuccessStack[_Stackpos] = false;
+		{
+			GenerateMessage(0x2002, pos, true);
+			return EndWithEmpty();
+		}
 	}
 
 	private bool Expr2()
 	{
-		if (success)
+		if (!success)
+			return _SuccessStack[_Stackpos] = false;
+		if (pos < end && IsCurrentLexemOperator("CombineWith"))
 		{
-			if (pos < end && IsCurrentLexemOperator("CombineWith"))
-			{
-				pos++;
-				_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
-				_TBStack[_Stackpos]?.Add(new("CombineWith", pos - 1, pos, container));
-			}
-			else
-				return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
-			return IncreaseStack("List", pos_: pos, applyPos: true, applyCurrentErl: true);
+			pos++;
+			_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
+			_TBStack[_Stackpos]?.Add(new("CombineWith", pos - 1, pos, container));
 		}
 		else
-			return _SuccessStack[_Stackpos] = false;
+			return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
+		return IncreaseStack("List", pos_: pos, applyPos: true, applyCurrentErl: true);
 	}
 
 	private bool List2()
@@ -1501,70 +1483,102 @@ public partial class MainParsing : LexemStream
 
 	private bool LambdaExpr2()
 	{
-		if (success)
+		if (!success)
+			return _SuccessStack[_Stackpos] = false;
+		if (pos >= end || !IsCurrentLexemOperator("=>"))
+			return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
+		pos++;
+		if (IsCurrentLexemOther("{"))
 		{
-			if (pos >= end || !IsLexemOperator(lexems[pos], "=>"))
-				return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
 			pos++;
-			_TaskStack[_Stackpos] = nameof(LambdaExpr3);
 			_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
-			return IncreaseStack("QuestionExpr", currentTask: nameof(LambdaExpr3), pos_: pos, applyPos: true, applyCurrentTask: true);
+			return IncreaseStack(nameof(Main), currentTask: "LambdaExpr4",
+				pos_: pos, applyPos: true, applyCurrentTask: true);
 		}
-		else
-			return _SuccessStack[_Stackpos] = false;
+		_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
+		return IncreaseStack("AssignedExpr", currentTask: "LambdaExpr3",
+			pos_: pos, applyPos: true, applyCurrentTask: true);
 	}
 
-	private bool LambdaExpr3()
+	private bool LambdaExpr3_4()
 	{
-		if (success)
-		{
-			var treeBranch = _TBStack[_Stackpos];
-			if (treeBranch != null)
-				treeBranch.Info = "Lambda";
-			return EndWithAddingOrAssigning(true, treeBranch?.Length ?? 0);
-		}
-		else
+		if (!success)
 			return _SuccessStack[_Stackpos] = false;
+		if (task == "LambdaExpr4" ^ IsCurrentLexemOther("}"))
+		{
+			GenerateUnexpectedEndError();
+			return EndWithEmpty();
+		}
+		if (task == "LambdaExpr4")
+			pos++;
+		var treeBranch = _TBStack[_Stackpos];
+		if (treeBranch != null)
+			treeBranch.Info = "Lambda";
+		if (treeBranch != null && treeBranch.Length == 1
+			&& treeBranch[0].Info.ToString() is "Assignment" or "DeclarationAssignment")
+		{
+			var assignmentBranch = treeBranch[0];
+			treeBranch.RemoveAt(0);
+			assignmentBranch[0] = new("Lambda", [assignmentBranch[0], this.treeBranch], assignmentBranch[0].Container);
+			_TBStack[_Stackpos] = assignmentBranch;
+			return Default();
+		}
+		return EndWithAddingOrAssigning(true, treeBranch?.Length ?? 0);
 	}
 
-	private bool HawaytennExpr2_TetraExpr2_UnaryExpr4_PostfixExpr4() => success ? EndWithAssigning(true) : (_SuccessStack[_Stackpos] = false);
+	private bool AssignedExpr2()
+	{
+		if (!success)
+			return _SuccessStack[_Stackpos] = false;
+		if (pos < end && IsLexemOperator(lexems[pos], AssignmentOperatorsList))
+		{
+			if (treeBranch != null && (treeBranch.Info == "Declaration" || treeBranch.Info == nameof(Hypername)))
+			{
+				pos++;
+				_TBStack[_Stackpos]?.Insert(0, [treeBranch, new(lexems[pos - 1].String, pos - 1, pos, container)]);
+				_TBStack[_Stackpos]!.Info = treeBranch.Info == "Declaration" ? "DeclarationAssignment" : "Assignment";
+			}
+			else
+				goto l0;
+		}
+		else
+			return EndWithAddingOrAssigning(true, 0);
+		return IncreaseStack("QuestionExpr", pos_: pos, applyPos: true, applyCurrentErl: true);
+	l0:
+		GenerateMessage(0x201D, pos, false);
+		_TBStack[_Stackpos]?.Insert(0, new TreeBranch("null", pos, pos + 1, container));
+		while (!IsLexemOther(lexems[pos], StopLexemsList))
+			pos++;
+		return Default();
+	}
+
+	private bool TetraExpr2_UnaryExpr4_PostfixExpr4() =>
+		success ? EndWithAssigning(true) : (_SuccessStack[_Stackpos] = false);
 
 	private bool QuestionExpr2()
 	{
-		if (success)
-		{
-			if (pos < end && IsLexemOperator(lexems[pos], ["?", "?=", "?>", "?<", "?>=", "?<=", "?!="]))
-			{
-				pos++;
-				_TaskStack[_Stackpos] = nameof(QuestionExpr3);
-				_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
-				_TBStack[_Stackpos]?.Add(new(lexems[pos - 1].String, pos - 1, pos, container));
-			}
-			else
-				return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
-			return IncreaseStack("XorExpr", pos_: pos, applyPos: true, applyCurrentErl: true);
-		}
-		else
+		if (!success)
 			return _SuccessStack[_Stackpos] = false;
+		if (pos >= end || !IsLexemOperator(lexems[pos], TernaryOperatorsList))
+			return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
+		pos++;
+		_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
+		_TBStack[_Stackpos]?.Add(new(lexems[pos - 1].String, pos - 1, pos, container));
+		return IncreaseStack("XorExpr", currentTask: nameof(QuestionExpr3), pos_: pos,
+			applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
 	}
 
 	private bool QuestionExpr3()
 	{
-		if (success)
-		{
-			if (pos < end && IsCurrentLexemOperator(":"))
-			{
-				pos++;
-				_TaskStack[_Stackpos] = nameof(QuestionExpr2);
-				_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
-				_TBStack[_Stackpos]?.Add(new(":", pos - 1, pos, container));
-			}
-			else
-				return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
-			return IncreaseStack("XorExpr", pos_: pos, applyPos: true, applyCurrentErl: true);
-		}
-		else
+		if (!success)
 			return _SuccessStack[_Stackpos] = false;
+		if (pos >= end || !IsCurrentLexemOperator(":"))
+			return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
+		pos++;
+		_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
+		_TBStack[_Stackpos]?.Add(new(":", pos - 1, pos, container));
+		return IncreaseStack("QuestionExpr", currentTask: nameof(QuestionExpr2), pos_: pos,
+			applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
 	}
 
 	private bool XorExpr2()
@@ -1638,31 +1652,6 @@ public partial class MainParsing : LexemStream
 		}
 	}
 
-	private bool AssignedExpr2()
-	{
-		if (!success)
-			return _SuccessStack[_Stackpos] = false;
-		if (pos < end && IsLexemOperator(lexems[pos], ["=", "+=", "-=", "*=", "/=", "%=", "pow=", "&=", "|=", "^=", ">>=", "<<="]))
-		{
-			if (treeBranch != null && (treeBranch.Info == "Declaration" || treeBranch.Info == nameof(Hypername)))
-			{
-				pos++;
-				_TBStack[_Stackpos]?.Insert(0, [treeBranch, new(lexems[pos - 1].String, pos - 1, pos, container)]);
-			}
-			else
-				goto l0;
-		}
-		else
-			return EndWithAddingOrAssigning(true, 0);
-		return IncreaseStack("HawaytennExpr", pos_: pos, applyPos: true, applyCurrentErl: true);
-	l0:
-		GenerateMessage(0x201D, pos, false);
-		_TBStack[_Stackpos]?.Insert(0, new TreeBranch("null", pos, pos + 1, container));
-		while (!IsLexemOther(lexems[pos], StopLexemsList))
-			pos++;
-		return Default();
-	}
-
 	private bool LeftAssociativeOperatorExpr2(String newTask, List<String> operatorsList)
 	{
 		if (!success)
@@ -1684,19 +1673,16 @@ public partial class MainParsing : LexemStream
 
 	private bool RightAssociativeOperatorExpr2(String newTask, List<String> operatorsList)
 	{
-		if (success)
+		if (!success)
+			return _SuccessStack[_Stackpos] = false;
+		if (pos < end && lexems[pos].Type == LexemType.Operator && operatorsList.Contains(lexems[pos].String))
 		{
-			if (pos < end && lexems[pos].Type == LexemType.Operator && operatorsList.Contains(lexems[pos].String))
-			{
-				pos++;
-				_TBStack[_Stackpos]?.Insert(0, [treeBranch ?? TreeBranch.DoNotAdd(), new(lexems[pos - 1].String, pos - 1, pos, container)]);
-			}
-			else
-				return EndWithAddingOrAssigning(true, 0);
-			return IncreaseStack(newTask, pos_: pos, applyPos: true, applyCurrentErl: true);
+			pos++;
+			_TBStack[_Stackpos]?.Insert(0, [treeBranch ?? TreeBranch.DoNotAdd(), new(lexems[pos - 1].String, pos - 1, pos, container)]);
 		}
 		else
-			return _SuccessStack[_Stackpos] = false;
+			return EndWithAddingOrAssigning(true, 0);
+		return IncreaseStack(newTask, pos_: pos, applyPos: true, applyCurrentErl: true);
 	}
 
 	private bool UnaryExpr()
@@ -1745,39 +1731,33 @@ public partial class MainParsing : LexemStream
 
 	private bool PrefixExpr2()
 	{
-		if (success)
+		if (!success)
+			return _SuccessStack[_Stackpos] = false;
+		if (pos < end && IsLexemOperator(lexems[pos], ["++", "--", "!", "!!"]))
 		{
-			if (pos < end && IsLexemOperator(lexems[pos], ["++", "--", "!", "!!"]))
-			{
-				pos++;
-				_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
-				_TBStack[_Stackpos]?.Add(new(lexems[pos - 1].String == "!!" ? "!!" : "postfix " + lexems[pos - 1].String, pos - 1, pos, container));
-			}
-			else
-				return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
-			_PosStack[_Stackpos] = pos;
-			_ErLStack[_Stackpos].AddRange(errorsList ?? []);
-			return Default();
+			pos++;
+			_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
+			_TBStack[_Stackpos]?.Add(new(lexems[pos - 1].String == "!!" ? "!!" : "postfix " + lexems[pos - 1].String, pos - 1, pos, container));
 		}
 		else
-			return _SuccessStack[_Stackpos] = false;
+			return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
+		_PosStack[_Stackpos] = pos;
+		_ErLStack[_Stackpos].AddRange(errorsList ?? []);
+		return Default();
 	}
 
 	private bool PostfixExpr2_3(String newTask, String currentTask)
 	{
-		if (success)
+		if (!success)
+			return IncreaseStack(newTask, currentTask: currentTask, applyCurrentTask: true);
+		if (treeBranch != null && treeBranch.Info == nameof(Hypername) && treeBranch.Length == 1 && (!WordRegex().IsMatch(treeBranch[0].Info.ToString()) || new List<String> { "_", "true", "false", "this", "base", "null", "Infty", "Uncty", "Pi", "E" }.Contains(treeBranch[0].Info) || treeBranch[0].Length != 0))
 		{
-			if (treeBranch != null && treeBranch.Info == nameof(Hypername) && treeBranch.Length == 1 && (!WordRegex().IsMatch(treeBranch[0].Info.ToString()) || new List<String> { "_", "true", "false", "this", "base", "null", "Infty", "Uncty", "Pi", "E" }.Contains(treeBranch[0].Info) || treeBranch[0].Length != 0))
-			{
-				_ErLStack[_Stackpos].AddRange(errorsList ?? []);
-				_TBStack[_Stackpos] = treeBranch[0];
-				return Default();
-			}
-			else
-				return EndWithAssigning(true);
+			_ErLStack[_Stackpos].AddRange(errorsList ?? []);
+			_TBStack[_Stackpos] = treeBranch[0];
+			return Default();
 		}
 		else
-			return IncreaseStack(newTask, currentTask: currentTask, applyCurrentTask: true);
+			return EndWithAssigning(true);
 	}
 
 	private bool Hypername()
@@ -1995,21 +1975,18 @@ public partial class MainParsing : LexemStream
 
 	private bool Indexes2()
 	{
-		if (success)
+		if (!success)
+			return _SuccessStack[_Stackpos] = false;
+		if (pos >= end)
+			return _SuccessStack[_Stackpos] = false;
+		else if (IsCurrentLexemOperator(","))
 		{
-			if (pos >= end)
-				return _SuccessStack[_Stackpos] = false;
-			else if (IsCurrentLexemOperator(","))
-			{
-				pos++;
-				_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
-			}
-			else
-				return EndWithAdding(true);
-			return IncreaseStack("LambdaExpr", pos_: pos, applyPos: true, applyCurrentErl: true);
+			pos++;
+			_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
 		}
 		else
-			return _SuccessStack[_Stackpos] = false;
+			return EndWithAdding(true);
+		return IncreaseStack("LambdaExpr", pos_: pos, applyPos: true, applyCurrentErl: true);
 	}
 
 	private bool Type()
@@ -2050,10 +2027,22 @@ public partial class MainParsing : LexemStream
 			_TBStack[_Stackpos] = new(s[^1] == 'i' ? s : s.Add('i'), pos - 1, pos, container);
 			return Default();
 		}
+		else if (lexems[pos].Type == LexemType.UnsignedInt)
+		{
+			pos++;
+			_TBStack[_Stackpos] = new(s[^1] == 'u' ? s : s.Add('u'), pos - 1, pos, container);
+			return Default();
+		}
 		else if (lexems[pos].Type == LexemType.LongInt)
 		{
 			pos++;
 			_TBStack[_Stackpos] = new(s[^1] == 'L' ? s : s.Add('L'), pos - 1, pos, container);
+			return Default();
+		}
+		else if (lexems[pos].Type == LexemType.UnsignedLongInt)
+		{
+			pos++;
+			_TBStack[_Stackpos] = new(s.EndsWith("uL") ? s : s.AddRange("uL"), pos - 1, pos, container);
 			return Default();
 		}
 		else if (lexems[pos].Type == LexemType.Real)
@@ -2076,17 +2065,14 @@ public partial class MainParsing : LexemStream
 
 	private bool BasicExpr2()
 	{
-		if (success)
-		{
-			if (pos >= end)
-				return _SuccessStack[_Stackpos] = false;
-			else if (IsCurrentLexemOther(")"))
-				pos++;
-			else
-				return EndWithError(0x200B, pos, true);
-		}
-		else
+		if (!success)
 			return _SuccessStack[_Stackpos] = false;
+		if (pos >= end)
+			return _SuccessStack[_Stackpos] = false;
+		else if (IsCurrentLexemOther(")"))
+			pos++;
+		else
+			return EndWithError(0x200B, pos, true);
 		if (pos >= end)
 			return _SuccessStack[_Stackpos] = false;
 		else
@@ -2157,7 +2143,9 @@ public partial class MainParsing : LexemStream
 	{
 		if (addError)
 			_ErLStack[_Stackpos].AddRange(errorsList ?? []);
-		if (_TBStack[_Stackpos] == null || _TBStack[_Stackpos]?.Length == 0 && !(task == nameof(Expr2) && _TaskStack[_Stackpos - 1] != nameof(BasicExpr2) && treeBranch != null && treeBranch.Info != "Expr"))
+		if (_TBStack[_Stackpos] == null || _TBStack[_Stackpos]?.Length == 0
+			&& !(task == nameof(Expr2) && _TaskStack[_Stackpos - 1] != nameof(BasicExpr2)
+			&& treeBranch != null && treeBranch.Info.ToString() is not ("Expr" or "Assignment" or "DeclarationAssignment")))
 			_TBStack[_Stackpos] = treeBranch;
 		else
 			_TBStack[_Stackpos]?.Insert(posToInsert, treeBranch ?? TreeBranch.DoNotAdd());

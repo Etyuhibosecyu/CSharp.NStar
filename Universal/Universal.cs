@@ -309,13 +309,19 @@ public struct Universal
 			throw new FormatException();
 		else if (s[^1] == 'i')
 			return int.Parse(s[..^1], InvariantCulture);
+		else if (s[^1] == 'u')
+			return uint.Parse(s[..^1], InvariantCulture);
 		else if (s[^1] == 'L')
 		{
 			s2 = s[..^1];
 			if (int.TryParse(s2, out var i))
 				return (Universal)i;
+			else if (uint.TryParse(s2, out var ui))
+				return (Universal)ui;
+			else if (long.TryParse(s2, out var l))
+				return new(l, LongIntType);
 			else
-				return long.TryParse(s2, out var l) ? new(l, LongIntType) : new(ulong.Parse(s2), UnsignedLongIntType);
+				return new(ulong.Parse(s2), UnsignedLongIntType);
 		}
 		else if (s[^1] == 'r')
 		{
