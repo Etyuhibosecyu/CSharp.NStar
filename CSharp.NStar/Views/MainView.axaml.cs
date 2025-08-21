@@ -29,8 +29,21 @@ public partial class MainView : UserControl
 	private static readonly ImmutableArray<string> minorVersions = ["2o"];
 	private static readonly ImmutableArray<string> langs = ["C#"];
 	private static readonly string AlphanumericCharactersWithoutDot = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-	private static readonly G.SortedSet<String> AutoCompletionList = [.. new List<String>("abstract", "break", "case", "Class", "closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypesList.Keys).AddRange(ExtraTypesList.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type))).AddRange(PublicFunctionsList.Keys)];
-	private static readonly G.SortedSet<string> AutoCompletionAfterDotList = [.. PrimitiveTypesList.Values.ToList().AddRange(ExtraTypesList.Values).ConvertAndJoin(x => x.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).ToList(x => PropertyMappingBack(x.Name)).AddRange(x.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public).ToList(x => FunctionMappingBack(x.Name)))).Filter(x => !x.Contains('_'))];
+	private static readonly G.SortedSet<String> AutoCompletionList = [.. new List<String>("abstract", "break", "case", "Class",
+		"closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event",
+		"Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst",
+		"Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref",
+		"repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or",
+		"xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith",
+		"CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypesList.Keys)
+		.AddRange(ExtraTypesList.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type)))
+		.AddRange(PublicFunctionsList.Keys)];
+	private static readonly G.SortedSet<string> AutoCompletionAfterDotList = [.. PrimitiveTypesList.Values.ToList()
+		.AddRange(ExtraTypesList.Values).ConvertAndJoin(x =>
+		x.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public)
+		.ToList(x => PropertyMappingBack(x.Name))
+		.AddRange(x.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public)
+		.ToList(x => FunctionMappingBack(x.Name)))).Filter(x => !x.Contains('_'))];
 #if VERIFY
 	private static readonly Dictionary<String, (String TargetResult, String? TargetErrors)> testPrograms = new() { { """
 		return ("7" * "2", "7" * 2, 7 * "2", "7" / "2", "7" / 2, 7 / "2", "7" % "2", "7" % 2, 7 % "2", "7" - "2", "7" - 2, 7 - "2");
@@ -127,10 +140,22 @@ var b = x < y + 2;
 var c = x > y && x < y + 2;
 var d = x > y || x < y + 2;
 return (a, b, c, d);
-", (@"(true, false, false, true)", "Ошибок нет") }, { @"return DateTime.IsLeapYear(2025) ? -1234567890 : 2345678901;
+", (@"(true, false, false, true)", "Ошибок нет") }, { @"return Max(3);
+", ("3", "Ошибок нет") }, { @"return Max(3, 1);
+", ("3", "Ошибок нет") }, { @"return Max(3, 1, 4);
+", ("4", "Ошибок нет") }, { @"return Max(3, 1, 4, 2);
+", ("4", "Ошибок нет") }, { @"return Mean(3);
+", ("3", "Ошибок нет") }, { @"return Mean(3, 1);
+", ("2", "Ошибок нет") }, { @"return Mean(3, 1, 3.5);
+", ("2.5", "Ошибок нет") }, { @"return Mean(3, 1, 4, 2);
+", ("2.5", "Ошибок нет") }, { @"return Min(2);
+", ("2", "Ошибок нет") }, { @"return Min(2, 4);
+", ("2", "Ошибок нет") }, { @"return Min(2, 4, 1);
+", ("1", "Ошибок нет") }, { @"return Min(2, 4, 1, 3);
+", ("1", "Ошибок нет") }, { @"return DateTime.IsLeapYear(2025) ? -1234567890 : 2345678901;
 ", ("2345678901", "Ошибок нет") }, { @"var a = DateTime.IsLeapYear(2025) ? -1234567890 : 2345678901;
 return a;
-", ("null", @"Error 4041 in line 1 at position 48: there is no implicit conversion between the types ""int"" and ""unsigned int""
+", ("null", @"Error 4015 in line 1 at position 48: there is no implicit conversion between the types ""int"" and ""unsigned int""
 ") }, { @"list() int list = (5, 8);
 var a = DateTime.IsLeapYear(2025) ? list : DateTime.IsLeapYear(2024) ? 12 : 20;
 return a;
@@ -140,12 +165,12 @@ return a;
 ", (@"(5, 8)", "Ошибок нет") }, { @"var a = 1 ?> 2 : 3 ?> 2 : 1;
 return a;
 ", ("3", "Ошибок нет") }, { @"return ""A"" ?= ""B"" : ""C"";
-", (@"""C""", "Ошибок нет") }, { @"var a = ""A"" ?= ""B"" : ""C"";
+", ("\"C\"", "Ошибок нет") }, { @"var a = ""A"" ?= ""B"" : ""C"";
 return a;
-", (@"""C""", "Ошибок нет") }, { @"return ""A"" ?!= ""B"" : ""C"";
-", (@"""A""", "Ошибок нет") }, { @"var a = ""A"" ?!= ""B"" : ""C"";
+", ("\"C\"", "Ошибок нет") }, { @"return ""A"" ?!= ""B"" : ""C"";
+", ("\"A\"", "Ошибок нет") }, { @"var a = ""A"" ?!= ""B"" : ""C"";
 return a;
-", (@"""A""", "Ошибок нет") }, { @"return ""A"" ?> ""B"" : ""C"";
+", ("\"A\"", "Ошибок нет") }, { @"return ""A"" ?> ""B"" : ""C"";
 ", ("null", @"Error 4006 in line 1 at position 11: cannot apply the operator ""?>"" to the types ""string"" and ""string""
 ") }, { @"var a = ""A"" ?> ""B"" : ""C"";
 return a;
@@ -153,15 +178,19 @@ return a;
 ") }, { @"return 3 ?> 2 : ""A"";
 ", ("3", "Ошибок нет") }, { @"var a = 3 ?> 2 : ""A"";
 return a;
-", ("null", @"Error 4041 in line 1 at position 15: there is no implicit conversion between the types ""byte"" and ""string""
+", ("null", @"Error 4015 in line 1 at position 15: there is no implicit conversion between the types ""byte"" and ""string""
 ") }, { @"real Function F(real x, real y)
 {
 	return x * x + x * y + y * y;
 }
+real Function Max2(real x, real y)
+{
+	return Max(x, y);
+}
 System.Func[real, real, real] f;
 f = F;
 real a = f(3.14159, 2.71828);
-f = Max;
+f = Max2;
 real b = f(3.14159, 2.71828);
 return (a, b);
 ", (@"(25.798355151699997, 3.14159)", "Ошибок нет") }, { @"Class MyClass
@@ -309,7 +338,109 @@ Error 4027 in line 33 at position 123: the conversion from the type ""real"" to 
 	else
 		return x * Factorial(x - 1);
 }
-return Factorial(100);", ("9.33262154439441E+157", "Ошибок нет") }, { @"int n = 0;
+return Factorial(100);
+", ("9.33262154439441E+157", "Ошибок нет") }, { @"int Function F(int x)
+{
+	if (x < 0)
+		return 0;
+	else
+		return 1;
+	x++;
+}
+return F(-5);
+", ("0", @"Warning 8005 in line 7 at position 1: the unreachable code has been detected
+") }, { @"int Function F(int x)
+{
+	if (x < 0)
+	if (x % 2 == 0)
+		return 0;
+	else
+		return 1;
+	x++;
+}
+return F(-5);
+", ("0", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
+") }, { @"int Function F(int x)
+{
+	while (x < 0)
+	if (x % 2 == 0)
+		return 0;
+	else
+		return 1;
+	x++;
+}
+return F(-5);
+", ("0", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
+") }, { @"int Function F(int x)
+{
+	loop
+	if (x % 2 == 0)
+		return 0;
+	else
+		return 1;
+	x++;
+}
+return F(-5);
+", ("1", @"Warning 8005 in line 8 at position 1: the unreachable code has been detected
+") }, { @"int Function F(int x)
+{
+	if (x < 0)
+	if (x % 2 == 0)
+		return 0;
+	else
+		return 1;
+	else
+		return 2;
+	x++;
+}
+return F(-5);
+", ("1", @"Warning 8005 in line 10 at position 1: the unreachable code has been detected
+") }, { @"int Function F(int x)
+{
+	if (x < 0)
+	if (x > -100)
+	if (x % 2 == 0)
+		return 0;
+	else
+		return 1;
+	else
+		return 2;
+	x++;
+}
+return F(-5);
+", ("0", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
+") }, { @"int Function ComplexCondition(int x, int y)
+{
+	if (x > 0)
+		if (y > 0)
+			return x + y;
+		else
+			return x - y;
+	else
+		if (y > 0)
+			return x * y;
+}
+", ("null", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
+") }, { @"int Function ForLoopFunction(list() int list)
+{
+	for (int i in Chain(0, list.Length))
+		if (list[i] > 0)
+				return list[i];
+}
+", ("null", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
+") }, { @"int Function ComplexFunction(int x, list() int list)
+{
+	if (x > 0)
+		for (int i in Chain(0, list.Length))
+			if (list[i] > x)
+				return list[i];
+	else
+		while (x < 10)
+			x++;
+		if (x % 2 == 0)
+			return x;
+}", ("null", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
+") }, { @"int n = 0;
 while (n < 1000)
 {
 	n++;
@@ -350,7 +481,7 @@ return c[1, 2, 3];
 ListHashSet[string] hs = new ListHashSet[string](3, ""A"", ""B"", ""C"");
 hs.Add(""B"");
 return hs[2];
-", (@"""B""", "Ошибок нет") }, { @"using System.Collections;
+", ("\"B\"", "Ошибок нет") }, { @"using System.Collections;
 ListHashSet[int] hs = new ListHashSet[int](3, 5, 10, 15);
 hs.Add(10);
 return hs[2];
@@ -417,7 +548,7 @@ return F()();
 ") }, { @"return /""Hello, world!""ssssssssssssssss\;
 ", ("null", @"Wreck 9004 in line 2 at position 0: unexpected end of code reached; expected: 1 pairs ""double quote - reverse slash"" (starting with quote)
 ") }, { @"return /""Hello, world!/""\;
-", (@"""Hello, world!/""", "Ошибок нет") }, { @"return /""Hell@""/""o, world!""\;
+", ("\"Hello, world!/\"", "Ошибок нет") }, { @"return /""Hell@""/""o, world!""\;
 ", (@"/""Hell@""/""o, world!""\", "Ошибок нет") }, { @"return /""Hell@""/{""o, world!""\;
 ", (@"/""Hell@""/{""o, world!""\", "Ошибок нет") }, { @"return /""Hell@""\""""\""o, world!""\;
 ", (@"/""Hell@""\""""\""o, world!""\", "Ошибок нет") }, { @"using System;
@@ -1355,7 +1486,7 @@ Class Car : Vehicle
 
 Vehicle vehicle = new Car();
 return vehicle.Start();
-", (@"""Car starting""", "Ошибок нет") }, { @"Class Engine
+", ("\"Car starting\"", "Ошибок нет") }, { @"Class Engine
 {
 	string Function Start()
 	{
@@ -1534,7 +1665,9 @@ return RedStarLinq.ToList(list, x => x * x);
 ", (@"(25, 100, 225, 400, 625)", "Ошибок нет") }, { @"using System;
 Func[real, real] f = x => x * x;
 return f(100);
-", ("10000", "Ошибок нет") }, { @"using System;
+", ("10000", "Ошибок нет") }, { @"x => x * x;
+", ("null", @"Error 4040 in line 1 at position 0: unexpected lambda expression here
+") }, { @"using System;
 list() Func[real, real] list = (x => x * x, x => 1 / x, x => E pow x);
 return (list[1](3.14), list[2](3.14), list[3](3.14), list[1](-5), list[2](-5), list[3](-5));
 ", (@"(9.8596, 0.3184713375796178, 23.10386685872218, 25, -0.2, 0.006737946999085469)", "Ошибок нет") }, { @"using System;
@@ -1552,7 +1685,68 @@ Func[real, real] f = x =>
 		return -x * x;
 };
 return (f(100), f(-5));
-", (@"(10000, -25)", "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
+", (@"(10000, -25)", "Ошибок нет") }, { @"using System;
+Func[int, int, int] sum = (x, y) => x + y;
+int result = sum(5, 3);
+return result;
+", ("8", "Ошибок нет") }, { @"using System;
+list() int numbers = (1, 2, 3, 4, 5, 6);
+var evenNumbers = RedStarLinq.Filter(numbers, x => x % 2 == 0);
+return (numbers, evenNumbers);
+", ("((1, 2, 3, 4, 5, 6), (2, 4, 6))", "Ошибок нет") }, { @"using System;
+string s = null;
+Func[null, string, int] logMessage = (message, level) => {
+	s = ""Уровень: "" + level + "", Сообщение: "" + message;
+};
+logMessage(""Ошибка"", 1);
+return s;
+", ("\"Уровень: 1, Сообщение: Ошибка\"", "Ошибок нет") }, { @"using System;
+int multiplier = 2;
+Func[int, int] multiply = x => x * multiplier;
+int result = multiply(5);
+return result;
+", ("10", "Ошибок нет") }, { @"using System;
+Func[bool, int] isPrime = (number) => {
+    if (number < 2) return false;
+    for (int i in Chain(2, number - 2)) {
+        if(number % i == 0) return false;
+    }
+    return true;
+};
+return (isPrime(1), isPrime(2), isPrime(3), isPrime(4), isPrime(5), isPrime(6), isPrime(7), isPrime(8));
+", ("(false, true, true, false, true, false, true, false)", "Ошибок нет") }, { @"using System;
+Func[real, int] f = x => x * x;
+var a = f(5);
+f = x => 1r / x;
+var b = f(5);
+return (a, b);
+", ("(25, 0.2)", "Ошибок нет") }, { @"using System;
+Func[int, int] invalidFunc = x => { x + 1; };
+", ("null", @"Error 402A in line 2 at position 36: this function or lambda must return the value on all execution paths
+") }, { @"using System;
+string s = null;
+Func[null, int] wrongParams = (x, y) => s = x;
+return s;
+", ("null", @"Error 4042 in line 3 at position 31: incorrect list of the parameters of the lambda expression
+") }, { @"using System;
+Func[string, int] typeMismatch = x => x + 1;
+return typeMismatch(5);
+", ("null", @"Error 4014 in line 2 at position 31: cannot convert from the type ""System.Func[int, int]"" to the type ""System.Func[string, int]""
+Error 4001 in line 3 at position 7: the identifier ""typeMismatch"" is not defined in this location
+Error 4038 in line 3 at position 19: this call is forbidden
+") }, { @"using System;
+Func[string, string] typeMismatch = x => x + 1;
+return typeMismatch();
+", ("null", @"Error 4045 in line 3 at position 19: this lambda must have 1 parameters
+") }, { @"using System;
+Func[string, string] typeMismatch = x => x + 1;
+return typeMismatch(5, 8, 12);
+", ("null", @"Error 4045 in line 3 at position 19: this lambda must have 1 parameters
+") }, { @"using System;
+Func[string, string] typeMismatch = x => x + 1;
+return typeMismatch(5);
+", ("null", @"Error 4014 in line 3 at position 20: cannot convert from the type ""byte"" to the type ""string"" - use an addition of zero-length string for this
+") }, { @"return 100000000000000000*100000000000000000000;
 ", ("0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
 ") }, { @"return ExecuteString(""return args[1];"", Q());
 ", ("""
