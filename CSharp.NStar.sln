@@ -3,6 +3,10 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34902.65
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaEdit", "AvaloniaEdit\AvaloniaEdit.csproj", "{B7C51C16-7171-2CEF-DEC9-E2667870E2B1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeSample", "CodeSample\CodeSample.csproj", "{B68EEA0C-D77B-46AC-0A5C-88ACE4BA659B}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSharp.NStar", "CSharp.NStar\CSharp.NStar.csproj", "{14D98B0C-51E6-454A-BA03-9265490C1EA9}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSharp.NStar.Desktop", "CSharp.NStar.Desktop\CSharp.NStar.Desktop.csproj", "{A4E18563-1CF6-4A2F-AD17-4E5B85EEDB86}"
@@ -11,11 +15,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeclaredConstructionHelpers
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeclaredConstructions", "DeclaredConstructions\DeclaredConstructions.csproj", "{E1A27804-8080-4755-9D70-EB4866AE649C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HighLevelAnalysis", "HighLevelAnalysis\HighLevelAnalysis.csproj", "{5539C599-1CC0-4799-B57C-DF6BEF67CFA7}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LowLevelAnalysis", "LowLevelAnalysis\LowLevelAnalysis.csproj", "{C775FC4E-A552-4839-8B0F-C568A5D8DA31}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MainParsing", "MainParsing\MainParsing.csproj", "{C775FC4E-A552-4839-8B0F-C568A5D8DA31}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuotesAndTreeBranch", "QuotesAndTreeBranch\QuotesAndTreeBranch.csproj", "{FE09F28C-176E-4EDA-A65C-7D6D4DA85642}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SemanticTree", "SemanticTree\SemanticTree.csproj", "{5539C599-1CC0-4799-B57C-DF6BEF67CFA7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SerializerHelpers", "SerializerHelpers\SerializerHelpers.csproj", "{929F50E9-15A2-4C92-A13E-2DBCBAA243C3}"
 EndProject
@@ -58,8 +62,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStar.SumCollections", "..\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStar.TreeSets", "..\.NStar\Sources\NStar.TreeSets\NStar.TreeSets.csproj", "{8A9CA20F-F351-42D7-AF5F-C13B0C273966}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaEdit", "AvaloniaEdit\AvaloniaEdit.csproj", "{B7C51C16-7171-2CEF-DEC9-E2667870E2B1}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -82,10 +84,6 @@ Global
 		{E1A27804-8080-4755-9D70-EB4866AE649C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1A27804-8080-4755-9D70-EB4866AE649C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1A27804-8080-4755-9D70-EB4866AE649C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5539C599-1CC0-4799-B57C-DF6BEF67CFA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5539C599-1CC0-4799-B57C-DF6BEF67CFA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5539C599-1CC0-4799-B57C-DF6BEF67CFA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5539C599-1CC0-4799-B57C-DF6BEF67CFA7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C775FC4E-A552-4839-8B0F-C568A5D8DA31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C775FC4E-A552-4839-8B0F-C568A5D8DA31}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C775FC4E-A552-4839-8B0F-C568A5D8DA31}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -94,6 +92,10 @@ Global
 		{FE09F28C-176E-4EDA-A65C-7D6D4DA85642}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE09F28C-176E-4EDA-A65C-7D6D4DA85642}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE09F28C-176E-4EDA-A65C-7D6D4DA85642}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5539C599-1CC0-4799-B57C-DF6BEF67CFA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5539C599-1CC0-4799-B57C-DF6BEF67CFA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5539C599-1CC0-4799-B57C-DF6BEF67CFA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5539C599-1CC0-4799-B57C-DF6BEF67CFA7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{929F50E9-15A2-4C92-A13E-2DBCBAA243C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{929F50E9-15A2-4C92-A13E-2DBCBAA243C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{929F50E9-15A2-4C92-A13E-2DBCBAA243C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -170,6 +172,10 @@ Global
 		{B7C51C16-7171-2CEF-DEC9-E2667870E2B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7C51C16-7171-2CEF-DEC9-E2667870E2B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7C51C16-7171-2CEF-DEC9-E2667870E2B1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B68EEA0C-D77B-46AC-0A5C-88ACE4BA659B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B68EEA0C-D77B-46AC-0A5C-88ACE4BA659B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B68EEA0C-D77B-46AC-0A5C-88ACE4BA659B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B68EEA0C-D77B-46AC-0A5C-88ACE4BA659B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

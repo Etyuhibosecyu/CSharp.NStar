@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
@@ -6,6 +6,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\DeclaredConstructions\DeclaredConstructions.csproj" />
+		<ProjectReference Include="..\CodeSample\CodeSample.csproj" />
 	</ItemGroup>
 </Project>

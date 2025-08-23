@@ -6,6 +6,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\DeclaredConstructions\DeclaredConstructions.csproj" />
+		<ProjectReference Include="..\..\.NStar\Sources\NStar.ExtraHS\NStar.ExtraHS.csproj" />
+		<ProjectReference Include="..\MainParsing\MainParsing.csproj" />
 	</ItemGroup>
+
 </Project>

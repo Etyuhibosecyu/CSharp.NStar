@@ -1,4 +1,17 @@
-﻿namespace CSharp.NStar;
+﻿global using NStar.Core;
+global using NStar.Dictionaries;
+global using NStar.Linq;
+global using System;
+global using G = System.Collections.Generic;
+global using static CSharp.NStar.DeclaredConstructionChecks;
+global using static CSharp.NStar.DeclaredConstructions;
+global using static CSharp.NStar.TypeHelpers;
+global using static NStar.Core.Extents;
+global using static System.Math;
+global using String = NStar.Core.String;
+
+namespace CSharp.NStar;
+
 public class LexemStream
 {
 	private protected readonly List<Lexem> lexems;
