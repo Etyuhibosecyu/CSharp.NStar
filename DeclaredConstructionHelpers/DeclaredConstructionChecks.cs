@@ -423,11 +423,11 @@ public static class DeclaredConstructionChecks
 			return true;
 		}
 		if (!(UserDefinedFunctionsList.TryGetValue(container, out var methods)
-			&& methods.TryGetValue(name, out var method_overloads)))
+			&& methods.TryGetValue(name, out var overloads)))
 		{
-			if (GeneralMethodsList.TryGetValue(container, out var list) && list.TryGetValue(name, out var overloads))
+			if (GeneralMethodsList.TryGetValue(container, out var list) && list.TryGetValue(name, out overloads))
 			{
-				functions = overloads;
+				functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
 				user = false;
 				return true;
 			}
@@ -435,7 +435,7 @@ public static class DeclaredConstructionChecks
 			user = false;
 			return false;
 		}
-		functions = method_overloads;
+		functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
 		for (var i = 0; i < functions.Length; i++)
 		{
 			var arrayParameters = functions[i].ArrayParameters;
@@ -482,9 +482,9 @@ public static class DeclaredConstructionChecks
 		[MaybeNullWhen(false)] out BlockStack matchingContainer, out bool derived)
 	{
 		if (CheckContainer(container, UserDefinedFunctionsList.ContainsKey, out matchingContainer)
-			&& UserDefinedFunctionsList[matchingContainer].TryGetValue(name, out var method_overloads))
+			&& UserDefinedFunctionsList[matchingContainer].TryGetValue(name, out var overloads))
 		{
-			functions = method_overloads;
+			functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
 			derived = false;
 			return true;
 		}
@@ -508,9 +508,9 @@ public static class DeclaredConstructionChecks
 		[MaybeNullWhen(false)] out GeneralMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer)
 	{
-		if (CheckContainer(container, UserDefinedFunctionsList.ContainsKey, out matchingContainer) && UserDefinedFunctionsList[matchingContainer].TryGetValue(name, out var method_overloads))
+		if (CheckContainer(container, UserDefinedFunctionsList.ContainsKey, out matchingContainer) && UserDefinedFunctionsList[matchingContainer].TryGetValue(name, out var overloads))
 		{
-			functions = method_overloads;
+			functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
 			return true;
 		}
 		functions = null;

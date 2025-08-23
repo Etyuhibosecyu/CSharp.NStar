@@ -439,7 +439,26 @@ return F(-5);
 			x++;
 		if (x % 2 == 0)
 			return x;
-}", ("null", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
+}
+", ("null", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
+") }, { @"null Function F()
+{
+}
+int Function F()
+{
+	return 5;
+}
+return F();
+", ("null", @"Error 000C in line 4 at position 13: the function ""F"" is already defined in this region; overloaded functions are under development
+") }, { @"null Function F(int x)
+{
+}
+int Function F(int x)
+{
+	return x * x;
+}
+return F(5);
+", ("null", @"Error 000C in line 4 at position 13: the function ""F"" is already defined in this region; overloaded functions are under development
 ") }, { @"int n = 0;
 while (n < 1000)
 {
@@ -1746,7 +1765,156 @@ return typeMismatch(5, 8, 12);
 Func[string, string] typeMismatch = x => x + 1;
 return typeMismatch(5);
 ", ("null", @"Error 4014 in line 3 at position 20: cannot convert from the type ""byte"" to the type ""string"" - use an addition of zero-length string for this
-") }, { @"return 100000000000000000*100000000000000000000;
+") }, { @"list() int list = (1, 2, 3, 4, 5);
+return list[^1];
+", ("5", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+return list[3..5];
+", ("(3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+return list[3..^2];
+", ("(3, 4, 5, 6)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+return list[^3..^2];
+", ("(5, 6)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+return list[^5..5];
+", ("(3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = 1;
+return list[^n];
+", ("5", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = ^1;
+return list[n];
+", ("5", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = 3;
+var end = 5;
+return list[start..end];
+", ("(3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+index start = 3;
+index end = 5;
+return list[start..end];
+", ("(3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = 3;
+var end = 2;
+return list[start..^end];
+", ("(3, 4, 5, 6)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = 3;
+var end = ^2;
+return list[start..end];
+", ("(3, 4, 5, 6)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = 3;
+var end = 2;
+return list[^start..^end];
+", ("(5, 6)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = ^3;
+var end = ^2;
+return list[start..end];
+", ("(5, 6)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = 5;
+var end = 5;
+return list[^start..end];
+", ("(3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = ^5;
+var end = 5;
+return list[start..end];
+", ("(3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = 3;
+var end = 5;
+var range = start..end;
+return list[range];
+", ("(3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+index start = 3;
+index end = 5;
+var range = start..end;
+return list[range];
+", ("(3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = 3;
+var end = 2;
+var range = start..^end;
+return list[range];
+", ("(3, 4, 5, 6)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = 3;
+var end = ^2;
+var range = start..end;
+return list[range];
+", ("(3, 4, 5, 6)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = 3;
+var end = 2;
+var range = ^start..^end;
+return list[range];
+", ("(5, 6)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = ^3;
+var end = ^2;
+var range = start..end;
+return list[range];
+", ("(5, 6)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = 5;
+var end = 5;
+var range = ^start..end;
+return list[range];
+", ("(3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5, 6, 7);
+var start = ^5;
+var end = 5;
+var range = start..end;
+return list[range];
+", ("(3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = 2;
+return list[n..];
+", ("(2, 3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+index n = 2;
+return list[n..];
+", ("(2, 3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = 2;
+return list[^n..];
+", ("(4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = ^2;
+return list[n..];
+", ("(4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = 2;
+return list[..n];
+", ("(1, 2)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+index n = 2;
+return list[..n];
+", ("(1, 2)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = 2;
+return list[..^n];
+", ("(1, 2, 3, 4)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = ^2;
+return list[..n];
+", ("(1, 2, 3, 4)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+return list[..];
+", ("(1, 2, 3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = 2;
+var range = n..;
+return list[range];
+", ("(2, 3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+index n = 2;
+var range = n..;
+return list[range];
+", ("(2, 3, 4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = 2;
+var range = ^n..;
+return list[range];
+", ("(4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = ^2;
+var range = n..;
+return list[range];
+", ("(4, 5)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = 2;
+var range = ..n;
+return list[range];
+", ("(1, 2)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+index n = 2;
+var range = ..n;
+return list[range];
+", ("(1, 2)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = 2;
+var range = ..^n;
+return list[range];
+", ("(1, 2, 3, 4)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var n = ^2;
+var range = ..n;
+return list[range];
+", ("(1, 2, 3, 4)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
+var range = ..;
+return list[range];
+", ("(1, 2, 3, 4, 5)", "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
 ", ("0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
 ") }, { @"return ExecuteString(""return args[1];"", Q());
 ", ("""

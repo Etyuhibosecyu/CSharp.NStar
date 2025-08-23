@@ -291,6 +291,7 @@ public enum FunctionAttributes
 	Abstract = 64,
 	Sealed = 128,
 	New = 192,
+	Wrong = 256,
 }
 
 public enum ParameterAttributes
@@ -402,6 +403,8 @@ public static class DeclaredConstructions
 	public static readonly UniversalType UnsignedLongIntType = GetPrimitiveType("unsigned long int");
 	public static readonly UniversalType RealType = GetPrimitiveType("real");
 	public static readonly UniversalType StringType = GetPrimitiveType("string");
+	public static readonly UniversalType IndexType = GetPrimitiveType("index");
+	public static readonly UniversalType RangeType = GetPrimitiveType("range");
 	public static readonly BlockStack EmptyBlockStack = new();
 	public static readonly BlockStack ListBlockStack = new([new(BlockType.Primitive, "list", 1)]);
 	public static readonly BlockStack TupleBlockStack = new([new(BlockType.Primitive, "tuple", 1)]);
@@ -451,7 +454,7 @@ public static class DeclaredConstructions
 
 	public static SortedSet<String> ExplicitlyConnectedNamespacesList { get; } = [];
 
-	public static SortedDictionary<String, Type> PrimitiveTypesList { get; } = new() { { "null", typeof(void) }, { "object", typeof(object) }, { "bool", typeof(bool) }, { "byte", typeof(byte) }, { "short char", typeof(byte) }, { "short int", typeof(short) }, { "unsigned short int", typeof(ushort) }, { "char", typeof(char) }, { "int", typeof(int) }, { "unsigned int", typeof(uint) }, { "long char", typeof(uint) }, { "long int", typeof(long) }, { "DateTime", typeof(DateTime) }, { "TimeSpan", typeof(TimeSpan) }, { "unsigned long int", typeof(long) }, { "real", typeof(double) }, { "typename", typeof(void) }, { "string", typeof(String) }, { "nint", typeof(nint) }, { "list", typeof(List<>) }, { "universal", typeof(object) }, { "dynamic", typeof(void) }, { "var", typeof(void) } };
+	public static SortedDictionary<String, Type> PrimitiveTypesList { get; } = new() { { "null", typeof(void) }, { "object", typeof(object) }, { "bool", typeof(bool) }, { "byte", typeof(byte) }, { "short char", typeof(byte) }, { "short int", typeof(short) }, { "unsigned short int", typeof(ushort) }, { "char", typeof(char) }, { "int", typeof(int) }, { "unsigned int", typeof(uint) }, { "long char", typeof(uint) }, { "long int", typeof(long) }, { "DateTime", typeof(DateTime) }, { "TimeSpan", typeof(TimeSpan) }, { "unsigned long int", typeof(long) }, { "real", typeof(double) }, { "typename", typeof(void) }, { "string", typeof(String) }, { "index", typeof(Index) }, { "range", typeof(Range) }, { "nint", typeof(nint) }, { "list", typeof(List<>) }, { "universal", typeof(object) }, { "dynamic", typeof(void) }, { "var", typeof(void) } };
 
 	/// <summary>
 	/// Sorted by tuple, contains Namespace and Type.
@@ -514,6 +517,11 @@ public static class DeclaredConstructions
 	public static TypeDictionary<UserDefinedMethods> UserDefinedFunctionsList { get; } = [];
 
 	/// <summary>
+	/// Sorted by Container, then by StartPos.
+	/// </summary>
+	public static TypeDictionary<SortedDictionary<int, int>> UserDefinedFunctionIndexesList { get; } = [];
+
+	/// <summary>
 	/// Sorted by Container, also contains Attributes, ParameterTypes, ParameterNames, ParameterArrayParameters, ParameterAttributes and ParameterDefaultValues.
 	/// </summary>
 	public static TypeDictionary<ConstructorOverloads> UserDefinedConstructorsList { get; } = [];
@@ -551,7 +559,7 @@ public static class DeclaredConstructions
 	/// <summary>
 	/// Sorted by SrcType, also contains SrcUnvType.ExtraTypes, DestTypes and their DestUnvType.ExtraTypes.
 	/// </summary>
-	public static TypeSortedList<ImplicitConversions> ImplicitConversionsList { get; } = new() { { GeneralTypeBool, new() { { NoGeneralExtraTypes, new() { (RealType, false), (UnsignedIntType, false), (IntType, false), (UnsignedShortIntListType, false), (ShortIntType, false), (ByteType, false) } } } }, { GetPrimitiveBlockStack("byte"), new() { { NoGeneralExtraTypes, new() { (UnsignedIntType, false), (IntType, false), (UnsignedShortIntListType, false), (ShortIntType, false), (GetPrimitiveType("short char"), true), (BoolType, true) } } } }, { GetPrimitiveBlockStack("char"), new() { { NoGeneralExtraTypes, new() { (UnsignedShortIntType, false), (StringType, false) } } } }, { GeneralTypeInt, new() { { NoGeneralExtraTypes, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true) } } } }, { GeneralTypeList, new() { { new() { GetPrimitiveType("char") }, new() { (StringType, false) } } } }, { GetPrimitiveBlockStack("long char"), new() { { NoGeneralExtraTypes, new() { (UnsignedIntType, false) } } } }, { GetPrimitiveBlockStack("long int"), new() { { NoGeneralExtraTypes, new() { (UnsignedLongIntType, false), (BoolType, true), (UnsignedShortIntListType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (RealType, true) } } } }, { GetPrimitiveBlockStack("real"), new() { { NoGeneralExtraTypes, new() { (BoolType, true), (UnsignedLongIntType, true), (LongIntType, true), (UnsignedIntType, true), (IntType, true) } } } }, { GetPrimitiveBlockStack("short char"), new() { { NoGeneralExtraTypes, new() { (ByteType, false) } } } }, { GetPrimitiveBlockStack("short int"), new() { { NoGeneralExtraTypes, new() { (LongIntType, false), (RealType, false), (IntType, false), (UnsignedShortIntType, false), (BoolType, true), (ByteType, true), (UnsignedIntType, true), (UnsignedLongIntType, true) } } } }, { GeneralTypeString, new() { { NoGeneralExtraTypes, new() { ((GeneralTypeList, [new(GetPrimitiveType("char"))]), false) } } } }, { GetPrimitiveBlockStack("unsigned int"), new() { { NoGeneralExtraTypes, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (IntType, true) } } } }, { GetPrimitiveBlockStack("unsigned long int"), new() { { NoGeneralExtraTypes, new() { (BoolType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (LongIntType, true), (RealType, true) } } } }, { GetPrimitiveBlockStack("unsigned short int"), new() { { NoGeneralExtraTypes, new() { (UnsignedLongIntType, false), (LongIntType, false), (RealType, false), (UnsignedIntType, false), (IntType, false), (BoolType, true), (ByteType, true), (ShortIntType, true) } } } } };
+	public static TypeSortedList<ImplicitConversions> ImplicitConversionsList { get; } = new() { { GeneralTypeBool, new() { { NoGeneralExtraTypes, new() { (RealType, false), (UnsignedIntType, false), (IntType, false), (UnsignedShortIntListType, false), (ShortIntType, false), (ByteType, false) } } } }, { GetPrimitiveBlockStack("byte"), new() { { NoGeneralExtraTypes, new() { (UnsignedIntType, false), (IntType, false), (UnsignedShortIntListType, false), (ShortIntType, false), (GetPrimitiveType("short char"), true), (BoolType, true) } } } }, { GetPrimitiveBlockStack("char"), new() { { NoGeneralExtraTypes, new() { (UnsignedShortIntType, false), (StringType, false) } } } }, { GeneralTypeInt, new() { { NoGeneralExtraTypes, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (IndexType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true) } } } }, { GeneralTypeList, new() { { new() { GetPrimitiveType("char") }, new() { (StringType, false) } } } }, { GetPrimitiveBlockStack("long char"), new() { { NoGeneralExtraTypes, new() { (UnsignedIntType, false) } } } }, { GetPrimitiveBlockStack("long int"), new() { { NoGeneralExtraTypes, new() { (UnsignedLongIntType, false), (BoolType, true), (UnsignedShortIntListType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (RealType, true) } } } }, { GetPrimitiveBlockStack("real"), new() { { NoGeneralExtraTypes, new() { (BoolType, true), (UnsignedLongIntType, true), (LongIntType, true), (UnsignedIntType, true), (IntType, true) } } } }, { GetPrimitiveBlockStack("short char"), new() { { NoGeneralExtraTypes, new() { (ByteType, false) } } } }, { GetPrimitiveBlockStack("short int"), new() { { NoGeneralExtraTypes, new() { (LongIntType, false), (RealType, false), (IntType, false), (UnsignedShortIntType, false), (BoolType, true), (ByteType, true), (UnsignedIntType, true), (UnsignedLongIntType, true) } } } }, { GeneralTypeString, new() { { NoGeneralExtraTypes, new() { ((GeneralTypeList, [new(GetPrimitiveType("char"))]), false) } } } }, { GetPrimitiveBlockStack("unsigned int"), new() { { NoGeneralExtraTypes, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (IntType, true) } } } }, { GetPrimitiveBlockStack("unsigned long int"), new() { { NoGeneralExtraTypes, new() { (BoolType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (LongIntType, true), (RealType, true) } } } }, { GetPrimitiveBlockStack("unsigned short int"), new() { { NoGeneralExtraTypes, new() { (UnsignedLongIntType, false), (LongIntType, false), (RealType, false), (UnsignedIntType, false), (IntType, false), (BoolType, true), (ByteType, true), (ShortIntType, true) } } } } };
 
 	/// <summary>
 	/// Sorted by tuple, contains DestType and DestUnvType.ExtraTypes.
@@ -771,6 +779,7 @@ public static class DeclaredConstructions
 			0x202F => "the properties can only have the proper access, no public",
 			0x2030 => "the \"new\" keyword is forbidden here",
 			0x2031 => "the \"new\" keyword with implicit type is under development",
+			0x2032 => "the method \"" + parameters[0] + "\" with these parameter types is already defined in this region",
 			0x203A => "the identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar and cannot be used",
 			0x203B => "the end of identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar" +
 				" and cannot be used",

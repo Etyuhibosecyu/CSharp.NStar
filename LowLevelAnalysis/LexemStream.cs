@@ -13,7 +13,8 @@ public class LexemStream
 	private protected readonly BlocksToJump blocksToJump = [];
 	private protected readonly LexemGroup registeredTypes = [];
 	private protected readonly LexemGroup parameterLists = [];
-	private readonly TypeDictionary<int> actualConstructorIndex = [];
+	private protected readonly TypeDictionary<Dictionary<String, int>> actualFunctionIndexes = [];
+	private readonly TypeDictionary<int> actualConstructorIndexes = [];
 	private int unknownIndex = 1;
 	private int figureBk;
 
@@ -74,15 +75,15 @@ public class LexemStream
 	private void PreParseIteration()
 	{
 		if (IsCurrentLexemKeyword("using"))
-			PreParseUsing();
+			Using();
 		else if (IsCurrentLexemKeyword("Namespace"))
-			PreParseNamespace();
+			Namespace();
 		else if (IsCurrentLexemKeyword("Class"))
-			PreParseClass();
+			Class();
 		else if (IsCurrentLexemKeyword("Function"))
-			PreParseFunction();
+			Function();
 		else if (IsCurrentLexemKeyword("Constructor"))
-			PreParseConstructor();
+			Constructor();
 		else if (IsCurrentLexemOther("{"))
 		{
 			nestedBlocksChain.Push(new(BlockType.Unnamed, "#" + ((nestedBlocksChain.Length == 0) ? globalUnnamedIndex++ : nestedBlocksChain.Peek().UnnamedIndex++).ToString(), 1));
@@ -107,7 +108,7 @@ public class LexemStream
 			pos++;
 	}
 
-	private void PreParseUsing()
+	private void Using()
 	{
 		if (pos != 0)
 		{
@@ -176,7 +177,7 @@ public class LexemStream
 		pos = 0;
 	}
 
-	private void PreParseNamespace()
+	private void Namespace()
 	{
 		pos++;
 		String name;
@@ -207,7 +208,7 @@ public class LexemStream
 		});
 	}
 
-	private void PreParseClass()
+	private void Class()
 	{
 		pos2 = pos;
 		var attributes = TypeAttributes.None;
@@ -259,7 +260,7 @@ public class LexemStream
 		});
 	}
 
-	private void PreParseFunction()
+	private void Function()
 	{
 		pos2 = pos;
 		var attributes = FunctionAttributes.None;
@@ -340,13 +341,29 @@ public class LexemStream
 		{
 			UserDefinedFunctionsList.TryAdd(container, []);
 			var list = UserDefinedFunctionsList[container];
-			list.Add(name, []);
+			list.TryAdd(name, []);
 			list[name].Add(new([], (new([new(BlockType.Primitive, "???", 1)]), NoGeneralExtraTypes), attributes, []));
 			blocksToJump.Add((container, "Function", name, blockStart, pos));
+			if (!(UserDefinedFunctionIndexesList.TryGetValue(container, out var list2)
+				&& actualFunctionIndexes.TryGetValue(container, out var dic)))
+			{
+				UserDefinedFunctionIndexesList[container] = new() { { blockStart, 0 } };
+				actualFunctionIndexes[container] = new() { { name, 1 } };
+			}
+			else if (!dic.TryGetValue(name, out var index))
+			{
+				list2.Add(blockStart, 0);
+				dic.Add(name, 1);
+			}
+			else
+			{
+				list2.Add(blockStart, index);
+				dic[name]++;
+			}
 		});
 	}
 
-	private void PreParseConstructor()
+	private void Constructor()
 	{
 		if (!IsClass())
 		{
@@ -395,15 +412,16 @@ public class LexemStream
 			UserDefinedConstructorsList.TryAdd(container, []);
 			UserDefinedConstructorsList[container].Add((attributes, []));
 			blocksToJump.Add((container, "Constructor", "", blockStart, pos));
-			if (UserDefinedConstructorIndexesList.TryGetValue(container, out var list) && actualConstructorIndex.TryGetValue(container, out var index))
+			if (UserDefinedConstructorIndexesList.TryGetValue(container, out var list)
+				&& actualConstructorIndexes.TryGetValue(container, out var index))
 			{
 				list.Add(blockStart, index);
-				actualConstructorIndex[container]++;
+				actualConstructorIndexes[container]++;
 			}
 			else
 			{
 				UserDefinedConstructorIndexesList[container] = new() { { blockStart, 0 } };
-				actualConstructorIndex[container] = 1;
+				actualConstructorIndexes[container] = 1;
 			}
 		});
 	}

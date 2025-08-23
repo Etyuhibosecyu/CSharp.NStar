@@ -52,6 +52,11 @@ public static class TypeHelpers
 				else
 					return NullType;
 			}
+			if (type.ExtraTypes.Length == 1 && TypesAreCompatible(type,
+				new(new([new(BlockType.Namespace, "System", 0), new(BlockType.Namespace, "Collections", 0),
+				new(BlockType.Interface, nameof(G.IEnumerable<bool>), 0)]), type.ExtraTypes),
+				out var warning, null, out _, out _) && !warning)
+				return new(type.ExtraTypes[0].MainType.Type, type.ExtraTypes[0].ExtraTypes);
 			else
 				return NullType;
 		}

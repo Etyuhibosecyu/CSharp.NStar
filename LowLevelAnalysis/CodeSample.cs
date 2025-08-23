@@ -114,6 +114,11 @@ public class CodeSample(String newString)
 		if (CheckOverflow(list[0], ref lexemType) is String s) return s;
 		if (ValidateChar('.'))
 		{
+			if (CheckChar('.'))
+			{
+				pos--;
+				return input.GetRange(start..pos, true);
+			}
 			lexemType = LexemType.Real;
 			list.Add(input[(pos - 1)..pos]);
 			list.Add(GetNumber2(out _));
