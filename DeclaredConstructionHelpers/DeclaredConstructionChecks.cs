@@ -312,6 +312,8 @@ public static class DeclaredConstructionChecks
 			return false;
 		foreach (var method in methods)
 		{
+			if (Attribute.IsDefined(method, typeof(ObsoleteAttribute)))
+				continue;
 			var genericArguments = method.GetGenericArguments();
 			var patterns = GetReplacementPatterns(genericArguments, callParameterNetTypes);
 			var returnNetType = method.ReturnType;
@@ -329,7 +331,8 @@ public static class DeclaredConstructionChecks
 				netType.GetGenericArguments(), container.ExtraTypes), parameters[index].Name ?? "x",
 				(parameters[index].IsOptional ? ParameterAttributes.Optional : 0)
 				| (parameters[index].ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
-				| (parameters[index].IsOut ? ParameterAttributes.Out : 0),
+				| (parameters[index].IsOut ? ParameterAttributes.Out : 0)
+				| (Attribute.IsDefined(parameters[index], typeof(ParamArrayAttribute)) ? ParameterAttributes.Params : 0),
 				parameters[index].DefaultValue?.ToString() ?? "null")))));
 		}
 		return true;

@@ -253,8 +253,9 @@ public static class DeclaredConstructionMappings
 		if (parameters == null)
 			return result;
 		result.Add('(');
-		if (function.ToString() is nameof(parameters.GetRange) or nameof(parameters.Remove) or nameof(parameters.RemoveAt)
-			or nameof(parameters.RemoveEnd) or nameof(parameters.Reverse) && parameters.Length >= 1)
+		if (function.ToString() is nameof(parameters.RemoveAt)
+			or nameof(parameters.RemoveEnd) or nameof(parameters.Reverse) && parameters.Length >= 1
+			|| function.ToString() is nameof(parameters.GetRange) or nameof(parameters.Remove) && parameters.Length == 2)
 			parameters[0].Insert(0, '(').AddRange(") - 1");
 		if (function.ToString() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf) && parameters.Length >= 2)
 			parameters[1].Insert(0, '(').AddRange(") - 1");

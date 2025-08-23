@@ -815,6 +815,7 @@ public static class DeclaredConstructions
 				? " - use an addition of zero-length string for this" : ""),
 			0x4015 => "there is no implicit conversion between the types \"" + parameters[0] + "\" and \""
 				+ parameters[1] + "\"",
+			0x4016 => "incorrect index in the list or the tuple; only the positive indexes are supported",
 			0x4020 => "the function \"" + parameters[0] + "\" cannot be used in the delegate",
 			0x4021 => "the function \"" + parameters[0] + "\" is linked with object instance so it cannot be used in delegate",
 			0x4022 => "the function \"" + parameters[0] + "\" must have " + (parameters[1] == parameters[2]

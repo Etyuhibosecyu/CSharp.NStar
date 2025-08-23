@@ -423,7 +423,7 @@ return F(-5);
 ", ("null", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
 ") }, { @"int Function ForLoopFunction(list() int list)
 {
-	for (int i in Chain(0, list.Length))
+	for (int i in Chain(1, list.Length))
 		if (list[i] > 0)
 				return list[i];
 }
@@ -431,7 +431,7 @@ return F(-5);
 ") }, { @"int Function ComplexFunction(int x, list() int list)
 {
 	if (x > 0)
-		for (int i in Chain(0, list.Length))
+		for (int i in Chain(1, list.Length))
 			if (list[i] > x)
 				return list[i];
 	else
@@ -630,7 +630,60 @@ hs.Add(2);
 hs.Add(3);
 hs.Add(2);
 return hs;
-", ("""(1, 2, 3)""", "Ошибок нет") }, { @"using System.Collections;
+", ("(1, 2, 3)", "Ошибок нет") }, { @"using System.Collections;
+var hs = new ListHashSet[string]();
+hs.Add(""1"");
+hs.Add(""2"");
+hs.Add(""3"");
+hs.Add(""2"");
+return hs.GetRange(2..);
+", ("""("2", "3")""", "Ошибок нет") }, { @"using System.Collections;
+var hs = new ListHashSet[string]();
+hs.Add(""1"");
+hs.Add(""2"");
+hs.Add(""3"");
+hs.Add(""2"");
+return hs.GetRange(2, 2);
+", ("""("2", "3")""", "Ошибок нет") }, { @"using System.Collections;
+var hs = new ListHashSet[string]();
+hs.Add(""1"");
+hs.Add(""2"");
+hs.Add(""3"");
+hs.Add(""2"");
+return hs.Remove(2);
+", ("null", @"Error 4026 in line 7 at position 17: incompatibility between the type of the parameter of the call ""byte"" and the type of the parameter of the function ""range""
+") }, { @"using System.Collections;
+var hs = new ListHashSet[string]();
+hs.Add(""1"");
+hs.Add(""2"");
+hs.Add(""3"");
+hs.Add(""2"");
+return hs.Remove(""2"");
+", ("null", @"Error 4026 in line 7 at position 17: incompatibility between the type of the parameter of the call ""string"" and the type of the parameter of the function ""range""
+") }, { @"using System.Collections;
+var hs = new ListHashSet[string]();
+hs.Add(""1"");
+hs.Add(""2"");
+hs.Add(""3"");
+hs.Add(""2"");
+return hs.Remove(2..);
+", (@"(""1"")", "Ошибок нет") }, { @"using System.Collections;
+var hs = new ListHashSet[string]();
+hs.Add(""1"");
+hs.Add(""2"");
+hs.Add(""3"");
+hs.Add(""2"");
+return hs.Remove(2, 1);
+", (@"(""1"", ""3"")", "Ошибок нет") }, { @"using System.Collections;
+var hs = new ListHashSet[string]();
+hs.Add(""1"");
+hs.Add(""2"");
+hs.Add(""3"");
+hs.Add(""2"");
+return hs.remove(2);
+", ("null", @"Error 4033 in line 7 at position 10: the type ""ListHashSet"" does not contain member ""remove""
+Error 4000 in line 7 at position 16: internal compiler error
+") }, { @"using System.Collections;
 var dic = new Dictionary[string, int]();
 dic.TryAdd(""1"", 1);
 dic.TryAdd(""2"", 2);
@@ -700,7 +753,17 @@ Buffer[int] list = new Buffer[int](16, 1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));
 return list.Reverse(2, 3);
-", (@"(1, 4, 3, 2, 5, 6, 7)", "Ошибок нет") }, { @"using System.Collections;
+", (@"(1, 4, 3, 2, 5, 6, 7)", "Ошибок нет") }, { @"list() int list = (1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list[0];
+", ("null", @"Error 4016 in line 4 at position 11: incorrect index in the list or the tuple; only the positive indexes are supported
+") }, { @"list() int list = (1, 2, 3);
+list.Add(4);
+list.Add((5, 6, 7));
+return list[-2];
+", ("null", @"Error 4016 in line 4 at position 11: incorrect index in the list or the tuple; only the positive indexes are supported
+") }, { @"using System.Collections;
 var hs = new ListHashSet[string]();
 hs.Add(""1"");
 hs.Add(""2"");
@@ -1426,7 +1489,26 @@ return (a1, a2, a3, a4);
 
  Person person = new Person(""Alice"", 30);
  return (person.GetName(), person.GetAge());
-", (@"(""Alice"", 30)", "Ошибок нет") }, { @"Class Animal
+", (@"(""Alice"", 30)", "Ошибок нет") }, { @"Class Person
+{
+	closed string name;
+	closed int age;
+
+	string Function GetName()
+	{
+		return name;
+	}
+
+	string Function GetAge()
+	{
+		return age;
+	}
+}
+
+ Person person = new Person(""Alice"", 30);
+ return (person.GetName(), person.GetAge());
+", (@"(""Alice"", null)", @"Error 4039 in line 13 at position 9: incompatibility between the type of the returning value ""int"" and the function return type ""string"" - use an addition of zero-length string for this
+") }, { @"Class Animal
 {
 	protected string species;
 

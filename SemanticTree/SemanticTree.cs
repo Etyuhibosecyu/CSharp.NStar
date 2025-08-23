@@ -1170,6 +1170,12 @@ public sealed class SemanticTree
 					GenerateMessage(ref errorsList, 0x400B, otherPos);
 					return "default!";
 				}
+				if (value <= 0)
+				{
+					var otherPos = branch[index].Pos;
+					GenerateMessage(ref errorsList, 0x4016, otherPos);
+					return "default!";
+				}
 				result.AddRange(".Item").AddRange(value.ToString());
 				CollectionUnvType = (CollectionUnvType.ExtraTypes[value - 1].MainType.Type,
 					CollectionUnvType.ExtraTypes[value - 1].ExtraTypes);
@@ -1178,6 +1184,12 @@ public sealed class SemanticTree
 			}
 			var trivialIndex = IsTrivialIndexType(CollectionUnvType) && branch[index][i].Extra is UniversalType IndexUnvType
 				&& !TypesAreEqual(IndexUnvType, IndexType) && !(range = TypesAreEqual(IndexUnvType, RangeType));
+			if (trivialIndex && int.TryParse(x.ToString(), out var value2) && value2 <= 0)
+			{
+				var otherPos = branch[index].Pos;
+				GenerateMessage(ref errorsList, 0x4016, otherPos);
+				return "default!";
+			}
 			if (trivialIndex)
 				result.AddRange("[(");
 			else
@@ -3325,7 +3337,7 @@ public sealed class SemanticTree
 	public static List<(string Name, byte[] Bytes)> GetNecessaryDependencies(List<string> assemblyArray)
 	{
 		//var assemblyArray = new[] { "NStar.Core", "Microsoft.CSharp", "mscorlib", "Mpir.NET", "netstandard",
-		//	"System", "System.Console", "System.Core", "System.Linq.essionsExpr", "System.Private.CoreLib",
+		//	"System", "System.Console", "System.Core", "System.Linq.Expressions", "System.Private.CoreLib",
 		//	"System.Runtime", "HighLevelAnalysis.Debug", "LowLevelAnalysis", "MidLayer", "Core", "EasyEval" };
 		var thisList = assemblyArray.ToList(GetAssemblyAsBytes);
 		var depencencyList = assemblyArray.ConvertAndJoin(x => Assembly.Load(x).GetReferencedAssemblies().ToArray(x => x.Name ?? throw new NotSupportedException())).ToHashSet().ToList();
