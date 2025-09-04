@@ -1808,11 +1808,11 @@ int result = multiply(5);
 return result;
 ", ("10", "Ошибок нет") }, { @"using System;
 Func[bool, int] isPrime = (number) => {
-    if (number < 2) return false;
-    for (int i in Chain(2, number - 2)) {
-        if(number % i == 0) return false;
-    }
-    return true;
+	if (number < 2) return false;
+	for (int i in Chain(2, number - 2)) {
+		if(number % i == 0) return false;
+	}
+	return true;
 };
 return (isPrime(1), isPrime(2), isPrime(3), isPrime(4), isPrime(5), isPrime(6), isPrime(7), isPrime(8));
 ", ("(false, true, true, false, true, false, true, false)", "Ошибок нет") }, { @"using System;
@@ -1996,7 +1996,32 @@ return list[range];
 ", ("(1, 2, 3, 4)", "Ошибок нет") }, { @"list() int list = (1, 2, 3, 4, 5);
 var range = ..;
 return list[range];
-", ("(1, 2, 3, 4, 5)", "Ошибок нет") }, { @"return 100000000000000000*100000000000000000000;
+", ("(1, 2, 3, 4, 5)", "Ошибок нет") }, { @"list() int list = new(3, 1, 2, 3);
+return list;
+", ("(1, 2, 3)", "Ошибок нет") }, { @"var list = new(3, 1, 2, 3);
+return list;
+", ("(1, 2, 3)", "Ошибок нет") }, { @"using System.Collections;
+var list = new(new ListHashSet[string](""A""), new(""B""), new(""C""));
+return list;
+", ("""(("A"), ("B"), ("C"))""", "Ошибок нет") }, { @"using System.Collections;
+ListHashSet[string] list = new(""A"", ""B"", ""C"");
+list = new(""C"", ""D"", ""E"");
+list.Add(""D"");
+return list;
+", ("""("C", "D", "E")""", "Ошибок нет") }, { @"int a = 5;
+a = new(8);
+return a;
+", ("0", @"Error 4017 in line 2 at position 4: the type ""int"" cannot be created via the constructor
+Error 4000 in line 2 at position 7: internal compiler error
+") }, { @"abstract Class MyClass { }
+MyClass a = new(5);
+a = new(8);
+return a;
+", ("null", @"Error 4018 in line 2 at position 12: the abstract type ""MyClass"" can be created via the constructor but only if you explicitly specify the constructing type (which is not abstract)
+Error 4000 in line 2 at position 15: internal compiler error
+Error 4018 in line 3 at position 4: the abstract type ""MyClass"" can be created via the constructor but only if you explicitly specify the constructing type (which is not abstract)
+Error 4000 in line 3 at position 7: internal compiler error
+") }, { @"return 100000000000000000*100000000000000000000;
 ", ("0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
 ") }, { @"return ExecuteString(""return args[1];"", Q());
 ", ("""
@@ -2411,22 +2436,76 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 				DefaultExtension = ".exe",
 				SuggestedFileName = "Program.exe",
 			})!);
-		var filename = fileResult?.TryGetLocalPath() ?? "";
-		if (string.IsNullOrEmpty(filename))
+		var outputPath = fileResult?.TryGetLocalPath() ?? "";
+		if (string.IsNullOrEmpty(outputPath))
 			return;
-		var dir = Path.GetDirectoryName(filename);
-		foreach (var dependency in GetNecessaryDependencies(compiledAssembly.GetReferencedAssemblies().ToList(x => x.Name ?? throw new NotSupportedException())))
-			File.WriteAllBytes(dir + "/" + dependency.Name + ".dll", dependency.Bytes);
-		File.WriteAllText(dir + "/" + Path.GetFileNameWithoutExtension(filename) + ".runtimeconfig.json", @$"{{
-	""runtimeOptions"": {{
+		var outputDir = Path.GetDirectoryName(outputPath);
+		var assembly = Assembly.GetExecutingAssembly();
+		// Получаем все зависимости
+		var dependencies = GetAllDependencies(assembly);
+		// Копируем все зависимости
+		foreach (var dep in dependencies)
+		{
+			var targetPath = Path.Combine(outputDir!, dep.GetName().Name + ".dll");
+			File.Copy(dep.Location, targetPath, true);
+		}
+		// Копируем основную сборку
+		File.Copy(assembly.Location, outputPath, true);
+
+		// Создаем runtimeconfig.json
+		CreateRuntimeConfig(outputPath);
+		File.WriteAllBytes(outputPath, CompileProgram(TextBoxInput.Text));
+	}
+
+	private List<Assembly> GetAllDependencies(Assembly assembly)
+	{
+		var dependencies = new List<Assembly>();
+		var seen = new ListHashSet<string>();
+
+		void AddDependencies(Assembly asm)
+		{
+			if (asm.FullName == null)
+				return;
+			if (seen.Contains(asm.FullName))
+				return;
+
+			seen.Add(asm.FullName);
+			dependencies.Add(asm);
+
+			foreach (var reference in asm.GetReferencedAssemblies())
+			{
+				try
+				{
+					var refAssembly = Assembly.Load(reference);
+					AddDependencies(refAssembly);
+				}
+				catch { }
+			}
+		}
+
+		AddDependencies(assembly);
+		return dependencies;
+	}
+
+	private void CreateRuntimeConfig(string outputPath)
+	{
+		var config = $@"{{
+    ""runtimeOptions"": {{
 		""tfm"": ""net{Environment.Version.Major}.{Environment.Version.Minor}"",
-		""framework"": {{
-			""name"": ""Microsoft.NETCore.App"",
-			""version"": ""{Environment.Version.Major}.{Environment.Version.Minor}.{Environment.Version.Build}""
-		}}
-	}}
-}}");
-		File.WriteAllBytes(filename, CompileProgram(TextBoxInput.Text));
+        ""frameworks"": [
+            {{
+                ""name"": ""Microsoft.NETCore.App"",
+                ""version"": ""{Environment.Version.Major}.{Environment.Version.Minor}.{Environment.Version.Build}""
+            }}
+        ],
+        ""configProperties"": {{
+            ""System.Runtime.Loader.AssemblyLoadContext.DebuggingEnabled"": true
+        }}
+    }}
+}}";
+
+		var configPath = Path.GetFileNameWithoutExtension(outputPath) + ".runtimeconfig.json";
+		File.WriteAllText(configPath, config);
 	}
 
 	private class MyCompletionData(string text, int offset) : ICompletionData

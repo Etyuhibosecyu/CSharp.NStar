@@ -677,7 +677,7 @@ public sealed class SemanticTree
 	{
 		String result = [];
 		errorsList = null;
-		result.AddRange(Hypername1(branch, out var firstErrorsList, ref extra));
+		result.AddRange(Hypername1(branch, out var firstErrorsList, ref extra, false));
 		AddRange(ref errorsList, firstErrorsList);
 		for (var i = 1; i < branch.Length; i++)
 		{
@@ -699,9 +699,6 @@ public sealed class SemanticTree
 		return result;
 	}
 
-	private String Hypername1(TreeBranch branch, out List<String>? errorsList, ref object? extra) =>
-		Hypername1(branch, out errorsList, ref extra, false);
-
 	private String Hypername1(TreeBranch branch, out List<String>? errorsList, ref object? extra, bool prepass)
 	{
 		String result = [];
@@ -712,16 +709,14 @@ public sealed class SemanticTree
 			? [] : new List<String>?[branch[1].Length];
 		var innerResults = branch.Length <= 1 || branch[0].Info.EndsWith(" (delegate)")
 			? [] : branch[1].Elements.ToList((x, index) =>
-			ParseAction(x.Info)(x, out innerErrorsLists[index]));
-		var parameterTypes = branch.Length <= 1 ? [] : branch[1].Elements.ToList(x =>
-			x.Extra is UniversalType UnvType ? UnvType : throw new InvalidOperationException());
-		List<int> recalculationIndexes = [];
+			branch[0].Info == "new" && index != 0 ? "default!" : ParseAction(x.Info)(x, out innerErrorsLists[index]));
+		var parameterTypes = branch.Length <= 1 ? [] : branch[1].Elements.ToList((x, index) =>
+			branch[0].Info == "new" && index != 0 ? NullType : x.Extra is UniversalType UnvType
+			? UnvType : throw new InvalidOperationException());
 		for (var i = 0; i < innerErrorsLists.Length; i++)
 		{
 			var innerErrorsList = innerErrorsLists[i];
-			if (innerResults[i].ToString() is "" or "_" or "default" or "default!" or "_ = default" or "_ = default!")
-				recalculationIndexes.Add(i);
-			else
+			if (innerResults[i].ToString() is not ("" or "_" or "default" or "default!" or "_ = default" or "_ = default!"))
 				AddRange(ref errorsList, innerErrorsList);
 		}
 		if (extra is null)
@@ -748,6 +743,22 @@ public sealed class SemanticTree
 				result.AddRange(Type(UnvType));
 				branch.Extra = branch[0].Extra;
 			}
+			else if (info == "new")
+			{
+				if (!ImplicitConstructor(branch, ref errorsList, parameterTypes))
+					return "default!";
+				if (branch[0].Extra is not UniversalType UnvType2)
+					extra = new List<object> { (String)"Constructor", NullType };
+				else if (UserDefinedConstructorsExist(UnvType2, parameterTypes, out var constructors) && constructors != null)
+					extra = new List<object> { (String)"Constructor", UnvType2, (String)"user", constructors, innerResults };
+				else if (ConstructorsExist(UnvType2, parameterTypes, out constructors) && constructors != null)
+					extra = new List<object> { (String)"Constructor", UnvType2, (String)"typical", constructors, innerResults };
+				else
+					extra = new List<object> { (String)"Constructor", NullType };
+				if (branch[0].Extra is UniversalType)
+					branch[0].Info = "new type";
+				result.AddRange("new ").AddRange(branch[0].Extra is UniversalType type ? Type(type) : "dynamic");
+			}
 			else if (info == "new type")
 			{
 				if (branch[0].Extra is not UniversalType UnvType)
@@ -758,7 +769,7 @@ public sealed class SemanticTree
 					extra = new List<object> { (String)"Constructor", UnvType, (String)"typical", constructors, innerResults };
 				else
 					extra = new List<object> { (String)"Constructor", NullType };
-				result.AddRange("new ").AddRange(branch[0].Extra is UniversalType type3 ? Type(type3) : "dynamic");
+				result.AddRange("new ").AddRange(branch[0].Extra is UniversalType type ? Type(type) : "dynamic");
 				return result;
 			}
 			else if (IsVariableDeclared(branch, info, out var variableErrorsList, out var extra2))
@@ -898,14 +909,52 @@ public sealed class SemanticTree
 				return "_";
 			}
 		}
-		foreach (var index in recalculationIndexes)
-		{
-			var x = branch[1][index];
-			innerResults[index] = ParseAction(x.Info)(x, out innerErrorsLists[index]);
-			AddRange(ref errorsList, innerErrorsLists[index]);
-		}
 		Debug.Assert(prepass || branch.Extra != null);
 		return result;
+	}
+
+	private bool ImplicitConstructor(TreeBranch branch, ref List<String>? errorsList, List<UniversalType> parameterTypes)
+	{
+		if (branch.Extra is UniversalType UnvType)
+		{
+			var split = SplitType(UnvType.MainType);
+			if (!UnvType.MainType.TryPeek(out var block) || block.BlockType is not (BlockType.Primitive or BlockType.Extra
+				or BlockType.Class or BlockType.Struct or BlockType.Interface or BlockType.Delegate or BlockType.Enum))
+				throw new InvalidOperationException();
+			else if (block.BlockType is BlockType.Extra or BlockType.Delegate or BlockType.Enum
+				|| block.BlockType == BlockType.Primitive && block.Name.ToString() is "null" or "bool" or "byte"
+				or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int" or "long char"
+				or "long int" or "unsigned long int" or "real" or "typename" or "index" or "range" or "nint" or "dynamic"
+				|| block.BlockType is BlockType.Class && TypeExists(split, out var netType)
+				&& netType.IsAbstract && netType.IsSealed
+				|| UserDefinedTypesList.TryGetValue(split, out var userDefinedType)
+				&& (userDefinedType.Attributes & TypeAttributes.Static) == TypeAttributes.Static)
+			{
+				var otherPos = branch.FirstPos;
+				GenerateMessage(ref errorsList, 0x4017, otherPos, UnvType.ToString());
+				branch.Parent![branch.Parent.Elements.IndexOf(branch)] = new("null", branch.Pos,
+					branch.EndPos, branch.Container) { Extra = NullType };
+				return false;
+			}
+			else if (block.BlockType == BlockType.Primitive && block.Name == "object" || block.BlockType == BlockType.Interface
+				|| block.BlockType is BlockType.Class && TypeExists(split, out netType)
+				&& netType.IsAbstract || UserDefinedTypesList.TryGetValue(split, out userDefinedType)
+				&& (userDefinedType.Attributes & TypeAttributes.Static) == TypeAttributes.Abstract)
+			{
+				var otherPos = branch.FirstPos;
+				GenerateMessage(ref errorsList, 0x4018, otherPos, UnvType.ToString());
+				branch.Parent![branch.Parent.Elements.IndexOf(branch)] = new("null", branch.Pos,
+					branch.EndPos, branch.Container) { Extra = NullType };
+				return false;
+			}
+			branch[0].Extra = UnvType;
+		}
+		else if (parameterTypes.Length != 0 && parameterTypes[0] is UniversalType ParameterUnvType)
+		{
+			branch[1].Elements.Skip(1).ForEach(x => x.Extra = ParameterUnvType);
+			branch.Extra = branch[0].Extra = GetListType(ParameterUnvType);
+		}
+		return true;
 	}
 
 	private String Hypername2(TreeBranch branch, ref List<String>? errorsList, ref object? extra, ref int index)
@@ -952,6 +1001,14 @@ public sealed class SemanticTree
 				GenerateMessage(ref errorsList, 0x4000, otherPos);
 				return "default!";
 			}
+			for (var i = 0; i < branch[index].Length; i++)
+				;
+			for (var i = 0; i < innerResults.Length; i++)
+				if (innerResults[i].ToString() is "" or "_" or "default" or "default!" or "_ = default" or "_ = default!")
+				{
+					innerResults[i] = ParseAction(branch[index][i].Info)(branch[index][i], out var innerErrorsList);
+					AddRange(ref errorsList, innerErrorsList);
+				}
 			var parameterTypes = branch.Length <= 1 ? [] : branch[1].Elements.ToList(x =>
 				x.Extra is UniversalType UnvType ? UnvType : throw new InvalidOperationException());
 			var s = elem1["Function ".Length..];
@@ -1074,7 +1131,7 @@ public sealed class SemanticTree
 		else if (branch[index].Info == nameof(ConstructorCall) && extra is List<object> list2)
 		{
 			var parameterTypes = branch.Length <= 1 ? [] : branch[1].Elements.ToList(x =>
-				x.Extra is UniversalType UnvType ? UnvType : throw new InvalidOperationException());
+				x.Extra is UniversalType UnvType ? UnvType : NullType);
 			if (!(list2.Length == 5 && list2[0] is String elem1 && elem1 == "Constructor"
 				&& list2[1] is UniversalType ConstructingUnvType && list2[2] is String elem3
 				&& list2[3] is ConstructorOverloads constructors && constructors.Length != 0
@@ -1086,6 +1143,15 @@ public sealed class SemanticTree
 				GenerateMessage(ref errorsList, 0x4000, otherPos);
 				return "default!";
 			}
+			ConstructorCall(branch[index], innerResults, out _, extra);
+			for (var i = 0; i < branch[index].Length; i++)
+				;
+			for (var i = 0; i < innerResults.Length; i++)
+				if (innerResults[i].ToString() is "" or "_" or "default" or "default!" or "_ = default" or "_ = default!")
+				{
+					innerResults[i] = ParseAction(branch[index][i].Info)(branch[index][i], out var innerErrorsList);
+					AddRange(ref errorsList, innerErrorsList);
+				}
 			if (elem3 == "typical")
 			{
 				list2[3] = constructors2;
@@ -1582,7 +1648,7 @@ public sealed class SemanticTree
 			else if (!(CallParameterUnvTypes.Length >= Parameters.Count(y => (y.Attributes & ParameterAttributes.Optional) == 0)
 				&& CallParameterUnvTypes.Combine(Parameters).All((x, i) =>
 				TypesAreCompatible(x.Item1, FunctionParameterUnvTypes[i] = x.Item2.Type,
-				out warnings[indexes2[j] = indexes[j] = i], innerResults[i],
+				out warnings[indexes2[j] = indexes[j] = i], innerResults[i].Copy(),
 				out adaptedInnerResults[i]!, out extraMessages[i]!) && adaptedInnerResults[i] != null)
 				&& CallParameterUnvTypes.Length <= Parameters.Length)
 				&& !((Parameters[^1].Attributes & ParameterAttributes.Params) == ParameterAttributes.Params
@@ -3332,19 +3398,6 @@ public sealed class SemanticTree
 		{
 			return [];
 		}
-	}
-
-	public static List<(string Name, byte[] Bytes)> GetNecessaryDependencies(List<string> assemblyArray)
-	{
-		//var assemblyArray = new[] { "NStar.Core", "Microsoft.CSharp", "mscorlib", "Mpir.NET", "netstandard",
-		//	"System", "System.Console", "System.Core", "System.Linq.Expressions", "System.Private.CoreLib",
-		//	"System.Runtime", "HighLevelAnalysis.Debug", "LowLevelAnalysis", "MidLayer", "Core", "EasyEval" };
-		var thisList = assemblyArray.ToList(GetAssemblyAsBytes);
-		var depencencyList = assemblyArray.ConvertAndJoin(x => Assembly.Load(x).GetReferencedAssemblies().ToArray(x => x.Name ?? throw new NotSupportedException())).ToHashSet().ToList();
-		if (depencencyList.Length == 0)
-			return thisList;
-		return thisList.AddRange(GetNecessaryDependencies(depencencyList));
-		static (string Name, byte[] Bytes) GetAssemblyAsBytes(string assemblyName) => (assemblyName, File.ReadAllBytes(Assembly.Load(assemblyName).Location));
 	}
 
 	private static (byte[] Bytes, List<String> ErrorsList) CompileProgram((String s, List<String>? errorsList, String translatedClasses) translated)

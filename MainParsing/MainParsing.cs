@@ -1860,7 +1860,13 @@ public partial class MainParsing : LexemStream
 			if (pos >= end)
 				return _SuccessStack[_Stackpos] = false;
 			if (IsCurrentLexemOther("("))
-				return EndWithError(0x2031, pos, true);
+			{
+				_TBStack[_Stackpos] ??= new("Hypername", pos - 1, pos, container);
+				_TBStack[_Stackpos]?.Add(new("new", pos - 1, pos, container));
+				pos++;
+				_TBStack[_Stackpos]?.Add(new("ConstructorCall", pos - 1, pos, container));
+				return IncreaseStack("List", currentTask: nameof(HypernameCall), pos_: pos, applyPos: true, applyCurrentTask: true, applyCurrentErl: success);
+			}
 			return IncreaseStack(nameof(TypeConstraints.NotAbstract), currentTask: "HypernameNew", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
 		}
 		return IncreaseStack(nameof(Type), currentTask: task == "HypernameNotCall" ? "HypernameNotCallType" : "HypernameType", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);

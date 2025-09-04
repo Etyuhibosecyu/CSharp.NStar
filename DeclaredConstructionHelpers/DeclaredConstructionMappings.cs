@@ -86,6 +86,8 @@ public static class DeclaredConstructionMappings
 			var genericArgumentsIndex = Array.IndexOf(genericArguments, netType);
 			if (genericArgumentsIndex < 0 || extraTypes.Length <= genericArgumentsIndex)
 				return new(new([new(BlockType.Extra, netType.Name, 0)]), []);
+			else if (extraTypes[genericArgumentsIndex].MainType.IsValue)
+				throw new InvalidOperationException();
 			else
 				return new(extraTypes[genericArgumentsIndex].MainType.Type, extraTypes[genericArgumentsIndex].ExtraTypes);
 		}

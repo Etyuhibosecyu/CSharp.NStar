@@ -545,16 +545,16 @@ public static class DeclaredConstructionChecks
 			var genericArguments = netType.GetGenericArguments();
 			var patterns = GetReplacementPatterns(genericArguments, callParameterNetTypes);
 			var parameters = method.GetParameters();
-			var functionParameterTypes = parameters.ToArray(x => x.ParameterType);
+			var constructorParameterTypes = parameters.ToArray(x => x.ParameterType);
 			for (var i = 0; i < patterns.Length; i++)
 			{
-				for (var j = 0; j < functionParameterTypes.Length; j++)
-					functionParameterTypes[j] = ReplaceExtraNetType(functionParameterTypes[j], patterns[i]);
+				for (var j = 0; j < constructorParameterTypes.Length; j++)
+					constructorParameterTypes[j] = ReplaceExtraNetType(constructorParameterTypes[j], patterns[i]);
 			}
 			constructors.Add(new((method.IsAbstract ? ConstructorAttributes.Abstract : 0)
 				| (method.IsStatic ? ConstructorAttributes.Static : 0),
-				new(functionParameterTypes.ToList((x, index) => new GeneralMethodParameter(TypeMappingBack(x,
-				netType.GetGenericArguments(), container.ExtraTypes).Wrap(y =>
+				new(constructorParameterTypes.ToList((x, index) => new GeneralMethodParameter(TypeMappingBack(x,
+				netType.GetGenericArguments(), [.. container.ExtraTypes.SkipWhile(x => x.Value.MainType.IsValue)]).Wrap(y =>
 				Attribute.IsDefined(parameters[index], typeof(ParamArrayAttribute)) ? GetSubtype(y) : y),
 				parameters[index].Name ?? "x",
 				(parameters[index].IsOptional ? ParameterAttributes.Optional : 0)
