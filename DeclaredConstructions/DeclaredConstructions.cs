@@ -5,6 +5,7 @@ global using System;
 global using G = System.Collections.Generic;
 global using static System.Math;
 global using String = NStar.Core.String;
+using Mpir.NET;
 using NStar.BufferLib;
 using NStar.MathLib;
 using NStar.ParallelHS;
@@ -252,6 +253,45 @@ public class OutdatedMethods : SortedDictionary<String, OutdatedMethodOverloads>
 
 public interface IClass { }
 
+public abstract class TImitator
+{
+	public abstract MpzT Equivalent { get; }
+}
+
+public class TZeroImitator : TImitator
+{
+	public override MpzT Equivalent { get; } = 0;
+}
+
+public class TOneImitator : TImitator
+{
+	public override MpzT Equivalent { get; } = 1;
+}
+
+public class TNextImitator<T> : TImitator where T : TImitator, new()
+{
+	private static readonly T _underlying = new();
+	public override MpzT Equivalent { get; } = _underlying.Equivalent + 1;
+}
+
+public class TDoubleImitator<T> : TImitator where T : TImitator, new()
+{
+	private static readonly T _underlying = new();
+	public override MpzT Equivalent { get; } = _underlying.Equivalent << 1;
+}
+
+public class THexImitator<T> : TImitator where T : TImitator, new()
+{
+	private static readonly T _underlying = new();
+	public override MpzT Equivalent { get; } = _underlying.Equivalent << 4;
+}
+
+public class TByteImitator<T> : TImitator where T : TImitator, new()
+{
+	private static readonly T _underlying = new();
+	public override MpzT Equivalent { get; } = _underlying.Equivalent << 8;
+}
+
 public enum TypeAttributes
 {
 	None = 0,
@@ -274,9 +314,10 @@ public enum PropertyAttributes
 	Closed = 2,
 	Protected = 4,
 	Internal = 8,
-	NoSet = 16,
-	ClosedSet = 32,
-	ProtectedSet = 64,
+	Const = 16,
+	NoSet = 32,
+	ClosedSet = 64,
+	ProtectedSet = 128,
 }
 
 public enum FunctionAttributes
@@ -402,6 +443,7 @@ public static class DeclaredConstructions
 	public static readonly UniversalType LongIntType = GetPrimitiveType("long int");
 	public static readonly UniversalType UnsignedLongIntType = GetPrimitiveType("unsigned long int");
 	public static readonly UniversalType RealType = GetPrimitiveType("real");
+	public static readonly UniversalType RecursiveType = GetPrimitiveType("typename");
 	public static readonly UniversalType StringType = GetPrimitiveType("string");
 	public static readonly UniversalType IndexType = GetPrimitiveType("index");
 	public static readonly UniversalType RangeType = GetPrimitiveType("range");
@@ -409,6 +451,9 @@ public static class DeclaredConstructions
 	public static readonly BlockStack ListBlockStack = new([new(BlockType.Primitive, "list", 1)]);
 	public static readonly BlockStack TupleBlockStack = new([new(BlockType.Primitive, "tuple", 1)]);
 	public static readonly BlockStack FuncBlockStack = new([new(BlockType.Namespace, "System", 1), new(BlockType.Class, "Func", 1)]);
+	public static readonly BlockStack IEnumerableBlockStack = new([new(BlockType.Namespace, "System", 1), new(BlockType.Namespace, "Collections", 1), new(BlockType.Interface, nameof(G.IEnumerable<bool>), 1)]);
+	public static readonly BlockStack BaseIndexableBlockStack = new([new(BlockType.Namespace, "System", 1), new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(BaseIndexable<bool>), 1)]);
+	public static readonly BlockStack ListHashSetBlockStack = new([new(BlockType.Namespace, "System", 1), new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(ListHashSet<bool>), 1)]);
 	public static readonly List<BlockType> ExplicitNameBlockTypes = new(BlockType.Constructor, BlockType.Destructor, BlockType.Operator, BlockType.Other);
 	public static readonly UniversalType BitListType = GetListType(BoolType);
 	public static readonly UniversalType ByteListType = GetListType(ByteType);
@@ -783,6 +828,8 @@ public static class DeclaredConstructions
 			0x203A => "the identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar and cannot be used",
 			0x203B => "the end of identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar" +
 				" and cannot be used",
+			0x203C => "the constants cannot have getters or setters",
+			0x203D => "the constant must have a value",
 			0x2048 => "goto is a bad operator, it worsens the organization of the code;" +
 				" C#.NStar refused from its using intentionally",
 			0x4000 => "internal compiler error",
@@ -892,6 +939,7 @@ public static class DeclaredConstructions
 				" maybe you wanted to check equality of these values? - it is done with the operator \"==\"",
 			0x800A => parameters[0] ?? "the type of the returning value \"" + parameters[1]
 				+ "\" and the function return type \"" + parameters[2] + "\" are badly compatible, you may lost data",
+			0x800B => "the constants are static implicitly; the word \"static\" is not necessary",
 			0x9000 => "unexpected end of code reached; expected: single quote",
 			0x9001 => "there must be a single character or a single escape-sequence in the single quotes",
 			0x9002 => "unexpected end of code reached; expected: double quote",

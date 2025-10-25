@@ -263,8 +263,6 @@ namespace AvaloniaEdit.Editing
                 textArea.Caret.BringCaretToView();
                 args.Handled = true;
             }
-
-            TextBox textBox = new TextBox();
         }
 
         public static void OnShiftTab(object target, RoutedEventArgs args)
@@ -332,7 +330,7 @@ namespace AvaloniaEdit.Editing
         private static void CanDelete(object target, CanExecuteRoutedEventArgs args)
         {
             var textArea = GetTextArea(target);
-            if (textArea?.Document != null)
+            if (textArea is { Document: not null })
             {
                 args.CanExecute = true;
                 args.Handled = true;
@@ -347,7 +345,7 @@ namespace AvaloniaEdit.Editing
         {
             // HasSomethingSelected for copy and cut commands
             var textArea = GetTextArea(target);
-            if (textArea?.Document != null)
+            if (textArea is { Document: not null })
             {
                 args.CanExecute = (textArea.Options.CutCopyWholeLine || !textArea.Selection.IsEmpty) && !textArea.IsReadOnly;
                 args.Handled = true;
@@ -358,7 +356,7 @@ namespace AvaloniaEdit.Editing
         {
             // HasSomethingSelected for copy and cut commands
             var textArea = GetTextArea(target);
-            if (textArea?.Document != null)
+            if (textArea is { Document: not null })
             {
                 args.CanExecute = textArea.Options.CutCopyWholeLine || !textArea.Selection.IsEmpty;
                 args.Handled = true;
@@ -489,7 +487,7 @@ namespace AvaloniaEdit.Editing
         private static void CanPaste(object target, CanExecuteRoutedEventArgs args)
         {
             var textArea = GetTextArea(target);
-            if (textArea?.Document != null)
+            if (textArea is { Document: not null })
             {
                 args.CanExecute = textArea.ReadOnlySectionProvider.CanInsert(textArea.Caret.Offset);
                 args.Handled = true;

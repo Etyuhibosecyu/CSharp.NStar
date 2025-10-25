@@ -1,4 +1,5 @@
 ﻿using Mpir.NET;
+using NStar.ExtraHS;
 using System.Collections;
 using System.Text;
 
@@ -85,7 +86,7 @@ public static class DeclaredConstructionMappings
 		{
 			var genericArgumentsIndex = Array.IndexOf(genericArguments, netType);
 			if (genericArgumentsIndex < 0 || extraTypes.Length <= genericArgumentsIndex)
-				return new(new([new(BlockType.Extra, netType.Name, 0)]), []);
+				return new(new([new(BlockType.Extra, netType.Name, 1)]), []);
 			else if (extraTypes[genericArgumentsIndex].MainType.IsValue)
 				throw new InvalidOperationException();
 			else
@@ -120,9 +121,7 @@ public static class DeclaredConstructionMappings
 			netType = netType.GetGenericTypeDefinition();
 		l1:
 		if (CreateVar(PrimitiveTypesList.Find(x => x.Value == netType).Key, out var typename) != null)
-			return typename == "list" ? new(ListBlockStack,
-				new([.. typeGenericArguments.Convert((x, index) =>
-				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))]))
+			return typename == "list" ? GetListType(TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes))
 				: GetPrimitiveType(typename);
 		else if (CreateVar(ExtraTypesList.Find(x => x.Value == netType).Key, out var type2) != default)
 			return new(GetBlockStack(type2.Namespace + "." + type2.Type),
@@ -134,6 +133,12 @@ public static class DeclaredConstructionMappings
 				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))]));
 		else if (netType == typeof(string))
 			return StringType;
+		else if (netType == typeof(BitList))
+			return GetListType(BoolType);
+		else if (netType == typeof(NList<>))
+			return GetListType(TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes));
+		else if (netType == typeof(NListHashSet<>))
+			return new(ListHashSetBlockStack, new([TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes)]));
 		else if (innerTypes.Length != 0)
 		{
 			netType = netType.MakeGenericType([.. innerTypes]);

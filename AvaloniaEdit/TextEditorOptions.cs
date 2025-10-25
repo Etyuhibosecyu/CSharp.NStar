@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
+using AvaloniaEdit.CodeCompletion;
 
 namespace AvaloniaEdit
 {
@@ -696,6 +697,50 @@ namespace AvaloniaEdit
                 {
                     _extendSelectionOnMouseUp = value;
                     OnPropertyChanged(nameof(ExtendSelectionOnMouseUp));
+                }
+            }
+        }
+
+        private CompletionAcceptAction _completionAcceptAction = CompletionAcceptAction.PointerPressed;
+
+        /// <summary>
+        /// Gets/Sets the pointer action used to request the insertion of a completion item.
+        /// </summary>
+        [DefaultValue(CompletionAcceptAction.PointerPressed)]
+        public CompletionAcceptAction CompletionAcceptAction
+        {
+            get { return _completionAcceptAction; }
+            set
+            {
+                if (_completionAcceptAction != value)
+                {
+                    _completionAcceptAction = value;
+                    OnPropertyChanged(nameof(CompletionAcceptAction));
+                }
+            }
+        }
+
+        // The default LineHeightFactor matches the line height in the Visual Studio text editor.
+        private const double DefaultLineHeightFactor = 1.16;
+        private double _lineHeightFactor = DefaultLineHeightFactor;
+
+        /// <summary>
+        /// Gets/Sets a factor to increase or decrease the height of a text line.
+        /// (Does not affect the font size.)
+        /// </summary>
+        [DefaultValue(DefaultLineHeightFactor)]
+        public double LineHeightFactor
+        {
+            get { return _lineHeightFactor; }
+            set
+            {
+                if (value <= 0 || double.IsNaN(value) || double.IsInfinity(value))
+                    throw new ArgumentOutOfRangeException(nameof(value), value, "value must be a positive number");
+                
+                if (_lineHeightFactor != value)
+                {
+                    _lineHeightFactor = value;
+                    OnPropertyChanged(nameof(LineHeightFactor));
                 }
             }
         }
