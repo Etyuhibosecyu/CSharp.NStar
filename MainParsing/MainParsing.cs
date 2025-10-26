@@ -1061,7 +1061,7 @@ public partial class MainParsing : LexemStream
 			if ((attributes & PropertyAttributes.Static) == 0)
 			{
 				t.Decomposition ??= [];
-				t.Decomposition.Add(name, UnvType);
+				t.Decomposition.Add(name, new("type", pos, container) { Extra = UnvType });
 				UserDefinedTypesList[SplitType(container)] = t;
 				if (!UserDefinedPropertiesMapping.TryGetValue(container, out var dic))
 				{
@@ -2783,7 +2783,7 @@ public partial class MainParsing : LexemStream
 			}
 			else if (lexems[pos].Type == LexemType.Int)
 			{
-				typeParts.Add(((TypeOrValue)lexems[pos].String, NoGeneralExtraTypes));
+				typeParts.Add(new(lexems[pos].String, 0, []));
 				pos++;
 			}
 			else if (!IsCurrentLexemOther(")"))
@@ -2812,12 +2812,12 @@ public partial class MainParsing : LexemStream
 		list0:
 			CloseBracket(ref pos, ")", ref errorsList!, false, end);
 			ParseType(ref pos, end, mainContainer, out var InnerUnvType, ref errorsList, true, "list");
-			typeParts.Add(InnerUnvType);
+			typeParts.Add(new("type", pos, container) { Extra = InnerUnvType });
 			UnvType = (new([new(BlockType.Primitive, "list", 1)]), typeParts);
 			return false;
 		list1:
 			ParseType(ref pos, end, mainContainer, out var InnerUnvType2, ref errorsList, true, "list");
-			typeParts.Add(InnerUnvType2);
+			typeParts.Add(new("type", pos, container) { Extra = InnerUnvType2 });
 			UnvType = (new([new(BlockType.Primitive, "list", 1)]), typeParts);
 			return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
 		}
@@ -2885,7 +2885,9 @@ public partial class MainParsing : LexemStream
 			else if (number >= 2)
 			{
 				var UnvType2 = UnvType;
-				UnvType = new(TupleBlockStack, new(RedStarLinq.Fill(number, _ => (UniversalTypeOrValue)UnvType2)));
+				var pos2 = pos;
+				UnvType = new(TupleBlockStack, new(RedStarLinq.Fill(number, _ =>
+					new TreeBranch("type", pos2, container) { Extra = UnvType2 })));
 			}
 			pos++;
 		}
@@ -2960,15 +2962,16 @@ public partial class MainParsing : LexemStream
 				itemName = lexems[pos].String;
 				pos++;
 			}
-			if (collectionType == "tuple" && TypeEqualsToPrimitive(InnerUnvType, "tuple", false) && InnerUnvType.ExtraTypes.Length == 2 && InnerUnvType.ExtraTypes[1].MainType.IsValue && int.TryParse(InnerUnvType.ExtraTypes[1].MainType.Value.ToString(), out _) && InnerUnvType.ExtraTypes[1].ExtraTypes.Length == 0)
+			TreeBranch branch = new("type", pos, container) { Extra = InnerUnvType };
+			if (collectionType == "tuple" && TypeEqualsToPrimitive(InnerUnvType, "tuple", false) && InnerUnvType.ExtraTypes.Length == 2 && InnerUnvType.ExtraTypes[1].Info != "type" && int.TryParse(InnerUnvType.ExtraTypes[1].Info.ToString(), out _))
 				tempTypes.AddRange(InnerUnvType.ExtraTypes.Values);
 			else if (itemName != "")
 			{
-				if (!tempTypes.TryAdd(itemName, InnerUnvType))
-					tempTypes.Add(InnerUnvType);
+				if (!tempTypes.TryAdd(itemName, branch))
+					tempTypes.Add(branch);
 			}
 			else
-				tempTypes.Add(InnerUnvType);
+				tempTypes.Add(branch);
 		}
 		else if (TypeIsPrimitive(template[tpos].ArrayParameterType) && template[tpos].ArrayParameterType.Peek().Name == "int")
 		{
@@ -2999,7 +3002,7 @@ public partial class MainParsing : LexemStream
 				return false;
 			}
 			tempTrees.Add(new((minus ? "-" : "") + lexems[pos].String, pos, mainContainer));
-			tempTypes.Add(((TypeOrValue)((minus ? "-" : "") + lexems[pos].String), NoGeneralExtraTypes));
+			tempTypes.Add(tempTrees[^1]);
 		}
 		if (pos >= end)
 		{

@@ -510,8 +510,9 @@ public static class DeclaredConstructionChecks
 		return true;
 		UniversalType FindParameter(String typeName) => parameterTypes[functionOverload.Parameters.FindIndex(x =>
 			typeName == x.Type || x.ExtraTypes.Contains(typeName))];
-		UniversalTypeOrValue GetUniversalType(String typeName) => functionOverload.ExtraTypes.Contains(typeName)
-			? (UniversalTypeOrValue)FindParameter(typeName) : new(GetBlockStack(typeName), []);
+		TreeBranch GetUniversalType(String typeName) => new("type", 0, []) { Extra
+			= functionOverload.ExtraTypes.Contains(typeName)
+			? FindParameter(typeName) : new UniversalType(GetBlockStack(typeName), []) };
 	}
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name)
@@ -606,7 +607,8 @@ public static class DeclaredConstructionChecks
 			constructors.Add(new((method.IsAbstract ? ConstructorAttributes.Abstract : 0)
 				| (method.IsStatic ? ConstructorAttributes.Static : 0),
 				new(constructorParameterTypes.ToList((x, index) => new GeneralMethodParameter(TypeMappingBack(x,
-				netType.GetGenericArguments(), [.. container.ExtraTypes.SkipWhile(x => x.Value.MainType.IsValue)]).Wrap(y =>
+				netType.GetGenericArguments(), [.. container.ExtraTypes.SkipWhile(x =>
+				x.Value.Info != "type" || x.Value.Extra is not UniversalType)]).Wrap(y =>
 				Attribute.IsDefined(parameters[index], typeof(ParamArrayAttribute)) ? GetSubtype(y) : y),
 				parameters[index].Name ?? "x",
 				(parameters[index].IsOptional ? ParameterAttributes.Optional : 0)

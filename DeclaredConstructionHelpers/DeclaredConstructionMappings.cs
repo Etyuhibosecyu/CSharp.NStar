@@ -1,4 +1,5 @@
 ﻿using Mpir.NET;
+using NStar.Core;
 using NStar.ExtraHS;
 using System.Collections;
 using System.Text;
@@ -7,25 +8,32 @@ namespace CSharp.NStar;
 
 public static class DeclaredConstructionMappings
 {
-	public static Type TypeMapping(UniversalTypeOrValue UnvType)
+	public static Type TypeMapping(TreeBranch branch)
 	{
-		if (UnvType.MainType.IsValue)
+		if (branch.Info != "type" || branch.Extra is not UniversalType UnvType)
 			throw new InvalidOperationException();
-		if (new BlockStackEComparer().Equals(UnvType.MainType.Type, FuncBlockStack))
+		return TypeMapping(UnvType);
+	}
+
+	public static Type TypeMapping(UniversalType UnvType)
+	{
+		if (UnvType.MainType.Equals(FuncBlockStack))
 		{
 			List<Type> funcComponents = [];
-			var returnType = TypeMapping(new(UnvType.ExtraTypes[0].MainType.Type, UnvType.ExtraTypes[0].ExtraTypes));
+			if (UnvType.ExtraTypes[0].Info != "type" || UnvType.ExtraTypes[0].Extra is not UniversalType InnerUnvType)
+				throw new InvalidOperationException();
+			var returnType = TypeMapping(InnerUnvType);
 			for (var i = 1; i < UnvType.ExtraTypes.Length; i++)
 			{
-				if (UnvType.ExtraTypes[i].MainType.IsValue)
+				if (UnvType.ExtraTypes[i].Info != "type" || UnvType.ExtraTypes[i].Extra is not UniversalType InnerUnvType2)
 					throw new InvalidOperationException();
-				funcComponents.Add(TypeMapping(new(UnvType.ExtraTypes[i].MainType.Type, UnvType.ExtraTypes[i].ExtraTypes)));
+				funcComponents.Add(TypeMapping(InnerUnvType2));
 			}
 			return ConstructFuncType(returnType, funcComponents.GetSlice());
 		}
-		if (!TypeEqualsToPrimitive(new(UnvType.MainType.Type, UnvType.ExtraTypes), "tuple", false))
+		if (!TypeEqualsToPrimitive(new(UnvType.MainType, UnvType.ExtraTypes), "tuple", false))
 		{
-			if (!TypeExists(SplitType(UnvType.MainType.Type), out var netType))
+			if (!TypeExists(SplitType(UnvType.MainType), out var netType))
 				throw new InvalidOperationException();
 			else if (netType.ContainsGenericParameters)
 				return netType.MakeGenericType(UnvType.ExtraTypes.ToArray(x => TypeMapping(x.Value)));
@@ -35,20 +43,22 @@ public static class DeclaredConstructionMappings
 		if (UnvType.ExtraTypes.Length == 0)
 			return typeof(void);
 		List<Type> tupleComponents = [];
-		var first = TypeMapping(new(UnvType.ExtraTypes[0].MainType.Type, UnvType.ExtraTypes[0].ExtraTypes));
+		if (UnvType.ExtraTypes[0].Info != "type" || UnvType.ExtraTypes[0].Extra is not UniversalType InnerUnvType3)
+			throw new InvalidOperationException();
+		var first = TypeMapping(InnerUnvType3);
 		if (UnvType.ExtraTypes.Length == 1)
 			return first;
 		var innerResult = first;
 		for (var i = 1; i < UnvType.ExtraTypes.Length; i++)
 		{
-			if (!UnvType.ExtraTypes[i].MainType.IsValue)
+			if (UnvType.ExtraTypes[i].Info == "type" && UnvType.ExtraTypes[i].Extra is UniversalType InnerUnvType2)
 			{
 				tupleComponents.Add(innerResult);
-				first = TypeMapping(new(UnvType.ExtraTypes[i].MainType.Type, UnvType.ExtraTypes[i].ExtraTypes));
+				first = TypeMapping(InnerUnvType2);
 				continue;
 			}
 			innerResult = ConstructTupleType(RedStarLinq.FillArray(innerResult,
-				int.TryParse(UnvType.ExtraTypes[i].MainType.Value.ToString(), out var n) ? n : 1).GetSlice());
+				int.TryParse(UnvType.ExtraTypes[i].Info.ToString(), out var n) ? n : 1).GetSlice());
 		}
 		return ConstructTupleType(tupleComponents.Add(innerResult).GetSlice());
 	}
@@ -87,10 +97,11 @@ public static class DeclaredConstructionMappings
 			var genericArgumentsIndex = Array.IndexOf(genericArguments, netType);
 			if (genericArgumentsIndex < 0 || extraTypes.Length <= genericArgumentsIndex)
 				return new(new([new(BlockType.Extra, netType.Name, 1)]), []);
-			else if (extraTypes[genericArgumentsIndex].MainType.IsValue)
+			else if (extraTypes[genericArgumentsIndex].Info != "type"
+				|| extraTypes[genericArgumentsIndex].Extra is not UniversalType InnerUnvType)
 				throw new InvalidOperationException();
 			else
-				return new(extraTypes[genericArgumentsIndex].MainType.Type, extraTypes[genericArgumentsIndex].ExtraTypes);
+				return InnerUnvType;
 		}
 		if (netType.IsSZArray || netType.IsPointer)
 			netType = typeof(List<>).MakeGenericType(netType.GetElementType() ?? throw new InvalidOperationException());
@@ -102,9 +113,9 @@ public static class DeclaredConstructionMappings
 		if (netType.Name.Contains("Func"))
 		{
 			return new(FuncBlockStack, new([typeGenericArguments[^1].Wrap(x =>
-			TypeMappingBack(x, genericArguments, extraTypes)),
+			new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) }),
 				.. typeGenericArguments.GetSlice(..^1).Convert((x, index) =>
-				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))]));
+				new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })]));
 		}
 		int foundIndex;
 		if ((foundIndex = genericArguments.FindIndex(x => x.Name == netType.Name)) >= 0)
@@ -126,11 +137,11 @@ public static class DeclaredConstructionMappings
 		else if (CreateVar(ExtraTypesList.Find(x => x.Value == netType).Key, out var type2) != default)
 			return new(GetBlockStack(type2.Namespace + "." + type2.Type),
 				new([.. typeGenericArguments.Convert((x, index) =>
-				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))]));
+				new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })]));
 		else if (CreateVar(InterfacesList.Find(x => x.Value.DotNetType == netType), out var type3).Key != default)
 			return new(GetBlockStack(type3.Key.Namespace + "." + type3.Key.Interface),
 				new([.. typeGenericArguments.Convert((x, index) =>
-				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))]));
+				new TreeBranch("type", 0,[]) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })]));
 		else if (netType == typeof(string))
 			return StringType;
 		else if (netType == typeof(BitList))
@@ -138,14 +149,15 @@ public static class DeclaredConstructionMappings
 		else if (netType == typeof(NList<>))
 			return GetListType(TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes));
 		else if (netType == typeof(NListHashSet<>))
-			return new(ListHashSetBlockStack, new([TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes)]));
+			return new(ListHashSetBlockStack, new([new("type", 0, []) { Extra
+				= TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes) }]));
 		else if (innerTypes.Length != 0)
 		{
 			netType = netType.MakeGenericType([.. innerTypes]);
 			if (netType.Name.Contains("Tuple") || netType.Name.Contains("KeyValuePair"))
 			{
 				return new(TupleBlockStack, new(netType.GenericTypeArguments.ToList(x =>
-				(UniversalTypeOrValue)TypeMappingBack(x, genericArguments, extraTypes))));
+				new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })));
 			}
 			innerTypes.Clear();
 			goto l1;
@@ -160,7 +172,7 @@ public static class DeclaredConstructionMappings
 				if (field.Name == "Rest")
 					tupleTypes.Enqueue(tupleType);
 				else
-					result.Add(TypeMappingBack(field.FieldType, genericArguments, extraTypes));
+					result.Add(new("type", 0, []) { Extra = TypeMappingBack(field.FieldType, genericArguments, extraTypes) });
 		return new(TupleBlockStack, result);
 	}
 
@@ -183,9 +195,9 @@ public static class DeclaredConstructionMappings
 		else
 		{
 			return new(originalType.MainType, [.. originalType.ExtraTypes.Convert(x =>
-				new G.KeyValuePair<String, UniversalTypeOrValue>(x.Key, x.Value.MainType.IsValue
-				? new UniversalTypeOrValue((TypeOrValue)x.Value.MainType.Value, [])
-				: ReplaceExtraType(new(x.Value.MainType.Type, x.Value.ExtraTypes), extraType, typeToInsert)))]);
+				new G.KeyValuePair<String, TreeBranch>(x.Key, x.Value.Info != "type"
+				|| x.Value.Extra is not UniversalType InnerUnvType ? new TreeBranch(x.Value.Info, 0, [])
+				: new TreeBranch("type", 0, []) { Extra = ReplaceExtraType(InnerUnvType, extraType, typeToInsert) }))]);
 		}
 	}
 

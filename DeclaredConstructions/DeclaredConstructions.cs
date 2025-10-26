@@ -33,33 +33,6 @@ public sealed class Block(BlockType blockType, String name, int unnamedIndex)
 	public override string ToString() => (BlockType == BlockType.Unnamed) ? "Unnamed(" + Name + ")" : (ExplicitNameBlockTypes.Contains(BlockType) ? BlockType.ToString() : "") + Name;
 }
 
-public sealed class TypeOrValue
-{
-	public String Value { get; set; } = [];
-	public BlockStack Type { get; set; } = new();
-	public bool IsValue { get; set; }
-
-	public TypeOrValue(String newValue)
-	{
-		Value = newValue;
-		IsValue = true;
-	}
-
-	public TypeOrValue(BlockStack newType)
-	{
-		Type = newType;
-		IsValue = false;
-	}
-
-	public override string ToString() => IsValue ? Value.ToString() : Type.ToString();
-
-	public static explicit operator TypeOrValue(string x) => new((String)x);
-
-	public static explicit operator TypeOrValue(String x) => new(x);
-
-	public static implicit operator TypeOrValue(BlockStack x) => new(x);
-}
-
 [DebuggerDisplay("{ToString()}")]
 public class BlockStack : Stack<Block>
 {
@@ -83,9 +56,35 @@ public class BlockStack : Stack<Block>
 	{
 	}
 
+	public override bool Equals(object? obj)
+	{
+		if (obj is not BlockStack m)
+			return false;
+		if (Length != m.Length)
+			return false;
+		for (var i = 0; i < Length && i < m.Length; i++)
+		{
+			if (!this.ElementAt(i).Equals(m.ElementAt(i)))
+				return false;
+		}
+		return true;
+	}
+
+	public override int GetHashCode()
+	{
+		var hash = 0;
+		for (var i = 0; i < Length; i++)
+			hash ^= this.ElementAt(i).GetHashCode();
+		return hash;
+	}
+
 	public string ToShortString() => string.Join(".", this.ToArray(x => (x.BlockType == BlockType.Unnamed) ? "Unnamed(" + x.Name + ")" : x.Name.ToString()));
 
 	public override string ToString() => string.Join(".", this.ToArray(x => x.ToString()));
+
+	public static bool operator ==(BlockStack? x, BlockStack? y) => x?.Equals(y) ?? y is null;
+
+	public static bool operator !=(BlockStack? x, BlockStack? y) => !(x == y);
 }
 
 public record struct UserDefinedType(GeneralArrayParameters ArrayParameters, TypeAttributes Attributes, UniversalType BaseType, GeneralExtraTypes Decomposition);
@@ -162,27 +161,27 @@ public class FunctionsList : SortedDictionary<String, FunctionOverload>
 }
 
 [DebuggerDisplay("{ToString()}")]
-public class GeneralExtraTypes : Dictionary<String, UniversalTypeOrValue>
+public class GeneralExtraTypes : Dictionary<String, TreeBranch>
 {
-	public UniversalTypeOrValue this[int index] { get => Values.ElementAt(index); set => this[Keys.ElementAt(index)] = value; }
+	public TreeBranch this[int index] { get => Values.ElementAt(index); set => this[Keys.ElementAt(index)] = value; }
 
 	public GeneralExtraTypes() : base()
 	{
 	}
 
-	public GeneralExtraTypes(G.IDictionary<String, UniversalTypeOrValue> collection) : base(collection)
+	public GeneralExtraTypes(G.IDictionary<String, TreeBranch> collection) : base(collection)
 	{
 	}
 
-	public GeneralExtraTypes(G.IEnumerable<UniversalTypeOrValue> collection) : this()
+	public GeneralExtraTypes(G.IEnumerable<TreeBranch> collection) : this()
 	{
 		foreach (var elem in collection)
 			Add(elem);
 	}
 
-	public virtual void Add(UniversalTypeOrValue item) => Add("Item" + (Length + 1).ToString(), item);
+	public virtual void Add(TreeBranch item) => Add("Item" + (Length + 1).ToString(), item);
 
-	public virtual void AddRange(G.IEnumerable<UniversalTypeOrValue> collection)
+	public virtual void AddRange(G.IEnumerable<TreeBranch> collection)
 	{
 		foreach (var elem in collection)
 			Add(elem);
@@ -194,7 +193,39 @@ public class GeneralExtraTypes : Dictionary<String, UniversalTypeOrValue>
 			Add(elem.Key, elem.Value);
 	}
 
-	public override string ToString() => string.Join(", ", Values.ToArray(x => x.ToString()));
+	public override bool Equals(object? obj)
+	{
+		if (obj is not GeneralExtraTypes m)
+			return false;
+		if (Length != m.Length)
+			return false;
+		for (var i = 0; i < Length; i++)
+			if (this[i] != m[i])
+				return false;
+		return true;
+	}
+
+	public override int GetHashCode()
+	{
+		var hash = 486187739;
+		var en = GetEnumerator();
+		if (en.MoveNext())
+		{
+			hash = (hash * 16777619) ^ en.Current.GetHashCode();
+			if (en.MoveNext())
+			{
+				hash = (hash * 16777619) ^ en.Current.GetHashCode();
+				hash = (hash * 16777619) ^ this[^1].GetHashCode();
+			}
+		}
+		return hash;
+	}
+
+	public override string ToString() => string.Join(", ", Values.ToArray(x => x.ToShortString()));
+
+	public static bool operator ==(GeneralExtraTypes? x, GeneralExtraTypes? y) => x?.Equals(y) ?? y is null;
+
+	public static bool operator !=(GeneralExtraTypes? x, GeneralExtraTypes? y) => !(x == y);
 }
 
 public class GeneralArrayParameters : List<GeneralArrayParameter>
@@ -483,7 +514,7 @@ public static class DeclaredConstructions
 	private static readonly BlockStack GeneralTypeInt = new([new(BlockType.Primitive, "int", 1)]);
 	private static readonly BlockStack GeneralTypeList = new([new(BlockType.Primitive, "list", 1)]);
 	private static readonly BlockStack GeneralTypeString = new([new(BlockType.Primitive, "string", 1)]);
-	private static readonly GeneralExtraTypes GeneralExtraTypesT = [new(new BlockStack([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes)];
+	private static readonly GeneralExtraTypes GeneralExtraTypesT = [new("type", 0, []) { Extra = new UniversalType(new BlockStack([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes) }];
 	private static readonly GeneralMethodParameter GeneralParameterIndex = new(IntType, "index", ParameterAttributes.None, []);
 	private static readonly GeneralMethodParameter GeneralParameterStringS = new(StringType, "s", ParameterAttributes.None, []);
 	private static readonly GeneralMethodParameter GeneralParameterString1 = new(StringType, "string1", ParameterAttributes.None, []);
@@ -594,7 +625,7 @@ public static class DeclaredConstructions
 	/// <summary>
 	/// Sorted by Operator, also contains ReturnTypes, ReturnUnvType.ExtraTypes, LeftOpdTypes and LeftOpdExtraTypes, RightOpdTypes and RightOpdExtraTypes.
 	/// </summary>
-	public static SortedDictionary<String, BinaryOperatorClasses> BinaryOperatorsList { get; } = new() { { "+", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (GeneralTypeInt, NoGeneralExtraTypes)), ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (GeneralTypeInt, NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } }, { GeneralTypeString, new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (GetPrimitiveBlockStack("char"), NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes)), ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (GeneralTypeList, [new(GetPrimitiveType("char"))]), (GeneralTypeString, NoGeneralExtraTypes)), ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes), (GetPrimitiveBlockStack("char"), NoGeneralExtraTypes)), ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes), (GeneralTypeList, [new(GetPrimitiveType("char"))])), ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes)) } } } }, { "-", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (GeneralTypeInt, NoGeneralExtraTypes)), ((GeneralTypeInt, NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } } } }, { "*", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } }, { GeneralTypeString, new() { ((GeneralTypeString, NoGeneralExtraTypes), (GeneralTypeInt, NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes)), ((GeneralTypeString, NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes), (GeneralTypeInt, NoGeneralExtraTypes)) } } } }, { "/", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "IRealNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IRealNumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IRealNumber", 1)]), GeneralExtraTypesT)) } } } }, { "pow", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (GeneralTypeInt, NoGeneralExtraTypes)) } }, { new([new(BlockType.Interface, "IRealNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IRealNumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IRealNumber", 1)]), GeneralExtraTypesT)) } } } }, { "==", new(new BlockStackComparer()) { { GetPrimitiveBlockStack("object"), new() { ((new([new(BlockType.Interface, "object", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "object", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "object", 1)]), NoGeneralExtraTypes)) } } } }, { ">", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } } } }, { "<", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } } } }, { ">=", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } } } }, { "<=", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } } } }, { "!=", new(new BlockStackComparer()) { { GetPrimitiveBlockStack("object"), new() { ((new([new(BlockType.Interface, "object", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "object", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "object", 1)]), NoGeneralExtraTypes)) } } } }, { ">>", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (GeneralTypeInt, NoGeneralExtraTypes)) } } } }, { "<<", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (GeneralTypeInt, NoGeneralExtraTypes)) } } } }, { "&", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT)) } } } }, { "|", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT)) } } } }, { "^", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT)) } } } }, { "&&", new(new BlockStackComparer()) { { GeneralTypeBool, new() { ((GeneralTypeBool, NoGeneralExtraTypes), (GeneralTypeBool, NoGeneralExtraTypes), (GeneralTypeBool, NoGeneralExtraTypes)) } } } }, { "||", new(new BlockStackComparer()) { { GeneralTypeBool, new() { ((GeneralTypeBool, NoGeneralExtraTypes), (GeneralTypeBool, NoGeneralExtraTypes), (GeneralTypeBool, NoGeneralExtraTypes)) } } } }, { "^^", new(new BlockStackComparer()) { { GeneralTypeBool, new() { ((GeneralTypeBool, NoGeneralExtraTypes), (GeneralTypeBool, NoGeneralExtraTypes), (GeneralTypeBool, NoGeneralExtraTypes)) } } } } };
+	public static SortedDictionary<String, BinaryOperatorClasses> BinaryOperatorsList { get; } = new() { { "+", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (GeneralTypeInt, NoGeneralExtraTypes)), ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (GeneralTypeInt, NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } }, { GeneralTypeString, new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (GetPrimitiveBlockStack("char"), NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes)), ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (GeneralTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("char") }]), (GeneralTypeString, NoGeneralExtraTypes)), ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes), (GetPrimitiveBlockStack("char"), NoGeneralExtraTypes)), ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes), (GeneralTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("char") }])), ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes)) } } } }, { "-", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (GeneralTypeInt, NoGeneralExtraTypes)), ((GeneralTypeInt, NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } } } }, { "*", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } }, { GeneralTypeString, new() { ((GeneralTypeString, NoGeneralExtraTypes), (GeneralTypeInt, NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes)), ((GeneralTypeString, NoGeneralExtraTypes), (GeneralTypeString, NoGeneralExtraTypes), (GeneralTypeInt, NoGeneralExtraTypes)) } } } }, { "/", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "IRealNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IRealNumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IRealNumber", 1)]), GeneralExtraTypesT)) } } } }, { "pow", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (GeneralTypeInt, NoGeneralExtraTypes)) } }, { new([new(BlockType.Interface, "IRealNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IRealNumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IRealNumber", 1)]), GeneralExtraTypesT)) } } } }, { "==", new(new BlockStackComparer()) { { GetPrimitiveBlockStack("object"), new() { ((new([new(BlockType.Interface, "object", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "object", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "object", 1)]), NoGeneralExtraTypes)) } } } }, { ">", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } } } }, { "<", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } } } }, { ">=", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } } } }, { "<=", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIncreasable", 1)]), GeneralExtraTypesT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((GeneralTypeBool, NoGeneralExtraTypes), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "INumber", 1)]), GeneralExtraTypesT)) } } } }, { "!=", new(new BlockStackComparer()) { { GetPrimitiveBlockStack("object"), new() { ((new([new(BlockType.Interface, "object", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "object", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "object", 1)]), NoGeneralExtraTypes)) } } } }, { ">>", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (GeneralTypeInt, NoGeneralExtraTypes)) } } } }, { "<<", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (GeneralTypeInt, NoGeneralExtraTypes)) } } } }, { "&", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT)) } } } }, { "|", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT)) } } } }, { "^", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoGeneralExtraTypes), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), GeneralExtraTypesT)) } } } }, { "&&", new(new BlockStackComparer()) { { GeneralTypeBool, new() { ((GeneralTypeBool, NoGeneralExtraTypes), (GeneralTypeBool, NoGeneralExtraTypes), (GeneralTypeBool, NoGeneralExtraTypes)) } } } }, { "||", new(new BlockStackComparer()) { { GeneralTypeBool, new() { ((GeneralTypeBool, NoGeneralExtraTypes), (GeneralTypeBool, NoGeneralExtraTypes), (GeneralTypeBool, NoGeneralExtraTypes)) } } } }, { "^^", new(new BlockStackComparer()) { { GeneralTypeBool, new() { ((GeneralTypeBool, NoGeneralExtraTypes), (GeneralTypeBool, NoGeneralExtraTypes), (GeneralTypeBool, NoGeneralExtraTypes)) } } } } };
 
 	/// <summary>
 	/// Sorted by Container, also contains Name and Value.
@@ -614,12 +645,12 @@ public static class DeclaredConstructions
 	/// <summary>
 	/// Sorted by SrcType, also contains SrcUnvType.ExtraTypes, DestTypes and their DestUnvType.ExtraTypes.
 	/// </summary>
-	public static TypeSortedList<ImplicitConversions> ImplicitConversionsList { get; } = new() { { GeneralTypeBool, new() { { NoGeneralExtraTypes, new() { (RealType, false), (UnsignedIntType, false), (IntType, false), (UnsignedShortIntListType, false), (ShortIntType, false), (ByteType, false) } } } }, { GetPrimitiveBlockStack("byte"), new() { { NoGeneralExtraTypes, new() { (UnsignedIntType, false), (IntType, false), (UnsignedShortIntListType, false), (ShortIntType, false), (GetPrimitiveType("short char"), true), (BoolType, true) } } } }, { GetPrimitiveBlockStack("char"), new() { { NoGeneralExtraTypes, new() { (UnsignedShortIntType, false), (StringType, false) } } } }, { GeneralTypeInt, new() { { NoGeneralExtraTypes, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (IndexType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true) } } } }, { GeneralTypeList, new() { { new() { GetPrimitiveType("char") }, new() { (StringType, false) } } } }, { GetPrimitiveBlockStack("long char"), new() { { NoGeneralExtraTypes, new() { (UnsignedIntType, false) } } } }, { GetPrimitiveBlockStack("long int"), new() { { NoGeneralExtraTypes, new() { (UnsignedLongIntType, false), (BoolType, true), (UnsignedShortIntListType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (RealType, true) } } } }, { GetPrimitiveBlockStack("real"), new() { { NoGeneralExtraTypes, new() { (BoolType, true), (UnsignedLongIntType, true), (LongIntType, true), (UnsignedIntType, true), (IntType, true) } } } }, { GetPrimitiveBlockStack("short char"), new() { { NoGeneralExtraTypes, new() { (ByteType, false) } } } }, { GetPrimitiveBlockStack("short int"), new() { { NoGeneralExtraTypes, new() { (LongIntType, false), (RealType, false), (IntType, false), (UnsignedShortIntType, false), (BoolType, true), (ByteType, true), (UnsignedIntType, true), (UnsignedLongIntType, true) } } } }, { GeneralTypeString, new() { { NoGeneralExtraTypes, new() { ((GeneralTypeList, [new(GetPrimitiveType("char"))]), false) } } } }, { GetPrimitiveBlockStack("unsigned int"), new() { { NoGeneralExtraTypes, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (IntType, true) } } } }, { GetPrimitiveBlockStack("unsigned long int"), new() { { NoGeneralExtraTypes, new() { (BoolType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (LongIntType, true), (RealType, true) } } } }, { GetPrimitiveBlockStack("unsigned short int"), new() { { NoGeneralExtraTypes, new() { (UnsignedLongIntType, false), (LongIntType, false), (RealType, false), (UnsignedIntType, false), (IntType, false), (BoolType, true), (ByteType, true), (ShortIntType, true) } } } } };
+	public static TypeSortedList<ImplicitConversions> ImplicitConversionsList { get; } = new() { { GeneralTypeBool, new() { { NoGeneralExtraTypes, new() { (RealType, false), (UnsignedIntType, false), (IntType, false), (UnsignedShortIntListType, false), (ShortIntType, false), (ByteType, false) } } } }, { GetPrimitiveBlockStack("byte"), new() { { NoGeneralExtraTypes, new() { (UnsignedIntType, false), (IntType, false), (UnsignedShortIntListType, false), (ShortIntType, false), (GetPrimitiveType("short char"), true), (BoolType, true) } } } }, { GetPrimitiveBlockStack("char"), new() { { NoGeneralExtraTypes, new() { (UnsignedShortIntType, false), (StringType, false) } } } }, { GeneralTypeInt, new() { { NoGeneralExtraTypes, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (IndexType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true) } } } }, { GeneralTypeList, new() { { [new("type", 0, []) { Extra = GetPrimitiveType("char") }], new() { (StringType, false) } } } }, { GetPrimitiveBlockStack("long char"), new() { { NoGeneralExtraTypes, new() { (UnsignedIntType, false) } } } }, { GetPrimitiveBlockStack("long int"), new() { { NoGeneralExtraTypes, new() { (UnsignedLongIntType, false), (BoolType, true), (UnsignedShortIntListType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (RealType, true) } } } }, { GetPrimitiveBlockStack("real"), new() { { NoGeneralExtraTypes, new() { (BoolType, true), (UnsignedLongIntType, true), (LongIntType, true), (UnsignedIntType, true), (IntType, true) } } } }, { GetPrimitiveBlockStack("short char"), new() { { NoGeneralExtraTypes, new() { (ByteType, false) } } } }, { GetPrimitiveBlockStack("short int"), new() { { NoGeneralExtraTypes, new() { (LongIntType, false), (RealType, false), (IntType, false), (UnsignedShortIntType, false), (BoolType, true), (ByteType, true), (UnsignedIntType, true), (UnsignedLongIntType, true) } } } }, { GeneralTypeString, new() { { NoGeneralExtraTypes, new() { ((GeneralTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("char") }]), false) } } } }, { GetPrimitiveBlockStack("unsigned int"), new() { { NoGeneralExtraTypes, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (IntType, true) } } } }, { GetPrimitiveBlockStack("unsigned long int"), new() { { NoGeneralExtraTypes, new() { (BoolType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (LongIntType, true), (RealType, true) } } } }, { GetPrimitiveBlockStack("unsigned short int"), new() { { NoGeneralExtraTypes, new() { (UnsignedLongIntType, false), (LongIntType, false), (RealType, false), (UnsignedIntType, false), (IntType, false), (BoolType, true), (ByteType, true), (ShortIntType, true) } } } } };
 
 	/// <summary>
 	/// Sorted by tuple, contains DestType and DestUnvType.ExtraTypes.
 	/// </summary>
-	public static List<UniversalType> ImplicitConversionsFromAnythingList { get; } = [(GetPrimitiveBlockStack("universal"), NoGeneralExtraTypes), (GetPrimitiveBlockStack("null"), NoGeneralExtraTypes), (GeneralTypeList, [new(new BlockStack([new(BlockType.Primitive, "[this]", 1)]), NoGeneralExtraTypes)])];
+	public static List<UniversalType> ImplicitConversionsFromAnythingList { get; } = [(GetPrimitiveBlockStack("universal"), NoGeneralExtraTypes), (GetPrimitiveBlockStack("null"), NoGeneralExtraTypes), (GeneralTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("[this]") }])];
 
 	public static G.SortedSet<String> NotImplementedNamespacesList { get; } = ["System.Diagnostics", "System.Globalization", "System.IO", "System.Runtime", "System.Text", "System.Threading", "System.Windows", "System.Windows.Forms"];
 
@@ -703,7 +734,7 @@ public static class DeclaredConstructions
 			return false;
 		for (var i = 0; i < type1.ExtraTypes.Length; i++)
 		{
-			if (type1.ExtraTypes[i].MainType.IsValue ? !(type2.ExtraTypes[i].MainType.IsValue && type1.ExtraTypes[i].MainType.Value == type2.ExtraTypes[i].MainType.Value) : (type2.ExtraTypes[i].MainType.IsValue || !TypesAreEqual((type1.ExtraTypes[i].MainType.Type, type1.ExtraTypes[i].ExtraTypes), (type2.ExtraTypes[i].MainType.Type, type2.ExtraTypes[i].ExtraTypes))))
+			if (type1.ExtraTypes[i] != type2.ExtraTypes[i])
 				return false;
 		}
 		return true;
@@ -738,14 +769,24 @@ public static class DeclaredConstructions
 			throw new InvalidOperationException();
 	}
 
-	public static UniversalType GetListType(UniversalTypeOrValue InnerType)
+	public static UniversalType GetListType(UniversalType InnerType)
 	{
-		if (InnerType.MainType.IsValue || !TypeEqualsToPrimitive((InnerType.MainType.Type, InnerType.ExtraTypes), "list", false))
-			return new(ListBlockStack, new([InnerType]));
-		else if (InnerType.ExtraTypes.Length >= 2 && InnerType.ExtraTypes[0].MainType.IsValue && int.TryParse(InnerType.ExtraTypes[0].MainType.Value.ToString(), out var number))
-			return new(ListBlockStack, new([new((TypeOrValue)(number + 1).ToString(), []), InnerType.ExtraTypes[^1]]));
+		if (!TypeEqualsToPrimitive(InnerType, "list", false))
+			return new(ListBlockStack, new([new("type", 0, []) { Extra = InnerType }]));
+		else if (InnerType.ExtraTypes.Length >= 2 && InnerType.ExtraTypes[0].Info != "type" && int.TryParse(InnerType.ExtraTypes[0].Info.ToString(), out var number))
+			return new(ListBlockStack, new([new((number + 1).ToString(), 0, []), InnerType.ExtraTypes[^1]]));
 		else
-			return new(ListBlockStack, new([new((TypeOrValue)"2", []), InnerType.ExtraTypes[^1]]));
+			return new(ListBlockStack, new([new("2", 0, []), InnerType.ExtraTypes[^1]]));
+	}
+
+	public static UniversalType GetListType(TreeBranch InnerType)
+	{
+		if (InnerType.Info != "type" || InnerType.Extra is not UniversalType UnvType || !TypeEqualsToPrimitive(UnvType, "list", false))
+			return new(ListBlockStack, new([InnerType]));
+		else if (UnvType.ExtraTypes.Length >= 2 && UnvType.ExtraTypes[0].Info != "type" && int.TryParse(UnvType.ExtraTypes[0].Info.ToString(), out var number))
+			return new(ListBlockStack, new([new((number + 1).ToString(), 0, []), UnvType.ExtraTypes[^1]]));
+		else
+			return new(ListBlockStack, new([new("2", 0, []), UnvType.ExtraTypes[^1]]));
 	}
 
 	public static void GenerateMessage(ref List<String>? errorsList, ushort code, int line, int column,
@@ -935,6 +976,7 @@ public static class DeclaredConstructions
 			0x4052 => "cannot assign a value to the constant",
 			0x4053 => "the local constant must have a value",
 			0x4054 => "the local constant declaration must not contain the other operators than the single assignment",
+			0x4055 => "too deep constant definition tree",
 			0x8000 => "the properties and the methods are static in the static class implicitly;" +
 				" the word \"static\" is not necessary",
 			0x8001 => "the semicolon in the end of the line with condition or cycle may easily be unnoticed" +
@@ -987,19 +1029,20 @@ public readonly record struct UniversalType(BlockStack MainType, GeneralExtraTyp
 	public override readonly string ToString()
 	{
 		if (TypeEqualsToPrimitive(this, "list", false))
-			return "list(" + (ExtraTypes.Length == 2 ? ExtraTypes[0].ToString() : "") + ") " + ExtraTypes[^1].ToString();
+			return "list(" + (ExtraTypes.Length == 2 ? ExtraTypes[0].ToShortString() : "") + ") "
+				+ ExtraTypes[^1].ToShortString();
 		else if (TypeEqualsToPrimitive(this, "tuple", false))
 		{
-			if (ExtraTypes.Length == 0)
+			if (ExtraTypes.Length == 0 || ExtraTypes[0].Info != "type" || ExtraTypes[0].Extra is not UniversalType prev)
 				return "()";
-			var prev = new UniversalType(ExtraTypes[0].MainType.Type, ExtraTypes[0].ExtraTypes);
 			if (ExtraTypes.Length == 1)
 				return prev.ToString();
 			String result = [];
 			var repeats = 1;
 			for (var i = 1; i < ExtraTypes.Length; i++)
 			{
-				var current = new UniversalType(ExtraTypes[i].MainType.Type, ExtraTypes[i].ExtraTypes);
+				if (ExtraTypes[i].Info != "type" || ExtraTypes[i].Extra is not UniversalType current)
+					return "()";
 				if (TypesAreEqual(prev, current))
 				{
 					repeats++;
@@ -1030,14 +1073,6 @@ public readonly record struct UniversalType(BlockStack MainType, GeneralExtraTyp
 	}
 
 	public static implicit operator UniversalType((BlockStack MainType, GeneralExtraTypes ExtraTypes) value) => new(value.MainType, value.ExtraTypes);
-}
-
-public record struct UniversalTypeOrValue(TypeOrValue MainType, GeneralExtraTypes ExtraTypes)
-{
-	public UniversalTypeOrValue(UniversalType value) : this(value.MainType, value.ExtraTypes) { }
-	public override readonly string ToString() => MainType.IsValue ? MainType.Value.ToString() : new UniversalType(MainType.Type, ExtraTypes).ToString();
-	public static implicit operator UniversalTypeOrValue((TypeOrValue MainType, GeneralExtraTypes ExtraTypes) value) => new(value.MainType, value.ExtraTypes);
-	public static implicit operator UniversalTypeOrValue(UniversalType value) => new(value);
 }
 
 public sealed class BlockComparer : G.IComparer<Block>
@@ -1086,45 +1121,18 @@ public sealed class BlockStackAndStringComparer : G.IComparer<(BlockStack, Strin
 	}
 }
 
-public sealed class BlockEComparer : G.IEqualityComparer<Block>
-{
-	public bool Equals(Block? x, Block? y) => x is null && y is null || x is not null && y is not null && x.BlockType == y.BlockType && x.Name == y.Name;
-
-	public int GetHashCode(Block x) => x.BlockType.GetHashCode() ^ x.Name.GetHashCode();
-}
-
 public sealed class BlockStackEComparer : G.IEqualityComparer<BlockStack>
 {
-	public bool Equals(BlockStack? x, BlockStack? y)
-	{
-		if (x is null && y is null)
-			return true;
-		if (x is null || y is null)
-			return false;
-		if (x.Length != y.Length)
-			return false;
-		for (var i = 0; i < x.Length && i < y.Length; i++)
-		{
-			if (new BlockEComparer().Equals(x.ElementAt(i), y.ElementAt(i)) == false)
-				return false;
-		}
-		return true;
-	}
+	public bool Equals(BlockStack? x, BlockStack? y) => x?.Equals(y) ?? y is null;
 
-	public int GetHashCode(BlockStack x)
-	{
-		var hash = 0;
-		for (var i = 0; i < x.Length; i++)
-			hash ^= new BlockEComparer().GetHashCode(x.ElementAt(i));
-		return hash;
-	}
+	public int GetHashCode(BlockStack x) => x.GetHashCode();
 }
 
 public sealed class BlockStackAndStringEComparer : G.IEqualityComparer<(BlockStack, String)>
 {
-	public bool Equals((BlockStack, String) x, (BlockStack, String) y) => new BlockStackEComparer().Equals(x.Item1, y.Item1) && x.Item2 == y.Item2;
+	public bool Equals((BlockStack, String) x, (BlockStack, String) y) => x.Item1.Equals(y.Item1) && x.Item2 == y.Item2;
 
-	public int GetHashCode((BlockStack, String) x) => new BlockStackEComparer().GetHashCode(x.Item1) ^ x.Item2.GetHashCode();
+	public int GetHashCode((BlockStack, String) x) => x.Item1.GetHashCode() ^ x.Item2.GetHashCode();
 }
 
 public sealed class GeneralExtraTypesEComparer : G.IEqualityComparer<GeneralExtraTypes>
@@ -1141,9 +1149,7 @@ public sealed class GeneralExtraTypesEComparer : G.IEqualityComparer<GeneralExtr
 			return true;
 		for (var i = 0; i < x.Length && i < y.Length; i++)
 		{
-			if (x[i].MainType.IsValue != y[i].MainType.IsValue)
-				return false;
-			else if ((x[i].MainType.IsValue ? x[i].MainType.Value != y[i].MainType.Value : !new BlockStackEComparer().Equals(x[i].MainType.Type, y[i].MainType.Type)) || !Equals(x[i].ExtraTypes, y[i].ExtraTypes))
+			if (x[i] != y[i])
 				return false;
 		}
 		return true;
@@ -1153,7 +1159,7 @@ public sealed class GeneralExtraTypesEComparer : G.IEqualityComparer<GeneralExtr
 	{
 		var hash = 0;
 		for (var i = 0; i < x.Length; i++)
-			hash ^= (x[i].MainType.IsValue ? x[i].MainType.Value.GetHashCode() : new BlockStackEComparer().GetHashCode(x[i].MainType.Type)) ^ GetHashCode(x[i].ExtraTypes);
+			hash ^= x[i].GetHashCode();
 		return hash;
 	}
 }

@@ -120,20 +120,40 @@ public sealed class TreeBranch
 	}
 
 	public override bool Equals(object? obj) => obj is not null
-&& obj is TreeBranch m
-&& Info == m.Info && RedStarLinq.Equals(Elements, m.Elements, (x, y) => new TreeBranchComparer().Equals(x, y));
+		&& obj is TreeBranch m
+		&& Info == m.Info && RedStarLinq.Equals(Elements, m.Elements, (x, y) => new TreeBranchComparer().Equals(x, y));
 
-	public override int GetHashCode() => Info.GetHashCode() ^ Elements.GetHashCode();
+	public override int GetHashCode() => Info.GetHashCode() ^ Elements.GetHashCode() ^ (Extra?.GetHashCode() ?? 77777777);
+
+	public string ToShortString()
+	{
+		if (Length != 0)
+			return "(" + string.Join(", ", Elements.ToArray(x => x.ToShortString()))
+				+ (Extra is null ? "" : " : " + Extra.ToString()) + ")";
+		else if (Extra is null)
+			return Info.ToString();
+		else if (Extra is UniversalType UnvType)
+			return UnvType.ToString();
+		else
+			return "(" + Info + " :: " + Extra.ToString() + ")";
+	}
 
 	public override string ToString() => ToString(new());
 
 	private string ToString(BlockStack container)
 	{
-		var infoString = Info + (RedStarLinq.Equals(container, Container) ? "" : Container.StartsWith(container) ? "@" + string.Join(".", Container.Skip(container.Length).ToArray(x => x.ToString())) : throw new ArgumentException(null, nameof(container)));
-		return Length == 0 ? (Extra is null ? infoString : "(" + infoString + " :: " + Extra.ToString() + ")") + "#" + Pos.ToString() : "(" + infoString + " : " + string.Join(", ", Elements.ToArray(x => x.ToString(Container))) + (Extra is null ? "" : " : " + Extra.ToString()) + ")";
+		var infoString = Info + (RedStarLinq.Equals(container, Container) ? "" : Container.StartsWith(container)
+			? "@" + string.Join(".", Container.Skip(container.Length).ToArray(x => x.ToString()))
+			: throw new ArgumentException(null, nameof(container)));
+		if (Length == 0)
+			return (Extra is null ? infoString : "(" + infoString + " :: " + Extra.ToString() + ")") + "#" + Pos.ToString();
+		return "(" + infoString + " : " + string.Join(", ", Elements.ToArray(x => x.ToString(Container)))
+			+ (Extra is null ? "" : " : " + Extra.ToString()) + ")";
 	}
 
-	public static bool operator ==(TreeBranch? x, TreeBranch? y) => x is null && y is null || x is not null && y is not null && x.Info == y.Info && RedStarLinq.Equals(x.Elements, y.Elements, (x, y) => new TreeBranchComparer().Equals(x, y));
+	public static bool operator ==(TreeBranch? x, TreeBranch? y) => x is null && y is null || x is not null && y is not null
+		&& x.Info == y.Info && RedStarLinq.Equals(x.Elements, y.Elements, (x, y) => new TreeBranchComparer().Equals(x, y))
+		&& (x.Extra?.Equals(y.Extra) ?? y.Extra is null);
 
 	public static bool operator !=(TreeBranch? x, TreeBranch? y) => !(x == y);
 

@@ -2366,6 +2366,25 @@ Error 4050 in line 2 at position 62: this expression must be constant but it isn
 Error 4050 in line 2 at position 68: this expression must be constant but it isn't
 Error 4050 in line 2 at position 74: this expression must be constant but it isn't
 ")]
+	[DataRow(@"const string A10 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
+const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+return A10;
+", "null", @"Error 4055 in line 1 at position 19: too deep constant definition tree
+Error 4055 in line 1 at position 26: too deep constant definition tree
+Error 4055 in line 1 at position 33: too deep constant definition tree
+Error 4055 in line 1 at position 40: too deep constant definition tree
+")]
+	[DataRow(@"static Class MyClass
+{
+	const string A10 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
+	const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+}
+return MyClass.A10;
+", "null", @"Error 4055 in line 3 at position 20: too deep constant definition tree
+Error 4055 in line 3 at position 27: too deep constant definition tree
+Error 4055 in line 3 at position 34: too deep constant definition tree
+Error 4055 in line 3 at position 41: too deep constant definition tree
+")]
 	[DataRow(@"typename real = int;
 return real;
 ", "int", "Ошибок нет")]

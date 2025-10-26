@@ -52,10 +52,10 @@ public static class TypeHelpers
 				else
 					return NullType;
 			}
-			if (type.ExtraTypes.Length == 1 && TypesAreCompatible(type,
-				new(IEnumerableBlockStack, type.ExtraTypes),
-				out var warning, null, out _, out _) && !warning)
-				return new(type.ExtraTypes[0].MainType.Type, type.ExtraTypes[0].ExtraTypes);
+			if (type.ExtraTypes.Length == 1 && TypesAreCompatible(type, new(IEnumerableBlockStack, type.ExtraTypes),
+				out var warning, null, out _, out _) && !warning
+				&& type.ExtraTypes[0].Info == "type" && type.ExtraTypes[0].Extra is UniversalType Subtype)
+				return Subtype;
 			else
 				return NullType;
 		}
@@ -70,14 +70,15 @@ public static class TypeHelpers
 
 	private static UniversalType GetListSubtype(UniversalType type)
 	{
-		if (type.ExtraTypes.Length == 1)
-			return (type.ExtraTypes[0].MainType.Type, type.ExtraTypes[0].ExtraTypes);
-		else if (!(type.ExtraTypes[0].MainType.IsValue && int.TryParse(type.ExtraTypes[0].MainType.Value.ToString(), out var n)))
+		if (type.ExtraTypes.Length == 1
+				&& type.ExtraTypes[0].Info == "type" && type.ExtraTypes[0].Extra is UniversalType Subtype)
+			return Subtype;
+		else if (!(type.ExtraTypes[0].Info != "type" && int.TryParse(type.ExtraTypes[0].Info.ToString(), out var n)))
 			return NullType;
 		else if (n <= 2)
 			return GetListType(type.ExtraTypes[1]);
 		else
-			return (ListBlockStack, new GeneralExtraTypes { ((TypeOrValue)(n - 1).ToString(), NoGeneralExtraTypes), type.ExtraTypes[1] });
+			return (ListBlockStack, new GeneralExtraTypes { new((n - 1).ToString(), 0, []), type.ExtraTypes[1] });
 	}
 
 	public static (int Depth, UniversalType LeafType) GetTypeDepthAndLeafType(UniversalType type)
@@ -88,26 +89,34 @@ public static class TypeHelpers
 		{
 			if (TypeEqualsToPrimitive(LeafType, "list", false))
 			{
-				if (LeafType.ExtraTypes.Length == 1)
+				if (LeafType.ExtraTypes.Length == 1
+					&& LeafType.ExtraTypes[0].Info == "type" && LeafType.ExtraTypes[0].Extra is UniversalType Subtype)
 				{
 					Depth++;
-					LeafType = (LeafType.ExtraTypes[0].MainType.Type, LeafType.ExtraTypes[0].ExtraTypes);
+					LeafType = Subtype;
 				}
-				else if (LeafType.ExtraTypes[0].MainType.IsValue && int.TryParse(LeafType.ExtraTypes[0].MainType.Value.ToString(), out var n))
+				else if (LeafType.ExtraTypes[0].Info != "type"
+					&& int.TryParse(LeafType.ExtraTypes[0].Info.ToString(), out var n)
+					&& LeafType.ExtraTypes[1].Info == "type" && LeafType.ExtraTypes[1].Extra is UniversalType Subtype2)
 				{
 					Depth += n;
-					LeafType = (LeafType.ExtraTypes[1].MainType.Type, LeafType.ExtraTypes[1].ExtraTypes);
+					LeafType = Subtype2;
 				}
-				else
+				else if (LeafType.ExtraTypes[1].Info == "type" && LeafType.ExtraTypes[1].Extra is UniversalType Subtype3)
 				{
 					Depth++;
-					LeafType = (LeafType.ExtraTypes[1].MainType.Type, LeafType.ExtraTypes[1].ExtraTypes);
+					LeafType = Subtype3;
 				}
+				else
+					return (Depth, LeafType);
 			}
-			else if (LeafType.MainType.Length != 0 && LeafType.MainType.Peek().BlockType is BlockType.Class or BlockType.Struct or BlockType.Interface && CollectionTypesList.Contains(LeafType.MainType.ToShortString().ToNString().GetAfterLast(".")))
+			else if (LeafType.MainType.Length != 0
+				&& LeafType.MainType.Peek().BlockType is BlockType.Class or BlockType.Struct or BlockType.Interface
+				&& CollectionTypesList.Contains(LeafType.MainType.ToShortString().ToNString().GetAfterLast("."))
+					&& LeafType.ExtraTypes[^1].Info == "type" && LeafType.ExtraTypes[^1].Extra is UniversalType Subtype)
 			{
 				Depth++;
-				LeafType = (LeafType.ExtraTypes[^1].MainType.Type, LeafType.ExtraTypes[^1].ExtraTypes);
+				LeafType = Subtype;
 			}
 			else
 				return (Depth, LeafType);
@@ -246,25 +255,34 @@ public static class TypeHelpers
 		if (CollectionTypesList.Contains(left_type) || CollectionTypesList.Contains(right_type))
 			return GetListType(GetResultType(GetSubtype(type1), GetSubtype(type2), value1, value2));
 		else if (left_type == "list")
-			return GetListType(GetResultType(GetSubtype(type1), (right_type == "list") ? GetSubtype(type2) : type2, value1, value2));
+			return GetListType(GetResultType(GetSubtype(type1), (right_type == "list")
+				? GetSubtype(type2) : type2, value1, value2));
 		else
 			return GetListType(GetResultType(type1, GetSubtype(type2), value1, value2));
 	}
 
-	public static UniversalType PartialTypeToGeneralType(String mainType, List<String> extraTypes) => (GetBlockStack(mainType), GetGeneralExtraTypes(extraTypes));
+	public static UniversalType PartialTypeToGeneralType(String mainType, List<String> extraTypes) =>
+		(GetBlockStack(mainType), GetGeneralExtraTypes(extraTypes));
 
-	public static GeneralExtraTypes GetGeneralExtraTypes(List<String> partialBlockStack) => new(partialBlockStack.Convert(x => (UniversalTypeOrValue)((TypeOrValue)new BlockStack([new Block(BlockType.Primitive, x, 1)]), NoGeneralExtraTypes)));
+	public static GeneralExtraTypes GetGeneralExtraTypes(List<String> partialBlockStack) =>
+		new(partialBlockStack.Convert(x => new TreeBranch("type", 0, []) { Extra
+			= new UniversalType(new BlockStack([new Block(BlockType.Primitive, x, 1)]), NoGeneralExtraTypes) }));
 
-	public static (BlockStack Container, String Type) SplitType(BlockStack blockStack) => (new(blockStack.ToList().SkipLast(1)), blockStack.TryPeek(out var block) ? block.Name : []);
+	public static (BlockStack Container, String Type) SplitType(BlockStack blockStack) =>
+		(new(blockStack.ToList().SkipLast(1)), blockStack.TryPeek(out var block) ? block.Name : []);
 
-	public static bool TypesAreCompatible(UniversalType sourceType, UniversalType destinationType, out bool warning, String? srcExpr, out String? destExpr, out String? extraMessage)
+	public static bool TypesAreCompatible(UniversalType sourceType, UniversalType destinationType,
+		out bool warning, String? srcExpr, out String? destExpr, out String? extraMessage)
 	{
 		warning = false;
 		extraMessage = null;
-		while (TypeEqualsToPrimitive(sourceType, "tuple", false) && sourceType.ExtraTypes.Length == 1)
-			sourceType = (sourceType.ExtraTypes[0].MainType.Type, sourceType.ExtraTypes[0].ExtraTypes);
-		while (TypeEqualsToPrimitive(destinationType, "tuple", false) && destinationType.ExtraTypes.Length == 1)
-			destinationType = (destinationType.ExtraTypes[0].MainType.Type, destinationType.ExtraTypes[0].ExtraTypes);
+		while (TypeEqualsToPrimitive(sourceType, "tuple", false) && sourceType.ExtraTypes.Length == 1
+			&& sourceType.ExtraTypes[0].Info == "type" && sourceType.ExtraTypes[0].Extra is UniversalType SourceSubtype)
+			sourceType = SourceSubtype;
+		while (TypeEqualsToPrimitive(destinationType, "tuple", false) && destinationType.ExtraTypes.Length == 1
+			&& destinationType.ExtraTypes[0].Info == "type"
+			&& destinationType.ExtraTypes[0].Extra is UniversalType DestinationSubtype)
+			destinationType = DestinationSubtype;
 		if (TypesAreEqual(sourceType, destinationType))
 		{
 			destExpr = srcExpr;
@@ -300,7 +318,10 @@ public static class TypeHelpers
 				return false;
 			}
 			destExpr = srcExpr;
-			return sourceType.ExtraTypes.Values.Combine(destinationType.ExtraTypes.Values).All(x => TypesAreCompatible((x.Item1.MainType.Type, x.Item1.ExtraTypes), (x.Item2.MainType.Type, x.Item2.ExtraTypes), out var warning2, null, out _, out _) && !warning2);
+			return sourceType.ExtraTypes.Values.Combine(destinationType.ExtraTypes.Values).All(x =>
+			x.Item1.Info == "type" && x.Item1.Extra is UniversalType LeftType
+			&& x.Item2.Info == "type" && x.Item2.Extra is UniversalType RightType
+			&& TypesAreCompatible(LeftType, RightType, out var warning2, null, out _, out _) && !warning2);
 		}
 		if (TypeEqualsToPrimitive(destinationType, "list", false) || destinationType.MainType.Length != 0
 			&& destinationType.MainType.Peek().BlockType is BlockType.Class or BlockType.Struct or BlockType.Interface
@@ -315,7 +336,8 @@ public static class TypeHelpers
 					extraMessage = "list can be constructed from tuple of up to 16 elements, if you need more, use the other ways like Chain() or Fill()";
 					return false;
 				}
-				else if (!sourceType.ExtraTypes.All(x => TypesAreCompatible((x.Value.MainType.Type, x.Value.ExtraTypes), subtype, out var warning2, null, out _, out _) && !warning2))
+				else if (!sourceType.ExtraTypes.All(x => x.Value.Info == "type" && x.Value.Extra is UniversalType ValueType
+					&& TypesAreCompatible(ValueType, subtype, out var warning2, null, out _, out _) && !warning2))
 				{
 					destExpr = "default!";
 					return false;
@@ -365,23 +387,26 @@ public static class TypeHelpers
 				return false;
 			}
 		}
-		if (new BlockStackEComparer().Equals(sourceType.MainType, FuncBlockStack) && new BlockStackEComparer().Equals(destinationType.MainType, FuncBlockStack))
+		if (sourceType.MainType.Equals(FuncBlockStack) && destinationType.MainType.Equals(FuncBlockStack))
 		{
 			destExpr = srcExpr;
 			try
 			{
 				var warning2 = false;
 				if (!(sourceType.ExtraTypes.Length >= destinationType.ExtraTypes.Length
-					&& destinationType.ExtraTypes.Length >= 1 && !sourceType.ExtraTypes[0].MainType.IsValue
-					&& !destinationType.ExtraTypes[0].MainType.IsValue
-					&& TypesAreCompatible((sourceType.ExtraTypes[0].MainType.Type, sourceType.ExtraTypes[0].ExtraTypes),
-					(destinationType.ExtraTypes[0].MainType.Type, destinationType.ExtraTypes[0].ExtraTypes),
+					&& destinationType.ExtraTypes.Length >= 1
+					&& sourceType.ExtraTypes[0].Info == "type" && sourceType.ExtraTypes[0].Extra is UniversalType SourceSubtype
+					&& destinationType.ExtraTypes[0].Info == "type"
+					&& destinationType.ExtraTypes[0].Extra is UniversalType DestinationSubtype
+					&& TypesAreCompatible(SourceSubtype, DestinationSubtype,
 					out warning, null, out _, out _)))
 					return false;
 				if (destinationType.ExtraTypes.Skip(1).Combine(sourceType.ExtraTypes.Skip(1), (x, y) =>
 				{
 					var warning3 = false;
-					var b = !x.Value.MainType.IsValue && !y.Value.MainType.IsValue && TypesAreCompatible((x.Value.MainType.Type, x.Value.ExtraTypes), (y.Value.MainType.Type, y.Value.ExtraTypes), out warning3, null, out _, out _);
+					var b = x.Value.Info == "type" && x.Value.Extra is UniversalType LeftType
+					&& y.Value.Info == "type" && y.Value.Extra is UniversalType RightType
+					&& TypesAreCompatible(LeftType, RightType, out warning3, null, out _, out _);
 					warning2 |= warning3;
 					return b;
 				}).All(x => x))
@@ -545,8 +570,8 @@ public static class TypeHelpers
 
 	private sealed class FullTypeEComparer : G.IEqualityComparer<UniversalType>
 	{
-		public bool Equals(UniversalType x, UniversalType y) => new BlockStackEComparer().Equals(x.MainType, y.MainType) && new GeneralExtraTypesEComparer().Equals(x.ExtraTypes, y.ExtraTypes);
+		public bool Equals(UniversalType x, UniversalType y) => x.MainType.Equals(y.MainType) && x.ExtraTypes.Equals(y.ExtraTypes);
 
-		public int GetHashCode(UniversalType x) => new BlockStackEComparer().GetHashCode(x.MainType) ^ new GeneralExtraTypesEComparer().GetHashCode(x.ExtraTypes);
+		public int GetHashCode(UniversalType x) => x.MainType.GetHashCode() ^ x.ExtraTypes.GetHashCode();
 	}
 }

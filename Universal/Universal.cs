@@ -917,7 +917,7 @@ public struct Universal
 		NList<int> numbers = [];
 		for (var i = 0; i < type_parts.Length; i++)
 		{
-			if (i >= 1 && type_parts[i].MainType.IsValue && int.TryParse(type_parts[i].MainType.Value.ToString(), out var number) && type_parts[i].ExtraTypes.Length == 0)
+			if (i >= 1 && type_parts[i].Info != "type" && int.TryParse(type_parts[i].Info.ToString(), out var number))
 			{
 				count += number - 1;
 				numbers.Add(number - 1);
@@ -931,14 +931,16 @@ public struct Universal
 		int tpos = 0, tpos2, npos = 0;
 		for (var i = 0; i < count && i < old_list.Length; i++)
 		{
-			if (tpos >= 1 && type_parts[tpos].MainType.IsValue && int.TryParse(type_parts[tpos].MainType.Value.ToString(), out _) && type_parts[tpos].ExtraTypes.Length == 0)
+			if (tpos >= 1 && type_parts[tpos].Info != "type" && int.TryParse(type_parts[tpos].Info.ToString(), out _))
 			{
 				tpos2 = tpos - 1;
 				numbers[npos]--;
 			}
 			else
 				tpos2 = tpos;
-			new_list[i] = old_list[i].ToType((type_parts[tpos2].MainType.Type, type_parts[tpos2].ExtraTypes), true);
+			if (type_parts[tpos2].Info != "type" || type_parts[tpos2].Extra is not UniversalType InnerUnvType)
+				continue;
+			new_list[i] = old_list[i].ToType(InnerUnvType, true);
 			if (tpos2 == tpos || numbers[npos] == 0)
 				tpos++;
 			if (numbers[npos] == 0)
