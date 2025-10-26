@@ -2254,6 +2254,118 @@ return (MyClass.a, MyClass.b, MyClass.c);
 ", "(null, 3.14159, \"A\")", @"Error 203D in line 3 at position 12: the constant must have a value
 Error 4033 in line 7 at position 16: the type ""MyClass"" does not contain member ""a""
 ")]
+	[DataRow(@"static Class MyClass
+{
+	const string A1000000 = A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000;
+	closed const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
+	closed const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
+	closed const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
+	closed const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+	closed const string A10 = ""AAAAAAAAAA"";
+}
+return MyClass.A1000000;
+", A1000000, "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const string A1000000 = MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000;
+	closed const string A100000 = MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000;
+	closed const string A10000 = MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000;
+	closed const string A1000 = MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100;
+	closed const string A100 = MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10;
+	closed const string A10 = ""AAAAAAAAAA"";
+}
+return MyClass.A1000000;
+", A1000000, "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	closed const string A1000000 = A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000;
+	closed const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
+	closed const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
+	closed const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
+	closed const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+	closed const string A10 = ""AAAAAAAAAA"";
+}
+return MyClass.A1000000;
+", "null", @"Error 4030 in line 10 at position 15: the property ""MyClass.A1000000"" is inaccessible from here
+")]
+	[DataRow(@"const int a = 5;
+const real b = 3.14159;
+const string c = ""A"";
+const bool d = true;
+return (a, b, c, d);
+", "(5, 3.14159, \"A\", true)", "Ошибок нет")]
+	[DataRow(@"const int a;
+const real b = 3.14159;
+const string c = ""A"";
+const bool d = true;
+return (a, b, c, d);
+", "(null, 3.14159, \"A\", true)", @"Error 203D in line 1 at position 11: the constant must have a value
+Error 4001 in line 5 at position 8: the identifier ""a"" is not defined in this location
+")]
+	[DataRow(@"static Class MyClass
+{
+	const int a = 5;
+	const real b = 3.14159;
+	const string c = ""A"";
+}
+return (MyClass.a = 8, MyClass.b *= 2, MyClass.c);
+", "(null, null, \"A\")", @"Error 4052 in line 7 at position 18: cannot assign a value to the constant
+Error 4052 in line 7 at position 33: cannot assign a value to the constant
+")]
+	[DataRow(@"const int a = 5;
+const real b = 3.14159;
+const string c = ""A"";
+return (a = 8, b *= 2, c);
+", "(null, null, \"A\")", @"Error 4052 in line 4 at position 10: cannot assign a value to the constant
+Error 4052 in line 4 at position 17: cannot assign a value to the constant
+")]
+	[DataRow(@"const string A1000000 = A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000;
+const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
+const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
+const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
+const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+const string A10 = ""AAAAAAAAAA"";
+return A1000000;
+", A1000000, "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	closed const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+	closed string A10 = ""AAAAAAAAAA"";
+}
+return MyClass.A100;
+", "null", @"Error 4050 in line 3 at position 28: this expression must be constant but it isn't
+Error 4050 in line 3 at position 34: this expression must be constant but it isn't
+Error 4050 in line 3 at position 40: this expression must be constant but it isn't
+Error 4050 in line 3 at position 46: this expression must be constant but it isn't
+Error 4050 in line 3 at position 52: this expression must be constant but it isn't
+Error 4050 in line 3 at position 58: this expression must be constant but it isn't
+Error 4050 in line 3 at position 64: this expression must be constant but it isn't
+Error 4050 in line 3 at position 70: this expression must be constant but it isn't
+Error 4050 in line 3 at position 76: this expression must be constant but it isn't
+Error 4050 in line 3 at position 82: this expression must be constant but it isn't
+")]
+	[DataRow(@"const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+string A10 = ""AAAAAAAAAA"";
+return A100;
+", "null", @"Error 4012 in line 1 at position 20: one cannot use the local variable ""A10"" before it is declared or inside such declaration in line 2 at position 0
+Error 4012 in line 1 at position 26: one cannot use the local variable ""A10"" before it is declared or inside such declaration in line 2 at position 0
+Error 4012 in line 1 at position 32: one cannot use the local variable ""A10"" before it is declared or inside such declaration in line 2 at position 0
+Error 4012 in line 1 at position 38: one cannot use the local variable ""A10"" before it is declared or inside such declaration in line 2 at position 0
+")]
+	[DataRow(@"string A10 = ""AAAAAAAAAA"";
+const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+return A100;
+", "null", @"Error 4050 in line 2 at position 20: this expression must be constant but it isn't
+Error 4050 in line 2 at position 26: this expression must be constant but it isn't
+Error 4050 in line 2 at position 32: this expression must be constant but it isn't
+Error 4050 in line 2 at position 38: this expression must be constant but it isn't
+Error 4050 in line 2 at position 44: this expression must be constant but it isn't
+Error 4050 in line 2 at position 50: this expression must be constant but it isn't
+Error 4050 in line 2 at position 56: this expression must be constant but it isn't
+Error 4050 in line 2 at position 62: this expression must be constant but it isn't
+Error 4050 in line 2 at position 68: this expression must be constant but it isn't
+Error 4050 in line 2 at position 74: this expression must be constant but it isn't
+")]
 	[DataRow(@"typename real = int;
 return real;
 ", "int", "Ошибок нет")]

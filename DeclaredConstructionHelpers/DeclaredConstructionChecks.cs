@@ -277,6 +277,58 @@ public static class DeclaredConstructionChecks
 		return result;
 	}
 
+	public static bool ConstantExists(UniversalType container, String name, [MaybeNullWhen(false)]
+		out UserDefinedConstant? constant)
+	{
+		if (UserDefinedConstantsList.TryGetValue(container.MainType, out var list) && list.TryGetValue(name, out var a))
+		{
+			constant = a;
+			return true;
+		}
+		else if (UserDefinedTypesList.TryGetValue(SplitType(container.MainType), out var userDefinedType)
+			&& ConstantExists(userDefinedType.BaseType, name, out constant))
+			return true;
+		var containerType = SplitType(container.MainType);
+		if (!TypeExists(containerType, out var netType))
+		{
+			constant = null;
+			return false;
+		}
+		var netProperty = netType.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.FlattenHierarchy)
+			.Find(x => x.IsLiteral && x.IsInitOnly && x.Name == name.ToString());
+		if (netProperty == null)
+		{
+			constant = null;
+			return false;
+		}
+		constant = new(TypeMappingBack(netProperty.FieldType, netType.GetGenericArguments(), container.ExtraTypes),
+			ConstantAttributes.None, new("null", 0, []));
+		return true;
+	}
+
+	public static bool UserDefinedConstantExists(BlockStack container, String name,
+		[MaybeNullWhen(false)] out UserDefinedConstant? constant, [MaybeNullWhen(false)] out BlockStack matchingContainer,
+		[MaybeNullWhen(false)] out bool inBase)
+	{
+		UserDefinedType userDefinedType = default!;
+		if (CheckContainer(container, UserDefinedConstantsList.ContainsKey, out matchingContainer)
+			&& UserDefinedConstantsList[matchingContainer].TryGetValue(name, out var value))
+		{
+			constant = value;
+			inBase = false;
+			return true;
+		}
+		else if (CheckContainer(container, x => UserDefinedTypesList.TryGetValue(SplitType(x), out userDefinedType),
+			out matchingContainer) && ConstantExists(userDefinedType.BaseType, name, out constant))
+		{
+			inBase = true;
+			return true;
+		}
+		constant = null;
+		inBase = false;
+		return false;
+	}
+
 	public static bool MethodExists(UniversalType container, String name)
 	{
 		var containerType = SplitType(container.MainType);

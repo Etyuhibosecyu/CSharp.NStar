@@ -1,19 +1,19 @@
 ﻿global using NStar.Core;
 global using NStar.Dictionaries;
 global using NStar.Linq;
+global using NStar.MathLib;
 global using System;
+global using System.Diagnostics;
 global using G = System.Collections.Generic;
 global using static System.Math;
 global using String = NStar.Core.String;
 using Mpir.NET;
 using NStar.BufferLib;
-using NStar.MathLib;
 using NStar.ParallelHS;
 using NStar.RemoveDoubles;
 using NStar.SortedSets;
 using NStar.SumCollections;
 using NStar.TreeSets;
-using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 using static CSharp.NStar.DeclaredConstructions;
@@ -90,6 +90,7 @@ public class BlockStack : Stack<Block>
 
 public record struct UserDefinedType(GeneralArrayParameters ArrayParameters, TypeAttributes Attributes, UniversalType BaseType, GeneralExtraTypes Decomposition);
 public record struct UserDefinedProperty(UniversalType UnvType, PropertyAttributes Attributes, String DefaultValue);
+public record struct UserDefinedConstant(UniversalType UnvType, ConstantAttributes Attributes, TreeBranch DefaultValue);
 public record struct GeneralArrayParameter(bool ArrayParameterPackage, GeneralExtraTypes ArrayParameterRestrictions, BlockStack ArrayParameterType, String ArrayParameterName);
 public record struct MethodParameter(String Type, String Name, List<String> ExtraTypes, ParameterAttributes Attributes, String DefaultValue);
 public record struct GeneralMethodParameter(UniversalType Type, String Name, ParameterAttributes Attributes, String DefaultValue);
@@ -318,6 +319,15 @@ public enum PropertyAttributes
 	NoSet = 32,
 	ClosedSet = 64,
 	ProtectedSet = 128,
+}
+
+public enum ConstantAttributes
+{
+	None = 0,
+	Static = 1,
+	Closed = 2,
+	Protected = 4,
+	Internal = 8,
 }
 
 public enum FunctionAttributes
@@ -599,7 +609,7 @@ public static class DeclaredConstructions
 	/// <summary>
 	/// Sorted by Container, also contains Name and Value.
 	/// </summary>
-	public static TypeSortedList<List<(String Name, UniversalType Type, dynamic Value)>> UserDefinedConstantsList { get; } = [];
+	public static TypeSortedList<Dictionary<String, UserDefinedConstant>> UserDefinedConstantsList { get; } = [];
 
 	/// <summary>
 	/// Sorted by SrcType, also contains SrcUnvType.ExtraTypes, DestTypes and their DestUnvType.ExtraTypes.
@@ -920,6 +930,11 @@ public static class DeclaredConstructions
 			0x4043 => "incorrect parameter #" + parameters[0] + " of the lambda expression",
 			0x4044 => "incorrect type of the lambda expression",
 			0x4045 => "this lambda must have " + parameters[0] + " parameters",
+			0x4050 => "this expression must be constant but it isn't",
+			0x4051 => "this expression must be constant but it isn't; const functions are under development",
+			0x4052 => "cannot assign a value to the constant",
+			0x4053 => "the local constant must have a value",
+			0x4054 => "the local constant declaration must not contain the other operators than the single assignment",
 			0x8000 => "the properties and the methods are static in the static class implicitly;" +
 				" the word \"static\" is not necessary",
 			0x8001 => "the semicolon in the end of the line with condition or cycle may easily be unnoticed" +

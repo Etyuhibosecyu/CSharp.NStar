@@ -3,23 +3,25 @@ global using NStar.Linq;
 global using NStar.MathLib;
 global using System;
 global using System.Diagnostics;
-global using G = System.Collections.Generic;
 global using static CSharp.NStar.DeclaredConstructions;
 global using static CSharp.NStar.TypeHelpers;
 global using static System.Math;
+global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
-using NStar.EasyEvalLib;
-using NStar.MathLib.Extras;
-using System.IO;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using NStar.EasyEvalLib;
+using NStar.ExtraHS;
+using NStar.MathLib.Extras;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
+using System.IO;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Text;
 using static CSharp.NStar.DeclaredConstructionChecks;
 using static CSharp.NStar.DeclaredConstructionMappings;
 using static CSharp.NStar.IntermediateFunctions;
 using static NStar.Core.Extents;
-using NStar.ExtraHS;
 
 namespace CSharp.NStar;
 
@@ -29,6 +31,7 @@ public sealed class SemanticTree
 	private readonly String input, compiledClasses = [];
 	private bool wreckOccurred;
 	private GeneralMethodOverload? currentFunction;
+	private bool constantsOnly;
 	private readonly TreeBranch topBranch = TreeBranch.DoNotAdd();
 	private readonly List<String>? errorsList = null;
 
@@ -96,6 +99,7 @@ public sealed class SemanticTree
 		nameof(Function) => Function,
 		nameof(Constructor) => Constructor,
 		nameof(Members) => Members,
+		nameof(Constant) => Constant,
 		"if" or "else if" or "if!" or "else if!" => Condition,
 		"loop" => Loop,
 		"while" => While,
@@ -548,6 +552,46 @@ public sealed class SemanticTree
 		return result;
 	}
 
+	private String Constant(TreeBranch branch, out List<String>? errorsList)
+	{
+		errorsList = null;
+		if (branch[0].Extra is not UniversalType UnvType)
+			return [];
+		var name = branch[1].Info;
+		var (UnvType2, Attributes, DefaultValue) = UserDefinedConstantsList[branch.Container][name];
+		if (!UnvType.Equals(UnvType2))
+			return [];
+		String result = [];
+		if ((Attributes & ConstantAttributes.Closed) != 0)
+			result.AddRange("private ");
+		if ((Attributes & ConstantAttributes.Protected) != 0)
+			result.AddRange("protected ");
+		if ((Attributes & ConstantAttributes.Internal) != 0)
+		{
+			result.AddRange("internal ");
+			GenerateMessage(ref errorsList, 0x8006, branch.Pos);
+		}
+		if (IsTypeContext(branch) && (Attributes & (ConstantAttributes.Closed | ConstantAttributes.Protected | ConstantAttributes.Internal)) == 0)
+			result.AddRange("public ");
+		result.AddRange(TypeIsPrimitive(UnvType.MainType) && UnvType.ExtraTypes.Length == 0
+			&& UnvType.MainType.Peek().Name.ToString() is "bool"
+			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
+			or "long char" or "long int" or "unsigned long int" or "real" ? "const " : "static readonly ");
+		var typeName = Type(UnvType);
+		result.AddRange(typeName).Add(' ');
+		if (EscapedKeywordsList.Contains(name))
+			result.Add('@');
+		result.AddRange(name).AddRange(" = ");
+		var constantsOnly = this.constantsOnly;
+		this.constantsOnly = true;
+		var expr = ParseAction(branch[^1].Info)(branch[^1], out var innerErrorsList);
+		result.AddRange(expr);
+		this.constantsOnly = constantsOnly;
+		AddRange(ref errorsList, innerErrorsList);
+		result.Add(';');
+		return [];
+	}
+
 	private String Condition(TreeBranch branch, out List<String>? errorsList)
 	{
 		String result = branch.Info.ToString() switch
@@ -641,6 +685,24 @@ public sealed class SemanticTree
 			};
 			return "_";
 		}
+		else if (UserDefinedConstantExists(branch.Container, s, out var constant, out var matchingContainer, out _)
+			&& constant.HasValue && constant.Value.DefaultValue == null)
+		{
+			if (branch.Parent == null || branch.Parent.Info != "DeclarationAssignment")
+			{
+				GenerateMessage(ref errorsList, 0x4053, branch.Pos);
+				return "default!";
+			}
+			var prevIndex = branch.Parent.Elements.FindIndex(x => ReferenceEquals(branch, x));
+			var assignmentIndex = Max(prevIndex + 1, 2);
+			if (assignmentIndex != 2 || branch.Parent[assignmentIndex].Info != "=")
+			{
+				GenerateMessage(ref errorsList, 0x4054, branch.Parent[assignmentIndex].Pos);
+				return "default!";
+			}
+			UserDefinedConstantsList[matchingContainer][s] = new(constant.Value.UnvType,
+				constant.Value.Attributes, branch.Parent[0]);
+		}
 		if (branch[0].Extra is not UniversalType UnvType)
 			branch.Extra = NullType;
 		else if (TypeEqualsToPrimitive(UnvType, "var"))
@@ -699,6 +761,14 @@ public sealed class SemanticTree
 					innerResult.RemoveAt(0);
 					result.Insert(0, '(');
 				}
+				if (innerResult.StartsWith('.')
+					&& TryReadValue(innerResult[1..^(innerResult.EndsWith(')') ? 1 : 0)], out var value))
+				{
+					branch.Info = value.ToString(true, true);
+					branch.Elements.Clear();
+					branch.Extra ??= value.InnerType;
+					return branch.Info;
+				}
 				result.AddRange(innerResult);
 			}
 		}
@@ -730,7 +800,7 @@ public sealed class SemanticTree
 			if (Universal.TryParse(branch[0].Info.ToString(), out var value))
 			{
 				branch[0].Extra = value.InnerType;
-				extra = new List<object> { (String)"Constant", value.InnerType };
+				extra = new List<object> { (String)nameof(Constant), value.InnerType };
 				return value.ToString(true, true);
 			}
 			if (TryReadValue(info, out value))
@@ -756,6 +826,11 @@ public sealed class SemanticTree
 			}
 			else if (info == "new")
 			{
+				if (constantsOnly)
+				{
+					GenerateMessage(ref errorsList, 0x4050, branch.Pos);
+					return "default!";
+				}
 				if (!ImplicitConstructor(branch, ref errorsList, parameterTypes))
 					return "default!";
 				if (branch[0].Extra is not UniversalType UnvType2)
@@ -772,6 +847,11 @@ public sealed class SemanticTree
 			}
 			else if (info == "new type")
 			{
+				if (constantsOnly)
+				{
+					GenerateMessage(ref errorsList, 0x4050, branch.Pos);
+					return "default!";
+				}
 				if (branch[0].Extra is not UniversalType UnvType)
 					extra = new List<object> { (String)"Constructor", NullType };
 				else if (UserDefinedConstructorsExist(UnvType, parameterTypes, out var constructors) && constructors != null)
@@ -783,8 +863,50 @@ public sealed class SemanticTree
 				result.AddRange("new ").AddRange(branch[0].Extra is UniversalType type ? Type(type) : "dynamic");
 				return result;
 			}
+			else if (IsConstantDeclared(branch, info, out var constantErrorsList, out var constant))
+			{
+				var constantsOnly = this.constantsOnly;
+				this.constantsOnly = true;
+				if (branch.Parent != null && branch.Parent.Info == nameof(Assignment))
+				{
+					GenerateMessage(ref errorsList, 0x4052, branch.Parent[Max(prevIndex + 1, 2)].Pos);
+					branch.Parent.Info = "null";
+					branch.Parent.Elements.Clear();
+					branch.Parent.Extra = NullType;
+					return "default!";
+				}
+				List<String>? innerErrorsList = null;
+				if (constant.HasValue && constant.Value.DefaultValue != null
+					&& TryReadValue(ParseAction(constant.Value.DefaultValue.Info)(constant.Value.DefaultValue,
+					out innerErrorsList).ToString(), out value))
+				{
+					info = branch.Info = value.ToString(true, true);
+					branch.Elements.Clear();
+					branch.Extra = value.InnerType;
+					extra = new List<object> { (String)nameof(Constant), value.InnerType, innerResults };
+				}
+				else
+				{
+					branch.Extra = branch[0].Extra = NullType;
+					extra = new List<object> { (String)nameof(Constant), NullType, innerResults };
+				}
+				if (prepass && branch.Parent != null && branch.Parent.Info == nameof(Assignment))
+				{
+					var targetIndex = Max(branch.Parent.Elements.FindIndex(x => ReferenceEquals(branch, x)) - 2, 0);
+					branch.Parent[targetIndex].Extra ??= branch.Extra;
+				}
+				result.AddRange(info);
+				AddRange(ref errorsList, constantErrorsList);
+				AddRange(ref errorsList, innerErrorsList);
+				this.constantsOnly = constantsOnly;
+			}
 			else if (IsVariableDeclared(branch, info, out var variableErrorsList, out var extra2))
 			{
+				if (constantsOnly)
+				{
+					GenerateMessage(ref errorsList, 0x4050, branch.Pos);
+					return "default!";
+				}
 				if (extra2 is UniversalType UnvType)
 				{
 					branch.Extra = branch[0].Extra = UnvType;
@@ -807,15 +929,20 @@ public sealed class SemanticTree
 			}
 			else if (IsPropertyDeclared(branch, info, out var propertyErrorsList, out var property))
 			{
+				if (constantsOnly)
+				{
+					GenerateMessage(ref errorsList, 0x4050, branch.Pos);
+					return "default!";
+				}
 				if (property.HasValue)
 				{
 					branch.Extra = branch[0].Extra = property.Value.UnvType;
-					extra = new List<object> { (String)"Property", property.Value.UnvType, innerResults };
+					extra = new List<object> { (String)nameof(Property), property.Value.UnvType, innerResults };
 				}
 				else
 				{
 					branch.Extra = branch[0].Extra = NullType;
-					extra = new List<object> { (String)"Property", NullType, innerResults };
+					extra = new List<object> { (String)nameof(Property), NullType, innerResults };
 				}
 				if (prepass && branch.Parent != null && branch.Parent.Info == nameof(Assignment))
 				{
@@ -830,6 +957,11 @@ public sealed class SemanticTree
 			else if (IsFunctionDeclared(branch, info, out var functionErrorsList,
 				out var functions, out var functionContainer, out _) && functions.Length != 0)
 			{
+				if (constantsOnly)
+				{
+					GenerateMessage(ref errorsList, 0x4051, branch.Pos);
+					return "default!";
+				}
 				if (functionContainer.Length == 0)
 					HypernamePublicGeneralMethod(branch, info, innerResults, ref extra, ref errorsList, prevIndex, functions, "user");
 				else if (HypernameGeneralMethod(branch, info, innerResults, ref extra, ref errorsList,
@@ -842,6 +974,11 @@ public sealed class SemanticTree
 			}
 			else if (GeneralMethodExists(new(), info, parameterTypes, out functions, out var user) && functions.Length != 0)
 			{
+				if (constantsOnly)
+				{
+					GenerateMessage(ref errorsList, 0x4051, branch.Pos);
+					return "default!";
+				}
 				if (info.ToString() is "ExecuteString" or "Q" && !(branch.Length >= 2 && branch[1].Info == nameof(Call)))
 				{
 					var otherPos = branch.FirstPos;
@@ -884,12 +1021,54 @@ public sealed class SemanticTree
 				GenerateMessage(ref errorsList, 0x4000, otherPos);
 				return "default!";
 			}
-			if (PropertyExists(ContainerUnvType, PropertyMapping(info), out var property))
+			if (ConstantExists(ContainerUnvType, info, out var constant))
 			{
+				var constantsOnly = this.constantsOnly;
+				this.constantsOnly = true;
+				if (IsAssignment(branch, out var assignmentBranch, out var assignmentIndex))
+				{
+					GenerateMessage(ref errorsList, 0x4052, assignmentBranch[assignmentIndex].Pos);
+					assignmentBranch.Info = "null";
+					assignmentBranch.Elements.Clear();
+					assignmentBranch.Extra = NullType;
+					return "default!";
+				}
+				if (!(constant.HasValue && constant.Value.DefaultValue != null
+					&& TryReadValue(ParseAction(constant.Value.DefaultValue.Info)(constant.Value.DefaultValue,
+					out var innerErrorsList).ToString(), out var value)))
+				{
+					branch.Extra = branch[0].Extra = NullType;
+					extra = new List<object> { (String)nameof(Constant), NullType };
+					return "_";
+				}
+				else if ((constant.Value.Attributes & ConstantAttributes.Closed) != 0 ^ (constant.Value.Attributes & ConstantAttributes.Protected) != 0 && !new List<Block>(branch.Container).StartsWith([.. ContainerUnvType.MainType]))
+				{
+					var otherPos = branch.FirstPos;
+					GenerateMessage(ref errorsList, 0x4030, otherPos, String.Join(".", ContainerUnvType.MainType.Convert(x => x.Name).Append(info).ToArray()));
+					branch.Parent[branch.Parent.Elements.IndexOf(branch)] = new("null", branch.Pos, branch.EndPos, branch.Container) { Extra = NullType };
+					return "_";
+				}
+				else
+				{
+					info = branch.Info = value.ToString(true, true);
+					branch.Elements.Clear();
+					branch.Extra = value.InnerType;
+					extra = new List<object> { (String)nameof(Constant), branch.Extra };
+				}
+				result.AddRange(info);
+				this.constantsOnly = constantsOnly;
+			}
+			else if (PropertyExists(ContainerUnvType, PropertyMapping(info), out var property))
+			{
+				if (constantsOnly)
+				{
+					GenerateMessage(ref errorsList, 0x4050, branch.Pos);
+					return "default!";
+				}
 				if (!property.HasValue)
 				{
 					branch.Extra = branch[0].Extra = NullType;
-					extra = new List<object> { (String)"Property", NullType };
+					extra = new List<object> { (String)nameof(Property), NullType };
 					return "_";
 				}
 				else if ((property.Value.Attributes & PropertyAttributes.Closed) != 0 ^ (property.Value.Attributes & PropertyAttributes.Protected) != 0 && !new List<Block>(branch.Container).StartsWith([.. ContainerUnvType.MainType]))
@@ -902,12 +1081,17 @@ public sealed class SemanticTree
 				else
 				{
 					branch.Extra = branch[0].Extra = new UniversalType(property.Value.UnvType.MainType, property.Value.UnvType.ExtraTypes);
-					extra = new List<object> { (String)"Property", branch.Extra };
+					extra = new List<object> { (String)nameof(Property), branch.Extra };
 				}
 				result.AddRange(PropertyMapping(info));
 			}
 			else if (UserDefinedFunctionExists(ContainerUnvType.MainType, info, parameterTypes, out var functions) && functions.Length != 0)
 			{
+				if (constantsOnly)
+				{
+					GenerateMessage(ref errorsList, 0x4051, branch.Pos);
+					return "default!";
+				}
 				if (HypernameGeneralMethod(branch, info, innerResults, ref extra, ref errorsList, prevIndex, ContainerUnvType.MainType, functions, "userMethod") != null)
 					return "_";
 				result.AddRange(info);
@@ -915,6 +1099,11 @@ public sealed class SemanticTree
 			}
 			else if (MethodExists(ContainerUnvType, FunctionMapping(info, null), parameterTypes, out functions) && functions.Length != 0)
 			{
+				if (constantsOnly)
+				{
+					GenerateMessage(ref errorsList, 0x4051, branch.Pos);
+					return "default!";
+				}
 				if (HypernameMethod(branch, info, innerResults, ref extra, ref errorsList, prevIndex, ContainerUnvType.MainType, functions) != null)
 					return "_";
 				result.AddRange(info);
@@ -982,7 +1171,7 @@ public sealed class SemanticTree
 		if (branch[index].Info == nameof(Call) && extra is List<object> list)
 		{
 			if (list.Length == 3 && list[0] is String delegateElem1
-				&& delegateElem1.ToString() is "Variable" or "Property" or nameof(Expr)
+				&& delegateElem1.ToString() is "Variable" or nameof(Property) or nameof(Expr)
 				&& list[1] is UniversalType DelegateUnvType
 				&& new BlockStackEComparer().Equals(DelegateUnvType.MainType, FuncBlockStack)
 				&& DelegateUnvType.ExtraTypes.Length != 0 && !DelegateUnvType.ExtraTypes[0].MainType.IsValue)
@@ -1233,7 +1422,7 @@ public sealed class SemanticTree
 		if (branch[index - 1].Extra is not UniversalType CollectionUnvType)
 			return "default!";
 		if (!(extra is List<object> list && list.Length == 3 && list[0] is String elem1
-			&& elem1.ToString() is "Variable" or "Property" or nameof(Expr)
+			&& elem1.ToString() is "Variable" or nameof(Property) or nameof(Expr)
 			&& list[1] is UniversalType CollectionUnvType2
 			&& TypesAreEqual(CollectionUnvType, CollectionUnvType2)
 			&& list[2] is List<String> innerResults))
@@ -1741,6 +1930,11 @@ public sealed class SemanticTree
 				Declaration(branch[i + 2], out innerErrorsList, true);
 			AddRange(ref errorsList, innerErrorsList);
 		}
+		if (TryReadValue(branch.Info, out var value))
+		{
+			branch.Extra = value.InnerType;
+			return value.ToString(true, true);
+		}
 		for (i = 0; i < branch.Length; i++)
 		{
 			if (branch[i].Info == "type")
@@ -1754,7 +1948,7 @@ public sealed class SemanticTree
 				AddRange(ref errorsList, innerErrorsList);
 				continue;
 			}
-			else if (TryReadValue(branch[i].Info, out var value))
+			else if (TryReadValue(branch[i].Info, out value))
 			{
 				branch[i].Extra = value.InnerType;
 				innerResults.SetOrAdd(i, value.ToString(true, true));
@@ -2404,6 +2598,14 @@ public sealed class SemanticTree
 
 	private String Assignment(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, int i)
 	{
+		if (constantsOnly)
+		{
+			GenerateMessage(ref errorsList, 0x4052, branch[i].Pos);
+			branch.Info = "null";
+			branch.Elements.Clear();
+			branch.Extra = NullType;
+			return "default!";
+		}
 		if (branch[i].Info == "=" && TryReadValue(branch[Max(0, i - 3)].Info, out _) && branch.Parent != null
 			&& (branch.Parent.Info == "if" || branch.Parent.Info == nameof(XorList) || branch.Parent.Info == nameof(Expr)
 			&& new List<String> { "xor", "or", "and", "^^", "||", "&&", "!" }
@@ -3210,7 +3412,7 @@ public sealed class SemanticTree
 			{
 				if (j == indexes[i] - 1)
 					continue;
-				if (branches[i][j].Info == "Property" && branches[i][j].Length == 3 && branches[i][j][1].Info == s)
+				if (branches[i][j].Info == nameof(Property) && branches[i][j].Length == 3 && branches[i][j][1].Info == s)
 				{
 					return true;
 				}
@@ -3225,18 +3427,121 @@ public sealed class SemanticTree
 		return false;
 	}
 
+	private bool IsConstantDeclared(TreeBranch branch, String s, out List<String>? errorsList, out UserDefinedConstant? constant)
+	{
+		errorsList = default!;
+		if (!UserDefinedConstantExists(branch.Container, s, out constant, out _, out var inBase))
+		{
+			if (errorsList == null || errorsList.Length == 0)
+				GenerateMessage(ref errorsList, 0x4001, branch.FirstPos, s);
+			return false;
+		}
+		else if (inBase)
+			return true;
+		NList<int> indexes = [];
+		List<TreeBranch> branches = [branch];
+		while (branch.Parent != null)
+		{
+			indexes.Add(branch.Parent.Elements.FindIndex(x => ReferenceEquals(branch, x)) + 1);
+			branches.Add(branch = branch.Parent);
+		}
+		indexes.Reverse();
+		branches.Reverse();
+		for (var i = indexes.Length - 1; i >= 0; i--)
+		{
+			if (branches[i].Info == "Function" && branches[i].Length == 4 && UserDefinedNonDerivedFunctionExists(branches[i].Container, branches[i][0].Info, out var functions, out _))
+			{
+				if ((functions[^1].Attributes & FunctionAttributes.Multiconst) != 0)
+				{
+					GenerateMessage(ref errorsList, 0x4031, branch.FirstPos, s);
+					return false;
+				}
+				else if ((functions[^1].Attributes & FunctionAttributes.Static) != 0 && (constant?.Attributes & ConstantAttributes.Static) == 0)
+				{
+					GenerateMessage(ref errorsList, 0x4032, branch.FirstPos, s);
+					return false;
+				}
+			}
+			for (var j = 0; j < branches[i].Length; j++)
+			{
+				if (j == indexes[i] - 1)
+					continue;
+				if ((branches[i][j].Info == nameof(Declaration) || branches[i][j].Info == "Parameter") && branches[i][j][1].Info == s)
+					return true;
+				else if (branches[i].Info == nameof(Lambda) && branches[i].Length == 2 && (IsValidLambdaParameter(branches[i][0], s) || branches[i][0].Info == nameof(List) && branches[i][0].Elements.Any(x => IsValidLambdaParameter(x, s))))
+					return true;
+				else if (new List<String> { "Parameters", "if", "if!", "else if", "else if!", "repeat", "while", "while!", "for", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment" }.Contains(branches[i][j].Info) && ConstantExistsInsideExpr(branches[i][j], s, out _, out _))
+					return true;
+				else if (branches[i][j].Info == nameof(Constant) && branches[i][j].Length == 3 && branches[i][j][1].Info == s)
+					return true;
+				else if (new List<String> { "ClassMain", "Members" }.Contains(branches[i][j].Info) && ConstantExistsInsideExpr(branches[i][j], s, out _, out _))
+					return true;
+			}
+		}
+		if (errorsList == null || errorsList.Length == 0)
+			GenerateMessage(ref errorsList, 0x4001, branch.FirstPos, s);
+		return false;
+		static bool IsValidLambdaParameter(TreeBranch branch, String info)
+		{
+			if (branch.Length == 0)
+				return branch.Info == info;
+			if (branch.Info != nameof(Hypername) || branch.Length != 1 || branch[0].Length != 0)
+				return false;
+			return branch[0].Info == info;
+		}
+	}
+
 	private static bool PropertyExistsInsideExpr(TreeBranch branch, String s, out int pos, out object? extra)
 	{
 		try
 		{
 			for (var i = 0; i < branch.Length; i++)
 			{
-				if (branch[i].Info == "Property" && branch[i].Length == 3 && branch[i][1].Info == s)
+				if (branch[i].Info == nameof(Property) && branch[i].Length == 3 && branch[i][1].Info == s)
 				{
 					pos = branch[i].FirstPos;
 					extra = branch[i][0].Extra;
 					return true;
 				}
+			}
+		}
+		catch (StackOverflowException)
+		{
+		}
+		pos = -1;
+		extra = null;
+		return false;
+	}
+
+	private static bool ConstantExistsInsideExpr(TreeBranch branch, String s, out int pos, out object? extra)
+	{
+		try
+		{
+			for (var i = 0; i < branch.Length; i++)
+			{
+				if (branch[i].Info == nameof(Constant) && branch[i].Length == 3 && branch[i][1].Info == s)
+				{
+					pos = branch[i].FirstPos;
+					extra = branch[i][0].Extra;
+					return true;
+				}
+			}
+		}
+		catch (StackOverflowException)
+		{
+		}
+		try
+		{
+			for (var i = 0; i < branch.Length; i++)
+			{
+				if ((branch[i].Info == nameof(Declaration) || branch[i].Info == "Parameter") && branch[i][1].Info == s)
+				{
+					pos = branch[i].FirstPos;
+					extra = branch[i][0].Extra;
+					return true;
+				}
+				else if (new List<String> { nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment" }.Contains(branch[i].Info) && ConstantExistsInsideExpr(branch[i], s, out pos, out extra))
+					return true;
 			}
 		}
 		catch (StackOverflowException)
@@ -3323,6 +3628,25 @@ public sealed class SemanticTree
 		functions = [];
 		matchingContainer = null;
 		return [];
+	}
+
+	private static bool IsAssignment(TreeBranch branch, [MaybeNullWhen(false)] out TreeBranch assignmentBranch, out int assignmentIndex)
+	{
+		var parent = branch.Parent;
+		while (parent != null)
+		{
+			if (parent.Info == nameof(Assignment))
+			{
+				var prevIndex = parent.Elements.FindIndex(x => ReferenceEquals(branch, x));
+				assignmentBranch = parent;
+				assignmentIndex = Max(prevIndex + 1, 2);
+				return true;
+			}
+			parent = parent.Parent;
+		}
+		assignmentBranch = null;
+		assignmentIndex = -1;
+		return false;
 	}
 
 	private void GenerateMessage(ref List<String>? errorsList, ushort code, Index pos, params dynamic[] parameters)
@@ -3472,7 +3796,9 @@ Console.WriteLine(F(args));
 		return (bytes, errorsList ?? []);
 	}
 
-	private static bool TryReadValue(String s, out Universal value) => Universal.TryParse(s.ToString(), out value) || s.StartsWith("(String)") && Universal.TryParse(s["(String)".Length..].ToString(), out value);
+	private static bool TryReadValue(String s, out Universal value) => Universal.TryParse(s.ToString(), out value)
+		|| s.StartsWith("(String)") && Universal.TryParse(s["(String)".Length..].ToString(), out value)
+		|| s.StartsWith("((String)") && s.EndsWith(')') && Universal.TryParse(s["((String)".Length..^1].ToString(), out value);
 
 	public override string ToString() => $"({String.Join(", ", lexems.ToArray(x => (String)x.ToString())).TakeIntoVerbatimQuotes()}, {input.TakeIntoVerbatimQuotes()}, {((String)topBranch.ToString()).TakeIntoVerbatimQuotes()}, ({(errorsList != null && errorsList.Length != 0 ? String.Join(", ", errorsList.ToArray(x => x.TakeIntoVerbatimQuotes())) : "NoErrors")}), {wreckOccurred})";
 }

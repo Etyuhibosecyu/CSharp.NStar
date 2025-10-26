@@ -222,6 +222,7 @@ public partial class MainParsing : LexemStream
 		nameof(PrefixExpr2) => PrefixExpr2,
 		nameof(Hypername) or "HypernameNotCall" => Hypername,
 		nameof(HypernameNew) => HypernameNew,
+		"HypernameConstType" or "HypernameNotCallConstType" => HypernameConstType,
 		"HypernameType" or "HypernameNotCallType" => HypernameType,
 		nameof(HypernameBasicExpr) or "HypernameNotCallBasicExpr" => HypernameBasicExpr,
 		nameof(HypernameCall) => HypernameCall,
@@ -902,7 +903,8 @@ public partial class MainParsing : LexemStream
 		{
 			if (value >= 2)
 				GenerateMessage(0x800B, pos - 1, false);
-			AddPropertyAttribute2(PropertyAttributes.Const);
+			_TBStack[_Stackpos]!.Info = "Constant";
+			AddPropertyAttribute2(PropertyAttributes.Static | PropertyAttributes.Const);
 			pos++;
 		}
 		if (IsCurrentLexemKeyword(nameof(Constructor)))
@@ -980,12 +982,15 @@ public partial class MainParsing : LexemStream
 	{
 		if (!success)
 			return _SuccessStack[_Stackpos] = false;
+		CreateObjectList(out var l);
 		if (IsCurrentLexemOther(";"))
 			pos++;
 		else
 			return EndWithError(0x2002, pos, false);
 		_ErLStack[_Stackpos].AddRange(errorsList ?? []);
 		_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
+		if (((PropertyAttributes)l![0] & PropertyAttributes.Const) == PropertyAttributes.Const)
+			return AddUserDefinedConstant();
 		return AddUserDefinedProperty();
 	}
 
@@ -1071,6 +1076,32 @@ public partial class MainParsing : LexemStream
 				list2 = UserDefinedPropertiesOrder[container];
 			}
 			list2.Add(name);
+		}
+		catch
+		{
+		}
+		return Default();
+	}
+
+	private bool AddUserDefinedConstant()
+	{
+		try
+		{
+			CreateObjectList(out var l);
+			var UnvType = (UniversalType)l![1];
+			if (!UserDefinedConstantsList.TryGetValue(container, out var list))
+			{
+				UserDefinedConstantsList.Add(container, []);
+				list = UserDefinedConstantsList[container];
+			}
+			var attributes = (ConstantAttributes)l[0];
+			var name = (String)l[2];
+			list.Add(name, new(UnvType, attributes, treeBranch == null ? new("null", 0, []) : treeBranch.Length == 0
+				&& Universal.TryParse(treeBranch.Info.ToString(), out var value)
+				? new(value.ToString(true), treeBranch.Pos, treeBranch.Container)
+				: treeBranch.Info == "Expr" && treeBranch.Length == 1 && treeBranch[0].Length == 0
+				&& Universal.TryParse(treeBranch[0].Info.ToString(), out value)
+				? new(value.ToString(true), treeBranch.Pos, treeBranch.Container) : treeBranch));
 		}
 		catch
 		{
@@ -1179,13 +1210,9 @@ public partial class MainParsing : LexemStream
 				return EndWithEmpty();
 			}
 		}
-		if (IsLexemOther(lexems[pos], ["{", "}"]))
-		{
-			_ErLStack[_Stackpos].AddRange(errorsList ?? []);
-			return Default();
-		}
-		else
+		if (!IsLexemOther(lexems[pos], ["{", "}"]))
 			pos++;
+		_ErLStack[_Stackpos].AddRange(errorsList ?? []);
 		return Default();
 	}
 
@@ -1871,6 +1898,11 @@ public partial class MainParsing : LexemStream
 			}
 			return IncreaseStack(nameof(TypeConstraints.NotAbstract), currentTask: "HypernameNew", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
 		}
+		else if (IsCurrentLexemKeyword("const"))
+		{
+			pos++;
+			return IncreaseStack(nameof(Type), currentTask: task == "HypernameNotCall" ? "HypernameNotCallConstType" : "HypernameConstType", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
+		}
 		return IncreaseStack(nameof(Type), currentTask: task == "HypernameNotCall" ? "HypernameNotCallType" : "HypernameType", applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
 	}
 
@@ -1897,6 +1929,26 @@ public partial class MainParsing : LexemStream
 				_ErLStack[_Stackpos].AddRange(errorsList);
 			return Default();
 		}
+	}
+
+	private bool HypernameConstType()
+	{
+		if (!success)
+			return EndWithError(0x2001, pos, true);
+		_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
+		if (pos >= end)
+			return _SuccessStack[_Stackpos] = false;
+		if (lexems[pos].Type != LexemType.Identifier)
+			return EndWithError(0x2001, pos, true);
+		pos++;
+		_ErLStack[_Stackpos].AddRange(errorsList ?? []);
+		AppendBranch("Declaration", new(lexems[pos - 1].String, pos - 1, pos, container));
+		if (!IsCurrentLexemOperator("="))
+		{
+			GenerateMessage(0x203D, pos, true);
+			return EndWithEmpty();
+		}
+		return HypernameDeclaration(true);
 	}
 
 	private bool HypernameType()
@@ -2015,9 +2067,23 @@ public partial class MainParsing : LexemStream
 
 	private bool HypernameClosing_BasicExpr4() => success ? pos >= end ? (_SuccessStack[_Stackpos] = false) : EndWithAdding(true) : (_SuccessStack[_Stackpos] = false);
 
-	private bool HypernameDeclaration()
+	private bool HypernameDeclaration(bool @const = false)
 	{
-		if (extra is UniversalType UnvType)
+		if (extra is not UniversalType UnvType)
+			return Default();
+		if (@const)
+		{
+			var index = UserDefinedConstantsList.IndexOfKey(container);
+			if (index == -1)
+			{
+				UserDefinedConstantsList.Add(container, []);
+				index = UserDefinedConstantsList.IndexOfKey(container);
+			}
+			var list = UserDefinedConstantsList.Values[index];
+			list[lexems[pos - 1].String] = new(UnvType, ConstantAttributes.None, null!);
+			return Default();
+		}
+		else
 		{
 			var index = VariablesList.IndexOfKey(container);
 			if (index == -1)
@@ -2027,8 +2093,8 @@ public partial class MainParsing : LexemStream
 			}
 			var list = VariablesList.Values[index];
 			list[lexems[pos - 1].String] = UnvType;
+			return Default();
 		}
-		return Default();
 	}
 
 	private bool HypernameBracketsAndDot()
