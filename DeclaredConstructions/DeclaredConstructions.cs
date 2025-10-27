@@ -550,7 +550,7 @@ public static class DeclaredConstructions
 	/// <summary>
 	/// Sorted by Container and Type, also contains ArrayParameterPackage modifiers, ArrayParameterRestrictions, ArrayParameterTypes, ArrayParameterNames and Attributes.
 	/// </summary>
-	public static GeneralTypes GeneralTypesList { get; } = new(new BlockStackAndStringComparer()) { { (new([new(BlockType.Namespace, "System", 1)]), nameof(Action)), ([new(true, NoGeneralExtraTypes, GetPrimitiveBlockStack("typename"), "Types")], TypeAttributes.None) }, { (new([new(BlockType.Namespace, "System", 1)]), nameof(Func<bool>)), new([new(false, NoGeneralExtraTypes, GetPrimitiveBlockStack("typename"), "TReturn"), new(true, NoGeneralExtraTypes, GetPrimitiveBlockStack("typename"), "Types")], TypeAttributes.None) } };
+	public static GeneralTypes GeneralTypesList { get; } = new(new BlockStackAndStringComparer()) { { (new([new(BlockType.Namespace, "System", 1)]), nameof(Action)), ([new(true, NoGeneralExtraTypes, GetPrimitiveBlockStack("typename"), "Types")], TypeAttributes.Delegate) }, { (new([new(BlockType.Namespace, "System", 1)]), nameof(Func<bool>)), new([new(false, NoGeneralExtraTypes, GetPrimitiveBlockStack("typename"), "TReturn"), new(true, NoGeneralExtraTypes, GetPrimitiveBlockStack("typename"), "Types")], TypeAttributes.Delegate) } };
 
 	/// <summary>
 	/// Sorted by Container and Type, also contains ArrayParameterPackage modifiers, ArrayParameterRestrictions, ArrayParameterTypes, ArrayParameterNames and Attributes.
@@ -991,7 +991,7 @@ public static class DeclaredConstructions
 				+ "\" has the same parameter types as its base method with the same name but it also" +
 				" has the other significant differences such as the access modifier or the return type," +
 				" so it cannot override that base method and creates a new one;" +
-				" if this is intentional, and the \"new\" keyword, otherwise fix the differences",
+				" if this is intentional, add the \"new\" keyword, otherwise fix the differences",
 			0x8009 => "this expression, used with conditional constructions, is constant;" +
 				" maybe you wanted to check equality of these values? - it is done with the operator \"==\"",
 			0x800A => parameters[0] ?? "the type of the returning value \"" + parameters[1]

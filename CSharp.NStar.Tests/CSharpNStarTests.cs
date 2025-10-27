@@ -526,6 +526,14 @@ loop
 }
 return a;
 ", "12", "Ошибок нет")]
+	[DataRow(@"int int int int int = 5;
+", "null", @"Error 2008 in line 1 at position 8: expected: "";""
+Error 2007 in line 1 at position 8: unrecognized construction
+")]
+	[DataRow(@"var var var var var = 5;
+", "null", @"Error 2008 in line 1 at position 8: expected: "";""
+Error 2007 in line 1 at position 8: unrecognized construction
+")]
 	[DataRow(@"list(3) int a = (((1, 2, 3), (4, 5, 6), (7, 8, 9)), ((10, 11, 12), (13, 14, 15), (16, 17, 18)), ((19, 20, 21), (22, 23, 24), (25, 26, 27)));
 return a[1, 2, 3];
 ", "6", "Ошибок нет")]
@@ -1853,7 +1861,120 @@ return (myDog.Speak(), myDog.Eat(), myCat.Speak(), myCat.Eat());
 			" has the same parameter types as its base method with the same name but it also" +
 			" has the other significant differences such as the access modifier or the return type," +
 			" so it cannot override that base method and creates a new one;" +
-			" if this is intentional, and the \"new\" keyword, otherwise fix the differences\r\n")]
+			" if this is intentional, add the \"new\" keyword, otherwise fix the differences\r\n")]
+	[DataRow(@"abstract Class Animal
+{
+	abstract string Function Speak();
+	string Function Eat()
+	{
+		return ""Animal is eating"";
+	}
+}
+
+sealed Class Cat : Animal
+{
+	string Function Speak()
+	{
+		return ""Meow"";
+	}
+
+	list() string Function Eat()
+	{
+		return ""Cat is eating"";
+	}
+}
+
+Animal myCat = new Cat();
+return (myCat.Speak(), myCat.Eat());
+", """("Meow", "Animal is eating")""", "Warning 8008 in line 17 at position 1: the method \"Eat\"" +
+			" has the same parameter types as its base method with the same name but it also" +
+			" has the other significant differences such as the access modifier or the return type," +
+			" so it cannot override that base method and creates a new one;" +
+			" if this is intentional, add the \"new\" keyword, otherwise fix the differences\r\n")]
+	[DataRow(@"Class Cat : int
+{
+	string Function Speak()
+	{
+		return ""Meow"";
+	}
+
+	list() string Function Eat()
+	{
+		return ""Cat is eating"";
+	}
+}
+
+Animal myCat = new Cat();
+return (myCat.Speak(), myCat.Eat());
+", "null", @"Error 2015 in line 1 at position 12: expected: non-sealed class or interface
+Error 2008 in line 14 at position 7: expected: "";""
+Error 2007 in line 14 at position 7: unrecognized construction
+Error 4001 in line 15 at position 8: the identifier ""myCat"" is not defined in this location
+Error 4001 in line 15 at position 23: the identifier ""myCat"" is not defined in this location
+")]
+	[DataRow(@"Class Cat : long int
+{
+	string Function Speak()
+	{
+		return ""Meow"";
+	}
+
+	list() string Function Eat()
+	{
+		return ""Cat is eating"";
+	}
+}
+
+Animal myCat = new Cat();
+return (myCat.Speak(), myCat.Eat());
+", "null", @"Error 2015 in line 1 at position 12: expected: non-sealed class or interface
+Error 2008 in line 14 at position 7: expected: "";""
+Error 2007 in line 14 at position 7: unrecognized construction
+Error 4001 in line 15 at position 8: the identifier ""myCat"" is not defined in this location
+Error 4001 in line 15 at position 23: the identifier ""myCat"" is not defined in this location
+")]
+	[DataRow(@"Class Cat : System.RedStarLinqExtras
+{
+	string Function Speak()
+	{
+		return ""Meow"";
+	}
+
+	list() string Function Eat()
+	{
+		return ""Cat is eating"";
+	}
+}
+
+Animal myCat = new Cat();
+return (myCat.Speak(), myCat.Eat());
+", "null", @"Error 2015 in line 1 at position 19: expected: non-sealed class or interface
+Error 2008 in line 14 at position 7: expected: "";""
+Error 2007 in line 14 at position 7: unrecognized construction
+Error 4001 in line 15 at position 8: the identifier ""myCat"" is not defined in this location
+Error 4001 in line 15 at position 23: the identifier ""myCat"" is not defined in this location
+")]
+	[DataRow(@"Class Cat : System.Func[int]
+{
+	string Function Speak()
+	{
+		return ""Meow"";
+	}
+
+	list() string Function Eat()
+	{
+		return ""Cat is eating"";
+	}
+}
+
+Animal myCat = new Cat();
+return (myCat.Speak(), myCat.Eat());
+", "null", @"Error 2015 in line 1 at position 19: expected: non-sealed class or interface
+Error 2008 in line 14 at position 7: expected: "";""
+Error 2007 in line 14 at position 7: unrecognized construction
+Error 4001 in line 15 at position 8: the identifier ""myCat"" is not defined in this location
+Error 4001 in line 15 at position 23: the identifier ""myCat"" is not defined in this location
+")]
 	[DataRow(@"Class MyClass
 {
 	abstract string Function Go();

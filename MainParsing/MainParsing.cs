@@ -22,6 +22,10 @@ public partial class MainParsing : LexemStream
 	private readonly List<BlockStack> _ContainerStack = new(16) { new() };
 	private readonly BitList _SuccessStack = new(16) { false, false };
 	private readonly NList<int> _BTJPStack = new(16, 0), _RTPStack = new(16, 0), _PLPStack = new(16, 0);
+	private int typeDepth;
+	private readonly List<String> collectionTypes = new(16) { "" };
+	private readonly List<GeneralArrayParameters> typeChainTemplate = new(16);
+	private readonly NList<int> tpos = new(16);
 	private int globalUnnamedIndex = 1;
 	private int _Stackpos;
 
@@ -103,7 +107,7 @@ public partial class MainParsing : LexemStream
 			}
 			(errorsList ??= []).AddRange(_ErLStack[0] ?? []);
 			if (_SuccessStack[0])
-				return (lexems, input, _TBStack[0] ?? TreeBranch.DoNotAdd(), errorsList, wreckOccurred);
+				return (lexems, input, _TBStack[0] ?? new(nameof(Main), 0, []), errorsList, wreckOccurred);
 			else
 			{
 				(errorsList ??= []).Add(GetWreckPosPrefix(0xF001, ^1) + ": main parsing failed because of internal error");
@@ -230,6 +234,15 @@ public partial class MainParsing : LexemStream
 		"HypernameClosing" or "HypernameNotCallClosing" or "BasicExpr4" => HypernameClosing_BasicExpr4,
 		nameof(Indexes2) => Indexes2,
 		nameof(Type) or nameof(TypeConstraints.BaseClassOrInterface) or nameof(TypeConstraints.NotAbstract) => Type,
+		nameof(IdentifierType2) => IdentifierType2,
+		nameof(TypeListFail) => TypeListFail,
+		nameof(TypeList) => TypeList,
+		nameof(TypeChain) => TypeChain,
+		nameof(TypeChain2) => TypeChain2,
+		nameof(TypeChainIteration) => TypeChainIteration,
+		nameof(TypeChainIteration2) => TypeChainIteration2,
+		nameof(TupleType) => TupleType,
+		nameof(TupleType2) => TupleType2,
 		nameof(BasicExpr) => BasicExpr,
 		nameof(BasicExpr2) => BasicExpr2,
 		_ => Default,
@@ -967,7 +980,7 @@ public partial class MainParsing : LexemStream
 			if (((PropertyAttributes)l![0] & PropertyAttributes.Const) == PropertyAttributes.Const)
 			{
 				GenerateMessage(0x203D, pos, false);
-				for (; !IsLexemOther(lexems[pos++], ";"); ) ;
+				for (; !IsLexemOther(lexems[pos++], ";");) ;
 				return EndWithEmpty();
 			}
 			if (!CheckLexemAndEndWithError(";", true))
@@ -1331,7 +1344,7 @@ public partial class MainParsing : LexemStream
 		}
 		else
 		{
-			GenerateMessage(0x2008, pos, true, (addQuotes ? "\"" + string_ + "\"" : string_));
+			GenerateMessage(0x2008, pos, true, addQuotes ? "\"" + string_ + "\"" : string_);
 			return true;
 		}
 	}
@@ -2146,23 +2159,854 @@ public partial class MainParsing : LexemStream
 
 	private bool Type()
 	{
-		var pos2 = pos;
-		if (ParseType(ref pos, end, container, out var UnvType, ref errorsList!, constraints: task.ToString() switch
+		var constraints = task.ToString() switch
 		{
 			nameof(TypeConstraints.BaseClassOrInterface) => TypeConstraints.BaseClassOrInterface,
 			nameof(TypeConstraints.NotAbstract) => TypeConstraints.NotAbstract,
 			_ => TypeConstraints.None,
-		}))
+		};
+		UniversalType UnvType;
+		if (pos >= end)
 		{
-			_ErLStack[_Stackpos].AddRange(errorsList);
-			_TBStack[_Stackpos] = new("type", pos2, container) { Extra = UnvType };
+			UnvType = NullType;
 			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		else if (IsCurrentLexemKeyword("null"))
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			pos++;
+			return TypeEnd1(UnvType);
+		}
+		else if (lexems[pos].Type == LexemType.Identifier)
+			return IdentifierType(constraints);
+		else if (!IsCurrentLexemOther("("))
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			GenerateMessage(0x2014, pos, false);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		else if (constraints == TypeConstraints.None)
+			return TupleType();
+		else
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			GenerateMessage(0x2015, pos, false);
+			return _SuccessStack[_Stackpos] = false;
+		}
+	}
+
+	private bool IdentifierType(TypeConstraints constraints = TypeConstraints.None)
+	{
+		String s, namespace_ = [], outerClass = [];
+		var mainContainer = this.container;
+		BlockStack container = new(), innerContainer, innerUserDefinedContainer;
+		UniversalType UnvType;
+	l0:
+		s = lexems[pos].String;
+		if (PrimitiveType(constraints, s) is bool b)
+			return b;
+		if (NamespacesList.Contains(namespace_ == "" ? s : namespace_ + "." + s) || UserDefinedNamespacesList.Contains(namespace_ == "" ? s : namespace_ + "." + s))
+		{
+			_PosStack[_Stackpos] = ++pos;
+			if (pos >= end)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				goto end;
+			}
+			else if (IsCurrentLexemOperator("."))
+			{
+				container.Push(new(BlockType.Namespace, s, 1));
+				namespace_ = namespace_ == "" ? s : namespace_ + "." + s;
+				_PosStack[_Stackpos] = ++pos;
+				goto l0;
+			}
+			else
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+				GenerateMessage(0x2020, pos, false);
+			}
+		}
+		else if (container.Length == 0 && PrimitiveTypesList.ContainsKey(s))
+		{
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2015, pos, false);
+				goto end;
+			}
+			if (typeDepth != 0 && s == "var")
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2022, pos, false);
+			}
+			else
+			{
+				_PosStack[_Stackpos] = ++pos;
+				UnvType = (new(container.ToList().Append(new(BlockType.Primitive, s, 1))), NoGeneralExtraTypes);
+				return TypeEnd1(UnvType);
+			}
+		}
+		else if (ExtraTypesList.TryGetValue((namespace_, s), out var netType) || namespace_ == ""
+			&& ExplicitlyConnectedNamespacesList.FindIndex(x => ExtraTypesList.TryGetValue((x, s), out netType)) >= 0)
+		{
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
+				&& (!netType.IsClass || netType.IsSealed))
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2015, pos, false);
+				goto end;
+			}
+			if (constraints == TypeConstraints.NotAbstract && netType.IsAbstract)
+			{
+				UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
+				GenerateMessage(0x2023, pos, false, UnvType.ToString());
+			}
+			var pos2 = pos;
+			_PosStack[_Stackpos] = ++pos;
+			if (netType.GetGenericArguments().Length == 0)
+			{
+				UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
+				return TypeEnd1(UnvType);
+			}
+			if (pos >= end)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				goto end;
+			}
+			else if (IsCurrentLexemOther("["))
+				_PosStack[_Stackpos] = ++pos;
+			else
+			{
+				UnvType = NullType;
+				GenerateMessage(0x200C, pos, false);
+				return TypeEnd1(UnvType);
+			}
+			GeneralArrayParameters template = [];
+			GeneralExtraTypes typeParts = [];
+			for (var i = 0; i < netType.GetGenericArguments().Length; i++)
+				template.Add(new(false, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), ""));
+			typeChainTemplate.Add(template);
+			collectionTypes.Add("associativeArray");
+			return IncreaseStack(nameof(TypeChain), currentTask: nameof(IdentifierType2), pos_: pos,
+				applyPos: true, applyCurrentTask: true, applyCurrentErl: true, currentExtra: (container, s, typeParts));
+		}
+		else if (GeneralTypesList.TryGetValue((innerContainer = container, s), out var value) || namespace_ == ""
+			&& ExplicitlyConnectedNamespacesList.FindIndex(x => GeneralTypesList.TryGetValue((innerContainer = new(x.Split('.').Convert(x =>
+			new Block(BlockType.Namespace, x, 1))), s), out value)) >= 0)
+		{
+			var pos2 = pos;
+			var (ArrayParameters, Attributes) = value;
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
+				&& !IsValidBaseClass(Attributes))
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2015, pos, false);
+				goto end;
+			}
+			if (constraints == TypeConstraints.NotAbstract
+				&& (Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) == TypeAttributes.Static)
+			{
+				UnvType = (new(innerContainer.ToList().Append(new(BlockType.Class, s, 1))),
+					NoGeneralExtraTypes);
+				GenerateMessage(0x2024, pos, false, UnvType.ToString());
+			}
+			else if (constraints == TypeConstraints.NotAbstract
+				&& (Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) is not (0 or TypeAttributes.Sealed
+				or TypeAttributes.Struct))
+			{
+				UnvType = (new(innerContainer.ToList().Append(new(BlockType.Class, s, 1))),
+					NoGeneralExtraTypes);
+				GenerateMessage(0x2023, pos, false, UnvType.ToString());
+			}
+			_PosStack[_Stackpos] = ++pos;
+			if (ArrayParameters.Length == 0)
+			{
+				UnvType = (new(innerContainer.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
+				return TypeEnd1(UnvType);
+			}
+			if (pos >= end)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				goto end;
+			}
+			else if (IsCurrentLexemOther("["))
+				_PosStack[_Stackpos] = ++pos;
+			else
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x200C, pos, false);
+				goto end;
+			}
+			GeneralExtraTypes typeParts = [];
+			typeChainTemplate.Add(ArrayParameters);
+			collectionTypes.Add("associativeArray");
+			return IncreaseStack(nameof(TypeChain), currentTask: nameof(IdentifierType2), pos_: pos,
+				applyPos: true, applyCurrentTask: true, applyCurrentErl: true, currentExtra: (innerContainer, s, typeParts));
+		}
+		else if (UserDefinedTypesList.TryGetValue((innerUserDefinedContainer = container, s), out var value2)
+			|| container.Length == 0 && CheckContainer(mainContainer, stack =>
+			UserDefinedTypesList.TryGetValue((stack, s), out value2), out innerUserDefinedContainer))
+		{
+			var pos2 = pos;
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
+				&& !IsValidBaseClass(value2.Attributes) && !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2015, pos, false);
+				goto end;
+			}
+			if (constraints == TypeConstraints.NotAbstract
+				&& (value2.Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) == TypeAttributes.Static
+				&& !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
+			{
+				UnvType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))),
+					NoGeneralExtraTypes);
+				GenerateMessage(0x2024, pos, false, UnvType.ToString());
+			}
+			else if (constraints == TypeConstraints.NotAbstract
+				&& (value2.Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) is not (0 or TypeAttributes.Sealed
+				or TypeAttributes.Struct) && !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
+			{
+				UnvType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))),
+					NoGeneralExtraTypes);
+				GenerateMessage(0x2023, pos, false, UnvType.ToString());
+			}
+			_PosStack[_Stackpos] = ++pos;
+			if (pos < end && IsCurrentLexemOperator("."))
+			{
+				container.Push(new(BlockType.Class, s, 1));
+				outerClass = outerClass == "" ? s : outerClass + "." + s;
+				_PosStack[_Stackpos] = ++pos;
+				goto l0;
+			}
+			else
+			{
+				UnvType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
+				return TypeEnd1(UnvType);
+			}
+		}
+		else if (ExtraTypeExists(container, s) || container.Length == 0
+			&& CheckContainer(mainContainer, stack => ExtraTypeExists(stack, s), out innerContainer))
+		{
+			var pos2 = pos;
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2015, pos, false);
+				goto end;
+			}
+			_PosStack[_Stackpos] = ++pos;
+			if (pos < end && IsCurrentLexemOperator("."))
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2025, pos, false);
+			}
+			else
+			{
+				UnvType = (new(innerContainer.ToList().Append(new(BlockType.Extra, s, 1))), NoGeneralExtraTypes);
+				return TypeEnd1(UnvType);
+			}
+		}
+		else if (IsNotImplementedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), s])) || IsNotImplementedType(String.Join(".", [.. container.ToList().Convert(X => X.Name)]), s))
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			GenerateMessage(0x202A, pos, false, s);
+		}
+		else if (IsNotImplementedEndOfIdentifier(s, out var s2))
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			GenerateMessage(0x202B, pos, false, s2);
+		}
+		else if (IsOutdatedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), s]), out var useInstead))
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			GenerateMessage(0x202C, pos, false, s, useInstead);
+		}
+		else if (IsOutdatedType(String.Join(".", [.. container.ToList().Convert(X => X.Name)]), s, out useInstead))
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			GenerateMessage(0x202D, pos, false, s, useInstead);
+		}
+		else if (IsOutdatedEndOfIdentifier(s, out useInstead, out s2))
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			GenerateMessage(0x202E, pos, false, s2, useInstead);
+		}
+		else if (IsReservedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), s])) || IsReservedType(String.Join(".", [.. container.ToList().Convert(X => X.Name)]), s))
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			GenerateMessage(0x203A, pos, false, s);
+		}
+		else if (IsReservedEndOfIdentifier(s, out s2))
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			GenerateMessage(0x203B, pos, false, s2);
+		}
+		else
+		{
+			if (container.Length == 0)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2026, pos, false, String.Join(".", [.. container.ToList().Convert(X => X.Name), s]));
+			}
+			else
+			{
+				pos--;
+				UnvType = new UniversalType(container, NoGeneralExtraTypes);
+				return TypeEnd1(UnvType);
+			}
+		}
+	end:
+		return _SuccessStack[_Stackpos] = false;
+	}
+
+	private bool IdentifierType2()
+	{
+		typeChainTemplate.RemoveAt(^1);
+		collectionTypes.RemoveAt(^1);
+		if (!success || extra is not (BlockStack innerContainer, String s, GeneralExtraTypes types))
+		{
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		UniversalType UnvType = (new(innerContainer.ToList().Append(new(BlockType.Class, s, 1))), types);
+		return TypeEnd2(UnvType);
+	}
+
+	private bool? PrimitiveType(TypeConstraints constraints, String s)
+	{
+		UniversalType UnvType;
+		if (s.ToString() is "short" or "long")
+		{
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2015, pos, false);
+				return _SuccessStack[_Stackpos] = false;
+			}
+			_PosStack[_Stackpos] = ++pos;
+			if (pos >= end)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return _SuccessStack[_Stackpos] = false;
+			}
+			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "char" || lexems[pos].String == "int"
+				/*|| s == "long" && (lexems[pos].input == "long" || lexems[pos].input == "real")*/))
+			{
+				UnvType = (new([new(BlockType.Primitive, s + " " + lexems[pos].String, 1)]), NoGeneralExtraTypes);
+				_PosStack[_Stackpos] = ++pos;
+				return TypeEnd1(UnvType);
+			}
+			else
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2027, pos, false);
+				return _SuccessStack[_Stackpos] = false;
+			}
+		}
+		else if (s == "unsigned")
+		{
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2015, pos, false);
+				return _SuccessStack[_Stackpos] = false;
+			}
+			String mediumWord = [];
+			_PosStack[_Stackpos] = ++pos;
+			if (pos >= end)
+			{
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return _SuccessStack[_Stackpos] = false;
+			}
+			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "short" || lexems[pos].String == "long"))
+			{
+				mediumWord = lexems[pos].String + " ";
+				_PosStack[_Stackpos] = ++pos;
+			}
+			if (pos >= end)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return _SuccessStack[_Stackpos] = false;
+			}
+			else if (lexems[pos].Type == LexemType.Identifier && lexems[pos].String == "int"/* || lexems[pos].input == "long"*/)
+			{
+				UnvType = (new([new(BlockType.Primitive, s + " " + mediumWord + lexems[pos].String, 1)]), NoGeneralExtraTypes);
+				_PosStack[_Stackpos] = ++pos;
+				return TypeEnd1(UnvType);
+			}
+			else
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2028, pos, false);
+				return _SuccessStack[_Stackpos] = false;
+			}
+		}
+		else if (s == "list")
+		{
+			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
+			{
+				UnvType = NullType;
+				GenerateMessage(0x2015, pos, false);
+				return _SuccessStack[_Stackpos] = false;
+			}
+			if (collectionTypes[^1] == "list")
+				GenerateMessage(0x8003, pos, false);
+			_PosStack[_Stackpos] = ++pos;
+			GeneralExtraTypes typeParts = [];
+			if (pos >= end)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return _SuccessStack[_Stackpos] = false;
+			}
+			else if (IsCurrentLexemOther("("))
+				_PosStack[_Stackpos] = ++pos;
+			else
+			{
+				UnvType = NullType;
+				GenerateMessage(0x200A, pos, false);
+				goto list0;
+			}
+			if (pos >= end)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return _SuccessStack[_Stackpos] = false;
+			}
+			else if (lexems[pos].Type == LexemType.Int)
+			{
+				_ExtraStack[_Stackpos - 1] = typeParts;
+				typeParts.Add(new(lexems[pos].String, 0, []));
+				_PosStack[_Stackpos] = ++pos;
+			}
+			else if (!IsCurrentLexemOther(")"))
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x2017, pos, false);
+				goto list0;
+			}
+			if (pos >= end)
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return _SuccessStack[_Stackpos] = false;
+			}
+			else if (IsCurrentLexemOther(")"))
+			{
+				_PosStack[_Stackpos] = ++pos;
+				goto list1;
+			}
+			else
+			{
+				UnvType = NullType;
+				_ExtraStack[_Stackpos - 1] = UnvType;
+				_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+				GenerateMessage(0x200B, pos, false);
+				goto list0;
+			}
+		list0:
+			typeDepth++;
+			CloseBracket(ref pos, ")", ref errorsList!, false, end);
+			collectionTypes.Add("list");
+			return IncreaseStack(nameof(Type), currentTask: nameof(TypeListFail), pos_: pos,
+				applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
+		list1:
+			typeDepth++;
+			collectionTypes.Add("list");
+			return IncreaseStack(nameof(Type), currentTask: nameof(TypeList), pos_: pos,
+				applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
+		}
+		UnvType = NullType;
+		return null;
+	}
+
+	private bool TypeListFail()
+	{
+		typeDepth--;
+		collectionTypes.RemoveAt(^1);
+		if (!success || extra is not UniversalType InnerUnvType)
+		{
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		if (_ExtraStack[_Stackpos - 1] is not GeneralExtraTypes typeParts)
+			typeParts = [];
+		_ExtraStack[_Stackpos - 1] = new UniversalType(ListBlockStack,
+			[.. typeParts, new("type", pos, container) { Extra = InnerUnvType }]);
+		return Default();
+	}
+
+	private bool TypeList()
+	{
+		typeDepth--;
+		collectionTypes.RemoveAt(^1);
+		if (!success || extra is not UniversalType InnerUnvType)
+		{
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		if (_ExtraStack[_Stackpos - 1] is not GeneralExtraTypes typeParts)
+			typeParts = [];
+		UniversalType UnvType = new(ListBlockStack,
+			[.. typeParts, new("type", pos, container) { Extra = InnerUnvType }]);
+		return TypeEnd1(UnvType);
+	}
+
+	private bool TupleType()
+	{
+		_PosStack[_Stackpos] = ++pos;
+		typeChainTemplate.Add([new(true, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), "")]);
+		collectionTypes.Add("tuple");
+		return IncreaseStack(nameof(TypeChain), currentTask: nameof(TupleType2), pos_: pos,
+			applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
+	}
+
+	private bool TupleType2()
+	{
+		UniversalType UnvType;
+		if (!success || extra is not GeneralExtraTypes innerArrayParameters)
+			return _SuccessStack[_Stackpos] = false;
+		if (pos >= end)
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		else if (IsCurrentLexemOther(")"))
+			_PosStack[_Stackpos] = ++pos;
+		else
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			GenerateMessage(0x200B, pos, false);
+			CloseBracket(ref pos, ")", ref errorsList, false, end);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		UnvType = (new([new(BlockType.Primitive, "tuple", 1)]), innerArrayParameters);
+		return TypeEnd1(UnvType);
+	}
+
+	private bool TypeEnd1(UniversalType UnvType)
+	{
+		if (pos < end && IsCurrentLexemOther("["))
+			_PosStack[_Stackpos] = ++pos;
+		else
+		{
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+			return Default();
+		}
+		return TypeEnd3(UnvType);
+	}
+
+	private bool TypeEnd2(UniversalType UnvType)
+	{
+		if (pos < end && IsCurrentLexemOther(","))
+			_PosStack[_Stackpos] = ++pos;
+		else
+			return TypeEnd4(UnvType);
+		return TypeEnd3(UnvType);
+	}
+
+	private bool TypeEnd3(UniversalType UnvType)
+	{
+		if (pos >= end)
+		{
+			UnvType = NullType;
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		else if (lexems[pos].Type == LexemType.Int && int.TryParse(lexems[pos].String.ToString(), out var number))
+		{
+			if (number == 0)
+				GenerateMessage(0x8004, pos, false);
+			else if (number >= 2)
+			{
+				var UnvType2 = UnvType;
+				var pos2 = pos - 1;
+				UnvType = new(TupleBlockStack, new(RedStarLinq.Fill(number, _ =>
+					new TreeBranch("type", pos2, container) { Extra = UnvType2 })));
+			}
+			_PosStack[_Stackpos] = ++pos;
+		}
+		else
+		{
+			UnvType = NullType;
+			GenerateMessage(0x2016, pos, false);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		return TypeEnd4(UnvType);
+	}
+
+	private bool TypeEnd4(UniversalType UnvType)
+	{
+		if (pos >= end)
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		else if (IsCurrentLexemOther("]"))
+		{
+			_PosStack[_Stackpos] = ++pos;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
 			return Default();
 		}
 		else
 		{
-			_ErLStack[_Stackpos].AddRange(errorsList);
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			GenerateMessage(0x200D, pos, false);
+			CloseBracket(ref pos, "]", ref errorsList, false, end);
 			return _SuccessStack[_Stackpos] = false;
+		}
+	}
+
+	private bool TypeChain()
+	{
+		GeneralExtraTypes types = [];
+		if (typeChainTemplate[^1].Length == 0)
+		{
+			types = NoGeneralExtraTypes;
+			return _SuccessStack[_Stackpos] = false;
+		}
+		return IncreaseStack(nameof(TypeChainIteration), currentTask: nameof(TypeChain2), pos_: pos,
+			applyPos: true, applyCurrentTask: true, applyCurrentErl: true, currentExtra: types);
+	}
+
+	private bool TypeChain2()
+	{
+		if (!success || _TaskStack[_Stackpos] == nameof(IdentifierType2)
+			&& _ExtraStack[_Stackpos - 1] is not (BlockStack, String, GeneralExtraTypes)
+			|| extra is not GeneralExtraTypes tempTypes)
+		{
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		if (_ExtraStack[_Stackpos - 1] is (BlockStack, String, GeneralExtraTypes types))
+			types.AddRange(tempTypes);
+		else
+			_ExtraStack[_Stackpos - 1] = tempTypes;
+		return Default();
+	}
+
+	private bool TypeChainIteration()
+	{
+		if (_ExtraStack[_Stackpos - 1] is not GeneralExtraTypes types)
+		{
+			types = NoGeneralExtraTypes;
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		if (TypeIsPrimitive(typeChainTemplate[^1][0].ArrayParameterType) && typeChainTemplate[^1][0].ArrayParameterType.Peek().Name == "typename")
+		{
+			tpos.Add(0);
+			typeDepth++;
+			collectionTypes.Add(collectionTypes[^1]);
+			return IncreaseStack(nameof(Type), currentTask: nameof(TypeChainIteration2), pos_: pos,
+				applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
+		}
+		else if (TypeIsPrimitive(typeChainTemplate[^1][tpos[^1]].ArrayParameterType) && typeChainTemplate[^1][tpos[^1]].ArrayParameterType.Peek().Name == "int")
+		{
+			var minus = false;
+			if (pos >= end)
+			{
+				types = NoGeneralExtraTypes;
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return _SuccessStack[_Stackpos] = false;
+			}
+			else if (IsCurrentLexemOperator("-"))
+			{
+				minus = true;
+				_PosStack[_Stackpos] = ++pos;
+			}
+			if (pos >= end)
+			{
+				types = NoGeneralExtraTypes;
+				GenerateUnexpectedEndOfTypeError(ref errorsList);
+				return _SuccessStack[_Stackpos] = false;
+			}
+			else if (lexems[pos].Type == LexemType.Int)
+				_PosStack[_Stackpos] = ++pos;
+			else
+			{
+				types = NoGeneralExtraTypes;
+				GenerateMessage(0x2016, pos, false);
+				return _SuccessStack[_Stackpos] = false;
+			}
+			types.Add(new((minus ? "-" : "") + lexems[pos - 1].String, pos - 1, container));
+		}
+		_TaskStack[_Stackpos] = nameof(TypeChainIteration2);
+		return true;
+	}
+
+	private bool TypeChainIteration2()
+	{
+		if (extra is not UniversalType InnerUnvType || _ExtraStack[_Stackpos - 1] is not GeneralExtraTypes types)
+		{
+			types = NoGeneralExtraTypes;
+			_ExtraStack[_Stackpos - 1] = types;
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		if (!success)
+		{
+			ReduceStack();
+			types.Add(new("type", pos, container) { Extra = InnerUnvType });
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		String itemName = [];
+		if (pos >= end)
+		{
+			ReduceStack();
+			types = NoGeneralExtraTypes;
+			_ExtraStack[_Stackpos - 1] = types;
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		else if (lexems[pos].Type == LexemType.Identifier)
+		{
+			itemName = lexems[pos].String;
+			_PosStack[_Stackpos] = ++pos;
+		}
+		TreeBranch branch = new("type", pos - 1, container) { Extra = InnerUnvType };
+		if (collectionTypes[^1] == "tuple" && TypeEqualsToPrimitive(InnerUnvType, "tuple", false)
+			&& InnerUnvType.ExtraTypes.Length == 2 && InnerUnvType.ExtraTypes[1].Info != "type"
+			&& int.TryParse(InnerUnvType.ExtraTypes[1].Info.ToString(), out _))
+			types.AddRange(InnerUnvType.ExtraTypes.Values);
+		else if (itemName != "")
+		{
+			if (!types.TryAdd(itemName, branch))
+				types.Add(branch);
+		}
+		else
+			types.Add(branch);
+		if (pos >= end)
+		{
+			ReduceStack();
+			types = NoGeneralExtraTypes;
+			_ExtraStack[_Stackpos - 1] = types;
+			GenerateUnexpectedEndOfTypeError(ref errorsList);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		else if (IsCurrentLexemOperator(","))
+		{
+			if (typeChainTemplate[^1][tpos[^1]].ArrayParameterPackage == false)
+			{
+				tpos[^1]++;
+				if (tpos[^1] >= typeChainTemplate[^1].Length)
+				{
+					ReduceStack();
+					return Default();
+				}
+			}
+			return IncreaseStack(nameof(Type), pos_: pos + 1, applyPos: true, applyCurrentErl: true);
+		}
+		else
+		{
+			if (tpos[^1] >= typeChainTemplate[^1].Length - 1 || tpos[^1] >= typeChainTemplate[^1].Length - 2 && typeChainTemplate[^1][tpos[^1] + 1].ArrayParameterPackage)
+			{
+				ReduceStack();
+				_ExtraStack[_Stackpos - 1] = types;
+				return Default();
+			}
+			else
+			{
+				ReduceStack();
+				types = NoGeneralExtraTypes;
+				_ExtraStack[_Stackpos - 1] = types;
+				GenerateMessage(0x2018, pos, false);
+				return _SuccessStack[_Stackpos] = false;
+			}
+		}
+		void ReduceStack()
+		{
+			typeDepth--;
+			tpos.RemoveAt(^1);
+			collectionTypes.RemoveAt(^1);
 		}
 	}
 
@@ -2366,684 +3210,6 @@ public partial class MainParsing : LexemStream
 		}
 		else
 			pos++;
-		return null;
-	}
-
-	private bool ParseType(ref int pos, int end, BlockStack mainContainer, out UniversalType UnvType,
-		ref List<String>? errorsList, bool inner = false, string collectionType = "",
-		TypeConstraints constraints = TypeConstraints.None)
-	{
-		try
-		{
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (IsCurrentLexemKeyword("null"))
-			{
-				UnvType = NullType;
-				pos++;
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-			else if (lexems[pos].Type == LexemType.Identifier)
-				return ParseIdentifierType(ref pos, end, mainContainer, out UnvType,
-					ref errorsList, inner, collectionType, constraints);
-			else if (!IsCurrentLexemOther("("))
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2014, pos, false);
-				return false;
-			}
-			else if (constraints == TypeConstraints.None)
-				return ParseTupleType(ref pos, end, mainContainer, out UnvType, ref errorsList);
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2015, pos, false);
-				return false;
-			}
-		}
-		catch (StackOverflowException) when (!inner)
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateMessage(0x2021, pos, false);
-			return false;
-		}
-	}
-
-	private bool ParseIdentifierType(ref int pos, int end, BlockStack mainContainer, out UniversalType UnvType,
-		ref List<String>? errorsList, bool inner = false, string collectionType = "",
-		TypeConstraints constraints = TypeConstraints.None)
-	{
-		String s, namespace_ = [], outerClass = [];
-		BlockStack container = new(), innerContainer, innerUserDefinedContainer;
-	l0:
-		s = lexems[pos].String;
-		if (ParsePrimitiveType(ref pos, end, mainContainer, out UnvType,
-			ref errorsList, collectionType, constraints, s) is bool b)
-			return b;
-		if (NamespacesList.Contains(namespace_ == "" ? s : namespace_ + "." + s) || UserDefinedNamespacesList.Contains(namespace_ == "" ? s : namespace_ + "." + s))
-		{
-			pos++;
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (IsCurrentLexemOperator("."))
-			{
-				container.Push(new(BlockType.Namespace, s, 1));
-				namespace_ = namespace_ == "" ? s : namespace_ + "." + s;
-				pos++;
-				goto l0;
-			}
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2020, pos, false);
-			}
-		}
-		else if (container.Length == 0 && PrimitiveTypesList.ContainsKey(s))
-		{
-			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2015, pos, false);
-				return false;
-			}
-			if (inner && s == "var")
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2022, pos, false);
-			}
-			else
-			{
-				pos++;
-				UnvType = (new(container.ToList().Append(new(BlockType.Primitive, s, 1))), NoGeneralExtraTypes);
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-		}
-		else if (ExtraTypesList.TryGetValue((namespace_, s), out var netType) || namespace_ == ""
-			&& ExplicitlyConnectedNamespacesList.FindIndex(x => ExtraTypesList.TryGetValue((x, s), out netType)) >= 0)
-		{
-			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
-				&& (!netType.IsClass || netType.IsSealed))
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2015, pos, false);
-				return false;
-			}
-			if (constraints == TypeConstraints.NotAbstract && netType.IsAbstract)
-			{
-				UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
-				GenerateMessage(0x2023, pos, false, UnvType.ToString());
-			}
-			var pos2 = pos;
-			pos++;
-			if (netType.GetGenericArguments().Length == 0)
-			{
-				UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (IsCurrentLexemOther("["))
-				pos++;
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x200C, pos, false);
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-			GeneralArrayParameters template = [];
-			for (var i = 0; i < netType.GetGenericArguments().Length; i++)
-				template.Add(new(false, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), ""));
-			ParseTypeChain(ref pos, end, mainContainer, template, out var innerArrayParameters, ref errorsList, "associativeArray");
-			UnvType = (new(container.ToList().Append(new(BlockType.Class, s, 1))), innerArrayParameters);
-			return EndParseType2(ref pos, end, ref UnvType, ref errorsList);
-		}
-		else if (GeneralTypesList.TryGetValue((innerContainer = container, s), out var value) || namespace_ == ""
-			&& ExplicitlyConnectedNamespacesList.FindIndex(x => GeneralTypesList.TryGetValue((innerContainer = new(x.Split('.').Convert(x =>
-			new Block(BlockType.Namespace, x, 1))), s), out value)) >= 0)
-		{
-			var pos2 = pos;
-			var (ArrayParameters, Attributes) = value;
-			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
-				&& !IsValidBaseClass(Attributes))
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2015, pos, false);
-				return false;
-			}
-			if (constraints == TypeConstraints.NotAbstract
-				&& (Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) == TypeAttributes.Static)
-			{
-				UnvType = (new(innerContainer.ToList().Append(new(BlockType.Class, s, 1))),
-					NoGeneralExtraTypes);
-				GenerateMessage(0x2024, pos, false, UnvType.ToString());
-			}
-			else if (constraints == TypeConstraints.NotAbstract
-				&& (Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) is not 0 or TypeAttributes.Sealed
-				or TypeAttributes.Struct)
-			{
-				UnvType = (new(innerContainer.ToList().Append(new(BlockType.Class, s, 1))),
-					NoGeneralExtraTypes);
-				GenerateMessage(0x2023, pos, false, UnvType.ToString());
-			}
-			pos++;
-			if (ArrayParameters.Length == 0)
-			{
-				UnvType = (new(innerContainer.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (IsCurrentLexemOther("["))
-				pos++;
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x200C, pos, false);
-				return false;
-			}
-			ParseTypeChain(ref pos, end, mainContainer, ArrayParameters, out var innerArrayParameters, ref errorsList, "associativeArray");
-			UnvType = (new(innerContainer.ToList().Append(new(BlockType.Class, s, 1))), innerArrayParameters);
-			return EndParseType2(ref pos, end, ref UnvType, ref errorsList);
-		}
-		else if (UserDefinedTypesList.TryGetValue((innerUserDefinedContainer = container, s), out var value2)
-			|| container.Length == 0 && CheckContainer(mainContainer, stack =>
-			UserDefinedTypesList.TryGetValue((stack, s), out value2), out innerUserDefinedContainer))
-		{
-			var pos2 = pos;
-			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
-				&& !IsValidBaseClass(value2.Attributes) && !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2015, pos, false);
-				return false;
-			}
-			if (constraints == TypeConstraints.NotAbstract
-				&& (value2.Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) == TypeAttributes.Static
-				&& !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
-			{
-				UnvType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))),
-					NoGeneralExtraTypes);
-				GenerateMessage(0x2024, pos, false, UnvType.ToString());
-			}
-			else if (constraints == TypeConstraints.NotAbstract
-				&& (value2.Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) is not 0 or TypeAttributes.Sealed
-				or TypeAttributes.Struct && !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
-			{
-				UnvType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))),
-					NoGeneralExtraTypes);
-				GenerateMessage(0x2023, pos, false, UnvType.ToString());
-			}
-			pos++;
-			if (pos < end && IsCurrentLexemOperator("."))
-			{
-				container.Push(new(BlockType.Class, s, 1));
-				outerClass = outerClass == "" ? s : outerClass + "." + s;
-				pos++;
-				goto l0;
-			}
-			else
-			{
-				UnvType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))), NoGeneralExtraTypes);
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-		}
-		else if (ExtraTypeExists(container, s) || container.Length == 0
-			&& CheckContainer(mainContainer, stack => ExtraTypeExists(stack, s), out innerContainer))
-		{
-			var pos2 = pos;
-			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2015, pos, false);
-				return false;
-			}
-			pos++;
-			if (pos < end && IsCurrentLexemOperator("."))
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2025, pos, false);
-			}
-			else
-			{
-				UnvType = (new(innerContainer.ToList().Append(new(BlockType.Extra, s, 1))), NoGeneralExtraTypes);
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-		}
-		else if (IsNotImplementedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), s])) || IsNotImplementedType(String.Join(".", [.. container.ToList().Convert(X => X.Name)]), s))
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateMessage(0x202A, pos, false, s);
-		}
-		else if (IsNotImplementedEndOfIdentifier(s, out var s2))
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateMessage(0x202B, pos, false, s2);
-		}
-		else if (IsOutdatedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), s]), out var useInstead))
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateMessage(0x202C, pos, false, s, useInstead);
-		}
-		else if (IsOutdatedType(String.Join(".", [.. container.ToList().Convert(X => X.Name)]), s, out useInstead))
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateMessage(0x202D, pos, false, s, useInstead);
-		}
-		else if (IsOutdatedEndOfIdentifier(s, out useInstead, out s2))
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateMessage(0x202E, pos, false, s2, useInstead);
-		}
-		else if (IsReservedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), s])) || IsReservedType(String.Join(".", [.. container.ToList().Convert(X => X.Name)]), s))
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateMessage(0x203A, pos, false, s);
-		}
-		else if (IsReservedEndOfIdentifier(s, out s2))
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateMessage(0x203B, pos, false, s2);
-		}
-		else
-		{
-			if (container.Length == 0)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2026, pos, false, String.Join(".", [.. container.ToList().Convert(X => X.Name), s]));
-			}
-			else
-			{
-				pos--;
-				UnvType = (container, NoGeneralExtraTypes);
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-		}
-		return false;
-	}
-
-	private bool? ParsePrimitiveType(ref int pos, int end, BlockStack mainContainer, out UniversalType UnvType,
-		ref List<String>? errorsList, string collectionType, TypeConstraints constraints, String s)
-	{
-		if (s.ToString() is "short" or "long")
-		{
-			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2015, pos, false);
-				return false;
-			}
-			pos++;
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "char" || lexems[pos].String == "int"
-				/*|| s == "long" && (lexems[pos].input == "long" || lexems[pos].input == "real")*/))
-			{
-				UnvType = (new([new(BlockType.Primitive, s + " " + lexems[pos].String, 1)]), NoGeneralExtraTypes);
-				pos++;
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2027, pos, false);
-				return false;
-			}
-		}
-		else if (s == "unsigned")
-		{
-			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2015, pos, false);
-				return false;
-			}
-			String mediumWord = [];
-			pos++;
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (lexems[pos].Type == LexemType.Identifier && (lexems[pos].String == "short" || lexems[pos].String == "long"))
-			{
-				mediumWord = lexems[pos].String + " ";
-				pos++;
-			}
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (lexems[pos].Type == LexemType.Identifier && lexems[pos].String == "int"/* || lexems[pos].input == "long"*/)
-			{
-				UnvType = (new([new(BlockType.Primitive, s + " " + mediumWord + lexems[pos].String, 1)]), NoGeneralExtraTypes);
-				pos++;
-				return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-			}
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2028, pos, false);
-				return false;
-			}
-		}
-		else if (s == "list")
-		{
-			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2015, pos, false);
-				return false;
-			}
-			if (collectionType == "list")
-				GenerateMessage(0x8003, pos, false);
-			pos++;
-			GeneralExtraTypes typeParts = [];
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (IsCurrentLexemOther("("))
-				pos++;
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x200A, pos, false);
-				goto list0;
-			}
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (lexems[pos].Type == LexemType.Int)
-			{
-				typeParts.Add(new(lexems[pos].String, 0, []));
-				pos++;
-			}
-			else if (!IsCurrentLexemOther(")"))
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x2017, pos, false);
-				goto list0;
-			}
-			if (pos >= end)
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (IsCurrentLexemOther(")"))
-			{
-				pos++;
-				goto list1;
-			}
-			else
-			{
-				UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-				GenerateMessage(0x200B, pos, false);
-				goto list0;
-			}
-		list0:
-			CloseBracket(ref pos, ")", ref errorsList!, false, end);
-			ParseType(ref pos, end, mainContainer, out var InnerUnvType, ref errorsList, true, "list");
-			typeParts.Add(new("type", pos, container) { Extra = InnerUnvType });
-			UnvType = (new([new(BlockType.Primitive, "list", 1)]), typeParts);
-			return false;
-		list1:
-			ParseType(ref pos, end, mainContainer, out var InnerUnvType2, ref errorsList, true, "list");
-			typeParts.Add(new("type", pos, container) { Extra = InnerUnvType2 });
-			UnvType = (new([new(BlockType.Primitive, "list", 1)]), typeParts);
-			return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-		}
-		UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-		return null;
-	}
-
-	private bool ParseTupleType(ref int pos, int end, BlockStack mainContainer, out UniversalType UnvType, ref List<String>? errorsList)
-	{
-		pos++;
-		if (ParseTypeChain(ref pos, end, mainContainer, [new(true, NoGeneralExtraTypes, new([new(BlockType.Primitive, "typename", 1)]), "")], out var innerArrayParameters, ref errorsList, "tuple") == false)
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			return false;
-		}
-		if (pos >= end)
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateUnexpectedEndOfTypeError(ref errorsList);
-			return false;
-		}
-		else if (IsCurrentLexemOther(")"))
-			pos++;
-		else
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateMessage(0x200B, pos, false);
-			CloseBracket(ref pos, ")", ref errorsList, false, end);
-			return false;
-		}
-		UnvType = (new([new(BlockType.Primitive, "tuple", 1)]), innerArrayParameters);
-		return EndParseType1(ref pos, end, ref UnvType, ref errorsList);
-	}
-
-	private bool EndParseType1(ref int pos, int end, ref UniversalType UnvType, ref List<String>? errorsList)
-	{
-		if (pos < end && IsCurrentLexemOther("["))
-			pos++;
-		else
-			return true;
-		return EndParseType3(ref pos, end, ref UnvType, ref errorsList);
-	}
-
-	private bool EndParseType2(ref int pos, int end, ref UniversalType UnvType, ref List<String>? errorsList)
-	{
-		if (pos < end && IsCurrentLexemOther(","))
-			pos++;
-		else
-			return EndParseType4(ref pos, end, ref UnvType, ref errorsList);
-		return EndParseType3(ref pos, end, ref UnvType, ref errorsList);
-	}
-
-	private bool EndParseType3(ref int pos, int end, ref UniversalType UnvType, ref List<String>? errorsList)
-	{
-		if (pos >= end)
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateUnexpectedEndOfTypeError(ref errorsList);
-			return false;
-		}
-		else if (lexems[pos].Type == LexemType.Int && int.TryParse(lexems[pos].String.ToString(), out var number))
-		{
-			if (number == 0)
-				GenerateMessage(0x8004, pos, false);
-			else if (number >= 2)
-			{
-				var UnvType2 = UnvType;
-				var pos2 = pos;
-				UnvType = new(TupleBlockStack, new(RedStarLinq.Fill(number, _ =>
-					new TreeBranch("type", pos2, container) { Extra = UnvType2 })));
-			}
-			pos++;
-		}
-		else
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateMessage(0x2016, pos, false);
-			return false;
-		}
-		return EndParseType4(ref pos, end, ref UnvType, ref errorsList);
-	}
-
-	private bool EndParseType4(ref int pos, int end, ref UniversalType UnvType, ref List<String>? errorsList)
-	{
-		if (pos >= end)
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateUnexpectedEndOfTypeError(ref errorsList);
-			return false;
-		}
-		else if (IsCurrentLexemOther("]"))
-		{
-			pos++;
-			return true;
-		}
-		else
-		{
-			UnvType = (EmptyBlockStack, NoGeneralExtraTypes);
-			GenerateMessage(0x200D, pos, false);
-			CloseBracket(ref pos, "]", ref errorsList, false, end);
-			return false;
-		}
-	}
-
-	private bool ParseTypeChain(ref int pos, int end, BlockStack mainContainer, GeneralArrayParameters template, out GeneralExtraTypes types, ref List<String>? errorsList, string collectionType = "")
-	{
-		List<TreeBranch> tempTrees = [];
-		GeneralExtraTypes tempTypes = [];
-		var tpos = 0;
-		types = [];
-		if (template.Length == 0)
-		{
-			types = NoGeneralExtraTypes;
-			return false;
-		}
-		while (true)
-		{
-			if (ParseTypeChainIteration(ref pos, end, mainContainer, template, ref types, ref errorsList, collectionType, tempTrees, tempTypes, ref tpos) is bool b)
-				return b;
-		}
-	}
-
-	private bool? ParseTypeChainIteration(ref int pos, int end, BlockStack mainContainer, GeneralArrayParameters template, ref GeneralExtraTypes types, ref List<String>? errorsList, String collectionType, List<TreeBranch> tempTrees, GeneralExtraTypes tempTypes, ref int tpos)
-	{
-		if (TypeIsPrimitive(template[tpos].ArrayParameterType) && template[tpos].ArrayParameterType.Peek().Name == "typename")
-		{
-			if (!ParseType(ref pos, end, mainContainer, out var InnerUnvType, ref errorsList, true, collectionType.ToString()))
-			{
-				types = NoGeneralExtraTypes;
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			String itemName = [];
-			if (pos >= end)
-			{
-				types = NoGeneralExtraTypes;
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (lexems[pos].Type == LexemType.Identifier)
-			{
-				itemName = lexems[pos].String;
-				pos++;
-			}
-			TreeBranch branch = new("type", pos, container) { Extra = InnerUnvType };
-			if (collectionType == "tuple" && TypeEqualsToPrimitive(InnerUnvType, "tuple", false) && InnerUnvType.ExtraTypes.Length == 2 && InnerUnvType.ExtraTypes[1].Info != "type" && int.TryParse(InnerUnvType.ExtraTypes[1].Info.ToString(), out _))
-				tempTypes.AddRange(InnerUnvType.ExtraTypes.Values);
-			else if (itemName != "")
-			{
-				if (!tempTypes.TryAdd(itemName, branch))
-					tempTypes.Add(branch);
-			}
-			else
-				tempTypes.Add(branch);
-		}
-		else if (TypeIsPrimitive(template[tpos].ArrayParameterType) && template[tpos].ArrayParameterType.Peek().Name == "int")
-		{
-			var minus = false;
-			if (pos >= end)
-			{
-				types = NoGeneralExtraTypes;
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (IsCurrentLexemOperator("-"))
-			{
-				minus = true;
-				pos++;
-			}
-			if (pos >= end)
-			{
-				types = NoGeneralExtraTypes;
-				GenerateUnexpectedEndOfTypeError(ref errorsList);
-				return false;
-			}
-			else if (lexems[pos].Type == LexemType.Int)
-				pos++;
-			else
-			{
-				types = NoGeneralExtraTypes;
-				GenerateMessage(0x2016, pos, false);
-				return false;
-			}
-			tempTrees.Add(new((minus ? "-" : "") + lexems[pos].String, pos, mainContainer));
-			tempTypes.Add(tempTrees[^1]);
-		}
-		if (pos >= end)
-		{
-			types = NoGeneralExtraTypes;
-			GenerateUnexpectedEndOfTypeError(ref errorsList);
-			return false;
-		}
-		else if (IsCurrentLexemOperator(","))
-		{
-			if (ParseCommaTypeChain(ref pos, template, ref types, tempTypes, ref tpos) is bool b)
-				return b;
-		}
-		else
-		{
-			if (tpos >= template.Length - 1 || tpos >= template.Length - 2 && template[tpos + 1].ArrayParameterPackage)
-			{
-				types = tempTypes;
-				return true;
-			}
-			else
-			{
-				types = NoGeneralExtraTypes;
-				GenerateMessage(0x2018, pos, false);
-				return false;
-			}
-		}
-		return null;
-	}
-
-	private static bool? ParseCommaTypeChain(ref int pos, GeneralArrayParameters template, ref GeneralExtraTypes types, GeneralExtraTypes tempTypes, ref int tpos)
-	{
-		if (template[tpos].ArrayParameterPackage == false)
-		{
-			tpos++;
-			if (tpos >= template.Length)
-			{
-				types = tempTypes;
-				return true;
-			}
-		}
-		pos++;
 		return null;
 	}
 

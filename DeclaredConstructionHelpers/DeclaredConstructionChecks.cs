@@ -625,7 +625,7 @@ public static class DeclaredConstructionChecks
 		if (UserDefinedConstructorsList.TryGetValue(container.MainType, out var temp_constructors)
 			&& !(UserDefinedTypesList.TryGetValue(SplitType(container.MainType), out var userDefinedType)
 			&& (userDefinedType.Attributes & (TypeAttributes.Struct | TypeAttributes.Static))
-			is not 0 or TypeAttributes.Sealed or TypeAttributes.Struct))
+			is not (0 or TypeAttributes.Sealed or TypeAttributes.Struct)))
 		{
 			constructors = [.. temp_constructors, .. ConstructorsExist(userDefinedType.BaseType, parameterTypes, out var baseConstructors)
 				? baseConstructors : [], .. UserDefinedConstructorsExist(userDefinedType.BaseType, parameterTypes, out baseConstructors)

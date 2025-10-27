@@ -349,7 +349,8 @@ public sealed class SemanticTree
 		{
 			if ((Attributes & FunctionAttributes.New) != FunctionAttributes.New)
 				GenerateMessage(ref errorsList, 0x8008, branch.Pos, name);
-			result.AddRange("new virtual ");
+			result.AddRange("new " + ((userDefinedType.Attributes & TypeAttributes.Static)
+				== TypeAttributes.Sealed ? "" : "virtual "));
 		}
 		result.AddRange(Type(ReturnUnvType)).Add(' ');
 		if (EscapedKeywordsList.Contains(name))
