@@ -846,7 +846,7 @@ public static class DeclaredConstructions
 			0x2014 => "expected: \"null\" or identifier or tuple",
 			0x2015 => "expected: non-sealed class or interface",
 			0x2016 => "expected: int number; variables and complex expressions at this place are under development",
-			0x2017 => "expected: int number or ); variables and complex expressions at this place are under development",
+			0x2017 => "this expression must be implicitly convertible to the \"int\" type",
 			0x2018 => "expected: comma; chain of indexes is not ended",
 			0x2019 => "incorrect construction in parameters list",
 			0x201A => "the parameter with the \"params\" keyword must be last in the list",
@@ -977,6 +977,8 @@ public static class DeclaredConstructions
 			0x4053 => "the local constant must have a value",
 			0x4054 => "the local constant declaration must not contain the other operators than the single assignment",
 			0x4055 => "too deep constant definition tree",
+			0x4056 => "this expression must be the type but it isn't",
+			0x4057 => "this expression must be constant and implicitly convertible to the \"int\" type",
 			0x8000 => "the properties and the methods are static in the static class implicitly;" +
 				" the word \"static\" is not necessary",
 			0x8001 => "the semicolon in the end of the line with condition or cycle may easily be unnoticed" +
@@ -1052,7 +1054,12 @@ public readonly record struct UniversalType(BlockStack MainType, GeneralExtraTyp
 					result.Add('(');
 				else
 					result.AddRange(", ");
+				var bList = TypeEqualsToPrimitive(prev, "list", false);
+				if (bList)
+					result.Add('(');
 				result.AddRange(prev.ToString());
+				if (bList)
+					result.Add(')');
 				if (repeats != 1)
 					result.Add('[').AddRange(repeats.ToString()).Add(']');
 				repeats = 1;

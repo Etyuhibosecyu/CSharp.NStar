@@ -546,6 +546,15 @@ list() (list() (list() (string, int, real), list() (string, int, real), list() (
 	= ((b, b, b), (b, b, b), (b, b, b));
 return c[1, 2, 3];
 ", """((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)))""", "Ошибок нет")]
+	[DataRow(@"list(2) (string, int, real) a = Fill((""A"", 77777, 3.14159), 3);
+list() (list(2) (string, int, real), list(2) (string, int, real),
+	list(2) (string, int, real)) b = ((a, a, a), (a, a, a), (a, a, a));
+list() (list() (list(2) (string, int, real), list(2) (string, int, real), list(2) (string, int, real)),
+	list() (list(2) (string, int, real), list(2) (string, int, real), list(2) (string, int, real)),
+	list() (list(2) (string, int, real), list(2) (string, int, real), list(2) (string, int, real))) c
+	= ((b, b, b), (b, b, b), (b, b, b));
+return c[1, 2, 3];
+", """(((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159))), ((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159))), ((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159))))""", "Ошибок нет")]
 	[DataRow(@"using System.Collections;
 ListHashSet[string] hs = new ListHashSet[string](3, ""A"", ""B"", ""C"");
 hs.Add(""B"");
@@ -765,7 +774,6 @@ hs.Add(""3"");
 hs.Add(""2"");
 return hs.remove(2);
 ", "null", @"Error 4033 in line 7 at position 10: the type ""ListHashSet"" does not contain member ""remove""
-Error 4000 in line 7 at position 16: internal compiler error
 ")]
 	[DataRow(@"using System.Collections;
 var dic = new Dictionary[string, int]();
@@ -2115,9 +2123,7 @@ return s;
 	[DataRow(@"using System;
 Func[string, int] typeMismatch = x => x + 1;
 return typeMismatch(5);
-", "null", @"Error 4014 in line 2 at position 31: cannot convert from the type ""System.Func[int, int]"" to the type ""System.Func[string, int]""
-Error 4001 in line 3 at position 7: the identifier ""typeMismatch"" is not defined in this location
-Error 4038 in line 3 at position 19: this call is forbidden
+", "null", @"Error 4014 in line 2 at position 38: cannot convert from the type ""int"" to the type ""string"" - use an addition of zero-length string for this
 ")]
 	[DataRow(@"using System;
 Func[string, string] typeMismatch = x => x + 1;
@@ -2506,6 +2512,400 @@ Error 4055 in line 3 at position 27: too deep constant definition tree
 Error 4055 in line 3 at position 34: too deep constant definition tree
 Error 4055 in line 3 at position 41: too deep constant definition tree
 ")]
+	[DataRow(@"list(2.5) int list = 8;
+list = 123;
+return list;
+", @"(123)", @"Error 2017 in line 1 at position 5: this expression must be implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"list(""AAA"") int list = 8;
+list = 123;
+return list;
+", @"(123)", @"Error 2017 in line 1 at position 5: this expression must be implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"static Class MyClass
+{
+	const int n = 3;
+	list(n) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const int bool = 3;
+	list(bool) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int n = 3;
+list(n) int list = 8;
+list = 123;
+return list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int bool = 3;
+list(bool) int list = 8;
+list = 123;
+return list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const int n = 2;
+	list(n + 1) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const int bool = 2;
+	list(bool + 1) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int n = 2;
+list(n + 1) int list = 8;
+list = 123;
+return list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int bool = 2;
+list(bool + 1) int list = 8;
+list = 123;
+return list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int n = 1;
+list(n) (string, int, real) a = Fill((""A"", 77777, 3.14159), 3);
+list(n) (list(n) (string, int, real), list(n) (string, int, real),
+	list(n) (string, int, real)) b = ((a, a, a), (a, a, a), (a, a, a));
+list(n) (list(n) (list(n) (string, int, real), list(n) (string, int, real), list(n) (string, int, real)),
+	list(n) (list(n) (string, int, real), list(n) (string, int, real), list(n) (string, int, real)),
+	list(n) (list(n) (string, int, real), list(n) (string, int, real), list(n) (string, int, real))) c
+	= ((b, b, b), (b, b, b), (b, b, b));
+return c[1, 2, 3];
+", """((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)))""", "Ошибок нет")]
+	[DataRow(@"const int n = 0;
+list(n + 1) (string, int, real) a = Fill((""A"", 77777, 3.14159), 3);
+list(n + 1) (list(n + 1) (string, int, real), list(n + 1) (string, int, real),
+	list(n + 1) (string, int, real)) b = ((a, a, a), (a, a, a), (a, a, a));
+list(n + 1) (list(n + 1) (list(n + 1) (string, int, real), list(n + 1) (string, int, real), list(n + 1) (string, int, real)),
+	list(n + 1) (list(n + 1) (string, int, real), list(n + 1) (string, int, real), list(n + 1) (string, int, real)),
+	list(n + 1) (list(n + 1) (string, int, real), list(n + 1) (string, int, real), list(n + 1) (string, int, real))) c
+	= ((b, b, b), (b, b, b), (b, b, b));
+return c[1, 2, 3];
+", """((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)))""", "Ошибок нет")]
+	[DataRow(@"const int bool = 1;
+list(bool) (string, int, real) a = Fill((""A"", 77777, 3.14159), 3);
+list(bool) (list(bool) (string, int, real), list(bool) (string, int, real),
+	list(bool) (string, int, real)) b = ((a, a, a), (a, a, a), (a, a, a));
+list(bool) (list(bool) (list(bool) (string, int, real), list(bool) (string, int, real), list(bool) (string, int, real)),
+	list(bool) (list(bool) (string, int, real), list(bool) (string, int, real), list(bool) (string, int, real)),
+	list(bool) (list(bool) (string, int, real), list(bool) (string, int, real), list(bool) (string, int, real))) c
+	= ((b, b, b), (b, b, b), (b, b, b));
+return c[1, 2, 3];
+", """((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)))""", "Ошибок нет")]
+	[DataRow(@"const int bool = 0;
+list(bool + 1) (string, int, real) a = Fill((""A"", 77777, 3.14159), 3);
+list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real),
+	list(bool + 1) (string, int, real)) b = ((a, a, a), (a, a, a), (a, a, a));
+list(bool + 1) (list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real), list(bool + 1) (string, int, real)),
+	list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real), list(bool + 1) (string, int, real)),
+	list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real), list(bool + 1) (string, int, real))) c
+	= ((b, b, b), (b, b, b), (b, b, b));
+return c[1, 2, 3];
+", """((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)))""", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	int n = 3;
+	list(n) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(123)", @"Error 4057 in line 4 at position 6: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"static Class MyClass
+{
+	int bool = 3;
+	list(bool) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(123)", @"Error 4057 in line 4 at position 6: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"int n = 3;
+list(n) int list = 8;
+list = 123;
+return list;
+", @"(123)", @"Error 4057 in line 2 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 2 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"int bool = 3;
+list(bool) int list = 8;
+list = 123;
+return list;
+", @"(123)", @"Error 4057 in line 2 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 2 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"static Class MyClass
+{
+	int n = 2;
+	list(n + 1) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(123)", @"Error 4057 in line 4 at position 6: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"static Class MyClass
+{
+	int bool = 2;
+	list(bool + 1) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(123)", @"Error 4057 in line 4 at position 6: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"int n = 2;
+list(n + 1) int list = 8;
+list = 123;
+return list;
+", @"(123)", @"Error 4057 in line 2 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 2 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"int bool = 2;
+list(bool + 1) int list = 8;
+list = 123;
+return list;
+", @"(123)", @"Error 4057 in line 2 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 2 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"int bool = 0;
+list(bool + 1) (string, int, real) a = Fill((""A"", 77777, 3.14159), 3);
+list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real),
+	list(bool + 1) (string, int, real)) b = ((a, a, a), (a, a, a), (a, a, a));
+list(bool + 1) (list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real), list(bool + 1) (string, int, real)),
+	list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real), list(bool + 1) (string, int, real)),
+	list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real), list(bool + 1) (string, int, real))) c
+	= ((b, b, b), (b, b, b), (b, b, b));
+return c[1, 2, 3];
+", "null", @"Error 4057 in line 2 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 2 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 3 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 3 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 5 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 5 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"using System;
+static Class MyClass
+{
+	const int n = 3;
+	Func[list(n) int] list = () => 123;
+}
+return MyClass.list();
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System;
+static Class MyClass
+{
+	const int bool = 3;
+	Func[list(bool) int] list = () => 123;
+}
+return MyClass.list();
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System;
+const int n = 3;
+Func[list(n) int] list = () => 123;
+return list();
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System;
+const int bool = 3;
+Func[list(bool) int] list = () => 123;
+return list();
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System;
+static Class MyClass
+{
+	const int n = 2;
+	Func[list(n + 1) int] list = () => 123;
+}
+return MyClass.list();
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System;
+static Class MyClass
+{
+	const int bool = 2;
+	Func[list(bool + 1) int] list = () => 123;
+}
+return MyClass.list();
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System;
+const int n = 2;
+Func[list(n + 1) int] list = () => 123;
+return list();
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System;
+const int bool = 2;
+Func[list(bool + 1) int] list = () => 123;
+return list();
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const int n = 3;
+
+	list(n) int Function list(list(n) int x)
+	{
+		return x[1, 1, 1] + 115;
+	}
+}
+return MyClass.list(8);
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const int bool = 3;
+
+	list(bool) int Function list(list(bool) int x)
+	{
+		return x[1, 1, 1] + 115;
+	}
+}
+return MyClass.list(8);
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int n = 3;
+
+list(n) int Function list(list(n) int x)
+{
+	return x[1, 1, 1] + 115;
+}
+return list(8);
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int bool = 3;
+
+list(bool) int Function list(list(bool) int x)
+{
+	return x[1, 1, 1] + 115;
+}
+return list(8);
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const int n = 2;
+
+	list(n + 1) int Function list(list(n + 1) int x)
+	{
+		return x[1, 1, 1] + 115;
+	}
+}
+return MyClass.list(8);
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const int bool = 2;
+
+	list(bool + 1) int Function list(list(bool + 1) int x)
+	{
+		return x[1, 1, 1] + 115;
+	}
+}
+return MyClass.list(8);
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int n = 2;
+
+list(n + 1) int Function list(list(n + 1) int x)
+{
+	return x[1, 1, 1] + 115;
+}
+return list(8);
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int bool = 2;
+
+list(bool + 1) int Function list(list(bool + 1) int x)
+{
+	return x[1, 1, 1] + 115;
+}
+return list(8);
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+static Class MyClass
+{
+	const int n = 2;
+
+	Buffer[list(n) int] Function list(Buffer[list(n) int] x)
+	{
+		return new(1, x[1, 1, 1] + 115);
+	}
+}
+return MyClass.list(new(1, 8));
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+static Class MyClass
+{
+	const int bool = 2;
+
+	Buffer[list(bool) int] Function list(Buffer[list(bool) int] x)
+	{
+		return new(1, x[1, 1, 1] + 115);
+	}
+}
+return MyClass.list(new(1, 8));
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const int n = 2;
+
+Buffer[list(n) int] Function list(Buffer[list(n) int] x)
+{
+	return new(1, x[1, 1, 1] + 115);
+}
+return list(new(1, 8));
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const int bool = 2;
+
+Buffer[list(bool) int] Function list(Buffer[list(bool) int] x)
+{
+	return new(1, x[1, 1, 1] + 115);
+}
+return list(new(1, 8));
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+static Class MyClass
+{
+	const int n = 3;
+
+	Buffer[list(n - 1) int] Function list(Buffer[list(n - 1) int] x)
+	{
+		return new(1, x[1, 1, 1] + 115);
+	}
+}
+return MyClass.list(new(1, 8));
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+static Class MyClass
+{
+	const int bool = 3;
+
+	Buffer[list(bool - 1) int] Function list(Buffer[list(bool - 1) int] x)
+	{
+		return new(1, x[1, 1, 1] + 115);
+	}
+}
+return MyClass.list(new(1, 8));
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const int n = 3;
+
+Buffer[list(n - 1) int] Function list(Buffer[list(n - 1) int] x)
+{
+	return new(1, x[1, 1, 1] + 115);
+}
+return list(new(1, 8));
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const int bool = 3;
+
+Buffer[list(bool - 1) int] Function list(Buffer[list(bool - 1) int] x)
+{
+	return new(1, x[1, 1, 1] + 115);
+}
+return list(new(1, 8));
+", @"(((123)))", "Ошибок нет")]
 	[DataRow(@"typename real = int;
 return real;
 ", "int", "Ошибок нет")]

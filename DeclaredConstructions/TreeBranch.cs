@@ -119,6 +119,16 @@ public sealed class TreeBranch
 		EndPos = Length == 0 ? Pos + 1 : Elements[^1].EndPos;
 	}
 
+	public void Replace(TreeBranch branch)
+	{
+		Info = branch.Info;
+		Pos = branch.Pos;
+		EndPos = branch.EndPos;
+		Elements = branch.Elements;
+		Container = branch.Container;
+		Extra = branch.Extra;
+	}
+
 	public override bool Equals(object? obj) => obj is not null
 		&& obj is TreeBranch m
 		&& Info == m.Info && RedStarLinq.Equals(Elements, m.Elements, (x, y) => new TreeBranchComparer().Equals(x, y));
@@ -132,7 +142,7 @@ public sealed class TreeBranch
 				+ (Extra is null ? "" : " : " + Extra.ToString()) + ")";
 		else if (Extra is null)
 			return Info.ToString();
-		else if (Extra is UniversalType UnvType)
+		else if (Info == "type" && Extra is UniversalType UnvType)
 			return UnvType.ToString();
 		else
 			return "(" + Info + " :: " + Extra.ToString() + ")";

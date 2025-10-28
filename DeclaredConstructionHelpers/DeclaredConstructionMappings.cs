@@ -8,15 +8,38 @@ namespace CSharp.NStar;
 
 public static class DeclaredConstructionMappings
 {
-	public static Type TypeMapping(TreeBranch branch)
-	{
-		if (branch.Info != "type" || branch.Extra is not UniversalType UnvType)
-			throw new InvalidOperationException();
-		return TypeMapping(UnvType);
-	}
-
 	public static Type TypeMapping(UniversalType UnvType)
 	{
+		if (TypeEqualsToPrimitive(UnvType, "list", false))
+		{
+			if (UnvType.ExtraTypes.Length == 1)
+			{
+				if (UnvType.ExtraTypes[0].Info != "type" || UnvType.ExtraTypes[0].Extra is not UniversalType InnerUnvType)
+					throw new InvalidOperationException();
+				var netType = TypeMapping(InnerUnvType);
+				if (netType == typeof(bool))
+					return typeof(BitList);
+				else if (netType.IsUnmanaged())
+					return typeof(NList<>).MakeGenericType(netType);
+				else
+					return typeof(List<>).MakeGenericType(netType);
+			}
+			if (UnvType.ExtraTypes[0].Info == "type"
+				|| !int.TryParse(UnvType.ExtraTypes[0].Info.ToString(), out var levelsCount) || levelsCount < 1
+				|| UnvType.ExtraTypes[^1].Info != "type" || UnvType.ExtraTypes[^1].Extra is not UniversalType InnerUnvType2)
+				throw new InvalidOperationException();
+			var netType2 = TypeMapping(InnerUnvType2);
+			Type outputType;
+			if (netType2 == typeof(bool))
+				outputType = typeof(BitList);
+			else if (netType2.IsUnmanaged())
+				outputType = typeof(NList<>).MakeGenericType(netType2);
+			else
+				outputType = typeof(List<>).MakeGenericType(netType2);
+			for (var i = 1; i < levelsCount; i++)
+				outputType = typeof(List<>).MakeGenericType(outputType);
+			return outputType;
+		}
 		if (UnvType.MainType.Equals(FuncBlockStack))
 		{
 			List<Type> funcComponents = [];
@@ -31,7 +54,7 @@ public static class DeclaredConstructionMappings
 			}
 			return ConstructFuncType(returnType, funcComponents.GetSlice());
 		}
-		if (!TypeEqualsToPrimitive(new(UnvType.MainType, UnvType.ExtraTypes), "tuple", false))
+		if (!TypeEqualsToPrimitive(UnvType, "tuple", false))
 		{
 			if (!TypeExists(SplitType(UnvType.MainType), out var netType))
 				throw new InvalidOperationException();
@@ -61,6 +84,13 @@ public static class DeclaredConstructionMappings
 				int.TryParse(UnvType.ExtraTypes[i].Info.ToString(), out var n) ? n : 1).GetSlice());
 		}
 		return ConstructTupleType(tupleComponents.Add(innerResult).GetSlice());
+	}
+
+	private static Type TypeMapping(TreeBranch branch)
+	{
+		if (branch.Info != "type" || branch.Extra is not UniversalType UnvType)
+			throw new InvalidOperationException();
+		return TypeMapping(UnvType);
 	}
 
 	public static Type ConstructFuncType(Type returnType, Slice<Type> netTypes) => netTypes.Length switch

@@ -581,7 +581,7 @@ public static class DeclaredConstructionChecks
 			constructors = [];
 			return false;
 		}
-		var callParameterNetTypes = callParameterTypes.ToArray(x => TypeMapping(x));
+		var callParameterNetTypes = callParameterTypes.ToArray(TypeMapping);
 		var validity = int.MinValue;
 		var methods = netType.GetConstructors().FindAllMax(x =>
 		{
