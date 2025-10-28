@@ -14,7 +14,7 @@ global using System.Threading;
 global using System.Threading.Tasks;
 global using G = System.Collections.Generic;
 global using static CSharp.NStar.Quotes;
-global using static CSharp.NStar.DeclaredConstructions;
+global using static CSharp.NStar.BuiltInMemberCollections;
 global using static System.Math;
 global using String = NStar.Core.String;
 

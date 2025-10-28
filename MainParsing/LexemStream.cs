@@ -2,12 +2,14 @@
 global using NStar.Dictionaries;
 global using NStar.Linq;
 global using System;
-global using G = System.Collections.Generic;
-global using static CSharp.NStar.DeclaredConstructionChecks;
-global using static CSharp.NStar.DeclaredConstructions;
-global using static CSharp.NStar.TypeHelpers;
+global using static CSharp.NStar.BuiltInMemberCollections;
+global using static CSharp.NStar.MemberChecks;
+global using static CSharp.NStar.NStarType;
+global using static CSharp.NStar.TypeChecks;
+global using static CSharp.NStar.TypeConverters;
 global using static NStar.Core.Extents;
 global using static System.Math;
+global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 
 namespace CSharp.NStar;
@@ -355,7 +357,7 @@ public class LexemStream
 			UserDefinedFunctionsList.TryAdd(container, []);
 			var list = UserDefinedFunctionsList[container];
 			list.TryAdd(name, []);
-			list[name].Add(new([], (new([new(BlockType.Primitive, "???", 1)]), NoGeneralExtraTypes), attributes, []));
+			list[name].Add(new([], (new([new(BlockType.Primitive, "???", 1)]), NoBranches), attributes, []));
 			blocksToJump.Add((container, "Function", name, blockStart, pos));
 			if (!(UserDefinedFunctionIndexesList.TryGetValue(container, out var list2)
 				&& actualFunctionIndexes.TryGetValue(container, out var dic)))
@@ -492,12 +494,12 @@ public class LexemStream
 
 	private void GenerateMessage(ushort code, Index pos, params dynamic[] parameters)
 	{
-		DeclaredConstructions.GenerateMessage(ref errorsList, code, lexems[pos].LineN, lexems[pos].Pos, parameters);
+		Messages.GenerateMessage(ref errorsList, code, lexems[pos].LineN, lexems[pos].Pos, parameters);
 		if (code >> 12 == 0x9)
 			wreckOccurred = true;
 	}
 
-	private void GenerateUnexpectedEndError() => DeclaredConstructions.GenerateMessage(ref errorsList, 0x0000, lexems[pos - 1].LineN, lexems[pos - 1].Pos + lexems[pos - 1].String.Length);
+	private void GenerateUnexpectedEndError() => Messages.GenerateMessage(ref errorsList, 0x0000, lexems[pos - 1].LineN, lexems[pos - 1].Pos + lexems[pos - 1].String.Length);
 
 	public (List<Lexem> Lexems, String String, TreeBranch TopBranch, List<String>? ErrorsList, bool WreckOccurred) EmptySyntaxTree() => (lexems, input, TreeBranch.DoNotAdd(), errorsList, true);
 

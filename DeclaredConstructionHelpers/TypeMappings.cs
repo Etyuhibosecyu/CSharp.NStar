@@ -1,20 +1,19 @@
 ﻿using Mpir.NET;
-using NStar.Core;
 using NStar.ExtraHS;
 using System.Collections;
 using System.Text;
 
 namespace CSharp.NStar;
 
-public static class DeclaredConstructionMappings
+public static class TypeMappings
 {
-	public static Type TypeMapping(UniversalType UnvType)
+	public static Type TypeMapping(NStarType UnvType)
 	{
 		if (TypeEqualsToPrimitive(UnvType, "list", false))
 		{
 			if (UnvType.ExtraTypes.Length == 1)
 			{
-				if (UnvType.ExtraTypes[0].Info != "type" || UnvType.ExtraTypes[0].Extra is not UniversalType InnerUnvType)
+				if (UnvType.ExtraTypes[0].Info != "type" || UnvType.ExtraTypes[0].Extra is not NStarType InnerUnvType)
 					throw new InvalidOperationException();
 				var netType = TypeMapping(InnerUnvType);
 				if (netType == typeof(bool))
@@ -26,7 +25,7 @@ public static class DeclaredConstructionMappings
 			}
 			if (UnvType.ExtraTypes[0].Info == "type"
 				|| !int.TryParse(UnvType.ExtraTypes[0].Info.ToString(), out var levelsCount) || levelsCount < 1
-				|| UnvType.ExtraTypes[^1].Info != "type" || UnvType.ExtraTypes[^1].Extra is not UniversalType InnerUnvType2)
+				|| UnvType.ExtraTypes[^1].Info != "type" || UnvType.ExtraTypes[^1].Extra is not NStarType InnerUnvType2)
 				throw new InvalidOperationException();
 			var netType2 = TypeMapping(InnerUnvType2);
 			Type outputType;
@@ -43,12 +42,12 @@ public static class DeclaredConstructionMappings
 		if (UnvType.MainType.Equals(FuncBlockStack))
 		{
 			List<Type> funcComponents = [];
-			if (UnvType.ExtraTypes[0].Info != "type" || UnvType.ExtraTypes[0].Extra is not UniversalType InnerUnvType)
+			if (UnvType.ExtraTypes[0].Info != "type" || UnvType.ExtraTypes[0].Extra is not NStarType InnerUnvType)
 				throw new InvalidOperationException();
 			var returnType = TypeMapping(InnerUnvType);
 			for (var i = 1; i < UnvType.ExtraTypes.Length; i++)
 			{
-				if (UnvType.ExtraTypes[i].Info != "type" || UnvType.ExtraTypes[i].Extra is not UniversalType InnerUnvType2)
+				if (UnvType.ExtraTypes[i].Info != "type" || UnvType.ExtraTypes[i].Extra is not NStarType InnerUnvType2)
 					throw new InvalidOperationException();
 				funcComponents.Add(TypeMapping(InnerUnvType2));
 			}
@@ -66,7 +65,7 @@ public static class DeclaredConstructionMappings
 		if (UnvType.ExtraTypes.Length == 0)
 			return typeof(void);
 		List<Type> tupleComponents = [];
-		if (UnvType.ExtraTypes[0].Info != "type" || UnvType.ExtraTypes[0].Extra is not UniversalType InnerUnvType3)
+		if (UnvType.ExtraTypes[0].Info != "type" || UnvType.ExtraTypes[0].Extra is not NStarType InnerUnvType3)
 			throw new InvalidOperationException();
 		var first = TypeMapping(InnerUnvType3);
 		if (UnvType.ExtraTypes.Length == 1)
@@ -74,7 +73,7 @@ public static class DeclaredConstructionMappings
 		var innerResult = first;
 		for (var i = 1; i < UnvType.ExtraTypes.Length; i++)
 		{
-			if (UnvType.ExtraTypes[i].Info == "type" && UnvType.ExtraTypes[i].Extra is UniversalType InnerUnvType2)
+			if (UnvType.ExtraTypes[i].Info == "type" && UnvType.ExtraTypes[i].Extra is NStarType InnerUnvType2)
 			{
 				tupleComponents.Add(innerResult);
 				first = TypeMapping(InnerUnvType2);
@@ -88,7 +87,7 @@ public static class DeclaredConstructionMappings
 
 	private static Type TypeMapping(TreeBranch branch)
 	{
-		if (branch.Info != "type" || branch.Extra is not UniversalType UnvType)
+		if (branch.Info != "type" || branch.Extra is not NStarType UnvType)
 			throw new InvalidOperationException();
 		return TypeMapping(UnvType);
 	}
@@ -120,7 +119,7 @@ public static class DeclaredConstructionMappings
 		_ => typeof(ValueTuple<,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], ConstructTupleType(netTypes[7..])),
 	};
 
-	public static UniversalType TypeMappingBack(Type netType, Type[] genericArguments, GeneralExtraTypes extraTypes)
+	public static NStarType TypeMappingBack(Type netType, Type[] genericArguments, BranchCollection extraTypes)
 	{
 		if (netType.IsGenericParameter)
 		{
@@ -128,7 +127,7 @@ public static class DeclaredConstructionMappings
 			if (genericArgumentsIndex < 0 || extraTypes.Length <= genericArgumentsIndex)
 				return new(new([new(BlockType.Extra, netType.Name, 1)]), []);
 			else if (extraTypes[genericArgumentsIndex].Info != "type"
-				|| extraTypes[genericArgumentsIndex].Extra is not UniversalType InnerUnvType)
+				|| extraTypes[genericArgumentsIndex].Extra is not NStarType InnerUnvType)
 				throw new InvalidOperationException();
 			else
 				return InnerUnvType;
@@ -194,7 +193,7 @@ public static class DeclaredConstructionMappings
 		}
 		else if (!typeof(ITuple).IsAssignableFrom(oldNetType))
 			throw new InvalidOperationException();
-		GeneralExtraTypes result = [];
+		BranchCollection result = [];
 		var tupleTypes = new Queue<Type>();
 		tupleTypes.Enqueue(oldNetType);
 		while (tupleTypes.Length != 0 && tupleTypes.Dequeue() is Type tupleType)
@@ -217,7 +216,7 @@ public static class DeclaredConstructionMappings
 		|| destination == typeof(uint) && new[] { typeof(byte), typeof(ushort), typeof(uint) }.Contains(source)
 		|| destination == typeof(ushort) && new[] { typeof(byte), typeof(ushort) }.Contains(source);
 
-	public static UniversalType ReplaceExtraType(UniversalType originalType, String extraType, UniversalType typeToInsert)
+	public static NStarType ReplaceExtraType(NStarType originalType, String extraType, NStarType typeToInsert)
 	{
 		if (originalType.MainType.Length == 1 && originalType.MainType.Peek().BlockType == BlockType.Extra
 			&& originalType.MainType.Peek().Name == extraType && originalType.ExtraTypes.Length == 0)
@@ -226,7 +225,7 @@ public static class DeclaredConstructionMappings
 		{
 			return new(originalType.MainType, [.. originalType.ExtraTypes.Convert(x =>
 				new G.KeyValuePair<String, TreeBranch>(x.Key, x.Value.Info != "type"
-				|| x.Value.Extra is not UniversalType InnerUnvType ? new TreeBranch(x.Value.Info, 0, [])
+				|| x.Value.Extra is not NStarType InnerUnvType ? new TreeBranch(x.Value.Info, 0, [])
 				: new TreeBranch("type", 0, []) { Extra = ReplaceExtraType(InnerUnvType, extraType, typeToInsert) }))]);
 		}
 	}
@@ -277,7 +276,7 @@ public static class DeclaredConstructionMappings
 			"Add" => nameof(function.AddRange),
 			"Ceil" => "(int)" + nameof(Ceiling),
 			nameof(Ceiling) => [],
-			"Chain" => ((String)nameof(IntermediateFunctions)).Add('.').AddRange(nameof(Chain)),
+			"Chain" => ((String)nameof(NStarBuiltInFunctions)).Add('.').AddRange(nameof(Chain)),
 			nameof(RedStarLinq.Fill) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Fill)),
 			"FillList" => [],
 			nameof(Floor) => "(int)" + nameof(Floor),
@@ -286,7 +285,7 @@ public static class DeclaredConstructionMappings
 			"IntToReal" => "(double)",
 			"IsSummertime" => nameof(DateTime.IsDaylightSavingTime),
 			nameof(DateTime.IsDaylightSavingTime) => [],
-			"Log" => ((String)nameof(IntermediateFunctions)).Add('.').AddRange(nameof(Log)),
+			"Log" => ((String)nameof(NStarBuiltInFunctions)).Add('.').AddRange(nameof(Log)),
 			nameof(RedStarLinqMath.Max) => ((String)nameof(RedStarLinqMath)).Add('.').AddRange(nameof(RedStarLinqMath.Max)),
 			"Max3" => [],
 			nameof(RedStarLinqMath.Mean) => ((String)nameof(RedStarLinqMath)).Add('.').AddRange(nameof(RedStarLinqMath.Mean)),

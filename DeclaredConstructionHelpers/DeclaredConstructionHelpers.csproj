@@ -7,6 +7,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\.NStar\Sources\NStar.ExtraHS\NStar.ExtraHS.csproj" />
-		<ProjectReference Include="..\TypeHelpers\TypeHelpers.csproj" />
+		<ProjectReference Include="..\TypeConverters\TypeConverters.csproj" />
 	</ItemGroup>
 </Project>

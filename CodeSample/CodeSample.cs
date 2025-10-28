@@ -3,9 +3,9 @@ global using NStar.Dictionaries;
 global using NStar.Linq;
 global using System;
 global using G = System.Collections.Generic;
-global using static CSharp.NStar.DeclaredConstructionChecks;
-global using static CSharp.NStar.DeclaredConstructions;
-global using static CSharp.NStar.TypeHelpers;
+global using static CSharp.NStar.TypeChecks;
+global using static CSharp.NStar.BuiltInMemberCollections;
+global using static CSharp.NStar.TypeConverters;
 global using static NStar.Core.Extents;
 global using static System.Math;
 global using String = NStar.Core.String;
@@ -741,7 +741,7 @@ public class CodeSample(String newString)
 	}
 
 	private void GenerateMessage(ushort code, int pos, params dynamic[] parameters) =>
-		DeclaredConstructions.GenerateMessage(errorsList, code, lineN, pos - lineStart, parameters);
+		Messages.GenerateMessage(errorsList, code, lineN, pos - lineStart, parameters);
 
 	public static implicit operator (List<Lexem> Lexems, String String, List<String> ErrorsList,
 		bool WreckOccurred)(CodeSample x) => x.Disassemble();

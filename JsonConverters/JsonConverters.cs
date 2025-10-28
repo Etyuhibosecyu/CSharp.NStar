@@ -5,13 +5,13 @@ using System;
 using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using static CSharp.NStar.DeclaredConstructionMappings;
+using static CSharp.NStar.TypeMappings;
 using static System.Math;
 using String = NStar.Core.String;
 
 namespace CSharp.NStar;
 
-public static class SerializerHelpers
+public static class JsonConverters
 {
 	public static JsonSerializerSettings SerializerSettings { get; } = new()
 	{
@@ -162,11 +162,11 @@ public static class SerializerHelpers
 		}
 	}
 
-	public class UniversalConverter : JsonConverter<Universal>
+	public class UniversalConverter : JsonConverter<NStarObject>
 	{
-		public override Universal ReadJson(JsonReader reader, Type objectType, Universal existingValue,
+		public override NStarObject ReadJson(JsonReader reader, Type objectType, NStarObject existingValue,
 			bool hasExistingValue, JsonSerializer serializer) => throw new NotSupportedException();
-		public override void WriteJson(JsonWriter writer, Universal value, JsonSerializer serializer) =>
+		public override void WriteJson(JsonWriter writer, NStarObject value, JsonSerializer serializer) =>
 			writer.WriteRaw(value.ToString(true).ToString());
 	}
 

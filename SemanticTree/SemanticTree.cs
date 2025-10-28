@@ -3,25 +3,25 @@ global using NStar.Linq;
 global using NStar.MathLib;
 global using System;
 global using System.Diagnostics;
-global using static CSharp.NStar.DeclaredConstructions;
-global using static CSharp.NStar.TypeHelpers;
+global using static CSharp.NStar.BuiltInMemberCollections;
+global using static CSharp.NStar.TypeMappings;
+global using static CSharp.NStar.MemberChecks;
+global using static CSharp.NStar.NStarBuiltInFunctions;
+global using static CSharp.NStar.NStarType;
+global using static CSharp.NStar.TypeChecks;
+global using static CSharp.NStar.TypeConverters;
+global using static NStar.Core.Extents;
 global using static System.Math;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using NStar.EasyEvalLib;
 using NStar.ExtraHS;
 using NStar.MathLib.Extras;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
-using System.Reflection.Metadata;
 using System.Text;
-using static CSharp.NStar.DeclaredConstructionChecks;
-using static CSharp.NStar.DeclaredConstructionMappings;
-using static CSharp.NStar.IntermediateFunctions;
-using static NStar.Core.Extents;
 
 namespace CSharp.NStar;
 
@@ -125,7 +125,7 @@ public sealed class SemanticTree
 		var thisBlockReturns = false;
 		var conditionReturns = false;
 		var nestedConditions = 0;
-		UniversalType? extraToReturn = null;
+		NStarType? extraToReturn = null;
 		for (var i = 0; i < branch.Length; i++)
 		{
 			var x = branch[i];
@@ -138,8 +138,8 @@ public sealed class SemanticTree
 			if (x.Info.ToString() is nameof(Main) or "return")
 			{
 				if (!extraToReturn.HasValue && x.Extra != null)
-					extraToReturn ??= (UniversalType)x.Extra!;
-				else if (!extraToReturn.HasValue || x.Extra is not UniversalType ReturnUnvType) { }
+					extraToReturn ??= (NStarType)x.Extra!;
+				else if (!extraToReturn.HasValue || x.Extra is not NStarType ReturnUnvType) { }
 				else if (TypesAreCompatible(ReturnUnvType, extraToReturn.Value,
 					out var warning, s, out var destExpr, out _) && !warning && destExpr != null)
 					s = destExpr;
@@ -154,7 +154,7 @@ public sealed class SemanticTree
 			}
 			if (x.Info.ToString() is "if" or "else if" or "if!" or "else if!" or "else" or "while" or "while!" or "repeat" or "for")
 				nestedConditions++;
-			if (x.Info.ToString() is nameof(Main) or "return" && x.Extra is UniversalType)
+			if (x.Info.ToString() is nameof(Main) or "return" && x.Extra is NStarType)
 			{
 				if (i != 0 && branch[i - 1].Info.ToString() is "if" or "if!" or "while" or "while!" or "repeat" or "for")
 					conditionReturns = true;
@@ -162,7 +162,7 @@ public sealed class SemanticTree
 					|| i == 0 || branch[i - 1].Info.ToString() is not ("else if" or "else if!") && nestedConditions <= 0)
 					thisBlockReturns = true;
 			}
-			if (i != 0 && branch[i - 1].Info.ToString() is "else if" or "else if!" && x.Extra is not UniversalType)
+			if (i != 0 && branch[i - 1].Info.ToString() is "else if" or "else if!" && x.Extra is not NStarType)
 				conditionReturns = false;
 			if (i != 0 && branch[i - 1].Info.ToString() is "if" or "else if" or "if!" or "else if!" or "else"
 				or "while" or "while!" or "repeat" or "for")
@@ -204,7 +204,7 @@ public sealed class SemanticTree
 		if (thisBlockReturns)
 			branch.Extra ??= extraToReturn;
 		else if (branch.Parent != null && branch.Parent.Info.ToString() is not (nameof(Constructor) or nameof(Main))
-			&& !(branch.Extra is UniversalType ThisBlockUnvType && TypesAreEqual(ThisBlockUnvType, NullType))
+			&& !(branch.Extra is NStarType ThisBlockUnvType && TypesAreEqual(ThisBlockUnvType, NullType))
 			&& !(branch.Parent.Info == nameof(Function) && currentFunction.HasValue
 			&& TypesAreEqual(currentFunction.Value.ReturnUnvType, NullType))
 			&& !branch.Parent.Info.StartsWith("Namespace "))
@@ -423,7 +423,7 @@ public sealed class SemanticTree
 
 	private GeneralMethodParameter GetParameterData(TreeBranch branch)
 	{
-		if (!(branch.Length == 3 && branch[0].Info == "type" && branch[0].Extra is UniversalType ParameterUnvType && (branch[2].Info == "no optional" || ExprTypesList.Contains(branch[2].Info)) && branch.Extra is ParameterAttributes Attributes))
+		if (!(branch.Length == 3 && branch[0].Info == "type" && branch[0].Extra is NStarType ParameterUnvType && (branch[2].Info == "no optional" || ExprTypesList.Contains(branch[2].Info)) && branch.Extra is ParameterAttributes Attributes))
 			throw new InvalidOperationException();
 		return new(ParameterUnvType, branch[1].Info, Attributes, ParseAction(branch[2].Info)(branch[2], out _));
 	}
@@ -465,7 +465,7 @@ public sealed class SemanticTree
 	private String Members(TreeBranch branch, out List<String>? errorsList)
 	{
 		errorsList = null;
-		if (Universal.TryParse(branch.Info.ToString(), out var value))
+		if (NStarObject.TryParse(branch.Info.ToString(), out var value))
 			return value.ToString(true, true);
 		if (branch.Length == 0)
 			return branch.Info;
@@ -515,7 +515,7 @@ public sealed class SemanticTree
 		errorsList = null;
 		result2 = [];
 		result3 = [];
-		if (branch[0].Extra is not UniversalType UnvType)
+		if (branch[0].Extra is not NStarType UnvType)
 			return [];
 		var name = branch[1].Info;
 		var (UnvType2, Attributes, DefaultValue) = UserDefinedPropertiesList[branch.Container][name];
@@ -547,7 +547,7 @@ public sealed class SemanticTree
 		result2.AddRange(name).AddRange(" = default!");
 		branch[^1].Extra ??= UnvType;
 		var expr = ParseAction(branch[^1].Info)(branch[^1], out var innerErrorsList);
-		if (branch[^1].Extra is not UniversalType ValueUnvType)
+		if (branch[^1].Extra is not NStarType ValueUnvType)
 		{
 			GenerateMessage(ref errorsList, 0x4014, branch[^1].Pos, null!, NullType, UnvType);
 			return "default!";
@@ -569,7 +569,7 @@ public sealed class SemanticTree
 	private String Constant(TreeBranch branch, out List<String>? errorsList)
 	{
 		errorsList = null;
-		if (branch[0].Extra is not UniversalType UnvType)
+		if (branch[0].Extra is not NStarType UnvType)
 			return [];
 		var name = branch[1].Info;
 		var (UnvType2, Attributes, DefaultValue) = UserDefinedConstantsList[branch.Container][name];
@@ -608,7 +608,7 @@ public sealed class SemanticTree
 				return [];
 			}
 			var expr = ParseAction(branch[^1].Info)(branch[^1], out var innerErrorsList);
-			if (branch[^1].Extra is not UniversalType ValueUnvType)
+			if (branch[^1].Extra is not NStarType ValueUnvType)
 			{
 				GenerateMessage(ref errorsList, 0x4014, branch[^1].Pos, null!, NullType, UnvType);
 				return "default!";
@@ -740,12 +740,12 @@ public sealed class SemanticTree
 			UserDefinedConstantsList[matchingContainer][s] = new(constant.Value.UnvType,
 				constant.Value.Attributes, branch.Parent[0]);
 		}
-		if (branch[0].Extra is not UniversalType UnvType)
+		if (branch[0].Extra is not NStarType UnvType)
 			branch.Extra = NullType;
 		else if (TypeEqualsToPrimitive(UnvType, "var"))
 		{
 			var prevIndex = branch.Parent!.Elements.FindIndex(x => ReferenceEquals(branch, x));
-			if (prevIndex >= 1 && branch.Parent[prevIndex - 1].Extra is UniversalType AssigningUnvType
+			if (prevIndex >= 1 && branch.Parent[prevIndex - 1].Extra is NStarType AssigningUnvType
 				&& branch.Parent.Length >= 3 && branch.Parent[prevIndex + 1].Info == "=")
 				branch.Extra = branch[prevIndex - 1].Extra = AssigningUnvType;
 			else if (branch.Parent[prevIndex - 1].Extra == null && prepass) { }
@@ -762,9 +762,9 @@ public sealed class SemanticTree
 		{
 			branch.Parent![branch.Parent.Elements.FindIndex(x => ReferenceEquals(branch, x))]
 				= new("_", branch.FirstPos, branch[0].EndPos, branch.Container)
-			{
-				Extra = NullType
-			};
+				{
+					Extra = NullType
+				};
 			return "_";
 		}
 		else
@@ -773,9 +773,9 @@ public sealed class SemanticTree
 			var targetIndex = Max(branch.Parent!.Elements.FindIndex(x => ReferenceEquals(branch, x)) - 2, 0);
 			branch.Parent[targetIndex].Extra ??= UnvType;
 		}
-		if (branch.Extra is UniversalType UnvType2 && TypesAreEqual(UnvType2, NullType))
+		if (branch.Extra is NStarType UnvType2 && TypesAreEqual(UnvType2, NullType))
 			return "_";
-		return Type(branch.Extra is UniversalType ResultType ? ResultType : NullType, branch, ref errorsList)
+		return Type(branch.Extra is NStarType ResultType ? ResultType : NullType, branch, ref errorsList)
 			.Copy().Add(' ').AddRange(EscapedKeywordsList.Contains(s) ? ((String)"@").AddRange(s) : s);
 	}
 
@@ -830,7 +830,7 @@ public sealed class SemanticTree
 			: x.Info == nameof(Hypername) ? Hypername(x, out innerErrorsLists[index], null, true)
 			: ParseAction(x.Info)(x, out innerErrorsLists[index]));
 		var parameterTypes = branch.Length <= 1 ? [] : branch[1].Elements.ToList((x, index) =>
-			branch[0].Info == "new" && branch.Extra == null && index != 0 ? NullType : x.Extra is UniversalType UnvType
+			branch[0].Info == "new" && branch.Extra == null && index != 0 ? NullType : x.Extra is NStarType UnvType
 			? UnvType : NullType);
 		for (var i = 0; i < innerErrorsLists.Length; i++)
 		{
@@ -840,7 +840,7 @@ public sealed class SemanticTree
 		}
 		if (extra is null)
 		{
-			if (Universal.TryParse(branch[0].Info.ToString(), out var value))
+			if (NStarObject.TryParse(branch[0].Info.ToString(), out var value))
 			{
 				branch[0].Extra = value.InnerType;
 				extra = new List<object> { (String)nameof(Constant), value.InnerType };
@@ -856,10 +856,10 @@ public sealed class SemanticTree
 			}
 			else if (info == "type")
 			{
-				if (branch[0].Extra is not UniversalType UnvType)
+				if (branch[0].Extra is not NStarType UnvType)
 					UnvType = NullType;
 				extra = new List<object> { (String)"Static", UnvType };
-				var bTypename = branch.Extra is UniversalType OuterUnvType && TypesAreEqual(OuterUnvType, RecursiveType);
+				var bTypename = branch.Extra is NStarType OuterUnvType && TypesAreEqual(OuterUnvType, RecursiveType);
 				if (bTypename)
 					result.AddRange("typeof(");
 				result.AddRange(Type(UnvType, targetBranch, ref errorsList));
@@ -876,7 +876,7 @@ public sealed class SemanticTree
 				}
 				if (!ImplicitConstructor(branch, ref errorsList, parameterTypes, prepass))
 					return "default!";
-				if (branch[0].Extra is not UniversalType UnvType)
+				if (branch[0].Extra is not NStarType UnvType)
 					extra = new List<object> { (String)"Constructor", NullType };
 				else if (UserDefinedConstructorsExist(UnvType, parameterTypes, out var constructors) && constructors != null)
 					extra = new List<object> { (String)"Constructor", UnvType, (String)"user", constructors, innerResults };
@@ -884,12 +884,12 @@ public sealed class SemanticTree
 					extra = new List<object> { (String)"Constructor", UnvType, (String)"typical", constructors, innerResults };
 				else
 					extra = new List<object> { (String)"Constructor", NullType };
-				branch[1].Elements.ToList((x, index) => x.Extra is UniversalType SourceType
+				branch[1].Elements.ToList((x, index) => x.Extra is NStarType SourceType
 					&& (!TypesAreCompatible(SourceType, parameterTypes[index], out var warning,
 					innerResults[index], out _, out _) || warning));
-				if (branch[0].Extra is UniversalType)
+				if (branch[0].Extra is NStarType)
 					branch[0].Info = "new type";
-				result.AddRange("new ").AddRange(branch[0].Extra is UniversalType type
+				result.AddRange("new ").AddRange(branch[0].Extra is NStarType type
 					? Type(type, targetBranch, ref errorsList) : "dynamic");
 			}
 			else if (info == "new type")
@@ -899,7 +899,7 @@ public sealed class SemanticTree
 					GenerateMessage(ref errorsList, 0x4050, branch.Pos);
 					return "default!";
 				}
-				if (branch[0].Extra is not UniversalType UnvType)
+				if (branch[0].Extra is not NStarType UnvType)
 					extra = new List<object> { (String)"Constructor", NullType };
 				else if (UserDefinedConstructorsExist(UnvType, parameterTypes, out var constructors) && constructors != null)
 					extra = new List<object> { (String)"Constructor", UnvType, (String)"user", constructors, innerResults };
@@ -907,10 +907,10 @@ public sealed class SemanticTree
 					extra = new List<object> { (String)"Constructor", UnvType, (String)"typical", constructors, innerResults };
 				else
 					extra = new List<object> { (String)"Constructor", NullType };
-				branch[1].Elements.ToList((x, index) => x.Extra is UniversalType SourceType
+				branch[1].Elements.ToList((x, index) => x.Extra is NStarType SourceType
 					&& (!TypesAreCompatible(SourceType, parameterTypes[index], out var warning,
 					innerResults[index], out _, out _) || warning));
-				result.AddRange("new ").AddRange(branch[0].Extra is UniversalType type
+				result.AddRange("new ").AddRange(branch[0].Extra is NStarType type
 					? Type(type, targetBranch, ref errorsList) : "dynamic");
 				return result;
 			}
@@ -966,7 +966,7 @@ public sealed class SemanticTree
 					GenerateMessage(ref errorsList, 0x4050, branch.Pos);
 					return "default!";
 				}
-				if (extra2 is UniversalType UnvType)
+				if (extra2 is NStarType UnvType)
 				{
 					branch.Extra = branch[0].Extra = UnvType;
 					extra = new List<object> { (String)"Variable", UnvType, innerResults };
@@ -1028,7 +1028,7 @@ public sealed class SemanticTree
 					prevIndex, functionContainer, functions, "userMethod") != null)
 					return "_";
 				result.AddRange(info);
-				branch.Extra = new UniversalType(FuncBlockStack,
+				branch.Extra = new NStarType(FuncBlockStack,
 					new([new("type", branch.Pos, branch.Container) { Extra = functions[^1].ReturnUnvType },
 					.. functions[^1].Parameters.Convert(x =>
 					new TreeBranch("type", branch.Pos, branch.Container) { Extra = x.Type })]));
@@ -1051,12 +1051,12 @@ public sealed class SemanticTree
 				HypernamePublicGeneralMethod(branch, info, innerResults, ref extra, ref errorsList,
 					prevIndex, functions, user ? "user" : "general");
 				result.AddRange(info);
-				branch.Extra = new UniversalType(FuncBlockStack,
+				branch.Extra = new NStarType(FuncBlockStack,
 					new([new("type", branch.Pos, branch.Container) { Extra = functions[^1].ReturnUnvType },
 					.. functions[^1].Parameters.Convert(x =>
 					new TreeBranch("type", branch.Pos, branch.Container) { Extra = x.Type })]));
 			}
-			else if (branch.Length == 1 && branch.Extra is UniversalType RecursiveUnvType
+			else if (branch.Length == 1 && branch.Extra is NStarType RecursiveUnvType
 				&& TypesAreEqual(RecursiveUnvType, RecursiveType) && PrimitiveTypesList.ContainsKey(info))
 			{
 				var primitiveType = GetPrimitiveType(info);
@@ -1081,7 +1081,7 @@ public sealed class SemanticTree
 		}
 		else
 		{
-			if (!(extra is List<object> list && list.Length is >= 2 and <= 5 && list[0] is String Category && list[1] is UniversalType ContainerUnvType))
+			if (!(extra is List<object> list && list.Length is >= 2 and <= 5 && list[0] is String Category && list[1] is NStarType ContainerUnvType))
 			{
 				var otherPos = branch.FirstPos;
 				GenerateMessage(ref errorsList, 0x4000, otherPos);
@@ -1156,7 +1156,7 @@ public sealed class SemanticTree
 				}
 				else
 				{
-					branch.Extra = branch[0].Extra = new UniversalType(property.Value.UnvType.MainType, property.Value.UnvType.ExtraTypes);
+					branch.Extra = branch[0].Extra = new NStarType(property.Value.UnvType.MainType, property.Value.UnvType.ExtraTypes);
 					extra = new List<object> { (String)nameof(Property), branch.Extra, innerResults };
 				}
 				result.AddRange(PropertyMapping(info));
@@ -1197,9 +1197,9 @@ public sealed class SemanticTree
 		return result;
 	}
 
-	private bool ImplicitConstructor(TreeBranch branch, ref List<String>? errorsList, List<UniversalType> parameterTypes, bool prepass)
+	private bool ImplicitConstructor(TreeBranch branch, ref List<String>? errorsList, List<NStarType> parameterTypes, bool prepass)
 	{
-		if (branch.Extra is UniversalType UnvType)
+		if (branch.Extra is NStarType UnvType)
 		{
 			var split = SplitType(UnvType.MainType);
 			if (!UnvType.MainType.TryPeek(out var block) || block.BlockType is not (BlockType.Primitive or BlockType.Extra
@@ -1235,7 +1235,7 @@ public sealed class SemanticTree
 			}
 			branch[0].Extra = UnvType;
 		}
-		else if (parameterTypes.Length != 0 && parameterTypes[0] is UniversalType ParameterUnvType)
+		else if (parameterTypes.Length != 0 && parameterTypes[0] is NStarType ParameterUnvType)
 		{
 			if (prepass)
 				return false;
@@ -1252,10 +1252,10 @@ public sealed class SemanticTree
 		{
 			if (list.Length == 3 && list[0] is String delegateElem1
 				&& delegateElem1.ToString() is "Variable" or nameof(Property) or nameof(Expr)
-				&& list[1] is UniversalType DelegateUnvType
+				&& list[1] is NStarType DelegateUnvType
 				&& DelegateUnvType.MainType.Equals(FuncBlockStack)
 				&& DelegateUnvType.ExtraTypes.Length != 0 && DelegateUnvType.ExtraTypes[0].Info == "type"
-				&& DelegateUnvType.ExtraTypes[0].Extra is UniversalType ReturnUnvType)
+				&& DelegateUnvType.ExtraTypes[0].Extra is NStarType ReturnUnvType)
 			{
 				if (index <= 1)
 					result.AddRange(branch[index - 1].Info);
@@ -1265,13 +1265,13 @@ public sealed class SemanticTree
 					GenerateMessage(ref errorsList, 0x4045, otherPos, DelegateUnvType.ExtraTypes.Length - 1);
 					return "default!";
 				}
-				UniversalType ParameterUnvType = default!, CallUnvType = default!;
+				NStarType ParameterUnvType = default!, CallUnvType = default!;
 				result.AddRange(List(branch[index], out var innerErrorsList));
 				var wrongParameterIndex = branch[index].Elements.Combine(DelegateUnvType.ExtraTypes.Skip(1))
-					.FindIndex(x => x.Item1.Extra is not UniversalType ParameterUnvType2
+					.FindIndex(x => x.Item1.Extra is not NStarType ParameterUnvType2
 					|| !TypesAreCompatible(ParameterUnvType = ParameterUnvType2,
 					CallUnvType = x.Item2.Value.Info == "type"
-					&& x.Item2.Value.Extra is UniversalType UnvType ? UnvType : NullType,
+					&& x.Item2.Value.Extra is NStarType UnvType ? UnvType : NullType,
 					out var warning, [], out var destExpr, out _) || warning || destExpr != null && destExpr.Length != 0);
 				if (wrongParameterIndex >= 0)
 				{
@@ -1297,7 +1297,7 @@ public sealed class SemanticTree
 					AddRange(ref errorsList, innerErrorsList);
 				}
 			var parameterTypes = branch.Length <= 1 ? [] : branch[1].Elements.ToList(x =>
-				x.Extra is UniversalType UnvType ? UnvType : throw new InvalidOperationException());
+				x.Extra is NStarType UnvType ? UnvType : throw new InvalidOperationException());
 			var s = elem1["Function ".Length..];
 			if (s == "ExecuteString")
 			{
@@ -1329,7 +1329,7 @@ public sealed class SemanticTree
 				return ((String)"((String)@\"").AddRange(input.Replace("\"", "\"\"")).AddRange("\")");
 			}
 			else if (elem2 == "public" && s == nameof(RedStarLinq.Fill) && branch[index].Length == 2
-				&& branch[index][0].Extra is UniversalType FirstParameterType
+				&& branch[index][0].Extra is NStarType FirstParameterType
 				&& TypeEqualsToPrimitive(FirstParameterType, "bool"))
 			{
 				result.AddRange("new ").AddRange(nameof(BitList)).Add('(');
@@ -1342,7 +1342,7 @@ public sealed class SemanticTree
 				branch.Extra = BitListType;
 				extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
 			}
-			else if (!elem2.StartsWith("user") && branch.Parent?[0].Extra is UniversalType ContainerUnvType)
+			else if (!elem2.StartsWith("user") && branch.Parent?[0].Extra is NStarType ContainerUnvType)
 			{
 				if (MethodExists(ContainerUnvType, FunctionMapping(s, null), parameterTypes, out var functions)
 					&& functions.Length != 0)
@@ -1354,7 +1354,7 @@ public sealed class SemanticTree
 					extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
 				}
 				else if (GeneralMethodExists(ContainerUnvType.MainType, s, branch[index].Elements.ToList(x =>
-					x.Extra is UniversalType UnvType ? UnvType : throw new InvalidOperationException()),
+					x.Extra is NStarType UnvType ? UnvType : throw new InvalidOperationException()),
 					out functions, out _) && functions.Length != 0)
 				{
 					list[2] = functions;
@@ -1386,7 +1386,7 @@ public sealed class SemanticTree
 				branch.Extra = functions[^1].ReturnUnvType;
 				extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
 			}
-			else if (elem2 == "userMethod" && branch.Parent?[0].Extra is UniversalType ContainerUnvType2)
+			else if (elem2 == "userMethod" && branch.Parent?[0].Extra is NStarType ContainerUnvType2)
 			{
 				if (TypeEqualsToPrimitive(ContainerUnvType2, "typename") && list.Length == 5 && list[4] is String elem4
 					&& elem4 == "static" && UserDefinedFunctionExists(ContainerUnvType2.MainType, s,
@@ -1418,9 +1418,9 @@ public sealed class SemanticTree
 		else if (branch[index].Info == nameof(ConstructorCall) && extra is List<object> list2)
 		{
 			var parameterTypes = branch.Length <= 1 ? [] : branch[1].Elements.ToList(x =>
-				x.Extra is UniversalType UnvType ? UnvType : NullType);
+				x.Extra is NStarType UnvType ? UnvType : NullType);
 			if (!(list2.Length == 5 && list2[0] is String elem1 && elem1 == "Constructor"
-				&& list2[1] is UniversalType ConstructingUnvType && list2[2] is String elem3
+				&& list2[1] is NStarType ConstructingUnvType && list2[2] is String elem3
 				&& list2[3] is ConstructorOverloads constructors && constructors.Length != 0
 				&& list2[4] is List<String> innerResults
 				&& (ConstructorsExist(ConstructingUnvType, parameterTypes, out var constructors2)
@@ -1498,11 +1498,11 @@ public sealed class SemanticTree
 	private String Indexes(TreeBranch branch, ref List<String>? errorsList, object? extra, int index)
 	{
 		String result = [];
-		if (branch[index - 1].Extra is not UniversalType CollectionUnvType)
+		if (branch[index - 1].Extra is not NStarType CollectionUnvType)
 			return "default!";
 		if (!(extra is List<object> list && list.Length == 3 && list[0] is String elem1
 			&& elem1.ToString() is "Variable" or nameof(Property) or nameof(Expr)
-			&& list[1] is UniversalType CollectionUnvType2
+			&& list[1] is NStarType CollectionUnvType2
 			&& TypesAreEqual(CollectionUnvType, CollectionUnvType2)
 			&& list[2] is List<String> innerResults))
 			return "default!";
@@ -1534,11 +1534,11 @@ public sealed class SemanticTree
 				}
 				result.AddRange(".Item").AddRange(value.ToString());
 				CollectionUnvType = CollectionUnvType.ExtraTypes[value - 1].Info == "type"
-					&& CollectionUnvType.ExtraTypes[value - 1].Extra is UniversalType InnerUnvType ? InnerUnvType : NullType;
+					&& CollectionUnvType.ExtraTypes[value - 1].Extra is NStarType InnerUnvType ? InnerUnvType : NullType;
 				oldRange = false;
 				continue;
 			}
-			var trivialIndex = IsTrivialIndexType(CollectionUnvType) && branch[index][i].Extra is UniversalType IndexUnvType
+			var trivialIndex = IsTrivialIndexType(CollectionUnvType) && branch[index][i].Extra is NStarType IndexUnvType
 				&& !TypesAreEqual(IndexUnvType, IndexType) && !(range = TypesAreEqual(IndexUnvType, RangeType));
 			if (trivialIndex && int.TryParse(x.ToString(), out var value2) && value2 <= 0)
 			{
@@ -1563,7 +1563,7 @@ public sealed class SemanticTree
 		branch.Extra = CollectionUnvType;
 		list[1] = CollectionUnvType;
 		return result;
-		static bool IsTrivialIndexType(UniversalType CollectionUnvType)
+		static bool IsTrivialIndexType(NStarType CollectionUnvType)
 		{
 			if (TypeEqualsToPrimitive(CollectionUnvType, "list", false))
 				return true;
@@ -1572,14 +1572,14 @@ public sealed class SemanticTree
 				out var warning, null, out _, out _) && !warning)
 				return true;
 			if (CollectionUnvType.ExtraTypes.Length != 2 || CollectionUnvType.ExtraTypes[0].Info != "type"
-				|| CollectionUnvType.ExtraTypes[0].Extra is not UniversalType FirstUnvType
+				|| CollectionUnvType.ExtraTypes[0].Extra is not NStarType FirstUnvType
 				|| CollectionUnvType.ExtraTypes[1].Info != "type"
-				|| CollectionUnvType.ExtraTypes[1].Extra is not UniversalType SecondUnvType)
+				|| CollectionUnvType.ExtraTypes[1].Extra is not NStarType SecondUnvType)
 				return false;
 			if (!CollectionUnvType.MainType.Equals(FirstUnvType.MainType))
 				return false;
 			if (SecondUnvType.ExtraTypes.Length != 1 || SecondUnvType.ExtraTypes[0].Info != "type"
-				|| SecondUnvType.ExtraTypes[0].Extra is not UniversalType SecondInnerUnvType)
+				|| SecondUnvType.ExtraTypes[0].Extra is not NStarType SecondInnerUnvType)
 				return false;
 			if (!TypesAreEqual(FirstUnvType, SecondInnerUnvType))
 				return false;
@@ -1591,7 +1591,7 @@ public sealed class SemanticTree
 
 	private bool? HypernameMethod(TreeBranch branch, String s, List<String> innerResults, ref object? refExtra, ref List<String>? errorsList, int prevIndex, BlockStack ContainerMainType, GeneralMethodOverloads functions)
 	{
-		UniversalType UnvType;
+		NStarType UnvType;
 		object extra;
 		foreach (var function in functions)
 		{
@@ -1609,7 +1609,7 @@ public sealed class SemanticTree
 				extra = (function!.Attributes & FunctionAttributes.Static) != 0 ? list.Add("static") : list;
 			}
 			TreeBranch newBranch = new("type", branch.Pos, branch.Container) { Extra = UnvType };
-			GeneralExtraTypes parameterTypes = new(function.Parameters.Convert(x =>
+			BranchCollection parameterTypes = new(function.Parameters.Convert(x =>
 			new TreeBranch("type", branch.Pos, branch.Container) { Extra = x.Type })
 				.Prepend(newBranch).ToList()
 				?? [newBranch]);
@@ -1627,7 +1627,7 @@ public sealed class SemanticTree
 
 	private bool? HypernameGeneralMethod(TreeBranch branch, String s, List<String> innerResults, ref object? refExtra, ref List<String>? errorsList, int prevIndex, BlockStack ContainerMainType, GeneralMethodOverloads functions, String category)
 	{
-		UniversalType extra;
+		NStarType extra;
 		object extra2;
 		foreach (var function in functions)
 		{
@@ -1642,7 +1642,7 @@ public sealed class SemanticTree
 				extra2 = (function.Attributes & FunctionAttributes.Static) != 0 ? list.Add("static") : list;
 			}
 			TreeBranch newBranch = new("type", branch.Pos, branch.Container) { Extra = extra };
-			GeneralExtraTypes parameterTypes = new(function.Parameters.Convert(x =>
+			BranchCollection parameterTypes = new(function.Parameters.Convert(x =>
 			new TreeBranch("type", branch.Pos, branch.Container) { Extra = x.Type })
 				.Prepend(newBranch).ToList()
 				?? [newBranch]);
@@ -1662,12 +1662,12 @@ public sealed class SemanticTree
 	{
 		foreach (var function in functions)
 		{
-			UniversalType extra;
+			NStarType extra;
 			object extra2;
 			extra = function.ReturnUnvType;
 			extra2 = new List<object> { ((String)"Function ").AddRange(s), category, functions, innerResults };
 			TreeBranch newBranch = new("type", branch.Pos, branch.Container) { Extra = extra };
-			GeneralExtraTypes parameterTypes = new(function.Parameters.Convert(x =>
+			BranchCollection parameterTypes = new(function.Parameters.Convert(x =>
 			new TreeBranch("type", branch.Pos, branch.Container) { Extra = x.Type })
 				.Prepend(newBranch).ToList()
 				?? [newBranch]);
@@ -1683,7 +1683,7 @@ public sealed class SemanticTree
 		return false;
 	}
 
-	private static void HypernameAddExtra(TreeBranch branch, UniversalType extra, object extra2, ref object? refExtra, GeneralExtraTypes extraTypes)
+	private static void HypernameAddExtra(TreeBranch branch, NStarType extra, object extra2, ref object? refExtra, BranchCollection extraTypes)
 	{
 		if (branch.Length >= 2 && branch[1].Info == nameof(Call))
 		{
@@ -1694,19 +1694,19 @@ public sealed class SemanticTree
 		else
 		{
 			branch[0].Info += " (delegate)";
-			branch[0].Extra = new UniversalType(FuncBlockStack, extraTypes);
+			branch[0].Extra = new NStarType(FuncBlockStack, extraTypes);
 			branch[0].Insert(0, (TreeBranch)new("data", branch.Pos, branch.EndPos, branch.Container) { Extra = extra2 });
 		}
 	}
 
-	private void PropagateParameterTypes(TreeBranch branch, bool @params, GeneralExtraTypes parameterTypes)
+	private void PropagateParameterTypes(TreeBranch branch, bool @params, BranchCollection parameterTypes)
 	{
 		if (branch.Length < 2)
 			return;
 		for (var i = 0; i < branch[1].Length; i++)
 		{
 			var x = branch[1][i];
-			if (parameterTypes[@params ? ^1 : i].Extra is UniversalType DestinationType && (x.Extra is not UniversalType SourceType
+			if (parameterTypes[@params ? ^1 : i].Extra is NStarType DestinationType && (x.Extra is not NStarType SourceType
 				|| i >= parameterTypes.Length - 1 && @params && TypesAreEqual(GetSubtype(SourceType), DestinationType)
 				|| TypesAreCompatible(SourceType, DestinationType, out var warning, [], out _, out _) && !warning))
 			{
@@ -1745,9 +1745,9 @@ public sealed class SemanticTree
 	private bool CallCheck(TreeBranch branch, ref List<String>? errorsList, List<String> innerResults, object? extra = null)
 	{
 		var otherPos = branch.FirstPos;
-		List<UniversalType> CallParameterUnvTypes = [];
+		List<NStarType> CallParameterUnvTypes = [];
 		for (var i = 0; i < branch.Length; i++)
-			if (branch[i].Extra is UniversalType type)
+			if (branch[i].Extra is NStarType type)
 				CallParameterUnvTypes.Add(type);
 			else
 			{
@@ -1776,7 +1776,7 @@ public sealed class SemanticTree
 			.FilterInPlace(x => x.Parameters.Count(y => (y.Attributes & ParameterAttributes.Optional) == 0)
 			<= CallParameterUnvTypes.Length);
 		var warnings = new bool[CallParameterUnvTypes.Length];
-		var FunctionParameterUnvTypes = new UniversalType[CallParameterUnvTypes.Length];
+		var FunctionParameterUnvTypes = new NStarType[CallParameterUnvTypes.Length];
 		var adaptedInnerResults = new String[CallParameterUnvTypes.Length];
 		var extraMessages = new String[CallParameterUnvTypes.Length];
 		int index = 0, index2 = 0;
@@ -1900,9 +1900,9 @@ public sealed class SemanticTree
 	private bool ConstructorCallCheck(TreeBranch branch, ref List<String>? errorsList, List<String> innerResults, object? extra = null)
 	{
 		var otherPos = branch.FirstPos;
-		List<UniversalType> CallParameterUnvTypes = [];
+		List<NStarType> CallParameterUnvTypes = [];
 		for (var i = 0; i < branch.Length; i++)
-			if (branch[i].Extra is UniversalType type)
+			if (branch[i].Extra is NStarType type)
 				CallParameterUnvTypes.Add(type);
 			else
 			{
@@ -1911,7 +1911,7 @@ public sealed class SemanticTree
 			}
 		if (!(extra is List<object> list
 			&& list.Length >= 4 && list.Length <= 5 && list[0] is String elem1 && elem1 == "Constructor"
-			&& list[1] is UniversalType ConstructingUnvType && list[2] is String elem3 &&
+			&& list[1] is NStarType ConstructingUnvType && list[2] is String elem3 &&
 			list[3] is ConstructorOverloads constructors && constructors.Length != 0))
 		{
 			GenerateMessage(ref errorsList, 0x4000, otherPos);
@@ -1930,7 +1930,7 @@ public sealed class SemanticTree
 			.FilterInPlace(x => x.Parameters.Count(y => (y.Attributes & ParameterAttributes.Optional) == 0)
 			<= CallParameterUnvTypes.Length);
 		var warnings = new bool[CallParameterUnvTypes.Length];
-		var FunctionParameterUnvTypes = new UniversalType[CallParameterUnvTypes.Length];
+		var FunctionParameterUnvTypes = new NStarType[CallParameterUnvTypes.Length];
 		var adaptedInnerResults = RedStarLinq.FillArray(constructors.Length, _ => new String[CallParameterUnvTypes.Length]);
 		var extraMessages = new String[CallParameterUnvTypes.Length];
 		int index = 0, index2 = 0;
@@ -2065,7 +2065,7 @@ public sealed class SemanticTree
 		{
 			if (branch[i].Info == "type")
 			{
-				innerResults.SetOrAdd(i, "typeof(" + (branch[0].Extra is UniversalType type2
+				innerResults.SetOrAdd(i, "typeof(" + (branch[0].Extra is NStarType type2
 					? Type(type2, branch[0], ref errorsList) : "dynamic") + ")");
 				continue;
 			}
@@ -2104,9 +2104,9 @@ public sealed class SemanticTree
 			else if (i == 0 || i % 2 != 0)
 				return branch.Length == 2 && i == 1 ? UnaryExpr(branch, ref errorsList, i)
 					: ListExpr(branch, ref errorsList, i);
-			if (branch[i - 2].Extra is not UniversalType UnvType1)
+			if (branch[i - 2].Extra is not NStarType UnvType1)
 				UnvType1 = NullType;
-			if (branch[i - 1].Extra is not UniversalType UnvType2)
+			if (branch[i - 1].Extra is not NStarType UnvType2)
 				UnvType2 = NullType;
 			var resultType = GetResultType(UnvType1, UnvType2, innerResults[^2].Copy(), innerResults[^1].Copy());
 			String @default = "default";
@@ -2153,10 +2153,10 @@ public sealed class SemanticTree
 		}
 		else if (branch.Info == nameof(List))
 			branch.Extra = branch.Elements.Progression(GetListType(NullType), (x, y) =>
-			GetResultType(x, GetListType(y.Extra is UniversalType UnvType ? UnvType : NullType), "default!", "default!"));
+			GetResultType(x, GetListType(y.Extra is NStarType UnvType ? UnvType : NullType), "default!", "default!"));
 		else if (branch.Info == nameof(Indexes))
 		{
-			if (prevIndex >= 1 && branch.Parent[prevIndex - 1].Extra is UniversalType UnvType)
+			if (prevIndex >= 1 && branch.Parent[prevIndex - 1].Extra is NStarType UnvType)
 				branch.Extra = GetSubtype(UnvType, branch.Length);
 			else
 				branch.Extra = NullType;
@@ -2165,9 +2165,9 @@ public sealed class SemanticTree
 			branch.Replace(branch[0]);
 		else if (branch.Length != 0)
 		{
-			if (branch[^1].Extra is not UniversalType UnvType)
+			if (branch[^1].Extra is not NStarType UnvType)
 				branch.Extra = NullType;
-			else if (branch.Extra is UniversalType BranchUnvType && branch.Parent.Info != "return"
+			else if (branch.Extra is NStarType BranchUnvType && branch.Parent.Info != "return"
 				&& (!TypesAreCompatible(UnvType, BranchUnvType, out var warning,
 				[], out _, out var extraMessage)
 				|| warning))
@@ -2181,10 +2181,10 @@ public sealed class SemanticTree
 		return innerResults[i - 1];
 	}
 
-	private String ValueExpr(Universal value, TreeBranch branch, ref List<String>? errorsList, int i)
+	private String ValueExpr(NStarObject value, TreeBranch branch, ref List<String>? errorsList, int i)
 	{
 		var otherPos = branch[i].Pos;
-		Universal result;
+		NStarObject result;
 		double realValue;
 		switch (branch[i].Info.ToString())
 		{
@@ -2385,7 +2385,7 @@ public sealed class SemanticTree
 	{
 		if (branch[i].Info.ToString() is "++" or "--" or "postfix ++" or "postfix --" or "!!")
 			branch.Info = "UnaryAssignment";
-		if (branch[i - 1].Extra is not UniversalType UnvType)
+		if (branch[i - 1].Extra is not NStarType UnvType)
 			UnvType = NullType;
 		if (!(TypeIsPrimitive(UnvType.MainType) && (branch[i].Info == "^" ? UnvType.MainType.Peek().Name.ToString()
 			is "byte" or "short int" or "unsigned short int" or "int"
@@ -2441,9 +2441,9 @@ public sealed class SemanticTree
 
 	private String PMExpr(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, ref int i)
 	{
-		if (branch[i - 2].Extra is not UniversalType UnvType1)
+		if (branch[i - 2].Extra is not NStarType UnvType1)
 			UnvType1 = NullType;
-		if (branch[i - 1].Extra is not UniversalType UnvType2)
+		if (branch[i - 1].Extra is not NStarType UnvType2)
 			UnvType2 = NullType;
 		var resultType = GetResultType(UnvType1, UnvType2, innerResults[^2], innerResults[^1]);
 		String @default = "default";
@@ -2464,7 +2464,7 @@ public sealed class SemanticTree
 			GenerateMessage(ref errorsList, 0x4006, branch[i].Pos, branch[i].Info, UnvType1.ToString(), UnvType2.ToString());
 			return @default;
 		}
-		if (!(i >= 4 && branch[i - 4].Extra is UniversalType PrevUnvType))
+		if (!(i >= 4 && branch[i - 4].Extra is NStarType PrevUnvType))
 			PrevUnvType = NullType;
 		var isString1 = TypeEqualsToPrimitive(UnvType1, "string");
 		var isString2 = TypeEqualsToPrimitive(UnvType2, "string") || TypeEqualsToPrimitive(UnvType2, "char");
@@ -2528,7 +2528,7 @@ public sealed class SemanticTree
 			return result.AddRange(".AddRange(").AddRange(innerResults[^1]).Add(')');
 		}
 		else if (isString1 || isString2)
-			return ((String)"((").AddRange(nameof(Universal)).Add(')').AddRange(innerResults[^2]).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]).AddRange(").ToString()");
+			return ((String)"((").AddRange(nameof(NStarObject)).Add(')').AddRange(innerResults[^2]).Add(' ').AddRange(branch[i].Info).Add(' ').AddRange(innerResults[^1]).AddRange(").ToString()");
 		else
 		{
 			if (innerResults[^2].ContainsAnyExcluding(AlphanumericCharacters))
@@ -2541,15 +2541,15 @@ public sealed class SemanticTree
 
 	private String MulDivExpr(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, ref int i)
 	{
-		if (branch[i - 2].Extra is not UniversalType UnvType1)
+		if (branch[i - 2].Extra is not NStarType UnvType1)
 			UnvType1 = NullType;
-		if (branch[i - 1].Extra is not UniversalType UnvType2)
+		if (branch[i - 1].Extra is not NStarType UnvType2)
 			UnvType2 = NullType;
 		var resultType = (branch[i].Info == "/" && TypeIsPrimitive(UnvType1.MainType) && TypeIsPrimitive(UnvType2.MainType))
-			? GetPrimitiveType(Universal.GetQuotientType(UnvType1.MainType.Peek().Name,
+			? GetPrimitiveType(NStarObject.GetQuotientType(UnvType1.MainType.Peek().Name,
 			TryReadValue(branch[i - 1].Info, out var value) ? value : 5, UnvType2.MainType.Peek().Name))
 			: (branch[i].Info == "%" && TypeIsPrimitive(UnvType1.MainType) && TypeIsPrimitive(UnvType2.MainType))
-			? GetPrimitiveType(Universal.GetRemainderType(UnvType1.MainType.Peek().Name,
+			? GetPrimitiveType(NStarObject.GetRemainderType(UnvType1.MainType.Peek().Name,
 			TryReadValue(branch[i - 1].Info, out var value2) ? value2 : new(12345678901234567890, UnsignedLongIntType),
 			UnvType2.MainType.Peek().Name)) : GetResultType(UnvType1, UnvType2, innerResults[^2], innerResults[^1]);
 		String @default = "default";
@@ -2571,7 +2571,7 @@ public sealed class SemanticTree
 			GenerateMessage(ref errorsList, 0x4006, branch[i].Pos, branch[i].Info, UnvType1.ToString(), UnvType2.ToString());
 			return @default;
 		}
-		if (!(i >= 4 && branch[i - 4].Extra is UniversalType PrevUnvType))
+		if (!(i >= 4 && branch[i - 4].Extra is NStarType PrevUnvType))
 			PrevUnvType = NullType;
 		var isString1 = TypeEqualsToPrimitive(UnvType1, "string");
 		var isString2 = TypeEqualsToPrimitive(UnvType2, "string");
@@ -2632,9 +2632,9 @@ public sealed class SemanticTree
 
 	private String PowExpr(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, int i)
 	{
-		if (branch[i - 2].Extra is not UniversalType UnvType1)
+		if (branch[i - 2].Extra is not NStarType UnvType1)
 			UnvType1 = NullType;
-		if (branch[i - 1].Extra is not UniversalType UnvType2)
+		if (branch[i - 1].Extra is not NStarType UnvType2)
 			UnvType2 = NullType;
 		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "byte"
 			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
@@ -2662,9 +2662,9 @@ public sealed class SemanticTree
 
 	private String RangeExpr(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, int i)
 	{
-		if (branch[i - 2].Extra is not UniversalType UnvType1)
+		if (branch[i - 2].Extra is not NStarType UnvType1)
 			UnvType1 = NullType;
-		if (branch[i - 1].Extra is not UniversalType UnvType2)
+		if (branch[i - 1].Extra is not NStarType UnvType2)
 			UnvType2 = NullType;
 		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "byte"
 			or "short int" or "unsigned short int" or "int" or "index"
@@ -2704,9 +2704,9 @@ public sealed class SemanticTree
 
 	private String BoolExpr(TreeBranch branch, List<String> innerResults, ref List<String>? errorsList, int i)
 	{
-		if (branch[i - 2].Extra is not UniversalType UnvType1)
+		if (branch[i - 2].Extra is not NStarType UnvType1)
 			UnvType1 = NullType;
-		if (branch[i - 1].Extra is not UniversalType UnvType2)
+		if (branch[i - 1].Extra is not NStarType UnvType2)
 			UnvType2 = NullType;
 		if (!((branch[i].Info.ToString() is "==" or ">" or "<" or ">=" or "<=" or "!="
 			&& TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null" or "bool"
@@ -2762,9 +2762,9 @@ public sealed class SemanticTree
 		else if (branch[i].Info == "=" && branch[i - 1].Info == nameof(Hypername) && branch[Max(0, i - 3)] == branch[i - 1])
 			GenerateMessage(ref errorsList, 0x8007, branch[i].Pos);
 		branch.Info = nameof(Assignment);
-		if (branch[i - 2].Extra is not UniversalType SrcUnvType)
+		if (branch[i - 2].Extra is not NStarType SrcUnvType)
 			SrcUnvType = NullType;
-		if (branch[i - 1].Extra is not UniversalType DestUnvType)
+		if (branch[i - 1].Extra is not NStarType DestUnvType)
 			DestUnvType = NullType;
 		var warning = false;
 		if (branch[i].Info == "pow=" && TypesAreCompatible(SrcUnvType, RealType, out warning, innerResults[^2],
@@ -2832,9 +2832,9 @@ public sealed class SemanticTree
 		}
 		if (branch[i - 2].Info == "?")
 		{
-			if (branch[i - 3].Extra is not UniversalType UnvType1)
+			if (branch[i - 3].Extra is not NStarType UnvType1)
 				UnvType1 = NullType;
-			if (branch[i - 1].Extra is not UniversalType UnvType2)
+			if (branch[i - 1].Extra is not NStarType UnvType2)
 				UnvType2 = NullType;
 			if (branch.Parent != null && branch.Parent.Info == "return" && branch.Parent.Parent != null
 				&& branch.Parent.Parent.Info == nameof(Main) && branch.Parent.Parent.Parent == null)
@@ -2868,11 +2868,11 @@ public sealed class SemanticTree
 		}
 		else
 		{
-			if (branch[i - 4].Extra is not UniversalType UnvType1)
+			if (branch[i - 4].Extra is not NStarType UnvType1)
 				UnvType1 = NullType;
-			if (branch[i - 3].Extra is not UniversalType UnvType2)
+			if (branch[i - 3].Extra is not NStarType UnvType2)
 				UnvType2 = NullType;
-			if (branch[i - 1].Extra is not UniversalType UnvType3)
+			if (branch[i - 1].Extra is not NStarType UnvType3)
 				UnvType3 = NullType;
 			var checksEquality = branch[i - 2].Info.ToString() is "?=" or "?!=";
 			if (!((checksEquality && TypeEqualsToPrimitive(UnvType1, "string")
@@ -2933,7 +2933,7 @@ public sealed class SemanticTree
 
 	private static String CombineWithExpr(TreeBranch branch, List<String> innerResults, int i)
 	{
-		if (branch[i - 1].Extra is not UniversalType UnvType)
+		if (branch[i - 1].Extra is not NStarType UnvType)
 			UnvType = NullType;
 		branch[i].Extra = UnvType;
 		return innerResults[^1];
@@ -2948,9 +2948,9 @@ public sealed class SemanticTree
 
 	private static String BinaryNotListExpr(TreeBranch branch, List<String> innerResults, int i)
 	{
-		if (branch[i - 2].Extra is not UniversalType UnvType1)
+		if (branch[i - 2].Extra is not NStarType UnvType1)
 			UnvType1 = NullType;
-		if (branch[i - 1].Extra is not UniversalType UnvType2)
+		if (branch[i - 1].Extra is not NStarType UnvType2)
 			UnvType2 = NullType;
 		branch[i].Extra = GetResultType(UnvType1, UnvType2, innerResults[^2], innerResults[^1]);
 		if (innerResults[^2].ContainsAnyExcluding(AlphanumericCharacters))
@@ -2965,7 +2965,7 @@ public sealed class SemanticTree
 		String result = "(";
 		List<String> innerResults = [];
 		errorsList = null;
-		if (branch.Extra is UniversalType UnvType)
+		if (branch.Extra is NStarType UnvType)
 		{
 			if (TypeEqualsToPrimitive(UnvType, "list", false))
 			{
@@ -2975,10 +2975,10 @@ public sealed class SemanticTree
 			}
 			else if (TypeEqualsToPrimitive(UnvType, "tuple", false))
 			{
-				if (UnvType.ExtraTypes.Any(x => x.Value.Info != "type" || x.Value.Extra is not UniversalType))
+				if (UnvType.ExtraTypes.Any(x => x.Value.Info != "type" || x.Value.Extra is not NStarType))
 					throw new InvalidOperationException();
 				for (var i = 0; i < UnvType.ExtraTypes.Length && i < branch.Length; i++)
-					branch[i].Extra = (UniversalType)UnvType.ExtraTypes[i].Extra!;
+					branch[i].Extra = (NStarType)UnvType.ExtraTypes[i].Extra!;
 			}
 		}
 		for (var i = 0; i < branch.Length; i++)
@@ -2995,7 +2995,7 @@ public sealed class SemanticTree
 				var innerResult = ParseAction(branch[i].Info)(branch[i], out var innerErrorsList);
 				innerResults.Add(innerResult.ToString() is "_" or "default" or "default!" or "_ = default" or "_ = default!"
 					|| branch[i].Info == nameof(Hypername)
-					&& branch[i].Extra is UniversalType ExprUnvType && TypesAreEqual(ExprUnvType, NullType)
+					&& branch[i].Extra is NStarType ExprUnvType && TypesAreEqual(ExprUnvType, NullType)
 					? branch.Parent != null && branch.Parent.Info == nameof(Expr) && branch.Parent.Parent != null
 					&& branch.Parent.Parent.Info == "return" && branch.Parent.Parent.Parent != null
 					&& branch.Parent.Parent.Parent.Info == nameof(Main)
@@ -3010,7 +3010,7 @@ public sealed class SemanticTree
 			branch.Extra = NullType;
 			return "default!";
 		}
-		branch.Extra = new UniversalType(TupleBlockStack, new(branch.Elements.Convert(x => x.Extra is UniversalType UnvType
+		branch.Extra = new NStarType(TupleBlockStack, new(branch.Elements.Convert(x => x.Extra is NStarType UnvType
 		? new TreeBranch("type", branch.Pos, branch.Container) { Extra = UnvType } : throw new InvalidOperationException())));
 		return result.Add(')');
 	}
@@ -3035,7 +3035,7 @@ public sealed class SemanticTree
 			}
 		}
 		branch.Extra = branch.Elements.Progression(GetListType(BoolType), (x, y) =>
-			GetResultType(x, GetListType(y.Extra is UniversalType UnvType ? UnvType : NullType), "default!", "default!"));
+			GetResultType(x, GetListType(y.Extra is NStarType UnvType ? UnvType : NullType), "default!", "default!"));
 		return result.Add(')');
 	}
 
@@ -3046,7 +3046,7 @@ public sealed class SemanticTree
 		var otherPos = branch.FirstPos;
 		if (branch.Parent == null || branch.Parent.Info.ToString() is not (nameof(Call) or nameof(ConstructorCall)))
 		{
-			if (branch.Extra is UniversalType FunctionType
+			if (branch.Extra is NStarType FunctionType
 				&& FunctionType.MainType.Equals(FuncBlockStack))
 				goto alter;
 			else
@@ -3061,7 +3061,7 @@ public sealed class SemanticTree
 		var grandParentIndex = grandParent.Elements.FindIndex(x => ReferenceEquals(x, branch.Parent));
 		if (grandParentIndex < 1 || grandParent.Extra is not GeneralMethodOverloads functions)
 			return Default(ref errorsList);
-		List<UniversalType> parameterTypes = [];
+		List<NStarType> parameterTypes = [];
 		List<TreeBranch> parameterBranches = [];
 		var success = false;
 		for (var i = 0; i < functions.Length; i++)
@@ -3071,9 +3071,9 @@ public sealed class SemanticTree
 			var ContainerUnvType = functions[i].Parameters[parentIndex].Type;
 			if (!ContainerUnvType.MainType.Equals(FuncBlockStack))
 				continue;
-			if (ContainerUnvType.ExtraTypes.Skip(1).Any(x => x.Value.Info != "type" || x.Value.Extra is not UniversalType))
+			if (ContainerUnvType.ExtraTypes.Skip(1).Any(x => x.Value.Info != "type" || x.Value.Extra is not NStarType))
 				continue;
-			parameterTypes = ContainerUnvType.ExtraTypes.Skip(1).ToList(x => (UniversalType)x.Value.Extra!);
+			parameterTypes = ContainerUnvType.ExtraTypes.Skip(1).ToList(x => (NStarType)x.Value.Extra!);
 			parameterBranches = ContainerUnvType.ExtraTypes.Skip(1).ToList(x => x.Value);
 			if (parameterTypes.Length == 1 && IsValidParameter(branch[0], out var singleParameterName))
 			{
@@ -3112,23 +3112,23 @@ public sealed class SemanticTree
 		}
 		goto alterEnd;
 	alter:
-		if (!(branch.Extra is UniversalType FunctionUnvType
+		if (!(branch.Extra is NStarType FunctionUnvType
 			&& FunctionUnvType.MainType.Equals(FuncBlockStack)))
 			throw new InvalidOperationException();
 		parameterTypes = [];
-		if (FunctionUnvType.ExtraTypes.Skip(1).Any(x => x.Value.Info != "type" || x.Value.Extra is not UniversalType))
+		if (FunctionUnvType.ExtraTypes.Skip(1).Any(x => x.Value.Info != "type" || x.Value.Extra is not NStarType))
 		{
 			GenerateMessage(ref errorsList, 0x4044, otherPos);
 			branch.Extra = NullType;
 			return "default!";
 		}
-		parameterTypes = FunctionUnvType.ExtraTypes.Skip(1).ToList(x => (UniversalType)x.Value.Extra!);
+		parameterTypes = FunctionUnvType.ExtraTypes.Skip(1).ToList(x => (NStarType)x.Value.Extra!);
 		parameterBranches = FunctionUnvType.ExtraTypes.Skip(1).ToList(x => x.Value);
 		if (parameterTypes.Length == 1 && IsValidParameter(branch[0], out var singleParameterName2))
 		{
 			result.AddRange(singleParameterName2).AddRange(" => ");
 			branch[0].Extra = parameterTypes[0];
-			branch[1].Extra = (UniversalType)FunctionUnvType.ExtraTypes[0].Extra!;
+			branch[1].Extra = (NStarType)FunctionUnvType.ExtraTypes[0].Extra!;
 			goto alterEnd;
 		}
 		if (branch[0].Info != "List" || parameterTypes.Length != branch[0].Length)
@@ -3153,11 +3153,11 @@ public sealed class SemanticTree
 		branch[1].Extra ??= NullType;
 	alterEnd:
 		var innerResult = ParseAction(branch[1].Info)(branch[1], out var innerErrorsList);
-		if (branch.Extra is UniversalType FunctionUnvType2 && FunctionUnvType2.MainType.Equals(FuncBlockStack)
+		if (branch.Extra is NStarType FunctionUnvType2 && FunctionUnvType2.MainType.Equals(FuncBlockStack)
 			&& FunctionUnvType2.ExtraTypes.Length != 0 && FunctionUnvType2.ExtraTypes[0].Info == "type"
-			&& FunctionUnvType2.ExtraTypes[0].Extra is UniversalType ReturnUnvType)
+			&& FunctionUnvType2.ExtraTypes[0].Extra is NStarType ReturnUnvType)
 		{
-			if (branch[1].Extra is not UniversalType ValueUnvType)
+			if (branch[1].Extra is not NStarType ValueUnvType)
 			{
 				GenerateMessage(ref errorsList, 0x4014, branch[1].Pos, null!, NullType, ReturnUnvType);
 				return result.AddRange("default!");
@@ -3170,9 +3170,9 @@ public sealed class SemanticTree
 		}
 		result.AddRange(innerResult);
 		AddRange(ref errorsList, innerErrorsList);
-		if (branch[1].Extra is not UniversalType ReturnUnvType2)
+		if (branch[1].Extra is not NStarType ReturnUnvType2)
 			throw new InvalidOperationException();
-		branch.Extra = new UniversalType(FuncBlockStack, new([new TreeBranch("type", branch.Pos, branch.Container) { Extra = ReturnUnvType2 }, .. parameterBranches]));
+		branch.Extra = new NStarType(FuncBlockStack, new([new TreeBranch("type", branch.Pos, branch.Container) { Extra = ReturnUnvType2 }, .. parameterBranches]));
 		return result;
 		String Default(ref List<String>? errorsList)
 		{
@@ -3210,8 +3210,8 @@ public sealed class SemanticTree
 		branch[0].Extra ??= currentFunction.HasValue ? currentFunction.Value.ReturnUnvType : null;
 		var expr = Expr(branch[0], out var innerErrorsList);
 		var otherPos = branch.FirstPos;
-		if (!currentFunction.HasValue || branch[0].Extra is not UniversalType ExprUnvType)
-			result.AddRange(expr == "_" || branch[0].Extra is UniversalType ExprUnvType2
+		if (!currentFunction.HasValue || branch[0].Extra is not NStarType ExprUnvType)
+			result.AddRange(expr == "_" || branch[0].Extra is NStarType ExprUnvType2
 				&& TypesAreEqual(ExprUnvType2, NullType) ? "default!" : expr);
 		else if (TypesAreEqual(currentFunction.Value.ReturnUnvType, NullType))
 		{
@@ -3239,7 +3239,7 @@ public sealed class SemanticTree
 	private String Default(TreeBranch branch, out List<String>? errorsList)
 	{
 		errorsList = null;
-		if (Universal.TryParse(branch.Info.ToString(), out var value))
+		if (NStarObject.TryParse(branch.Info.ToString(), out var value))
 		{
 			branch.Extra = value.InnerType;
 			return value.ToString(true, true);
@@ -3285,7 +3285,7 @@ public sealed class SemanticTree
 		return [];
 	}
 
-	private String Type(UniversalType type, TreeBranch branch, ref List<String>? errorsList)
+	private String Type(NStarType type, TreeBranch branch, ref List<String>? errorsList)
 	{
 		String result = [];
 		List<String>? innerErrorsList = null;
@@ -3319,18 +3319,18 @@ public sealed class SemanticTree
 				type.ExtraTypes[0].Extra = IntType;
 			}
 			if (levelsCount == 0)
-				result.AddRange(Type((UniversalType)type.ExtraTypes[^1].Extra!, branch, ref errorsList));
+				result.AddRange(Type((NStarType)type.ExtraTypes[^1].Extra!, branch, ref errorsList));
 			else
 			{
 				result.AddRange(((String)"List<").Repeat(levelsCount - 1));
-				if (type.ExtraTypes[^1].Info != "type" || type.ExtraTypes[^1].Extra is not UniversalType InnerUnvType)
+				if (type.ExtraTypes[^1].Info != "type" || type.ExtraTypes[^1].Extra is not NStarType InnerUnvType)
 				{
 					GenerateMessage(ref errorsList, 0x4056, type.ExtraTypes[^1].Pos);
 					result.AddRange("dynamic");
 					goto skip;
 				}
 				var innerTypeName = Type(InnerUnvType, branch, ref errorsList);
-				var DotNetType = DeclaredConstructionMappings.TypeMapping(InnerUnvType);
+				var DotNetType = TypeMappings.TypeMapping(InnerUnvType);
 				if (DotNetType == typeof(bool))
 					result.AddRange(nameof(BitList));
 				else
@@ -3347,13 +3347,13 @@ public sealed class SemanticTree
 		{
 			if (type.ExtraTypes.Length == 0)
 				return "void";
-			var first = Type((UniversalType)type.ExtraTypes[0].Extra!, branch, ref errorsList);
+			var first = Type((NStarType)type.ExtraTypes[0].Extra!, branch, ref errorsList);
 			if (type.ExtraTypes.Length == 1)
 				return first;
 			using var innerResult = first.Copy();
 			for (var i = 1; i < type.ExtraTypes.Length; i++)
 			{
-				if (type.ExtraTypes[i].Info == "type" && type.ExtraTypes[i].Extra is UniversalType InnerUnvType)
+				if (type.ExtraTypes[i].Info == "type" && type.ExtraTypes[i].Extra is NStarType InnerUnvType)
 				{
 					result.AddRange(result.Length == 0 ? "(" : ", ").AddRange(innerResult);
 					innerResult.Replace(Type(InnerUnvType, branch, ref errorsList));
@@ -3393,7 +3393,7 @@ public sealed class SemanticTree
 		}
 		else if (type.MainType.Equals(FuncBlockStack))
 		{
-			if (type.ExtraTypes[0].Info != "type" || type.ExtraTypes[0].Extra is not UniversalType ReturnUnvType)
+			if (type.ExtraTypes[0].Info != "type" || type.ExtraTypes[0].Extra is not NStarType ReturnUnvType)
 			{
 				GenerateMessage(ref errorsList, 0x4056, type.ExtraTypes[0].Pos);
 				return "dynamic";
@@ -3402,7 +3402,7 @@ public sealed class SemanticTree
 			result.AddRange(noReturn ? "Action<" : "Func<");
 			for (var i = 1; i < type.ExtraTypes.Length; i++)
 			{
-				result.AddRange(type.ExtraTypes[i].Info != "type" || type.ExtraTypes[i].Extra is not UniversalType InnerUnvType
+				result.AddRange(type.ExtraTypes[i].Info != "type" || type.ExtraTypes[i].Extra is not NStarType InnerUnvType
 					? ParseAction(type.ExtraTypes[i].Info)(type.ExtraTypes[i],
 					out innerErrorsList) : Type(InnerUnvType, branch, ref errorsList));
 				AddRange(ref errorsList, innerErrorsList);
@@ -3422,13 +3422,13 @@ public sealed class SemanticTree
 				result.Insert(0, "G.");
 			if (result == nameof(ListHashSet<int>) && type.ExtraTypes.Length == 1)
 			{
-				if (type.ExtraTypes[0].Info != "type" || type.ExtraTypes[0].Extra is not UniversalType InnerUnvType)
+				if (type.ExtraTypes[0].Info != "type" || type.ExtraTypes[0].Extra is not NStarType InnerUnvType)
 				{
 					GenerateMessage(ref errorsList, 0x4056, type.ExtraTypes[0].Pos);
 					result.AddRange("dynamic");
 					return "dynamic";
 				}
-				if (DeclaredConstructionMappings.TypeMapping(InnerUnvType).IsUnmanaged())
+				if (TypeMappings.TypeMapping(InnerUnvType).IsUnmanaged())
 					result.Insert(0, 'N');
 			}
 			if (type.ExtraTypes.Length == 0)
@@ -3436,7 +3436,7 @@ public sealed class SemanticTree
 			result.Add('<');
 			for (var i = 0; i < type.ExtraTypes.Length; i++)
 			{
-				result.AddRange(type.ExtraTypes[i].Info != "type" || type.ExtraTypes[i].Extra is not UniversalType InnerUnvType
+				result.AddRange(type.ExtraTypes[i].Info != "type" || type.ExtraTypes[i].Extra is not NStarType InnerUnvType
 					? type.ExtraTypes[i].Info : Type(InnerUnvType, branch, ref errorsList));
 				if (i != type.ExtraTypes.Length - 1)
 					result.AddRange(", ");
@@ -3877,7 +3877,7 @@ public sealed class SemanticTree
 
 	private void GenerateMessage(ref List<String>? errorsList, ushort code, Index pos, params dynamic[] parameters)
 	{
-		DeclaredConstructions.GenerateMessage(ref errorsList, code, lexems[pos].LineN, lexems[pos].Pos, parameters);
+		Messages.GenerateMessage(ref errorsList, code, lexems[pos].LineN, lexems[pos].Pos, parameters);
 		if (code >> 12 == 0x9)
 			wreckOccurred = true;
 	}
@@ -3958,7 +3958,7 @@ public sealed class SemanticTree
 		assembly = EasyEval.GetAssembly(bytes);
 		var result = assembly?.GetType("Program")?.GetMethod("F")?.Invoke(null, [args]) ?? null;
 		errors = errorsList == null || errorsList.Length == 0 ? "Ошибок нет" : String.Join("\r\n", errorsList.Append([]));
-		return result is null ? "null" : JsonConvert.SerializeObject(result, SerializerHelpers.SerializerSettings);
+		return result is null ? "null" : JsonConvert.SerializeObject(result, JsonConverters.SerializerSettings);
 	}
 
 	public static byte[] CompileProgram(String program)
@@ -3993,11 +3993,11 @@ using System;
 using System.Dynamic;
 using System.Threading;
 using System.Threading.Tasks;
-using G = System.Collections.Generic;
 using static NStar.Core.Extents;
+using static CSharp.NStar.").AddRange(nameof(NStarBuiltInFunctions)).AddRange(@";
 using static CSharp.NStar.").AddRange(nameof(Quotes)).AddRange(@";
-using static CSharp.NStar.").AddRange(nameof(IntermediateFunctions)).AddRange(@";
 using static System.Math;
+using G = System.Collections.Generic;
 using String = NStar.Core.String;
 using CSharp.NStar;
 using static NStar.EasyEvalLib.EasyEval;
@@ -4016,15 +4016,15 @@ public static void Main(string[] args)
 Console.WriteLine(F(args));
 }
 }
-"), ["SemanticTree", "MainParsing", "CodeSample", "DeclaredConstructionHelpers", "DeclaredConstructions", "QuotesAndTreeBranch", "TypeHelpers", "Universal", "NStar.EasyEval"], translateErrors);
+"), ["BuiltInMemberCollections", "CodeSample", "DeclaredConstructionHelpers", "MainParsing", "NStar.EasyEval", "NStarObject", "QuotesAndTreeBranch", "TypeConverters", "SemanticTree"], translateErrors);
 		if (bytes == null || bytes.Length <= 2 || sb.ToString() != "Compilation done without any error.\r\n")
 			throw new EvaluationFailedException();
 		return (bytes, errorsList ?? []);
 	}
 
-	private static bool TryReadValue(String s, out Universal value) => Universal.TryParse(s.ToString(), out value)
-		|| s.StartsWith("(String)") && Universal.TryParse(s["(String)".Length..].ToString(), out value)
-		|| s.StartsWith("((String)") && s.EndsWith(')') && Universal.TryParse(s["((String)".Length..^1].ToString(), out value);
+	private static bool TryReadValue(String s, out NStarObject value) => NStarObject.TryParse(s.ToString(), out value)
+		|| s.StartsWith("(String)") && NStarObject.TryParse(s["(String)".Length..].ToString(), out value)
+		|| s.StartsWith("((String)") && s.EndsWith(')') && NStarObject.TryParse(s["((String)".Length..^1].ToString(), out value);
 
 	public override string ToString() => $"({String.Join(", ", lexems.ToArray(x => (String)x.ToString())).TakeIntoVerbatimQuotes()}, {input.TakeIntoVerbatimQuotes()}, {((String)topBranch.ToString()).TakeIntoVerbatimQuotes()}, ({(errorsList != null && errorsList.Length != 0 ? String.Join(", ", errorsList.ToArray(x => x.TakeIntoVerbatimQuotes())) : "NoErrors")}), {wreckOccurred})";
 }

@@ -142,7 +142,7 @@ public sealed class TreeBranch
 				+ (Extra is null ? "" : " : " + Extra.ToString()) + ")";
 		else if (Extra is null)
 			return Info.ToString();
-		else if (Info == "type" && Extra is UniversalType UnvType)
+		else if (Info == "type" && Extra is NStarType UnvType)
 			return UnvType.ToString();
 		else
 			return "(" + Info + " :: " + Extra.ToString() + ")";

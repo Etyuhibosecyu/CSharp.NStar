@@ -7,6 +7,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\QuotesAndTreeBranch\QuotesAndTreeBranch.csproj" />
-		<ProjectReference Include="..\TypeHelpers\TypeHelpers.csproj" />
+		<ProjectReference Include="..\TypeConverters\TypeConverters.csproj" />
 	</ItemGroup>
 </Project>

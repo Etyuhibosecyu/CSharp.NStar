@@ -5,7 +5,8 @@ global using System;
 global using System.Diagnostics;
 global using System.Reflection;
 global using G = System.Collections.Generic;
-global using static CSharp.NStar.DeclaredConstructions;
+global using static CSharp.NStar.BuiltInMemberCollections;
+global using static CSharp.NStar.NStarType;
 global using static NStar.Core.Extents;
 global using static System.Math;
 global using String = NStar.Core.String;
@@ -16,7 +17,7 @@ using System.Text;
 
 namespace CSharp.NStar;
 
-public static class TypeHelpers
+public static class TypeConverters
 {
 	public static readonly Random globalRandom = new();
 	public static readonly String[] operators = ["or", "and", "^^", "||", "&&", "==", "!=", ">=", "<=", ">", "<", "^=", "|=", "&=", ">>=", "<<=", "+=", "-=", "*=", "/=", "%=", "pow=", "=", "^", "|", "&", ">>", "<<", "+", "-", "*", "/", "%", "pow", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "!", "~", "++", "--", "!!"];
@@ -39,7 +40,7 @@ public static class TypeHelpers
 		return answer;
 	}
 
-	public static UniversalType GetSubtype(UniversalType type, int levels = 1)
+	public static NStarType GetSubtype(NStarType type, int levels = 1)
 	{
 		if (levels <= 0)
 			return type;
@@ -54,7 +55,7 @@ public static class TypeHelpers
 			}
 			if (type.ExtraTypes.Length == 1 && TypesAreCompatible(type, new(IEnumerableBlockStack, type.ExtraTypes),
 				out var warning, null, out _, out _) && !warning
-				&& type.ExtraTypes[0].Info == "type" && type.ExtraTypes[0].Extra is UniversalType Subtype)
+				&& type.ExtraTypes[0].Info == "type" && type.ExtraTypes[0].Extra is NStarType Subtype)
 				return Subtype;
 			else
 				return NullType;
@@ -68,22 +69,22 @@ public static class TypeHelpers
 		}
 	}
 
-	private static UniversalType GetListSubtype(UniversalType type)
+	private static NStarType GetListSubtype(NStarType type)
 	{
 		if (type.ExtraTypes.Length == 1
-				&& type.ExtraTypes[0].Info == "type" && type.ExtraTypes[0].Extra is UniversalType Subtype)
+				&& type.ExtraTypes[0].Info == "type" && type.ExtraTypes[0].Extra is NStarType Subtype)
 			return Subtype;
 		else if (!(type.ExtraTypes[0].Info != "type" && int.TryParse(type.ExtraTypes[0].Info.ToString(), out var n)))
 			return NullType;
-		else if (n <= 1 && type.ExtraTypes[1].Info == "type" && type.ExtraTypes[1].Extra is UniversalType Subtype2)
+		else if (n <= 1 && type.ExtraTypes[1].Info == "type" && type.ExtraTypes[1].Extra is NStarType Subtype2)
 			return Subtype2;
 		else if (n == 2)
 			return GetListType(type.ExtraTypes[1]);
 		else
-			return (ListBlockStack, new GeneralExtraTypes { new((n - 1).ToString(), 0, []), type.ExtraTypes[1] });
+			return (ListBlockStack, new BranchCollection { new((n - 1).ToString(), 0, []), type.ExtraTypes[1] });
 	}
 
-	public static (int Depth, UniversalType LeafType) GetTypeDepthAndLeafType(UniversalType type)
+	public static (int Depth, NStarType LeafType) GetTypeDepthAndLeafType(NStarType type)
 	{
 		var Depth = 0;
 		var LeafType = type;
@@ -92,19 +93,19 @@ public static class TypeHelpers
 			if (TypeEqualsToPrimitive(LeafType, "list", false))
 			{
 				if (LeafType.ExtraTypes.Length == 1
-					&& LeafType.ExtraTypes[0].Info == "type" && LeafType.ExtraTypes[0].Extra is UniversalType Subtype)
+					&& LeafType.ExtraTypes[0].Info == "type" && LeafType.ExtraTypes[0].Extra is NStarType Subtype)
 				{
 					Depth++;
 					LeafType = Subtype;
 				}
 				else if (LeafType.ExtraTypes[0].Info != "type"
 					&& int.TryParse(LeafType.ExtraTypes[0].Info.ToString(), out var n)
-					&& LeafType.ExtraTypes[1].Info == "type" && LeafType.ExtraTypes[1].Extra is UniversalType Subtype2)
+					&& LeafType.ExtraTypes[1].Info == "type" && LeafType.ExtraTypes[1].Extra is NStarType Subtype2)
 				{
 					Depth += n;
 					LeafType = Subtype2;
 				}
-				else if (LeafType.ExtraTypes[1].Info == "type" && LeafType.ExtraTypes[1].Extra is UniversalType Subtype3)
+				else if (LeafType.ExtraTypes[1].Info == "type" && LeafType.ExtraTypes[1].Extra is NStarType Subtype3)
 				{
 					Depth++;
 					LeafType = Subtype3;
@@ -115,7 +116,7 @@ public static class TypeHelpers
 			else if (LeafType.MainType.Length != 0
 				&& LeafType.MainType.Peek().BlockType is BlockType.Class or BlockType.Struct or BlockType.Interface
 				&& CollectionTypesList.Contains(LeafType.MainType.ToShortString().ToNString().GetAfterLast("."))
-					&& LeafType.ExtraTypes[^1].Info == "type" && LeafType.ExtraTypes[^1].Extra is UniversalType Subtype)
+					&& LeafType.ExtraTypes[^1].Info == "type" && LeafType.ExtraTypes[^1].Extra is NStarType Subtype)
 			{
 				Depth++;
 				LeafType = Subtype;
@@ -125,7 +126,7 @@ public static class TypeHelpers
 		}
 	}
 
-	public static UniversalType GetResultType(UniversalType type1, UniversalType type2, String value1, String value2)
+	public static NStarType GetResultType(NStarType type1, NStarType type2, String value1, String value2)
 	{
 		try
 		{
@@ -251,7 +252,7 @@ public static class TypeHelpers
 			return "null";
 	}
 
-	private static UniversalType GetListResultType(UniversalType type1, UniversalType type2,
+	private static NStarType GetListResultType(NStarType type1, NStarType type2,
 		String left_type, String right_type, String value1, String value2)
 	{
 		if (CollectionTypesList.Contains(left_type) || CollectionTypesList.Contains(right_type))
@@ -263,27 +264,27 @@ public static class TypeHelpers
 			return GetListType(GetResultType(type1, GetSubtype(type2), value1, value2));
 	}
 
-	public static UniversalType PartialTypeToGeneralType(String mainType, List<String> extraTypes) =>
-		(GetBlockStack(mainType), GetGeneralExtraTypes(extraTypes));
+	public static NStarType PartialTypeToGeneralType(String mainType, List<String> extraTypes) =>
+		(GetBlockStack(mainType), GetBranchCollection(extraTypes));
 
-	public static GeneralExtraTypes GetGeneralExtraTypes(List<String> partialBlockStack) =>
+	public static BranchCollection GetBranchCollection(List<String> partialBlockStack) =>
 		new(partialBlockStack.Convert(x => new TreeBranch("type", 0, []) { Extra
-			= new UniversalType(new BlockStack([new Block(BlockType.Primitive, x, 1)]), NoGeneralExtraTypes) }));
+			= new NStarType(new BlockStack([new Block(BlockType.Primitive, x, 1)]), NoBranches) }));
 
 	public static (BlockStack Container, String Type) SplitType(BlockStack blockStack) =>
 		(new(blockStack.ToList().SkipLast(1)), blockStack.TryPeek(out var block) ? block.Name : []);
 
-	public static bool TypesAreCompatible(UniversalType sourceType, UniversalType destinationType,
+	public static bool TypesAreCompatible(NStarType sourceType, NStarType destinationType,
 		out bool warning, String? srcExpr, out String? destExpr, out String? extraMessage)
 	{
 		warning = false;
 		extraMessage = null;
 		while (TypeEqualsToPrimitive(sourceType, "tuple", false) && sourceType.ExtraTypes.Length == 1
-			&& sourceType.ExtraTypes[0].Info == "type" && sourceType.ExtraTypes[0].Extra is UniversalType SourceSubtype)
+			&& sourceType.ExtraTypes[0].Info == "type" && sourceType.ExtraTypes[0].Extra is NStarType SourceSubtype)
 			sourceType = SourceSubtype;
 		while (TypeEqualsToPrimitive(destinationType, "tuple", false) && destinationType.ExtraTypes.Length == 1
 			&& destinationType.ExtraTypes[0].Info == "type"
-			&& destinationType.ExtraTypes[0].Extra is UniversalType DestinationSubtype)
+			&& destinationType.ExtraTypes[0].Extra is NStarType DestinationSubtype)
 			destinationType = DestinationSubtype;
 		if (TypesAreEqual(sourceType, destinationType))
 		{
@@ -321,8 +322,8 @@ public static class TypeHelpers
 			}
 			destExpr = srcExpr;
 			return sourceType.ExtraTypes.Values.Combine(destinationType.ExtraTypes.Values).All(x =>
-			x.Item1.Info == "type" && x.Item1.Extra is UniversalType LeftType
-			&& x.Item2.Info == "type" && x.Item2.Extra is UniversalType RightType
+			x.Item1.Info == "type" && x.Item1.Extra is NStarType LeftType
+			&& x.Item2.Info == "type" && x.Item2.Extra is NStarType RightType
 			&& TypesAreCompatible(LeftType, RightType, out var warning2, null, out _, out _) && !warning2);
 		}
 		if (TypeEqualsToPrimitive(destinationType, "list", false) || destinationType.MainType.Length != 0
@@ -338,7 +339,7 @@ public static class TypeHelpers
 					extraMessage = "list can be constructed from tuple of up to 16 elements, if you need more, use the other ways like Chain() or Fill()";
 					return false;
 				}
-				else if (!sourceType.ExtraTypes.All(x => x.Value.Info == "type" && x.Value.Extra is UniversalType ValueType
+				else if (!sourceType.ExtraTypes.All(x => x.Value.Info == "type" && x.Value.Extra is NStarType ValueType
 					&& TypesAreCompatible(ValueType, subtype, out var warning2, null, out _, out _) && !warning2))
 				{
 					destExpr = "default!";
@@ -364,7 +365,7 @@ public static class TypeHelpers
 					destExpr = null;
 				else
 				{
-					srcExpr.Insert(0, ((String)nameof(TypeHelpers)).Add('.').AddRange(nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth));
+					srcExpr.Insert(0, ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth));
 					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth));
 					destExpr = srcExpr;
 				}
@@ -377,7 +378,7 @@ public static class TypeHelpers
 					destExpr = null;
 				else
 				{
-					srcExpr.Insert(0, ((String)nameof(TypeHelpers)).Add('.').AddRange(nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth - 1));
+					srcExpr.Insert(0, ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth - 1));
 					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth - 1));
 					destExpr = srcExpr;
 				}
@@ -397,17 +398,17 @@ public static class TypeHelpers
 				var warning2 = false;
 				if (!(sourceType.ExtraTypes.Length >= destinationType.ExtraTypes.Length
 					&& destinationType.ExtraTypes.Length >= 1
-					&& sourceType.ExtraTypes[0].Info == "type" && sourceType.ExtraTypes[0].Extra is UniversalType SourceSubtype
+					&& sourceType.ExtraTypes[0].Info == "type" && sourceType.ExtraTypes[0].Extra is NStarType SourceSubtype
 					&& destinationType.ExtraTypes[0].Info == "type"
-					&& destinationType.ExtraTypes[0].Extra is UniversalType DestinationSubtype
+					&& destinationType.ExtraTypes[0].Extra is NStarType DestinationSubtype
 					&& TypesAreCompatible(SourceSubtype, DestinationSubtype,
 					out warning, null, out _, out _)))
 					return false;
 				if (destinationType.ExtraTypes.Skip(1).Combine(sourceType.ExtraTypes.Skip(1), (x, y) =>
 				{
 					var warning3 = false;
-					var b = x.Value.Info == "type" && x.Value.Extra is UniversalType LeftType
-					&& y.Value.Info == "type" && y.Value.Extra is UniversalType RightType
+					var b = x.Value.Info == "type" && x.Value.Extra is NStarType LeftType
+					&& y.Value.Info == "type" && y.Value.Extra is NStarType RightType
 					&& TypesAreCompatible(LeftType, RightType, out warning3, null, out _, out _);
 					warning2 |= warning3;
 					return b;
@@ -466,11 +467,11 @@ public static class TypeHelpers
 			destExpr = srcExpr == null ? null : !warning ? srcExpr : AdaptTerminalType(srcExpr, sourceType, destinationType);
 			return true;
 		}
-		List<(UniversalType Type, bool Warning)> types_list = [(sourceType, false)];
-		List<(UniversalType Type, bool Warning)> new_types_list = [(sourceType, false)];
+		List<(NStarType Type, bool Warning)> types_list = [(sourceType, false)];
+		List<(NStarType Type, bool Warning)> new_types_list = [(sourceType, false)];
 		while (true)
 		{
-			List<(UniversalType Type, bool Warning)> new_types2_list = new(16);
+			List<(NStarType Type, bool Warning)> new_types2_list = new(16);
 			for (var i = 0; i < new_types_list.Length; i++)
 			{
 				var new_types3_list = GetCompatibleTypes(new_types_list[i], types_list);
@@ -492,7 +493,7 @@ public static class TypeHelpers
 		return false;
 	}
 
-	private static String AdaptTerminalType(String source, UniversalType srcType, UniversalType destType)
+	private static String AdaptTerminalType(String source, NStarType srcType, NStarType destType)
 	{
 		Debug.Assert(TypeIsPrimitive(srcType.MainType));
 		Debug.Assert(TypeIsPrimitive(destType.MainType));
@@ -543,9 +544,9 @@ public static class TypeHelpers
 			return ((String)"unchecked((").AddRange(destTypeconverter).AddRange(")(").AddRange(source).AddRange("))");
 	}
 
-	private static List<(UniversalType Type, bool Warning)> GetCompatibleTypes((UniversalType Type, bool Warning) source, List<(UniversalType Type, bool Warning)> blackList)
+	private static List<(NStarType Type, bool Warning)> GetCompatibleTypes((NStarType Type, bool Warning) source, List<(NStarType Type, bool Warning)> blackList)
 	{
-		List<(UniversalType Type, bool Warning)> list = new(16);
+		List<(NStarType Type, bool Warning)> list = new(16);
 		list.AddRange(ImplicitConversionsFromAnythingList.Convert(x => (x, source.Warning)).Filter(x => !blackList.Contains(x)));
 		var index = ImplicitConversionsList.IndexOfKey(source.Type.MainType);
 		if (index != -1)
@@ -570,10 +571,10 @@ public static class TypeHelpers
 
 	public static NList<char> RandomVarName() => RedStarLinq.NFill(32, _ => (char)(globalRandom.Next(2) == 1 ? globalRandom.Next('A', 'Z' + 1) : globalRandom.Next('a', 'z' + 1)));
 
-	private sealed class FullTypeEComparer : G.IEqualityComparer<UniversalType>
+	private sealed class FullTypeEComparer : G.IEqualityComparer<NStarType>
 	{
-		public bool Equals(UniversalType x, UniversalType y) => x.MainType.Equals(y.MainType) && x.ExtraTypes.Equals(y.ExtraTypes);
+		public bool Equals(NStarType x, NStarType y) => x.MainType.Equals(y.MainType) && x.ExtraTypes.Equals(y.ExtraTypes);
 
-		public int GetHashCode(UniversalType x) => x.MainType.GetHashCode() ^ x.ExtraTypes.GetHashCode();
+		public int GetHashCode(NStarType x) => x.MainType.GetHashCode() ^ x.ExtraTypes.GetHashCode();
 	}
 }

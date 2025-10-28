@@ -1,18 +1,17 @@
 ﻿using System.Text;
-using static CSharp.NStar.SemanticTree;
 
 namespace CSharp.NStar;
 
-internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBranch Branch, List<Lexem> Lexems, String Default)
+internal record class TwoValuesExpr(NStarObject Value1, NStarObject Value2, TreeBranch Branch, List<Lexem> Lexems, String Default)
 {
 	public String Calculate(ref List<String>? errorsList, ref int i)
 	{
 		var otherPos = Branch[i].Pos;
-		if (Branch[i - 2].Extra is not UniversalType UnvType1)
+		if (Branch[i - 2].Extra is not NStarType UnvType1)
 			UnvType1 = NullType;
-		if (Branch[i - 1].Extra is not UniversalType UnvType2)
+		if (Branch[i - 1].Extra is not NStarType UnvType2)
 			UnvType2 = NullType;
-		if (!(i >= 4 && Branch[i - 4].Extra is UniversalType PrevUnvType))
+		if (!(i >= 4 && Branch[i - 4].Extra is NStarType PrevUnvType))
 			PrevUnvType = NullType;
 		var result = Branch[i].Info.ToString() switch
 		{
@@ -26,15 +25,15 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 			"-" => TranslateTimeMinusExpr(ref errorsList, ref i, UnvType1, UnvType2, PrevUnvType),
 			">>" => TranslateTimeRightShiftExpr(ref i, UnvType1, UnvType2),
 			"<<" => TranslateTimeLeftShiftExpr(ref i, UnvType1, UnvType2),
-			"==" => TranslateTimeSingularExpr(i, Universal.Eq(Value1, Value2)),
-			">" => TranslateTimeSingularExpr(i, Universal.Gt(Value1, Value2)),
-			"<" => TranslateTimeSingularExpr(i, Universal.Lt(Value1, Value2)),
-			">=" => TranslateTimeSingularExpr(i, Universal.Goe(Value1, Value2)),
-			"<=" => TranslateTimeSingularExpr(i, Universal.Loe(Value1, Value2)),
-			"!=" => TranslateTimeSingularExpr(i, Universal.Neq(Value1, Value2)),
-			"&&" => TranslateTimeSingularExpr(i, Universal.And(Value1, Value2)),
-			"||" => TranslateTimeSingularExpr(i, Universal.Or(Value1, Value2)),
-			"^^" => TranslateTimeSingularExpr(i, Universal.Xor(Value1, Value2)),
+			"==" => TranslateTimeSingularExpr(i, NStarObject.Eq(Value1, Value2)),
+			">" => TranslateTimeSingularExpr(i, NStarObject.Gt(Value1, Value2)),
+			"<" => TranslateTimeSingularExpr(i, NStarObject.Lt(Value1, Value2)),
+			">=" => TranslateTimeSingularExpr(i, NStarObject.Goe(Value1, Value2)),
+			"<=" => TranslateTimeSingularExpr(i, NStarObject.Loe(Value1, Value2)),
+			"!=" => TranslateTimeSingularExpr(i, NStarObject.Neq(Value1, Value2)),
+			"&&" => TranslateTimeSingularExpr(i, NStarObject.And(Value1, Value2)),
+			"||" => TranslateTimeSingularExpr(i, NStarObject.Or(Value1, Value2)),
+			"^^" => TranslateTimeSingularExpr(i, NStarObject.Xor(Value1, Value2)),
 			_ => TranslateTimeDefaultExpr(ref i, UnvType1, UnvType2),
 		};
 		Branch.Remove(Min(i - 1, Branch.Length - 2), 2);
@@ -47,7 +46,7 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 	{
 		String result;
 		var s = Branch[i].Info;
-		if ((s == "?" ? Value1 : s == "?=" ? Universal.Eq(Value1, Value2) : s == "?>" ? Universal.Gt(Value1, Value2) : s == "?<" ? Universal.Lt(Value1, Value2) : s == "?>=" ? Universal.Goe(Value1, Value2) : s == "?<=" ? Universal.Loe(Value1, Value2) : Universal.Neq(Value1, Value2)).ToBool())
+		if ((s == "?" ? Value1 : s == "?=" ? NStarObject.Eq(Value1, Value2) : s == "?>" ? NStarObject.Gt(Value1, Value2) : s == "?<" ? NStarObject.Lt(Value1, Value2) : s == "?>=" ? NStarObject.Goe(Value1, Value2) : s == "?<=" ? NStarObject.Loe(Value1, Value2) : NStarObject.Neq(Value1, Value2)).ToBool())
 		{
 			Branch[Max(i - 3, 0)] = new((s == "?" ? Value2 : Value1).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 			Branch.RemoveEnd(i - 1);
@@ -67,13 +66,13 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String TranslateTimeColonExpr(ref int i, UniversalType UnvType2)
+	private String TranslateTimeColonExpr(ref int i, NStarType UnvType2)
 	{
 		String result;
 		if (i + 2 >= Branch.Length)
 		{
 			var i2 = i;
-			Branch[i].Extra = Branch.Elements.Filter((_, index) => index == i2 - 1 || index % 4 == 1).Convert(x => x.Extra is UniversalType ElemType ? ElemType : NullType).Progression((x, y) => GetResultType(x, y, "default!", "default!"));
+			Branch[i].Extra = Branch.Elements.Filter((_, index) => index == i2 - 1 || index % 4 == 1).Convert(x => x.Extra is NStarType ElemType ? ElemType : NullType).Progression((x, y) => GetResultType(x, y, "default!", "default!"));
 			i++;
 			result = new String(Branch[i - 2].Info).Add(' ').AddRange(Branch[i].Info).Add(' ').AddRange(Branch[i - 1].Info);
 		}
@@ -90,7 +89,7 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 	{
 		try
 		{
-			Branch[Max(i - 3, 0)] = new(((Universal)Pow(Value2.ToReal(), Value1.ToReal())).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
+			Branch[Max(i - 3, 0)] = new(((NStarObject)Pow(Value2.ToReal(), Value1.ToReal())).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 		}
 		catch
 		{
@@ -100,7 +99,7 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 		return [];
 	}
 
-	private String TranslateTimeMulExpr(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
+	private String TranslateTimeMulExpr(ref List<String>? errorsList, ref int i, NStarType UnvType1, NStarType UnvType2, NStarType PrevUnvType)
 	{
 		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
@@ -133,7 +132,7 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String TranslateTimeDivExpr(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
+	private String TranslateTimeDivExpr(ref List<String>? errorsList, ref int i, NStarType UnvType1, NStarType UnvType2, NStarType PrevUnvType)
 	{
 		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
@@ -171,7 +170,7 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String TranslateTimeModExpr(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
+	private String TranslateTimeModExpr(ref List<String>? errorsList, ref int i, NStarType UnvType1, NStarType UnvType2, NStarType PrevUnvType)
 	{
 		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
@@ -209,7 +208,7 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String TranslateTimePlusExpr(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
+	private String TranslateTimePlusExpr(ref List<String>? errorsList, ref int i, NStarType UnvType1, NStarType UnvType2, NStarType PrevUnvType)
 	{
 		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null" or "bool"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
@@ -240,13 +239,13 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 			result = result2.AddRange(".AddRange(").AddRange(Value2.ToString(true, true)).Add(')');
 		}
 		else if (isString1 || isString2)
-			result = ((String)"((").AddRange(nameof(Universal)).Add(')').AddRange(Value1.ToString(true, true)).Add(' ').AddRange(Branch[i++].Info).Add(' ').AddRange(Value2.ToString(true, true)).AddRange(").ToString()");
+			result = ((String)"((").AddRange(nameof(NStarObject)).Add(')').AddRange(Value1.ToString(true, true)).Add(' ').AddRange(Branch[i++].Info).Add(' ').AddRange(Value2.ToString(true, true)).AddRange(").ToString()");
 		else
 			result = i < 2 ? Branch[i][^1].Info : Value1.ToString(true, true).Copy().Add(' ').AddRange(Branch[i++].Info).Add(' ').AddRange(Value2.ToString(true, true));
 		return result;
 	}
 
-	private String TranslateTimeMinusExpr(ref List<String>? errorsList, ref int i, UniversalType UnvType1, UniversalType UnvType2, UniversalType PrevUnvType)
+	private String TranslateTimeMinusExpr(ref List<String>? errorsList, ref int i, NStarType UnvType1, NStarType UnvType2, NStarType PrevUnvType)
 	{
 		if (!(TypeIsPrimitive(UnvType1.MainType) && UnvType1.MainType.Peek().Name.ToString() is "null" or "bool"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
@@ -279,7 +278,7 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String TranslateTimeRightShiftExpr(ref int i, UniversalType UnvType1, UniversalType UnvType2)
+	private String TranslateTimeRightShiftExpr(ref int i, NStarType UnvType1, NStarType UnvType2)
 	{
 		String result = [];
 		if (i == 2)
@@ -293,7 +292,7 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String TranslateTimeLeftShiftExpr(ref int i, UniversalType UnvType1, UniversalType UnvType2)
+	private String TranslateTimeLeftShiftExpr(ref int i, NStarType UnvType1, NStarType UnvType2)
 	{
 		String result = [];
 		if (i == 2)
@@ -307,9 +306,9 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 		return result;
 	}
 
-	private String TranslateTimeSingularExpr(int i, Universal resultValue) => (Branch[Max(i - 3, 0)] = new(resultValue.ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container)).Info;
+	private String TranslateTimeSingularExpr(int i, NStarObject resultValue) => (Branch[Max(i - 3, 0)] = new(resultValue.ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container)).Info;
 
-	private String TranslateTimeDefaultExpr(ref int i, UniversalType UnvType1, UniversalType UnvType2)
+	private String TranslateTimeDefaultExpr(ref int i, NStarType UnvType1, NStarType UnvType2)
 	{
 		Branch[i].Extra = GetResultType(UnvType1, UnvType2, Value1.ToString(true), Value2.ToString(true));
 		return new String(Branch[Max(i - 3, 0)].Info).Add(' ').AddRange(Branch[i - 1].Info).Add(' ').AddRange(Branch[i++ - 1].Info);
@@ -317,7 +316,7 @@ internal record class TwoValuesExpr(Universal Value1, Universal Value2, TreeBran
 
 	private void GenerateMessage(ref List<String>? errorsList, ushort code, Index pos, params dynamic[] parameters)
 	{
-		DeclaredConstructions.GenerateMessage(ref errorsList, code, Lexems[pos].LineN, Lexems[pos].Pos, parameters);
+		Messages.GenerateMessage(ref errorsList, code, Lexems[pos].LineN, Lexems[pos].Pos, parameters);
 		if (code >> 12 == 0x9)
 			throw new InvalidOperationException();
 	}

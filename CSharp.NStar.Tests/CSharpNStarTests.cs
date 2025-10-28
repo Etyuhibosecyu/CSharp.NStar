@@ -1,16 +1,4 @@
-﻿global using NStar.Core;
-global using NStar.Dictionaries;
-global using NStar.Linq;
-global using System;
-global using System.Diagnostics;
-global using System.IO;
-global using System.Net.Http;
-global using System.Threading;
-global using System.Threading.Tasks;
-global using G = System.Collections.Generic;
-global using static CSharp.NStar.Quotes;
-global using static CSharp.NStar.DeclaredConstructions;
-global using static System.Math;
+﻿global using System;
 global using String = NStar.Core.String;
 using static CSharp.NStar.SemanticTree;
 using System.Globalization;

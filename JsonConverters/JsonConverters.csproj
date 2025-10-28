@@ -8,6 +8,6 @@
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<ProjectReference Include="..\DeclaredConstructionHelpers\DeclaredConstructionHelpers.csproj" />
-		<ProjectReference Include="..\Universal\Universal.csproj" />
+		<ProjectReference Include="..\NStarObject\NStarObject.csproj" />
 	</ItemGroup>
 </Project>

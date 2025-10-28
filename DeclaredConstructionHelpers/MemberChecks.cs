@@ -1,24 +1,10 @@
-﻿global using NStar.Core;
-global using NStar.Linq;
-global using NStar.MathLib;
-global using System;
-global using System.Runtime.CompilerServices;
-global using G = System.Collections.Generic;
-global using static CSharp.NStar.DeclaredConstructionChecks;
-global using static CSharp.NStar.DeclaredConstructionMappings;
-global using static CSharp.NStar.DeclaredConstructions;
-global using static CSharp.NStar.IntermediateFunctions;
-global using static CSharp.NStar.TypeHelpers;
-global using static NStar.Core.Extents;
-global using static System.Math;
-global using String = NStar.Core.String;
-using NStar.MathLib.Extras;
+﻿using NStar.MathLib.Extras;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace CSharp.NStar;
 
-public static class DeclaredConstructionChecks
+public static class MemberChecks
 {
 	public static bool CheckContainer(BlockStack container, Func<BlockStack, bool> check, out BlockStack type)
 	{
@@ -42,179 +28,7 @@ public static class DeclaredConstructionChecks
 		return false;
 	}
 
-	public static bool ExtraTypeExists(BlockStack container, String typeName)
-	{
-		if (VariablesList.TryGetValue(container, out var list))
-		{
-			if (list.TryGetValue(typeName, out var type2))
-				return TypeIsPrimitive(type2.MainType) && type2.MainType.Peek().Name == "typename" && type2.ExtraTypes.Length == 0;
-			else
-				return false;
-		}
-		if (UserDefinedPropertiesList.TryGetValue(container, out var list_))
-		{
-			if (list_.TryGetValue(typeName, out var a))
-				return TypeIsPrimitive(a.UnvType.MainType) && a.UnvType.MainType.Peek().Name == "typename" && a.UnvType.ExtraTypes.Length == 0;
-			else
-				return false;
-		}
-		return false;
-	}
-
-	public static bool IsNotImplementedNamespace(String @namespace)
-	{
-		if (NotImplementedNamespacesList.Contains(@namespace))
-			return true;
-		return false;
-	}
-
-	public static bool IsOutdatedNamespace(String @namespace, out String useInstead)
-	{
-		var index = OutdatedNamespacesList.IndexOfKey(@namespace);
-		if (index != -1)
-		{
-			useInstead = OutdatedNamespacesList.Values[index];
-			return true;
-		}
-		useInstead = [];
-		return false;
-	}
-
-	public static bool IsReservedNamespace(String @namespace)
-	{
-		if (ReservedNamespacesList.Contains(@namespace))
-			return true;
-		return false;
-	}
-
-	public static bool IsNotImplementedType(String @namespace, String typeName)
-	{
-		if (NotImplementedTypesList.Contains((@namespace, typeName)))
-			return true;
-		return false;
-	}
-
-	public static bool IsOutdatedType(String @namespace, String typeName, out String useInstead)
-	{
-		var index = OutdatedTypesList.IndexOfKey((@namespace, typeName));
-		if (index != -1)
-		{
-			useInstead = OutdatedTypesList.Values[index];
-			return true;
-		}
-		useInstead = [];
-		return false;
-	}
-
-	public static bool IsReservedType(String @namespace, String typeName)
-	{
-		if (ReservedTypesList.Contains((@namespace, typeName)))
-			return true;
-		return false;
-	}
-
-	public static bool IsNotImplementedEndOfIdentifier(String identifier, out String typeEnd)
-	{
-		foreach (var te in NotImplementedTypeEndsList)
-		{
-			if (identifier.EndsWith(te))
-			{
-				typeEnd = te;
-				return true;
-			}
-		}
-		typeEnd = [];
-		return false;
-	}
-
-	public static bool IsOutdatedEndOfIdentifier(String identifier, out String useInstead, out String typeEnd)
-	{
-		foreach (var te in OutdatedTypeEndsList)
-		{
-			if (identifier.EndsWith(te.Key))
-			{
-				useInstead = te.Value;
-				typeEnd = te.Key;
-				return true;
-			}
-		}
-		useInstead = [];
-		typeEnd = [];
-		return false;
-	}
-
-	public static bool IsReservedEndOfIdentifier(String identifier, out String typeEnd)
-	{
-		foreach (var te in ReservedTypeEndsList)
-		{
-			if (identifier.EndsWith(te))
-			{
-				typeEnd = te;
-				return true;
-			}
-		}
-		typeEnd = [];
-		return false;
-	}
-
-	public static bool IsNotImplementedMember(BlockStack type, String member)
-	{
-		var index = NotImplementedMembersList.IndexOfKey(type);
-		if (index != -1)
-		{
-			if (NotImplementedMembersList.Values[index].Contains(member))
-				return true;
-		}
-		return false;
-	}
-
-	public static bool IsOutdatedMember(BlockStack type, String member, out String useInstead)
-	{
-		var index = OutdatedMembersList.IndexOfKey(type);
-		if (index != -1)
-		{
-			var list = OutdatedMembersList.Values[index];
-			var index2 = list.IndexOfKey(member);
-			if (index2 != -1)
-			{
-				useInstead = list.Values[index2];
-				return true;
-			}
-		}
-		useInstead = [];
-		return false;
-	}
-
-	public static bool IsReservedMember(BlockStack type, String member)
-	{
-		var index = ReservedMembersList.IndexOfKey(type);
-		if (index != -1)
-		{
-			if (ReservedMembersList.Values[index].Contains(member))
-				return true;
-		}
-		return false;
-	}
-
-	public static bool TypeExists((BlockStack Container, String Type) containerType, out Type netType)
-	{
-		if (PrimitiveTypesList.TryGetValue(containerType.Type, out netType))
-			return true;
-		if (ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out netType))
-			return true;
-		Type? netType2 = null;
-		if (containerType.Container.Length != 0)
-			return false;
-		if (ExplicitlyConnectedNamespacesList.FindIndex(x =>
-			ExtraTypesList.TryGetValue((x, containerType.Type), out netType2)) < 0)
-			return false;
-		if (netType2 == null)
-			return false;
-		netType = netType2;
-		return true;
-	}
-
-	public static bool PropertyExists(UniversalType container, String name, [MaybeNullWhen(false)]
+	public static bool PropertyExists(NStarType container, String name, [MaybeNullWhen(false)]
 		out UserDefinedProperty? property)
 	{
 		if (UserDefinedPropertiesList.TryGetValue(container.MainType, out var list) && list.TryGetValue(name, out var a))
@@ -277,7 +91,7 @@ public static class DeclaredConstructionChecks
 		return result;
 	}
 
-	public static bool ConstantExists(UniversalType container, String name, [MaybeNullWhen(false)]
+	public static bool ConstantExists(NStarType container, String name, [MaybeNullWhen(false)]
 		out UserDefinedConstant? constant)
 	{
 		if (UserDefinedConstantsList.TryGetValue(container.MainType, out var list) && list.TryGetValue(name, out var a))
@@ -329,7 +143,7 @@ public static class DeclaredConstructionChecks
 		return false;
 	}
 
-	public static bool MethodExists(UniversalType container, String name)
+	public static bool MethodExists(NStarType container, String name)
 	{
 		var containerType = SplitType(container.MainType);
 		if (!TypeExists(containerType, out var netType))
@@ -341,7 +155,7 @@ public static class DeclaredConstructionChecks
 		return true;
 	}
 
-	public static bool MethodExists(UniversalType container, String name, List<UniversalType> callParameterTypes,
+	public static bool MethodExists(NStarType container, String name, List<NStarType> callParameterTypes,
 		[MaybeNullWhen(false)] out GeneralMethodOverloads functions)
 	{
 		var containerType = SplitType(container.MainType);
@@ -350,7 +164,7 @@ public static class DeclaredConstructionChecks
 			functions = [];
 			return false;
 		}
-		var callParameterNetTypes = callParameterTypes.ToArray(x => TypeMapping(x));
+		var callParameterNetTypes = callParameterTypes.ToArray(TypeMapping);
 		var validity = int.MinValue;
 		var methods = netType.GetMethods().FindAllMax(x =>
 		{
@@ -458,7 +272,7 @@ public static class DeclaredConstructionChecks
 		return false;
 	}
 
-	public static bool GeneralMethodExists(BlockStack container, String name, List<UniversalType> parameterTypes,
+	public static bool GeneralMethodExists(BlockStack container, String name, List<NStarType> parameterTypes,
 		[MaybeNullWhen(false)] out GeneralMethodOverloads functions, out bool user)
 	{
 		if (PublicFunctionsList.TryGetValue(name, out var functionOverload))
@@ -468,7 +282,7 @@ public static class DeclaredConstructionChecks
 				mainType = FindParameter(functionOverload.ReturnType).MainType;
 			else
 				mainType = GetBlockStack(functionOverload.ReturnType);
-			GeneralExtraTypes extraTypes = new(functionOverload.ReturnExtraTypes.ToList(GetUniversalType));
+			BranchCollection extraTypes = new(functionOverload.ReturnExtraTypes.ToList(GetTypeAsBranch));
 			functions = [new([], new(mainType, extraTypes),
 				functionOverload.Attributes, [.. functionOverload.Parameters.Convert((x, index) =>
 				new GeneralMethodParameter(functionOverload.ExtraTypes.Contains(x.Type)
@@ -508,11 +322,14 @@ public static class DeclaredConstructionChecks
 		}
 		user = true;
 		return true;
-		UniversalType FindParameter(String typeName) => parameterTypes[functionOverload.Parameters.FindIndex(x =>
+		NStarType FindParameter(String typeName) => parameterTypes[functionOverload.Parameters.FindIndex(x =>
 			typeName == x.Type || x.ExtraTypes.Contains(typeName))];
-		TreeBranch GetUniversalType(String typeName) => new("type", 0, []) { Extra
+		TreeBranch GetTypeAsBranch(String typeName) => new("type", 0, [])
+		{
+			Extra
 			= functionOverload.ExtraTypes.Contains(typeName)
-			? FindParameter(typeName) : new UniversalType(GetBlockStack(typeName), []) };
+			? FindParameter(typeName) : new NStarType(GetBlockStack(typeName), [])
+		};
 	}
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name)
@@ -529,11 +346,11 @@ public static class DeclaredConstructionChecks
 		return false;
 	}
 
-	public static bool UserDefinedFunctionExists(BlockStack container, String name, List<UniversalType> parameterTypes,
+	public static bool UserDefinedFunctionExists(BlockStack container, String name, List<NStarType> parameterTypes,
 		[MaybeNullWhen(false)] out GeneralMethodOverloads functions) =>
 		UserDefinedFunctionExists(container, name, parameterTypes, out functions, out _, out _);
 
-	public static bool UserDefinedFunctionExists(BlockStack container, String name, List<UniversalType> parameterTypes,
+	public static bool UserDefinedFunctionExists(BlockStack container, String name, List<NStarType> parameterTypes,
 		[MaybeNullWhen(false)] out GeneralMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer, out bool derived)
 	{
@@ -573,7 +390,7 @@ public static class DeclaredConstructionChecks
 		return false;
 	}
 
-	public static bool ConstructorsExist(UniversalType container, List<UniversalType> callParameterTypes, [MaybeNullWhen(false)] out ConstructorOverloads constructors)
+	public static bool ConstructorsExist(NStarType container, List<NStarType> callParameterTypes, [MaybeNullWhen(false)] out ConstructorOverloads constructors)
 	{
 		var containerType = SplitType(container.MainType);
 		if (!TypeExists(containerType, out var netType))
@@ -608,7 +425,7 @@ public static class DeclaredConstructionChecks
 				| (method.IsStatic ? ConstructorAttributes.Static : 0),
 				new(constructorParameterTypes.ToList((x, index) => new GeneralMethodParameter(TypeMappingBack(x,
 				netType.GetGenericArguments(), [.. container.ExtraTypes.SkipWhile(x =>
-				x.Value.Info != "type" || x.Value.Extra is not UniversalType)]).Wrap(y =>
+				x.Value.Info != "type" || x.Value.Extra is not NStarType)]).Wrap(y =>
 				Attribute.IsDefined(parameters[index], typeof(ParamArrayAttribute)) ? GetSubtype(y) : y),
 				parameters[index].Name ?? "x",
 				(parameters[index].IsOptional ? ParameterAttributes.Optional : 0)
@@ -620,7 +437,7 @@ public static class DeclaredConstructionChecks
 		return true;
 	}
 
-	public static bool UserDefinedConstructorsExist(UniversalType container, List<UniversalType> parameterTypes, [MaybeNullWhen(false)] out ConstructorOverloads constructors)
+	public static bool UserDefinedConstructorsExist(NStarType container, List<NStarType> parameterTypes, [MaybeNullWhen(false)] out ConstructorOverloads constructors)
 	{
 		if (UserDefinedConstructorsList.TryGetValue(container.MainType, out var temp_constructors)
 			&& !(UserDefinedTypesList.TryGetValue(SplitType(container.MainType), out var userDefinedType)

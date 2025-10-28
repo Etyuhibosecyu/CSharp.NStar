@@ -2,8 +2,9 @@
 global using NStar.Linq;
 global using System;
 global using System.Diagnostics;
-global using static CSharp.NStar.DeclaredConstructions;
-global using static CSharp.NStar.TypeHelpers;
+global using static CSharp.NStar.BuiltInMemberCollections;
+global using static CSharp.NStar.TypeConverters;
+global using static CSharp.NStar.NStarType;
 global using static NStar.Core.Extents;
 global using static System.Math;
 global using String = NStar.Core.String;
@@ -11,24 +12,24 @@ using System.Globalization;
 
 namespace CSharp.NStar;
 [DebuggerDisplay("{ToString(true)}")]
-public struct Universal
+public struct NStarObject
 {
 	private readonly bool Bool;
 	private readonly double Number;
 	private readonly String String;
-	private readonly List<Universal>? NextList;
+	private readonly List<NStarObject>? NextList;
 	private readonly object? Object;
-	public UniversalType InnerType { get; set; }
-	public UniversalType? OuterType { get; set; }
+	public NStarType InnerType { get; set; }
+	public NStarType? OuterType { get; set; }
 	public bool Fixed { get; set; }
-	public static Universal Infinity => (double)1 / 0;
-	public static Universal MinusInfinity => (double)-1 / 0;
-	public static Universal Uncertainty => (double)0 / 0;
+	public static NStarObject Infinity => (double)1 / 0;
+	public static NStarObject MinusInfinity => (double)-1 / 0;
+	public static NStarObject Uncertainty => (double)0 / 0;
 
 	private static readonly List<String> ConvertibleTypesList = ["bool", "byte", "short int", "unsigned short int", "char", "int", "unsigned int", "long int", "unsigned long int", "real", "string"];
 	private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
 
-	public Universal()
+	public NStarObject()
 	{
 		Bool = false;
 		Number = 0;
@@ -40,7 +41,7 @@ public struct Universal
 		Fixed = false;
 	}
 
-	public Universal(Universal other)
+	public NStarObject(NStarObject other)
 	{
 		if (Fixed)
 		{
@@ -62,7 +63,7 @@ public struct Universal
 		}
 	}
 
-	public Universal(bool @bool)
+	public NStarObject(bool @bool)
 	{
 		Bool = @bool;
 		Number = 0;
@@ -74,7 +75,7 @@ public struct Universal
 		Fixed = false;
 	}
 
-	public Universal(char @char)
+	public NStarObject(char @char)
 	{
 		Bool = false;
 		Number = @char;
@@ -86,7 +87,7 @@ public struct Universal
 		Fixed = false;
 	}
 
-	public Universal(double number)
+	public NStarObject(double number)
 	{
 		Bool = false;
 		Number = number;
@@ -107,7 +108,7 @@ public struct Universal
 		Fixed = false;
 	}
 
-	public Universal(String @string)
+	public NStarObject(String @string)
 	{
 		Bool = false;
 		Number = 0;
@@ -119,7 +120,7 @@ public struct Universal
 		Fixed = false;
 	}
 
-	public Universal(List<Universal> nextList)
+	public NStarObject(List<NStarObject> nextList)
 	{
 		Bool = false;
 		Number = 0;
@@ -131,9 +132,9 @@ public struct Universal
 		Fixed = false;
 	}
 
-	public Universal(object @object, UniversalType type)
+	public NStarObject(object @object, NStarType type)
 	{
-		if (@object is Universal unv)
+		if (@object is NStarObject unv)
 		{
 			Bool = unv.Bool;
 			Number = unv.Number;
@@ -154,7 +155,7 @@ public struct Universal
 		Fixed = false;
 	}
 
-	public static Universal Parse(string s)
+	public static NStarObject Parse(string s)
 	{
 		string s2;
 		if (s.Length == 0)
@@ -183,9 +184,9 @@ public struct Universal
 		{
 			s2 = s[..^1];
 			if (int.TryParse(s2, out var i))
-				return (Universal)i;
+				return (NStarObject)i;
 			else if (uint.TryParse(s2, out var ui))
-				return (Universal)ui;
+				return (NStarObject)ui;
 			else if (long.TryParse(s2, out var l))
 				return new(l, LongIntType);
 			else
@@ -212,7 +213,7 @@ public struct Universal
 		else if (s[0] == '\"' && s[^1] == '\"')
 			return ((String)s).RemoveQuotes();
 		else if (s[0] == '\'' && s[^1] == '\'')
-			return s.Length <= 2 ? (Universal)'\0' : (Universal)((String)s).RemoveQuotes()[0];
+			return s.Length <= 2 ? (NStarObject)'\0' : (NStarObject)((String)s).RemoveQuotes()[0];
 		else if (s.Length >= 3 && s[0] == '@' && s[1] == '\"' && s[^1] == '\"')
 			return ((String)s)[2..^1].Replace("\"\"", "\"");
 		else if (Quotes.IsRawString(s, out var output))
@@ -222,13 +223,13 @@ public struct Universal
 			if (int.TryParse(s, NumberStyles.Integer, InvariantCulture, out var i))
 				return i;
 			else if (long.TryParse(s, NumberStyles.Integer, InvariantCulture, out var l))
-				return (Universal)l;
+				return (NStarObject)l;
 			else
-				return ulong.TryParse(s, NumberStyles.Integer, InvariantCulture, out var ul) ? (Universal)ul : (Universal)double.Parse(s, InvariantCulture);
+				return ulong.TryParse(s, NumberStyles.Integer, InvariantCulture, out var ul) ? (NStarObject)ul : (NStarObject)double.Parse(s, InvariantCulture);
 		}
 	}
 
-	public static bool TryParse(string s, out Universal result)
+	public static bool TryParse(string s, out NStarObject result)
 	{
 		try
 		{
@@ -242,7 +243,7 @@ public struct Universal
 		}
 	}
 
-	public static Universal TryConstruct(object? element) => element switch
+	public static NStarObject TryConstruct(object? element) => element switch
 	{
 		null => new(),
 		bool b => b,
@@ -259,36 +260,36 @@ public struct Universal
 		_ => new()
 	};
 
-	public static Universal And(Universal x, Universal y) => (Universal)(x.ToBool() && y.ToBool());
+	public static NStarObject And(NStarObject x, NStarObject y) => (NStarObject)(x.ToBool() && y.ToBool());
 
-	public static Universal Or(Universal x, Universal y) => (Universal)(x.ToBool() || y.ToBool());
+	public static NStarObject Or(NStarObject x, NStarObject y) => (NStarObject)(x.ToBool() || y.ToBool());
 
-	public static Universal Xor(Universal x, Universal y) => (Universal)(x.ToBool() != y.ToBool());
+	public static NStarObject Xor(NStarObject x, NStarObject y) => (NStarObject)(x.ToBool() != y.ToBool());
 
-	public static Universal Eq(Universal x, Universal y)
+	public static NStarObject Eq(NStarObject x, NStarObject y)
 	{
 		var result_type = GetResultType(x.InnerType, y.InnerType, x.ToString(true), y.ToString(true));
 		return x.ToType(result_type, x.Fixed) == y.ToType(result_type, y.Fixed);
 	}
 
-	public static Universal Neq(Universal x, Universal y)
+	public static NStarObject Neq(NStarObject x, NStarObject y)
 	{
 		var result_type = GetResultType(x.InnerType, y.InnerType, x.ToString(true), y.ToString(true));
 		return x.ToType(result_type, x.Fixed) != y.ToType(result_type, y.Fixed);
 	}
 
-	public static Universal Goe(Universal x, Universal y) => (Universal)(x.ToReal() >= y.ToReal());
+	public static NStarObject Goe(NStarObject x, NStarObject y) => (NStarObject)(x.ToReal() >= y.ToReal());
 
-	public static Universal Loe(Universal x, Universal y) => (Universal)(x.ToReal() <= y.ToReal());
+	public static NStarObject Loe(NStarObject x, NStarObject y) => (NStarObject)(x.ToReal() <= y.ToReal());
 
-	public static Universal Gt(Universal x, Universal y) => (Universal)(x.ToReal() > y.ToReal());
+	public static NStarObject Gt(NStarObject x, NStarObject y) => (NStarObject)(x.ToReal() > y.ToReal());
 
-	public static Universal Lt(Universal x, Universal y) => (Universal)(x.ToReal() < y.ToReal());
+	public static NStarObject Lt(NStarObject x, NStarObject y) => (NStarObject)(x.ToReal() < y.ToReal());
 
 	// Set flag to true if you want to try to apply this function.
-	public static Universal ValidateFixing(Universal value, UniversalType type, bool flag = false)
+	public static NStarObject ValidateFixing(NStarObject value, NStarType type, bool flag = false)
 	{
-		Universal a = new(value);
+		NStarObject a = new(value);
 		if (flag)
 		{
 			a.InnerType = type;
@@ -297,7 +298,7 @@ public struct Universal
 		return a;
 	}
 
-	public readonly Universal GetElement(int index)
+	public readonly NStarObject GetElement(int index)
 	{
 		if (Object is (IList<bool> BoolIsNullList, IList<bool> BoolList))
 			return GetElement2(index, BoolIsNullList, BoolList);
@@ -324,7 +325,7 @@ public struct Universal
 		else if (TypeEqualsToPrimitive(InnerType, "string"))
 		{
 			var string_ = ToString();
-			return index <= 0 || index > string_.Length ? new() : (Universal)string_[index - 1];
+			return index <= 0 || index > string_.Length ? new() : (NStarObject)string_[index - 1];
 		}
 		else
 		{
@@ -333,9 +334,9 @@ public struct Universal
 		}
 	}
 
-	private static Universal GetElement2<T>(int index, IList<bool> IsNullList, IList<T> MainList) => index <= 0 || index > MainList.Length ? new() : IsNullList[index - 1] ? new() : TryConstruct(MainList[index - 1]);
+	private static NStarObject GetElement2<T>(int index, IList<bool> IsNullList, IList<T> MainList) => index <= 0 || index > MainList.Length ? new() : IsNullList[index - 1] ? new() : TryConstruct(MainList[index - 1]);
 
-	public readonly void SetElement(int index, Universal value)
+	public readonly void SetElement(int index, NStarObject value)
 	{
 		if (Object is (IList<bool> BoolIsNullList, IList<bool> BoolList))
 			SetElement2(index, BoolIsNullList, BoolList, value.ToBool());
@@ -706,7 +707,7 @@ public struct Universal
 				};
 			}
 			else if (basic_type == "typename")
-				return Object == null ? "" : Object is UniversalType UnvType ? UnvType.ToString() : NullType.ToString();
+				return Object == null ? "" : Object is NStarType UnvType ? UnvType.ToString() : NullType.ToString();
 			else if (basic_type == "string")
 			{
 				if (!takeIntoQuotes)
@@ -777,11 +778,11 @@ public struct Universal
 		return new([.. output]);
 	}
 
-	public static Universal PerformOperation<T>(Universal x, Universal y, Func<Universal, T> Input, Func<T, T, Universal> Output, String leftType, String rightType, String inputType) => ValidateFixing(Output(Input(x), Input(y)), GetPrimitiveType(inputType), x.Fixed && leftType == inputType || y.Fixed && rightType == inputType);
+	public static NStarObject PerformOperation<T>(NStarObject x, NStarObject y, Func<NStarObject, T> Input, Func<T, T, NStarObject> Output, String leftType, String rightType, String inputType) => ValidateFixing(Output(Input(x), Input(y)), GetPrimitiveType(inputType), x.Fixed && leftType == inputType || y.Fixed && rightType == inputType);
 
-	public static Universal PerformOperation<T>(T x, T y, Func<T, T, Universal> Process, String leftType, String rightType, String inputType) => ValidateFixing(Process(x, y), GetPrimitiveType(inputType), leftType == inputType || rightType == inputType);
+	public static NStarObject PerformOperation<T>(T x, T y, Func<T, T, NStarObject> Process, String leftType, String rightType, String inputType) => ValidateFixing(Process(x, y), GetPrimitiveType(inputType), leftType == inputType || rightType == inputType);
 
-	public readonly List<Universal> ToList()
+	public readonly List<NStarObject> ToList()
 	{
 		if (TypeIsPrimitive(InnerType.MainType) && InnerType.MainType.Peek().Name != "list" && InnerType.MainType.Peek().Name != "tuple")
 			return [this];
@@ -804,19 +805,19 @@ public struct Universal
 		}
 	}
 
-	private static List<Universal> ToList2<T>(IList<bool> IsNullList, IList<T> MainList)
+	private static List<NStarObject> ToList2<T>(IList<bool> IsNullList, IList<T> MainList)
 	{
-		List<Universal> output = new(MainList.Length);
+		List<NStarObject> output = new(MainList.Length);
 		for (var i = 0; i < MainList.Length; i++)
 			output.Add(IsNullList[i] ? new() : TryConstruct(MainList[i]));
 		return output;
 	}
 
-	public Universal ToType(UniversalType type, bool fix = false)
+	public NStarObject ToType(NStarType type, bool fix = false)
 	{
 		try
 		{
-			Universal a;
+			NStarObject a;
 			if (TypeIsPrimitive(type.MainType))
 				a = ToPrimitiveType(type, fix);
 			else if (TypesAreEqual(type, InnerType))
@@ -837,7 +838,7 @@ public struct Universal
 		}
 	}
 
-	private Universal ToPrimitiveType(UniversalType type, bool fix)
+	private NStarObject ToPrimitiveType(NStarType type, bool fix)
 	{
 		var basic_type = type.MainType.Peek().Name;
 		if (basic_type == "null")
@@ -879,25 +880,25 @@ public struct Universal
 		else return basic_type == "tuple" ? ToTupleType(type.ExtraTypes) : new();
 	}
 
-	private Universal ToFullListType(UniversalType type, int LeftDepth, UniversalType LeftLeafType, int RightDepth, UniversalType RightLeafType, bool fix = false)
+	private NStarObject ToFullListType(NStarType type, int LeftDepth, NStarType LeftLeafType, int RightDepth, NStarType RightLeafType, bool fix = false)
 	{
 		if (LeftDepth == 0)
 			return ToType(LeftLeafType, fix);
 		else if (LeftDepth > RightDepth)
 		{
-			var types_list = new UniversalType[LeftDepth - RightDepth + 1];
+			var types_list = new NStarType[LeftDepth - RightDepth + 1];
 			types_list[0] = type;
 			for (var i = 0; i < LeftDepth - RightDepth; i++)
 				types_list[i + 1] = GetSubtype(types_list[i]);
 			var element = (RightDepth == 0) ? ToType(types_list[LeftDepth - RightDepth], true) : ToFullListType(types_list[LeftDepth - RightDepth], RightDepth, LeftLeafType, RightDepth, RightLeafType, true);
 			for (var i = LeftDepth - RightDepth - 1; i >= 0; i--)
-				element = ValidateFixing(new List<Universal> { element }, types_list[i], i > 0 || fix);
+				element = ValidateFixing(new List<NStarObject> { element }, types_list[i], i > 0 || fix);
 			return element;
 		}
 		else if (LeftDepth == RightDepth || TypeEqualsToPrimitive(LeftLeafType, "string"))
 		{
 			var old_list = ToList();
-			List<Universal> new_list = new(old_list.Length);
+			List<NStarObject> new_list = new(old_list.Length);
 			for (var i = 0; i < old_list.Length; i++)
 				new_list.Add(old_list[i].ToFullListType(GetSubtype(type), LeftDepth - 1, LeftLeafType, RightDepth - 1, RightLeafType, true));
 			return ValidateFixing(new_list, type, fix);
@@ -911,7 +912,7 @@ public struct Universal
 		}
 	}
 
-	private readonly Universal ToTupleType(GeneralExtraTypes type_parts)
+	private readonly NStarObject ToTupleType(BranchCollection type_parts)
 	{
 		var count = 0;
 		NList<int> numbers = [];
@@ -927,7 +928,7 @@ public struct Universal
 		}
 		numbers.Add(1);
 		var old_list = ToList();
-		List<Universal> new_list = [.. new Universal[count]];
+		List<NStarObject> new_list = [.. new NStarObject[count]];
 		int tpos = 0, tpos2, npos = 0;
 		for (var i = 0; i < count && i < old_list.Length; i++)
 		{
@@ -938,7 +939,7 @@ public struct Universal
 			}
 			else
 				tpos2 = tpos;
-			if (type_parts[tpos2].Info != "type" || type_parts[tpos2].Extra is not UniversalType InnerUnvType)
+			if (type_parts[tpos2].Info != "type" || type_parts[tpos2].Extra is not NStarType InnerUnvType)
 				continue;
 			new_list[i] = old_list[i].ToType(InnerUnvType, true);
 			if (tpos2 == tpos || numbers[npos] == 0)
@@ -951,7 +952,7 @@ public struct Universal
 		return new_list;
 	}
 
-	public static String GetQuotientType(String leftType, Universal right, String rightType)
+	public static String GetQuotientType(String leftType, NStarObject right, String rightType)
 	{
 		if (ValidateRealType(leftType, rightType) is String s)
 			return s;
@@ -1019,7 +1020,7 @@ public struct Universal
 			return ValidatePostUSIType(leftType, rightType);
 	}
 
-	public static String GetRemainderType(String leftType, Universal right, String rightType)
+	public static String GetRemainderType(String leftType, NStarObject right, String rightType)
 	{
 		if (ValidateRealType(leftType, rightType) is String s)
 			return s;
@@ -1140,7 +1141,7 @@ public struct Universal
 	}
 
 	public override readonly bool Equals(object? obj) => obj != null
-&& obj is Universal m && ToBool() == m.ToBool() && ToReal() == m.ToReal() && ToString() == m.ToString();
+&& obj is NStarObject m && ToBool() == m.ToBool() && ToReal() == m.ToReal() && ToString() == m.ToString();
 
 	public override readonly int GetHashCode()
 	{
@@ -1169,19 +1170,19 @@ public struct Universal
 		return 0;
 	}
 
-	public static implicit operator Universal(bool x) => new(x);
+	public static implicit operator NStarObject(bool x) => new(x);
 
-	public static implicit operator Universal(char x) => new(x);
+	public static implicit operator NStarObject(char x) => new(x);
 
-	public static implicit operator Universal(double x) => new(x);
+	public static implicit operator NStarObject(double x) => new(x);
 
-	public static implicit operator Universal(string x) => new((String)x);
+	public static implicit operator NStarObject(string x) => new((String)x);
 
-	public static implicit operator Universal(String x) => new(x);
+	public static implicit operator NStarObject(String x) => new(x);
 
-	public static implicit operator Universal(List<Universal> x) => new(x);
+	public static implicit operator NStarObject(List<NStarObject> x) => new(x);
 
-	public static Universal operator +(Universal x)
+	public static NStarObject operator +(NStarObject x)
 	{
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
@@ -1214,7 +1215,7 @@ public struct Universal
 			return new();
 	}
 
-	public static Universal operator -(Universal x)
+	public static NStarObject operator -(NStarObject x)
 	{
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
@@ -1247,9 +1248,9 @@ public struct Universal
 			return new();
 	}
 
-	public static Universal operator !(Universal x) => ValidateFixing(!x.ToBool(), BoolType, x.Fixed && TypeIsPrimitive(x.InnerType.MainType) && x.InnerType.MainType.Peek().Name == "bool");
+	public static NStarObject operator !(NStarObject x) => ValidateFixing(!x.ToBool(), BoolType, x.Fixed && TypeIsPrimitive(x.InnerType.MainType) && x.InnerType.MainType.Peek().Name == "bool");
 
-	public static Universal operator ~(Universal x)
+	public static NStarObject operator ~(NStarObject x)
 	{
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
@@ -1280,7 +1281,7 @@ public struct Universal
 			return new();
 	}
 
-	public static Universal operator +(Universal left, Universal right)
+	public static NStarObject operator +(NStarObject left, NStarObject right)
 	{
 		if (TypeIsPrimitive(left.InnerType.MainType) && TypeIsPrimitive(right.InnerType.MainType))
 		{
@@ -1323,7 +1324,7 @@ public struct Universal
 			return new();
 	}
 
-	public static Universal operator -(Universal left, Universal right)
+	public static NStarObject operator -(NStarObject left, NStarObject right)
 	{
 		if (TypeIsPrimitive(left.InnerType.MainType) && TypeIsPrimitive(right.InnerType.MainType))
 		{
@@ -1366,7 +1367,7 @@ public struct Universal
 			return new();
 	}
 
-	private static Universal StringSubtract(Universal left, Universal right, String left_type, String right_type)
+	private static NStarObject StringSubtract(NStarObject left, NStarObject right, String left_type, String right_type)
 	{
 		if (byte.TryParse(left.ToString().ToString(), out var left_byte) && byte.TryParse(right.ToString().ToString(), out var right_byte))
 			return PerformOperation(left_byte, right_byte, (x, y) => x - y, left_type, right_type, "byte");
@@ -1388,7 +1389,7 @@ public struct Universal
 			return new();
 	}
 
-	public static Universal operator *(Universal left, Universal right)
+	public static NStarObject operator *(NStarObject left, NStarObject right)
 	{
 		if (TypeIsPrimitive(left.InnerType.MainType) && TypeIsPrimitive(right.InnerType.MainType))
 		{
@@ -1433,20 +1434,20 @@ public struct Universal
 			return new();
 	}
 
-	private static Universal StringMultiply(Universal left, Universal right, String right_type)
+	private static NStarObject StringMultiply(NStarObject left, NStarObject right, String right_type)
 	{
 		if (right_type == "string" && uint.TryParse(right.ToString().ToString(), out _) == false)
 		{
 			if (uint.TryParse(left.ToString().ToString(), out _) == false)
 				return new();
 			else
-				return (Universal)new String(RedStarLinq.Fill(right.ToString(), Max((int)left.ToUnsignedInt(), 0)).JoinIntoSingle());
+				return (NStarObject)new String(RedStarLinq.Fill(right.ToString(), Max((int)left.ToUnsignedInt(), 0)).JoinIntoSingle());
 		}
 		else
-			return (Universal)new String(RedStarLinq.Fill(left.ToString(), Max((int)right.ToUnsignedInt(), 0)).JoinIntoSingle());
+			return (NStarObject)new String(RedStarLinq.Fill(left.ToString(), Max((int)right.ToUnsignedInt(), 0)).JoinIntoSingle());
 	}
 
-	public static Universal operator /(Universal left, Universal right)
+	public static NStarObject operator /(NStarObject left, NStarObject right)
 	{
 		if (TypeIsPrimitive(left.InnerType.MainType) && TypeIsPrimitive(right.InnerType.MainType))
 		{
@@ -1491,7 +1492,7 @@ public struct Universal
 			return new();
 	}
 
-	private static Universal StringDivide(Universal left, Universal right, String left_type, String right_type)
+	private static NStarObject StringDivide(NStarObject left, NStarObject right, String left_type, String right_type)
 	{
 		var t = GetQuotientType(left_type, right, right_type);
 		if (short.TryParse(left.ToString().ToString(), out var left_short_int) && short.TryParse(right.ToString().ToString(), out var right_short_int))
@@ -1512,7 +1513,7 @@ public struct Universal
 			return new();
 	}
 
-	public static Universal operator %(Universal left, Universal right)
+	public static NStarObject operator %(NStarObject left, NStarObject right)
 	{
 		if (TypeIsPrimitive(left.InnerType.MainType) && TypeIsPrimitive(right.InnerType.MainType))
 		{
@@ -1557,7 +1558,7 @@ public struct Universal
 			return new();
 	}
 
-	private static Universal StringMod(Universal left, Universal right, String left_type, String right_type)
+	private static NStarObject StringMod(NStarObject left, NStarObject right, String left_type, String right_type)
 	{
 		var t = GetRemainderType(left_type, right, right_type);
 		if (short.TryParse(left.ToString().ToString(), out var left_short_int) && short.TryParse(right.ToString().ToString(), out var right_short_int))
@@ -1578,18 +1579,18 @@ public struct Universal
 			return new();
 	}
 
-	public static Universal operator &(Universal left, Universal right) => left.ToInt() & right.ToInt();
+	public static NStarObject operator &(NStarObject left, NStarObject right) => left.ToInt() & right.ToInt();
 
-	public static Universal operator |(Universal left, Universal right) => left.ToInt() | right.ToInt();
+	public static NStarObject operator |(NStarObject left, NStarObject right) => left.ToInt() | right.ToInt();
 
-	public static Universal operator ^(Universal left, Universal right) => left.ToInt() ^ right.ToInt();
+	public static NStarObject operator ^(NStarObject left, NStarObject right) => left.ToInt() ^ right.ToInt();
 
-	public static Universal operator >>(Universal left, int right) => left.ToInt() >> right;
+	public static NStarObject operator >>(NStarObject left, int right) => left.ToInt() >> right;
 
-	public static Universal operator <<(Universal left, int right) => left.ToInt() << right;
+	public static NStarObject operator <<(NStarObject left, int right) => left.ToInt() << right;
 
-	public static bool operator ==(Universal left, Universal right) =>
+	public static bool operator ==(NStarObject left, NStarObject right) =>
 		left.ToBool() == right.ToBool() && left.ToReal() == right.ToReal() && left.ToString() == right.ToString();
 
-	public static bool operator !=(Universal left, Universal right) => !(left == right);
+	public static bool operator !=(NStarObject left, NStarObject right) => !(left == right);
 }
