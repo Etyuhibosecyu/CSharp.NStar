@@ -48,7 +48,7 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 				+ ExtraTypes[^1].ToShortString();
 		else if (TypeEqualsToPrimitive(this, "tuple", false))
 		{
-			if (ExtraTypes.Length == 0 || ExtraTypes[0].Info != "type" || ExtraTypes[0].Extra is not NStarType prev)
+			if (ExtraTypes.Length == 0 || ExtraTypes[0].Name != "type" || ExtraTypes[0].Extra is not NStarType prev)
 				return "()";
 			if (ExtraTypes.Length == 1)
 				return prev.ToString();
@@ -56,7 +56,7 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 			var repeats = 1;
 			for (var i = 1; i < ExtraTypes.Length; i++)
 			{
-				if (ExtraTypes[i].Info != "type" || ExtraTypes[i].Extra is not NStarType current)
+				if (ExtraTypes[i].Name != "type" || ExtraTypes[i].Extra is not NStarType current)
 					return "()";
 				if (TypesAreEqual(prev, current))
 				{
@@ -67,11 +67,11 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 					result.Add('(');
 				else
 					result.AddRange(", ");
-				var bList = TypeEqualsToPrimitive(prev, "list", false);
-				if (bList)
+				var isList = TypeEqualsToPrimitive(prev, "list", false);
+				if (isList)
 					result.Add('(');
 				result.AddRange(prev.ToString());
-				if (bList)
+				if (isList)
 					result.Add(')');
 				if (repeats != 1)
 					result.Add('[').AddRange(repeats.ToString()).Add(']');

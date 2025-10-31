@@ -3,7 +3,7 @@
 [DebuggerDisplay("{ToString()}")]
 public sealed class TreeBranch
 {
-	public String Info { get; set; }
+	public String Name { get; set; }
 	public int Pos { get; set; }
 	public int EndPos { get; set; }
 	public List<TreeBranch> Elements { get; set; }
@@ -26,27 +26,27 @@ public sealed class TreeBranch
 	public int FullCount => Elements.Length + Elements.Sum(x => x.FullCount);
 	public int FirstPos => Length == 0 ? Pos : Elements[0].Pos;
 
-	public TreeBranch(String info, int pos, BlockStack container)
+	public TreeBranch(String name, int pos, BlockStack container)
 	{
-		Info = info;
+		Name = name;
 		Pos = pos;
 		EndPos = pos + 1;
 		Elements = [];
 		Container = container;
 	}
 
-	public TreeBranch(String info, int pos, int endPos, BlockStack container)
+	public TreeBranch(String name, int pos, int endPos, BlockStack container)
 	{
-		Info = info;
+		Name = name;
 		Pos = pos;
 		EndPos = endPos;
 		Elements = [];
 		Container = container;
 	}
 
-	public TreeBranch(String info, TreeBranch element, BlockStack container)
+	public TreeBranch(String name, TreeBranch element, BlockStack container)
 	{
-		Info = info;
+		Name = name;
 		Pos = element.Pos;
 		EndPos = element.EndPos;
 		Elements = [element];
@@ -54,9 +54,9 @@ public sealed class TreeBranch
 		Container = container;
 	}
 
-	public TreeBranch(String info, List<TreeBranch> elements, BlockStack container)
+	public TreeBranch(String name, List<TreeBranch> elements, BlockStack container)
 	{
-		Info = info;
+		Name = name;
 		Pos = elements.Length == 0 ? throw new ArgumentException(null, nameof(elements)) : elements[0].Pos;
 		EndPos = elements.Length == 0 ? throw new ArgumentException(null, nameof(elements)) : elements[^1].EndPos;
 		Elements = elements;
@@ -121,7 +121,7 @@ public sealed class TreeBranch
 
 	public void Replace(TreeBranch branch)
 	{
-		Info = branch.Info;
+		Name = branch.Name;
 		Pos = branch.Pos;
 		EndPos = branch.EndPos;
 		Elements = branch.Elements;
@@ -131,9 +131,9 @@ public sealed class TreeBranch
 
 	public override bool Equals(object? obj) => obj is not null
 		&& obj is TreeBranch m
-		&& Info == m.Info && RedStarLinq.Equals(Elements, m.Elements, (x, y) => new TreeBranchComparer().Equals(x, y));
+		&& Name == m.Name && RedStarLinq.Equals(Elements, m.Elements, (x, y) => new TreeBranchComparer().Equals(x, y));
 
-	public override int GetHashCode() => Info.GetHashCode() ^ Elements.GetHashCode() ^ (Extra?.GetHashCode() ?? 77777777);
+	public override int GetHashCode() => Name.GetHashCode() ^ Elements.GetHashCode() ^ (Extra?.GetHashCode() ?? 77777777);
 
 	public string ToShortString()
 	{
@@ -141,18 +141,18 @@ public sealed class TreeBranch
 			return "(" + string.Join(", ", Elements.ToArray(x => x.ToShortString()))
 				+ (Extra is null ? "" : " : " + Extra.ToString()) + ")";
 		else if (Extra is null)
-			return Info.ToString();
-		else if (Info == "type" && Extra is NStarType UnvType)
+			return Name.ToString();
+		else if (Name == "type" && Extra is NStarType UnvType)
 			return UnvType.ToString();
 		else
-			return "(" + Info + " :: " + Extra.ToString() + ")";
+			return "(" + Name + " :: " + Extra.ToString() + ")";
 	}
 
 	public override string ToString() => ToString(new());
 
 	private string ToString(BlockStack container)
 	{
-		var infoString = Info + (RedStarLinq.Equals(container, Container) ? "" : Container.StartsWith(container)
+		var infoString = Name + (RedStarLinq.Equals(container, Container) ? "" : Container.StartsWith(container)
 			? "@" + string.Join(".", Container.Skip(container.Length).ToArray(x => x.ToString()))
 			: throw new ArgumentException(null, nameof(container)));
 		if (Length == 0)
@@ -162,7 +162,7 @@ public sealed class TreeBranch
 	}
 
 	public static bool operator ==(TreeBranch? x, TreeBranch? y) => x is null && y is null || x is not null && y is not null
-		&& x.Info == y.Info && RedStarLinq.Equals(x.Elements, y.Elements, (x, y) => new TreeBranchComparer().Equals(x, y))
+		&& x.Name == y.Name && RedStarLinq.Equals(x.Elements, y.Elements, (x, y) => new TreeBranchComparer().Equals(x, y))
 		&& (x.Extra?.Equals(y.Extra) ?? y.Extra is null);
 
 	public static bool operator !=(TreeBranch? x, TreeBranch? y) => !(x == y);

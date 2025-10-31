@@ -21,7 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonConverters", "JsonConve
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MainParsing", "MainParsing\MainParsing.csproj", "{C775FC4E-A552-4839-8B0F-C568A5D8DA31}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStarObject", "NStarObject\NStarObject.csproj", "{8A55065B-4095-418B-A4D5-A26315315F5F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStarEntity", "NStarEntity\NStarEntity.csproj", "{8A55065B-4095-418B-A4D5-A26315315F5F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuotesAndTreeBranch", "QuotesAndTreeBranch\QuotesAndTreeBranch.csproj", "{FE09F28C-176E-4EDA-A65C-7D6D4DA85642}"
 EndProject

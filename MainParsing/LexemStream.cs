@@ -18,7 +18,7 @@ public class LexemStream
 {
 	private protected readonly List<Lexem> lexems;
 	private protected readonly String input;
-	private protected List<String>? errorsList;
+	private protected List<String>? errors;
 	private readonly BlockStack? rootContainer;
 	private protected bool wreckOccurred;
 	private protected int pos;
@@ -35,18 +35,18 @@ public class LexemStream
 
 	private protected static readonly ListHashSet<String> StopLexemsList = ["\r\n", ";", "{", "}"];
 
-	private protected LexemStream(List<Lexem> lexems, String input, List<String>? errorsList, bool wreckOccurred, BlockStack? rootContainer = null)
+	private protected LexemStream(List<Lexem> lexems, String input, List<String>? errors, bool wreckOccurred, BlockStack? rootContainer = null)
 	{
 		this.lexems = lexems;
 		this.input = input;
-		this.errorsList = errorsList;
+		this.errors = errors;
 		this.rootContainer = rootContainer;
 		this.wreckOccurred = wreckOccurred;
 		pos = 0;
 		pos2 = 0;
 	}
 
-	private protected LexemStream(LexemStream lexemStream) : this(lexemStream.lexems, lexemStream.input, lexemStream.errorsList, lexemStream.wreckOccurred, lexemStream.rootContainer)
+	private protected LexemStream(LexemStream lexemStream) : this(lexemStream.lexems, lexemStream.input, lexemStream.errors, lexemStream.wreckOccurred, lexemStream.rootContainer)
 	{
 		pos = lexemStream.pos;
 		blocksToJump = lexemStream.blocksToJump;
@@ -133,16 +133,16 @@ public class LexemStream
 		}
 		pos++;
 		String name;
-		var nameList = new List<String>();
+		var names = new List<String>();
 		while (pos < lexems.Length - 1 && lexems[pos].Type == LexemType.Identifier && lexems[pos + 1].Type == LexemType.Operator && lexems[pos + 1].String == ".")
 		{
-			nameList.Add(lexems[pos].String);
+			names.Add(lexems[pos].String);
 			pos += 2;
 		}
 		if (IsEnd()) return;
 		if (lexems[pos].Type == LexemType.Identifier)
 		{
-			name = String.Join(".", [.. nameList, lexems[pos].String]);
+			name = String.Join(".", [.. names, lexems[pos].String]);
 			pos++;
 		}
 		else
@@ -198,16 +198,16 @@ public class LexemStream
 		String name;
 		BlockStack container = new(nestedBlocksChain.ToList());
 		var blockStart = pos - 1;
-		var nameList = new List<String>();
+		var names = new List<String>();
 		while (pos < lexems.Length - 1 && lexems[pos].Type == LexemType.Identifier && lexems[pos + 1].Type == LexemType.Operator && lexems[pos + 1].String == ".")
 		{
-			nameList.Add(lexems[pos].String);
+			names.Add(lexems[pos].String);
 			pos += 2;
 		}
 		if (IsEnd()) return;
 		if (lexems[pos].Type == LexemType.Identifier)
 		{
-			name = String.Join(".", [.. nameList, lexems[pos].String]);
+			name = String.Join(".", [.. names, lexems[pos].String]);
 			pos++;
 		}
 		else
@@ -232,7 +232,7 @@ public class LexemStream
 		GetBlockStart();
 		var blockStart = pos2;
 		attributes = (TypeAttributes)GetAccessMethod((int)attributes);
-		attributes |= (TypeAttributes)AddAttribute(new() { { "static", TypeAttributes.Static },
+		attributes |= (TypeAttributes)AddOneOfAttributes(new() { { "static", TypeAttributes.Static },
 			{ "sealed", TypeAttributes.Sealed }, { "abstract", TypeAttributes.Abstract } });
 		attributes |= (TypeAttributes)AddAttribute("partial", TypeAttributes.Partial);
 		while (pos2 < pos)
@@ -291,12 +291,12 @@ public class LexemStream
 		}
 		if (IsClass())
 		{
-			var value = (IsPos2LexemKeyword("static") ? 2 : 0) + (IsStatic() ? 1 : 0);
-			if (value == 3)
+			var mask = (IsPos2LexemKeyword("static") ? 2 : 0) + (IsStatic() ? 1 : 0);
+			if (mask == 3)
 				GenerateMessage(0x8000, pos2);
-			if (value >= 1)
+			if (mask >= 1)
 				attributes |= FunctionAttributes.Static;
-			if (value >= 2)
+			if (mask >= 2)
 				pos2++;
 		}
 		else
@@ -341,7 +341,7 @@ public class LexemStream
 		{
 			var start = pos;
 			pos++;
-			CloseBracket(ref pos, ")", ref errorsList);
+			CloseBracket(ref pos, ")", ref errors);
 			if (pos - start > 2)
 				parameterLists.Add((container, name, start + 1, pos - 1));
 			if (pos >= lexems.Length)
@@ -355,9 +355,9 @@ public class LexemStream
 		GetFigureBracketAndSetBlock(BlockType.Function, name, attributes, () =>
 		{
 			UserDefinedFunctionsList.TryAdd(container, []);
-			var list = UserDefinedFunctionsList[container];
-			list.TryAdd(name, []);
-			list[name].Add(new([], (new([new(BlockType.Primitive, "???", 1)]), NoBranches), attributes, []));
+			var containerFunctions = UserDefinedFunctionsList[container];
+			containerFunctions.TryAdd(name, []);
+			containerFunctions[name].Add(new([], (new([new(BlockType.Primitive, "???", 1)]), NoBranches), attributes, []));
 			blocksToJump.Add((container, "Function", name, blockStart, pos));
 			if (!(UserDefinedFunctionIndexesList.TryGetValue(container, out var list2)
 				&& actualFunctionIndexes.TryGetValue(container, out var dic)))
@@ -392,12 +392,12 @@ public class LexemStream
 		GetBlockStart();
 		var blockStart = pos2;
 		attributes = (ConstructorAttributes)GetAccessMethod((int)attributes);
-		var value = (IsPos2LexemKeyword("static") ? 2 : 0) + (IsStatic() ? 1 : 0);
-		if (value == 3)
+		var mask = (IsPos2LexemKeyword("static") ? 2 : 0) + (IsStatic() ? 1 : 0);
+		if (mask == 3)
 			GenerateMessage(0x8000, pos2);
-		if (value >= 1)
+		if (mask >= 1)
 			attributes |= ConstructorAttributes.Static;
-		if (value >= 2)
+		if (mask >= 2)
 			pos2++;
 		attributes |= (ConstructorAttributes)AddAttribute("multiconst", ConstructorAttributes.Multiconst);
 		attributes |= (ConstructorAttributes)AddAttribute("abstract", ConstructorAttributes.Abstract);
@@ -413,7 +413,7 @@ public class LexemStream
 		{
 			var start = pos;
 			pos++;
-			CloseBracket(ref pos, ")", ref errorsList);
+			CloseBracket(ref pos, ")", ref errors);
 			if (pos - start > 2)
 				parameterLists.Add((container, "Constructor", start + 1, pos - 1));
 			if (pos >= lexems.Length)
@@ -427,10 +427,10 @@ public class LexemStream
 			UserDefinedConstructorsList.TryAdd(container, []);
 			UserDefinedConstructorsList[container].Add((attributes, []));
 			blocksToJump.Add((container, "Constructor", "", blockStart, pos));
-			if (UserDefinedConstructorIndexesList.TryGetValue(container, out var list)
+			if (UserDefinedConstructorIndexesList.TryGetValue(container, out var containerConstructorIndexes)
 				&& actualConstructorIndexes.TryGetValue(container, out var index))
 			{
-				list.Add(blockStart, index);
+				containerConstructorIndexes.Add(blockStart, index);
 				actualConstructorIndexes[container]++;
 			}
 			else
@@ -451,7 +451,7 @@ public class LexemStream
 			name = s;
 	}
 
-	private bool CloseBracket(ref int pos, String bracket, ref List<String>? errorsList, int end = -1)
+	private bool CloseBracket(ref int pos, String bracket, ref List<String>? errors, int end = -1)
 	{
 		while (pos < ((end == -1) ? lexems.Length : end))
 		{
@@ -466,7 +466,7 @@ public class LexemStream
 				else if (new List<String> { "(", "[", "{" }.Contains(s))
 				{
 					pos++;
-					CloseBracket(ref pos, (s == "(") ? ")" : (s == "[") ? "]" : "}", ref errorsList);
+					CloseBracket(ref pos, (s == "(") ? ")" : (s == "[") ? "]" : "}", ref errors);
 				}
 				else if (new List<String> { ")", "]", "}" }.Contains(s) || bracket != "}" && (s == ";" || s == "\r\n"))
 				{
@@ -494,14 +494,14 @@ public class LexemStream
 
 	private void GenerateMessage(ushort code, Index pos, params dynamic[] parameters)
 	{
-		Messages.GenerateMessage(ref errorsList, code, lexems[pos].LineN, lexems[pos].Pos, parameters);
+		Messages.GenerateMessage(ref errors, code, lexems[pos].LineN, lexems[pos].Pos, parameters);
 		if (code >> 12 == 0x9)
 			wreckOccurred = true;
 	}
 
-	private void GenerateUnexpectedEndError() => Messages.GenerateMessage(ref errorsList, 0x0000, lexems[pos - 1].LineN, lexems[pos - 1].Pos + lexems[pos - 1].String.Length);
+	private void GenerateUnexpectedEndError() => Messages.GenerateMessage(ref errors, 0x0000, lexems[pos - 1].LineN, lexems[pos - 1].Pos + lexems[pos - 1].String.Length);
 
-	public (List<Lexem> Lexems, String String, TreeBranch TopBranch, List<String>? ErrorsList, bool WreckOccurred) EmptySyntaxTree() => (lexems, input, TreeBranch.DoNotAdd(), errorsList, true);
+	public (List<Lexem> Lexems, String String, TreeBranch TopBranch, List<String>? ErrorsList, bool WreckOccurred) EmptySyntaxTree() => (lexems, input, TreeBranch.DoNotAdd(), errors, true);
 
 	private bool IsClass() => nestedBlocksChain.Length != 0 && nestedBlocksChain.Peek().BlockType == BlockType.Class;
 
@@ -549,9 +549,9 @@ public class LexemStream
 		}
 	}
 
-	private dynamic AddAttribute(Dictionary<String, dynamic> list)
+	private dynamic AddOneOfAttributes(Dictionary<String, dynamic> attributes)
 	{
-		if (lexems[pos2].Type == LexemType.Keyword && list.TryGetValue(lexems[pos2].String, out var value))
+		if (lexems[pos2].Type == LexemType.Keyword && attributes.TryGetValue(lexems[pos2].String, out var value))
 		{
 			pos2++;
 			return value;
@@ -559,12 +559,12 @@ public class LexemStream
 		return 0;
 	}
 
-	private dynamic AddAttribute(String string_, dynamic value)
+	private dynamic AddAttribute(String string_, dynamic mask)
 	{
 		if (lexems[pos2].String == string_)
 		{
 			pos2++;
-			return value;
+			return mask;
 		}
 		return 0;
 	}

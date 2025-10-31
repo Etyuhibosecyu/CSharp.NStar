@@ -4,13 +4,13 @@ namespace CSharp.NStar;
 
 public static class Messages
 {
-	public static void GenerateMessage(ref List<String>? errorsList, ushort code, int line, int column,
-		params dynamic[] parameters) => GenerateMessage(errorsList ??= [], code, line, column, parameters);
+	public static void GenerateMessage(ref List<String>? errors, ushort code, int line, int column,
+		params dynamic[] parameters) => GenerateMessage(errors ??= [], code, line, column, parameters);
 
-	public static void GenerateMessage(List<String> errorsList, ushort code, int line, int column, params dynamic[] parameters)
+	public static void GenerateMessage(List<String> errors, ushort code, int line, int column, params dynamic[] parameters)
 	{
 		var codeString = Convert.ToString(code, 16).ToUpper().PadLeft(4, '0');
-		errorsList.Add(codeString[0] switch
+		errors.Add(codeString[0] switch
 		{
 			>= '0' and <= '7' => "Error ",
 			'8' => "Warning ",

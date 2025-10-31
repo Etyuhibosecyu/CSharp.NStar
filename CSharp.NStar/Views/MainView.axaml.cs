@@ -179,16 +179,16 @@ public partial class MainView : UserControl
 	{
 		// Open code completion after the user has pressed dot:
 		completionWindow = new CompletionWindow(TextBoxInput.TextArea);
-		var data = completionWindow.CompletionList.CompletionData;
+		var completionData = completionWindow.CompletionList.CompletionData;
 		if (e.Text == ".")
 			enteredText.Replace(e.Text);
 		else
 			enteredText.AddRange(e.Text ?? "");
 		if (enteredText.StartsWith('.'))
-			data.AddRange(AutoCompletionAfterDotList.Filter(x => x.StartsWith(enteredText[1..])).Convert(x =>
+			completionData.AddRange(AutoCompletionAfterDotList.Filter(x => x.StartsWith(enteredText[1..])).Convert(x =>
 				new MyCompletionData(x.ToString(), enteredText.Length - 1)));
 		else
-			data.AddRange(AutoCompletionList.Filter(x => x.StartsWith(enteredText)).Convert(x =>
+			completionData.AddRange(AutoCompletionList.Filter(x => x.StartsWith(enteredText)).Convert(x =>
 				new MyCompletionData(x.ToString(), enteredText.Length)));
 		completionWindow.Show();
 		completionWindow.Closed += (_, _) => completionWindow = null;

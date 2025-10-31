@@ -12,24 +12,24 @@ using System.Globalization;
 
 namespace CSharp.NStar;
 [DebuggerDisplay("{ToString(true)}")]
-public struct NStarObject
+public struct NStarEntity
 {
 	private readonly bool Bool;
 	private readonly double Number;
 	private readonly String String;
-	private readonly List<NStarObject>? NextList;
+	private readonly List<NStarEntity>? NextList;
 	private readonly object? Object;
 	public NStarType InnerType { get; set; }
 	public NStarType? OuterType { get; set; }
 	public bool Fixed { get; set; }
-	public static NStarObject Infinity => (double)1 / 0;
-	public static NStarObject MinusInfinity => (double)-1 / 0;
-	public static NStarObject Uncertainty => (double)0 / 0;
+	public static NStarEntity Infinity => (double)1 / 0;
+	public static NStarEntity MinusInfinity => (double)-1 / 0;
+	public static NStarEntity Uncertainty => (double)0 / 0;
 
 	private static readonly List<String> ConvertibleTypesList = ["bool", "byte", "short int", "unsigned short int", "char", "int", "unsigned int", "long int", "unsigned long int", "real", "string"];
 	private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
 
-	public NStarObject()
+	public NStarEntity()
 	{
 		Bool = false;
 		Number = 0;
@@ -41,7 +41,7 @@ public struct NStarObject
 		Fixed = false;
 	}
 
-	public NStarObject(NStarObject other)
+	public NStarEntity(NStarEntity other)
 	{
 		if (Fixed)
 		{
@@ -63,7 +63,7 @@ public struct NStarObject
 		}
 	}
 
-	public NStarObject(bool @bool)
+	public NStarEntity(bool @bool)
 	{
 		Bool = @bool;
 		Number = 0;
@@ -75,7 +75,7 @@ public struct NStarObject
 		Fixed = false;
 	}
 
-	public NStarObject(char @char)
+	public NStarEntity(char @char)
 	{
 		Bool = false;
 		Number = @char;
@@ -87,7 +87,7 @@ public struct NStarObject
 		Fixed = false;
 	}
 
-	public NStarObject(double number)
+	public NStarEntity(double number)
 	{
 		Bool = false;
 		Number = number;
@@ -108,7 +108,7 @@ public struct NStarObject
 		Fixed = false;
 	}
 
-	public NStarObject(String @string)
+	public NStarEntity(String @string)
 	{
 		Bool = false;
 		Number = 0;
@@ -120,7 +120,7 @@ public struct NStarObject
 		Fixed = false;
 	}
 
-	public NStarObject(List<NStarObject> nextList)
+	public NStarEntity(List<NStarEntity> nextList)
 	{
 		Bool = false;
 		Number = 0;
@@ -132,9 +132,9 @@ public struct NStarObject
 		Fixed = false;
 	}
 
-	public NStarObject(object @object, NStarType type)
+	public NStarEntity(object @object, NStarType type)
 	{
-		if (@object is NStarObject unv)
+		if (@object is NStarEntity unv)
 		{
 			Bool = unv.Bool;
 			Number = unv.Number;
@@ -155,7 +155,7 @@ public struct NStarObject
 		Fixed = false;
 	}
 
-	public static NStarObject Parse(string s)
+	public static NStarEntity Parse(string s)
 	{
 		string s2;
 		if (s.Length == 0)
@@ -184,9 +184,9 @@ public struct NStarObject
 		{
 			s2 = s[..^1];
 			if (int.TryParse(s2, out var i))
-				return (NStarObject)i;
+				return (NStarEntity)i;
 			else if (uint.TryParse(s2, out var ui))
-				return (NStarObject)ui;
+				return (NStarEntity)ui;
 			else if (long.TryParse(s2, out var l))
 				return new(l, LongIntType);
 			else
@@ -213,7 +213,7 @@ public struct NStarObject
 		else if (s[0] == '\"' && s[^1] == '\"')
 			return ((String)s).RemoveQuotes();
 		else if (s[0] == '\'' && s[^1] == '\'')
-			return s.Length <= 2 ? (NStarObject)'\0' : (NStarObject)((String)s).RemoveQuotes()[0];
+			return s.Length <= 2 ? (NStarEntity)'\0' : (NStarEntity)((String)s).RemoveQuotes()[0];
 		else if (s.Length >= 3 && s[0] == '@' && s[1] == '\"' && s[^1] == '\"')
 			return ((String)s)[2..^1].Replace("\"\"", "\"");
 		else if (Quotes.IsRawString(s, out var output))
@@ -223,13 +223,13 @@ public struct NStarObject
 			if (int.TryParse(s, NumberStyles.Integer, InvariantCulture, out var i))
 				return i;
 			else if (long.TryParse(s, NumberStyles.Integer, InvariantCulture, out var l))
-				return (NStarObject)l;
+				return (NStarEntity)l;
 			else
-				return ulong.TryParse(s, NumberStyles.Integer, InvariantCulture, out var ul) ? (NStarObject)ul : (NStarObject)double.Parse(s, InvariantCulture);
+				return ulong.TryParse(s, NumberStyles.Integer, InvariantCulture, out var ul) ? (NStarEntity)ul : (NStarEntity)double.Parse(s, InvariantCulture);
 		}
 	}
 
-	public static bool TryParse(string s, out NStarObject result)
+	public static bool TryParse(string s, out NStarEntity result)
 	{
 		try
 		{
@@ -243,7 +243,7 @@ public struct NStarObject
 		}
 	}
 
-	public static NStarObject TryConstruct(object? element) => element switch
+	public static NStarEntity TryConstruct(object? element) => element switch
 	{
 		null => new(),
 		bool b => b,
@@ -260,37 +260,37 @@ public struct NStarObject
 		_ => new()
 	};
 
-	public static NStarObject And(NStarObject x, NStarObject y) => (NStarObject)(x.ToBool() && y.ToBool());
+	public static NStarEntity And(NStarEntity x, NStarEntity y) => (NStarEntity)(x.ToBool() && y.ToBool());
 
-	public static NStarObject Or(NStarObject x, NStarObject y) => (NStarObject)(x.ToBool() || y.ToBool());
+	public static NStarEntity Or(NStarEntity x, NStarEntity y) => (NStarEntity)(x.ToBool() || y.ToBool());
 
-	public static NStarObject Xor(NStarObject x, NStarObject y) => (NStarObject)(x.ToBool() != y.ToBool());
+	public static NStarEntity Xor(NStarEntity x, NStarEntity y) => (NStarEntity)(x.ToBool() != y.ToBool());
 
-	public static NStarObject Eq(NStarObject x, NStarObject y)
+	public static NStarEntity Eq(NStarEntity x, NStarEntity y)
 	{
 		var result_type = GetResultType(x.InnerType, y.InnerType, x.ToString(true), y.ToString(true));
 		return x.ToType(result_type, x.Fixed) == y.ToType(result_type, y.Fixed);
 	}
 
-	public static NStarObject Neq(NStarObject x, NStarObject y)
+	public static NStarEntity Neq(NStarEntity x, NStarEntity y)
 	{
 		var result_type = GetResultType(x.InnerType, y.InnerType, x.ToString(true), y.ToString(true));
 		return x.ToType(result_type, x.Fixed) != y.ToType(result_type, y.Fixed);
 	}
 
-	public static NStarObject Goe(NStarObject x, NStarObject y) => (NStarObject)(x.ToReal() >= y.ToReal());
+	public static NStarEntity Goe(NStarEntity x, NStarEntity y) => (NStarEntity)(x.ToReal() >= y.ToReal());
 
-	public static NStarObject Loe(NStarObject x, NStarObject y) => (NStarObject)(x.ToReal() <= y.ToReal());
+	public static NStarEntity Loe(NStarEntity x, NStarEntity y) => (NStarEntity)(x.ToReal() <= y.ToReal());
 
-	public static NStarObject Gt(NStarObject x, NStarObject y) => (NStarObject)(x.ToReal() > y.ToReal());
+	public static NStarEntity Gt(NStarEntity x, NStarEntity y) => (NStarEntity)(x.ToReal() > y.ToReal());
 
-	public static NStarObject Lt(NStarObject x, NStarObject y) => (NStarObject)(x.ToReal() < y.ToReal());
+	public static NStarEntity Lt(NStarEntity x, NStarEntity y) => (NStarEntity)(x.ToReal() < y.ToReal());
 
 	// Set flag to true if you want to try to apply this function.
-	public static NStarObject ValidateFixing(NStarObject value, NStarType type, bool flag = false)
+	public static NStarEntity ValidateFixing(NStarEntity source, NStarType type, bool doFixing = false)
 	{
-		NStarObject a = new(value);
-		if (flag)
+		NStarEntity a = new(source);
+		if (doFixing)
 		{
 			a.InnerType = type;
 			a.Fixed = true;
@@ -298,7 +298,7 @@ public struct NStarObject
 		return a;
 	}
 
-	public readonly NStarObject GetElement(int index)
+	public readonly NStarEntity GetElement(int index)
 	{
 		if (Object is (IList<bool> BoolIsNullList, IList<bool> BoolList))
 			return GetElement2(index, BoolIsNullList, BoolList);
@@ -325,81 +325,16 @@ public struct NStarObject
 		else if (TypeEqualsToPrimitive(InnerType, "string"))
 		{
 			var string_ = ToString();
-			return index <= 0 || index > string_.Length ? new() : (NStarObject)string_[index - 1];
+			return index <= 0 || index > string_.Length ? new() : (NStarEntity)string_[index - 1];
 		}
 		else
 		{
-			var list = ToList();
-			return index <= 0 || index > list.Length ? new() : list[index - 1];
+			var convertedToList = ToList();
+			return index <= 0 || index > convertedToList.Length ? new() : convertedToList[index - 1];
 		}
 	}
 
-	private static NStarObject GetElement2<T>(int index, IList<bool> IsNullList, IList<T> MainList) => index <= 0 || index > MainList.Length ? new() : IsNullList[index - 1] ? new() : TryConstruct(MainList[index - 1]);
-
-	public readonly void SetElement(int index, NStarObject value)
-	{
-		if (Object is (IList<bool> BoolIsNullList, IList<bool> BoolList))
-			SetElement2(index, BoolIsNullList, BoolList, value.ToBool());
-		else if (Object is (IList<bool> ByteIsNullList, IList<byte> ByteList))
-			SetElement2(index, ByteIsNullList, ByteList, value.ToByte());
-		else if (Object is (IList<bool> ShortIntIsNullList, IList<short> ShortIntList))
-			SetElement2(index, ShortIntIsNullList, ShortIntList, value.ToShortInt());
-		else if (Object is (IList<bool> UnsignedShortIntIsNullList, IList<ushort> UnsignedShortIntList))
-			SetElement2(index, UnsignedShortIntIsNullList, UnsignedShortIntList, value.ToUnsignedShortInt());
-		else if (Object is (IList<bool> CharIsNullList, IList<char> CharList))
-			SetElement2(index, CharIsNullList, CharList, value.ToChar());
-		else if (Object is (IList<bool> IntIsNullList, IList<int> IntList))
-			SetElement2(index, IntIsNullList, IntList, value.ToInt());
-		else if (Object is (IList<bool> UnsignedIntIsNullList, IList<uint> UnsignedIntList))
-			SetElement2(index, UnsignedIntIsNullList, UnsignedIntList, value.ToUnsignedInt());
-		else if (Object is (IList<bool> LongIntIsNullList, IList<long> LongIntList))
-			SetElement2(index, LongIntIsNullList, LongIntList, value.ToLongInt());
-		else if (Object is (IList<bool> UnsignedLongIntIsNullList, IList<ulong> UnsignedLongIntList))
-			SetElement2(index, UnsignedLongIntIsNullList, UnsignedLongIntList, value.ToUnsignedLongInt());
-		else if (Object is (IList<bool> RealIsNullList, IList<double> RealList))
-			SetElement2(index, RealIsNullList, RealList, value.ToReal());
-		else if (Object is (IList<bool> StringIsNullList, IList<String> StringList))
-			SetElement2(index, StringIsNullList, StringList, value.ToString());
-		else if (TypeEqualsToPrimitive(InnerType, "string"))
-			throw new NotSupportedException("Separate characters in the string cannot be set!");
-		else
-		{
-			var list = ToList();
-			if (index <= 0 || index > list.Length)
-				return;
-			else
-				list[index - 1] = value;
-		}
-	}
-
-	private static void SetElement2<T>(int index, IList<bool> IsNullList, IList<T> MainList, T value)
-	{
-		if (index <= 0 || index > MainList.Length)
-			return;
-		else
-		{
-			IsNullList[index - 1] = false;
-			MainList[index - 1] = value;
-		}
-	}
-
-	public readonly int GetLength() => Object switch
-	{
-		(IList<bool> BoolIsNullList, IList<bool> BoolList) => GetLength2(BoolIsNullList, BoolList),
-		(IList<bool> ByteIsNullList, IList<byte> ByteList) => GetLength2(ByteIsNullList, ByteList),
-		(IList<bool> ShortIntIsNullList, IList<short> ShortIntList) => GetLength2(ShortIntIsNullList, ShortIntList),
-		(IList<bool> UnsignedShortIntIsNullList, IList<ushort> UnsignedShortIntList) => GetLength2(UnsignedShortIntIsNullList, UnsignedShortIntList),
-		(IList<bool> CharIsNullList, IList<char> CharList) => GetLength2(CharIsNullList, CharList),
-		(IList<bool> IntIsNullList, IList<int> IntList) => GetLength2(IntIsNullList, IntList),
-		(IList<bool> UnsignedIntIsNullList, IList<uint> UnsignedIntList) => GetLength2(UnsignedIntIsNullList, UnsignedIntList),
-		(IList<bool> LongIntIsNullList, IList<long> LongIntList) => GetLength2(LongIntIsNullList, LongIntList),
-		(IList<bool> UnsignedLongIntIsNullList, IList<ulong> UnsignedLongIntList) => GetLength2(UnsignedLongIntIsNullList, UnsignedLongIntList),
-		(IList<bool> RealIsNullList, IList<double> RealList) => GetLength2(RealIsNullList, RealList),
-		(IList<bool> StringIsNullList, IList<string> StringList) => GetLength2(StringIsNullList, StringList),
-		_ => TypeEqualsToPrimitive(InnerType, "string") ? ToString().Length : ToList().Length
-	};
-
-	private static int GetLength2<T>(IList<bool> IsNullList, IList<T> MainList) => IsNullList.Length != MainList.Length ? 0 : MainList.Length;
+	private static NStarEntity GetElement2<T>(int index, IList<bool> IsNullList, IList<T> MainList) => index <= 0 || index > MainList.Length ? new() : IsNullList[index - 1] ? new() : TryConstruct(MainList[index - 1]);
 
 	public readonly bool ToBool()
 	{
@@ -743,19 +678,19 @@ public struct NStarObject
 
 	private readonly string ListToString(string type_name = "")
 	{
-		var list = ToList();
-		if (list.Length == 0)
+		var convertedToList = ToList();
+		if (convertedToList.Length == 0)
 			return (type_name == "" ? "ListWithSingle" : "new " + type_name) + "(null)";
-		else if (list.Length == 1)
-			return (type_name == "" ? "ListWithSingle" : "new " + type_name) + "(" + list[0].ToString(true) + ")";
-		String output = new(list.Length * 4 + 2) { '(' };
+		else if (convertedToList.Length == 1)
+			return (type_name == "" ? "ListWithSingle" : "new " + type_name) + "(" + convertedToList[0].ToString(true) + ")";
+		String output = new(convertedToList.Length * 4 + 2) { '(' };
 		if (type_name != "")
 			output.Insert(0, "new " + type_name);
-		output.AddRange(list[0].ToString(true));
-		for (var i = 1; i <= list.Length - 1; i++)
+		output.AddRange(convertedToList[0].ToString(true));
+		for (var i = 1; i <= convertedToList.Length - 1; i++)
 		{
 			output.AddRange(", ");
-			output.AddRange(list[i].ToString(true));
+			output.AddRange(convertedToList[i].ToString(true));
 		}
 		output.Add(')');
 		return new([.. output]);
@@ -778,11 +713,11 @@ public struct NStarObject
 		return new([.. output]);
 	}
 
-	public static NStarObject PerformOperation<T>(NStarObject x, NStarObject y, Func<NStarObject, T> Input, Func<T, T, NStarObject> Output, String leftType, String rightType, String inputType) => ValidateFixing(Output(Input(x), Input(y)), GetPrimitiveType(inputType), x.Fixed && leftType == inputType || y.Fixed && rightType == inputType);
+	public static NStarEntity PerformOperation<T>(NStarEntity x, NStarEntity y, Func<NStarEntity, T> Input, Func<T, T, NStarEntity> Output, String leftType, String rightType, String inputType) => ValidateFixing(Output(Input(x), Input(y)), GetPrimitiveType(inputType), x.Fixed && leftType == inputType || y.Fixed && rightType == inputType);
 
-	public static NStarObject PerformOperation<T>(T x, T y, Func<T, T, NStarObject> Process, String leftType, String rightType, String inputType) => ValidateFixing(Process(x, y), GetPrimitiveType(inputType), leftType == inputType || rightType == inputType);
+	public static NStarEntity PerformOperation<T>(T x, T y, Func<T, T, NStarEntity> Process, String leftType, String rightType, String inputType) => ValidateFixing(Process(x, y), GetPrimitiveType(inputType), leftType == inputType || rightType == inputType);
 
-	public readonly List<NStarObject> ToList()
+	public readonly List<NStarEntity> ToList()
 	{
 		if (TypeIsPrimitive(InnerType.MainType) && InnerType.MainType.Peek().Name != "list" && InnerType.MainType.Peek().Name != "tuple")
 			return [this];
@@ -805,19 +740,19 @@ public struct NStarObject
 		}
 	}
 
-	private static List<NStarObject> ToList2<T>(IList<bool> IsNullList, IList<T> MainList)
+	private static List<NStarEntity> ToList2<T>(IList<bool> IsNullList, IList<T> MainList)
 	{
-		List<NStarObject> output = new(MainList.Length);
+		List<NStarEntity> output = new(MainList.Length);
 		for (var i = 0; i < MainList.Length; i++)
 			output.Add(IsNullList[i] ? new() : TryConstruct(MainList[i]));
 		return output;
 	}
 
-	public NStarObject ToType(NStarType type, bool fix = false)
+	public NStarEntity ToType(NStarType type, bool fix = false)
 	{
 		try
 		{
-			NStarObject a;
+			NStarEntity a;
 			if (TypeIsPrimitive(type.MainType))
 				a = ToPrimitiveType(type, fix);
 			else if (TypesAreEqual(type, InnerType))
@@ -838,7 +773,7 @@ public struct NStarObject
 		}
 	}
 
-	private NStarObject ToPrimitiveType(NStarType type, bool fix)
+	private NStarEntity ToPrimitiveType(NStarType type, bool fix)
 	{
 		var basic_type = type.MainType.Peek().Name;
 		if (basic_type == "null")
@@ -880,7 +815,7 @@ public struct NStarObject
 		else return basic_type == "tuple" ? ToTupleType(type.ExtraTypes) : new();
 	}
 
-	private NStarObject ToFullListType(NStarType type, int LeftDepth, NStarType LeftLeafType, int RightDepth, NStarType RightLeafType, bool fix = false)
+	private NStarEntity ToFullListType(NStarType type, int LeftDepth, NStarType LeftLeafType, int RightDepth, NStarType RightLeafType, bool fix = false)
 	{
 		if (LeftDepth == 0)
 			return ToType(LeftLeafType, fix);
@@ -892,13 +827,13 @@ public struct NStarObject
 				types_list[i + 1] = GetSubtype(types_list[i]);
 			var element = (RightDepth == 0) ? ToType(types_list[LeftDepth - RightDepth], true) : ToFullListType(types_list[LeftDepth - RightDepth], RightDepth, LeftLeafType, RightDepth, RightLeafType, true);
 			for (var i = LeftDepth - RightDepth - 1; i >= 0; i--)
-				element = ValidateFixing(new List<NStarObject> { element }, types_list[i], i > 0 || fix);
+				element = ValidateFixing(new List<NStarEntity> { element }, types_list[i], i > 0 || fix);
 			return element;
 		}
 		else if (LeftDepth == RightDepth || TypeEqualsToPrimitive(LeftLeafType, "string"))
 		{
 			var old_list = ToList();
-			List<NStarObject> new_list = new(old_list.Length);
+			List<NStarEntity> new_list = new(old_list.Length);
 			for (var i = 0; i < old_list.Length; i++)
 				new_list.Add(old_list[i].ToFullListType(GetSubtype(type), LeftDepth - 1, LeftLeafType, RightDepth - 1, RightLeafType, true));
 			return ValidateFixing(new_list, type, fix);
@@ -912,13 +847,13 @@ public struct NStarObject
 		}
 	}
 
-	private readonly NStarObject ToTupleType(BranchCollection type_parts)
+	private readonly NStarEntity ToTupleType(BranchCollection type_parts)
 	{
 		var count = 0;
 		NList<int> numbers = [];
 		for (var i = 0; i < type_parts.Length; i++)
 		{
-			if (i >= 1 && type_parts[i].Info != "type" && int.TryParse(type_parts[i].Info.ToString(), out var number))
+			if (i >= 1 && type_parts[i].Name != "type" && int.TryParse(type_parts[i].Name.ToString(), out var number))
 			{
 				count += number - 1;
 				numbers.Add(number - 1);
@@ -928,18 +863,18 @@ public struct NStarObject
 		}
 		numbers.Add(1);
 		var old_list = ToList();
-		List<NStarObject> new_list = [.. new NStarObject[count]];
+		List<NStarEntity> new_list = [.. new NStarEntity[count]];
 		int tpos = 0, tpos2, npos = 0;
 		for (var i = 0; i < count && i < old_list.Length; i++)
 		{
-			if (tpos >= 1 && type_parts[tpos].Info != "type" && int.TryParse(type_parts[tpos].Info.ToString(), out _))
+			if (tpos >= 1 && type_parts[tpos].Name != "type" && int.TryParse(type_parts[tpos].Name.ToString(), out _))
 			{
 				tpos2 = tpos - 1;
 				numbers[npos]--;
 			}
 			else
 				tpos2 = tpos;
-			if (type_parts[tpos2].Info != "type" || type_parts[tpos2].Extra is not NStarType InnerUnvType)
+			if (type_parts[tpos2].Name != "type" || type_parts[tpos2].Extra is not NStarType InnerUnvType)
 				continue;
 			new_list[i] = old_list[i].ToType(InnerUnvType, true);
 			if (tpos2 == tpos || numbers[npos] == 0)
@@ -952,7 +887,7 @@ public struct NStarObject
 		return new_list;
 	}
 
-	public static String GetQuotientType(String leftType, NStarObject right, String rightType)
+	public static String GetQuotientType(String leftType, NStarEntity right, String rightType)
 	{
 		if (ValidateRealType(leftType, rightType) is String s)
 			return s;
@@ -1020,7 +955,7 @@ public struct NStarObject
 			return ValidatePostUSIType(leftType, rightType);
 	}
 
-	public static String GetRemainderType(String leftType, NStarObject right, String rightType)
+	public static String GetRemainderType(String leftType, NStarEntity right, String rightType)
 	{
 		if (ValidateRealType(leftType, rightType) is String s)
 			return s;
@@ -1141,7 +1076,7 @@ public struct NStarObject
 	}
 
 	public override readonly bool Equals(object? obj) => obj != null
-&& obj is NStarObject m && ToBool() == m.ToBool() && ToReal() == m.ToReal() && ToString() == m.ToString();
+&& obj is NStarEntity m && ToBool() == m.ToBool() && ToReal() == m.ToReal() && ToString() == m.ToString();
 
 	public override readonly int GetHashCode()
 	{
@@ -1170,19 +1105,19 @@ public struct NStarObject
 		return 0;
 	}
 
-	public static implicit operator NStarObject(bool x) => new(x);
+	public static implicit operator NStarEntity(bool x) => new(x);
 
-	public static implicit operator NStarObject(char x) => new(x);
+	public static implicit operator NStarEntity(char x) => new(x);
 
-	public static implicit operator NStarObject(double x) => new(x);
+	public static implicit operator NStarEntity(double x) => new(x);
 
-	public static implicit operator NStarObject(string x) => new((String)x);
+	public static implicit operator NStarEntity(string x) => new((String)x);
 
-	public static implicit operator NStarObject(String x) => new(x);
+	public static implicit operator NStarEntity(String x) => new(x);
 
-	public static implicit operator NStarObject(List<NStarObject> x) => new(x);
+	public static implicit operator NStarEntity(List<NStarEntity> x) => new(x);
 
-	public static NStarObject operator +(NStarObject x)
+	public static NStarEntity operator +(NStarEntity x)
 	{
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
@@ -1215,7 +1150,7 @@ public struct NStarObject
 			return new();
 	}
 
-	public static NStarObject operator -(NStarObject x)
+	public static NStarEntity operator -(NStarEntity x)
 	{
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
@@ -1248,9 +1183,9 @@ public struct NStarObject
 			return new();
 	}
 
-	public static NStarObject operator !(NStarObject x) => ValidateFixing(!x.ToBool(), BoolType, x.Fixed && TypeIsPrimitive(x.InnerType.MainType) && x.InnerType.MainType.Peek().Name == "bool");
+	public static NStarEntity operator !(NStarEntity x) => ValidateFixing(!x.ToBool(), BoolType, x.Fixed && TypeIsPrimitive(x.InnerType.MainType) && x.InnerType.MainType.Peek().Name == "bool");
 
-	public static NStarObject operator ~(NStarObject x)
+	public static NStarEntity operator ~(NStarEntity x)
 	{
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
@@ -1281,7 +1216,7 @@ public struct NStarObject
 			return new();
 	}
 
-	public static NStarObject operator +(NStarObject left, NStarObject right)
+	public static NStarEntity operator +(NStarEntity left, NStarEntity right)
 	{
 		if (TypeIsPrimitive(left.InnerType.MainType) && TypeIsPrimitive(right.InnerType.MainType))
 		{
@@ -1324,7 +1259,7 @@ public struct NStarObject
 			return new();
 	}
 
-	public static NStarObject operator -(NStarObject left, NStarObject right)
+	public static NStarEntity operator -(NStarEntity left, NStarEntity right)
 	{
 		if (TypeIsPrimitive(left.InnerType.MainType) && TypeIsPrimitive(right.InnerType.MainType))
 		{
@@ -1367,7 +1302,7 @@ public struct NStarObject
 			return new();
 	}
 
-	private static NStarObject StringSubtract(NStarObject left, NStarObject right, String left_type, String right_type)
+	private static NStarEntity StringSubtract(NStarEntity left, NStarEntity right, String left_type, String right_type)
 	{
 		if (byte.TryParse(left.ToString().ToString(), out var left_byte) && byte.TryParse(right.ToString().ToString(), out var right_byte))
 			return PerformOperation(left_byte, right_byte, (x, y) => x - y, left_type, right_type, "byte");
@@ -1389,7 +1324,7 @@ public struct NStarObject
 			return new();
 	}
 
-	public static NStarObject operator *(NStarObject left, NStarObject right)
+	public static NStarEntity operator *(NStarEntity left, NStarEntity right)
 	{
 		if (TypeIsPrimitive(left.InnerType.MainType) && TypeIsPrimitive(right.InnerType.MainType))
 		{
@@ -1434,20 +1369,20 @@ public struct NStarObject
 			return new();
 	}
 
-	private static NStarObject StringMultiply(NStarObject left, NStarObject right, String right_type)
+	private static NStarEntity StringMultiply(NStarEntity left, NStarEntity right, String right_type)
 	{
 		if (right_type == "string" && uint.TryParse(right.ToString().ToString(), out _) == false)
 		{
 			if (uint.TryParse(left.ToString().ToString(), out _) == false)
 				return new();
 			else
-				return (NStarObject)new String(RedStarLinq.Fill(right.ToString(), Max((int)left.ToUnsignedInt(), 0)).JoinIntoSingle());
+				return (NStarEntity)new String(RedStarLinq.Fill(right.ToString(), Max((int)left.ToUnsignedInt(), 0)).JoinIntoSingle());
 		}
 		else
-			return (NStarObject)new String(RedStarLinq.Fill(left.ToString(), Max((int)right.ToUnsignedInt(), 0)).JoinIntoSingle());
+			return (NStarEntity)new String(RedStarLinq.Fill(left.ToString(), Max((int)right.ToUnsignedInt(), 0)).JoinIntoSingle());
 	}
 
-	public static NStarObject operator /(NStarObject left, NStarObject right)
+	public static NStarEntity operator /(NStarEntity left, NStarEntity right)
 	{
 		if (TypeIsPrimitive(left.InnerType.MainType) && TypeIsPrimitive(right.InnerType.MainType))
 		{
@@ -1492,7 +1427,7 @@ public struct NStarObject
 			return new();
 	}
 
-	private static NStarObject StringDivide(NStarObject left, NStarObject right, String left_type, String right_type)
+	private static NStarEntity StringDivide(NStarEntity left, NStarEntity right, String left_type, String right_type)
 	{
 		var t = GetQuotientType(left_type, right, right_type);
 		if (short.TryParse(left.ToString().ToString(), out var left_short_int) && short.TryParse(right.ToString().ToString(), out var right_short_int))
@@ -1513,7 +1448,7 @@ public struct NStarObject
 			return new();
 	}
 
-	public static NStarObject operator %(NStarObject left, NStarObject right)
+	public static NStarEntity operator %(NStarEntity left, NStarEntity right)
 	{
 		if (TypeIsPrimitive(left.InnerType.MainType) && TypeIsPrimitive(right.InnerType.MainType))
 		{
@@ -1558,7 +1493,7 @@ public struct NStarObject
 			return new();
 	}
 
-	private static NStarObject StringMod(NStarObject left, NStarObject right, String left_type, String right_type)
+	private static NStarEntity StringMod(NStarEntity left, NStarEntity right, String left_type, String right_type)
 	{
 		var t = GetRemainderType(left_type, right, right_type);
 		if (short.TryParse(left.ToString().ToString(), out var left_short_int) && short.TryParse(right.ToString().ToString(), out var right_short_int))
@@ -1579,18 +1514,18 @@ public struct NStarObject
 			return new();
 	}
 
-	public static NStarObject operator &(NStarObject left, NStarObject right) => left.ToInt() & right.ToInt();
+	public static NStarEntity operator &(NStarEntity left, NStarEntity right) => left.ToInt() & right.ToInt();
 
-	public static NStarObject operator |(NStarObject left, NStarObject right) => left.ToInt() | right.ToInt();
+	public static NStarEntity operator |(NStarEntity left, NStarEntity right) => left.ToInt() | right.ToInt();
 
-	public static NStarObject operator ^(NStarObject left, NStarObject right) => left.ToInt() ^ right.ToInt();
+	public static NStarEntity operator ^(NStarEntity left, NStarEntity right) => left.ToInt() ^ right.ToInt();
 
-	public static NStarObject operator >>(NStarObject left, int right) => left.ToInt() >> right;
+	public static NStarEntity operator >>(NStarEntity left, int right) => left.ToInt() >> right;
 
-	public static NStarObject operator <<(NStarObject left, int right) => left.ToInt() << right;
+	public static NStarEntity operator <<(NStarEntity left, int right) => left.ToInt() << right;
 
-	public static bool operator ==(NStarObject left, NStarObject right) =>
+	public static bool operator ==(NStarEntity left, NStarEntity right) =>
 		left.ToBool() == right.ToBool() && left.ToReal() == right.ToReal() && left.ToString() == right.ToString();
 
-	public static bool operator !=(NStarObject left, NStarObject right) => !(left == right);
+	public static bool operator !=(NStarEntity left, NStarEntity right) => !(left == right);
 }

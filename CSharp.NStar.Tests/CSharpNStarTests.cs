@@ -631,6 +631,16 @@ return F()();
 ", @"/""Hell@""/{""o, world!""\", "Ошибок нет")]
 	[DataRow(@"return /""Hell@""\""""\""o, world!""\;
 ", @"/""Hell@""\""""\""o, world!""\", "Ошибок нет")]
+	[DataRow(@"return 'Hello, world!';
+", "null", @"Wreck 9001 in line 1 at position 9: there must be a single character or a single escape-sequence in the single quotes
+")]
+	[DataRow(@"return 'H
+;
+", "null", @"Wreck 9001 in line 1 at position 9: there must be a single character or a single escape-sequence in the single quotes
+")]
+	[DataRow(@"return '", "null", @"Wreck 9000 in line 1 at position 8: unexpected end of code reached; expected: single quote
+Wreck 9000 in line 1 at position 8: unexpected end of code reached; expected: single quote
+")]
 	[DataRow(@"using System;
 real Function F(int n)
 {

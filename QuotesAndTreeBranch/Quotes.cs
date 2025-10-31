@@ -12,10 +12,10 @@ public static partial class Quotes
 {
 	public static String TakeIntoQuotes(this String input, bool oldStyle = false)
 	{
-		String list = new((int)Ceiling(input.Length * 1.1), '\"');
+		String result = new((int)Ceiling(input.Length * 1.1), '\"');
 		for (var i = 0; i < input.Length; i++)
 		{
-			list.AddRange(input[i] switch
+			result.AddRange(input[i] switch
 			{
 				'\0' => new String('\\', '0'),
 				'\a' => new String('\\', 'a'),
@@ -30,8 +30,8 @@ public static partial class Quotes
 				_ => new String(input[i]),
 			});
 		}
-		list.Add('\"');
-		return list;
+		result.Add('\"');
+		return result;
 	}
 
 	public static String TakeIntoVerbatimQuotes(this String input) => ((String)"@\"").AddRange(input.Replace("\"", "\"\"")).Add('\"');
@@ -56,12 +56,12 @@ public static partial class Quotes
 			return input[2..^1].Replace("\"\"", "\"");
 		if (!(input.Length >= 2 && (input[0] == '\"' && input[^1] == '\"' || input[0] == '\'' && input[^1] == '\'')))
 		{
-			if (input.IsRawString(out var input2))
-				return input2;
+			if (input.IsRawString(out var rawInput))
+				return rawInput;
 			else
 				return input;
 		}
-		String list = new(input.Length);
+		String result = new(input.Length);
 		var state = 0;
 		var hex_left = 0;
 		var n = 0;
@@ -72,7 +72,7 @@ public static partial class Quotes
 			{
 				if (state == 1)
 				{
-					list.Add('\\');
+					result.Add('\\');
 					state = 0;
 				}
 				else
@@ -99,10 +99,10 @@ public static partial class Quotes
 				}
 			}
 			else
-				list.Add(c);
+				result.Add(c);
 		}
-		return list;
-		void State1(char c) => list.Add(c switch
+		return result;
+		void State1(char c) => result.Add(c switch
 		{
 			'0' => '\0',
 			'a' => '\a',
@@ -125,7 +125,7 @@ public static partial class Quotes
 				n = n * 16 + ((c is >= '0' and <= '9') ? c - '0' : (c is >= 'A' and <= 'F') ? c - 'A' + 10 : c - 'a' + 10);
 				if (hex_left == 1)
 				{
-					list.Add((char)n);
+					result.Add((char)n);
 					state = 0;
 				}
 				hex_left--;

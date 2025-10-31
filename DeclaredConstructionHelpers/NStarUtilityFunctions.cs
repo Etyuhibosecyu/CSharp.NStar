@@ -2,7 +2,7 @@
 
 namespace CSharp.NStar;
 
-public static class NStarBuiltInFunctions
+public static class NStarUtilityFunctions
 {
 	private static int random_calls;
 	private static readonly double random_initializer = DateTime.Now.ToBinary() / 1E+9;

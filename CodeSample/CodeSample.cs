@@ -45,13 +45,13 @@ public sealed class Lexem(String newString, LexemType newType, int newLineN, int
 public class CodeSample(String newString)
 {
 	private readonly List<Lexem> lexems = [];
-	private List<Lexem> tempLexems = [];
+	private List<Lexem> lexemsBuffer = [];
 	private bool success;
 	private readonly String input = newString.Length == 0 ? "return null;" : newString;
 	private int pos = 0, lineStart = 0;
 	private int lineN = 1;
 	private bool wreckOccurred = false;
-	private readonly List<String> errorsList = [];
+	private readonly List<String> errors = [];
 	private readonly List<LexemTree> lexemTree = [DoubleEqualLexemTree('^'), DoubleEqualLexemTree('|'), DoubleEqualLexemTree('&'), TripleEqualLexemTree('>'), TripleEqualLexemTree('<'), DoubleEqualLexemTree('!'), new LexemTree('?', [new LexemTree('!', ['='], allowNone: false), EqualLexemTree('>'), EqualLexemTree('<'), '=', '?', '.', '[']), ',', ':', '@', '#', '$', '~', DoubleEqualLexemTree('+'), DoubleEqualLexemTree('-'), EqualLexemTree('*'), EqualLexemTree('/'), EqualLexemTree('%'), new LexemTree('=', ['=', '>']), TripleLexemTree('.')];
 
 	private static LexemTree EqualLexemTree(char c) => new(c, ['=']);
@@ -110,8 +110,8 @@ public class CodeSample(String newString)
 	private String GetNumber(out LexemType lexemType)
 	{
 		var start = pos;
-		List<String> list = [GetNumber2(out lexemType)];
-		if (CheckOverflow(list[0], ref lexemType) is String s) return s;
+		List<String> numberParts = [GetNumber2(out lexemType)];
+		if (CheckOverflow(numberParts[0], ref lexemType) is String s) return s;
 		if (ValidateChar('.'))
 		{
 			if (CheckChar('.'))
@@ -120,28 +120,28 @@ public class CodeSample(String newString)
 				return input.GetRange(start..pos, true);
 			}
 			lexemType = LexemType.Real;
-			list.Add(input[(pos - 1)..pos]);
-			list.Add(GetNumber2(out _));
-			if (CheckOverflow(list[^1], ref lexemType) is String s2) return s2;
-			if (list[0].Length == 0 && list[2].Length == 0)
+			numberParts.Add(input[(pos - 1)..pos]);
+			numberParts.Add(GetNumber2(out _));
+			if (CheckOverflow(numberParts[^1], ref lexemType) is String s2) return s2;
+			if (numberParts[0].Length == 0 && numberParts[2].Length == 0)
 			{
 				pos = start;
 				return [];
 			}
 		}
-		if (list[0].Length != 0 && ValidateCharList("Ee") && ValidateCharList("+-"))
+		if (numberParts[0].Length != 0 && ValidateCharList("Ee") && ValidateCharList("+-"))
 		{
 			lexemType = LexemType.Real;
-			list.Add(input[(pos - 2)..pos]);
-			list.Add(GetNumber2(out _));
-			if (CheckOverflow(list[^1], ref lexemType) is String s2) return s2;
+			numberParts.Add(input[(pos - 2)..pos]);
+			numberParts.Add(GetNumber2(out _));
+			if (CheckOverflow(numberParts[^1], ref lexemType) is String s2) return s2;
 		}
-		if (list[0].Length != 0 && ValidateChar('r'))
+		if (numberParts[0].Length != 0 && ValidateChar('r'))
 		{
 			lexemType = LexemType.Real;
-			list.Add("r");
+			numberParts.Add("r");
 		}
-		return String.Join([], [.. list]);
+		return String.Join([], [.. numberParts]);
 		String? CheckOverflow(String s, ref LexemType lexemType)
 		{
 			if (s == "null")
@@ -205,7 +205,7 @@ public class CodeSample(String newString)
 	{
 		var start = pos;
 		String result = [];
-		String tempResult = [];
+		String buffer = [];
 		var hex = 0;
 		void AddChar(String target) => target.Add(input[pos++]);
 		String EscapeSequence() => ['\\', input[pos - 1]];
@@ -222,7 +222,7 @@ public class CodeSample(String newString)
 		{
 			if (ValidateChar(c))
 			{
-				tempResult.AddRange(EscapeSequence());
+				buffer.AddRange(EscapeSequence());
 				hex = length;
 				return true;
 			}
@@ -248,22 +248,6 @@ public class CodeSample(String newString)
 			s2 = input[start..pos];
 			return new(result);
 		}
-		String TriStateCondition(ref String s2, bool condition, bool flag)
-		{
-			if (condition)
-				return [];
-			else if (!IsNotEnd())
-				return GenerateQuoteWreck(out s2, 0x9000);
-			else if (flag)
-			{
-				if (!CheckChar('\''))
-					AddChar(result);
-				return [];
-			}
-			{
-				return GenerateQuoteWreck(out s2, 0x9001);
-			}
-		}
 		bool ValidateCharOrEscapeSequence()
 		{
 			if (ValidateChar('\\'))
@@ -277,9 +261,9 @@ public class CodeSample(String newString)
 					GenerateEscapeSequenceError(1);
 				else
 					hex = 0;
-				AddEscapeSequenceChars(ref tempResult, hex);
-				if (tempResult.Length != 0)
-					result.AddRange(tempResult);
+				AddEscapeSequenceChars(ref buffer, hex);
+				if (buffer.Length != 0)
+					result.AddRange(buffer);
 				return true;
 			}
 			else
@@ -320,9 +304,16 @@ public class CodeSample(String newString)
 		}
 		else if (ValidateAndAdd('\''))
 		{
-			s2 = [];
-			TriStateCondition(ref s2, ValidateCharOrEscapeSequence(), true);
-			TriStateCondition(ref s2, ValidateAndAdd('\''), false);
+			if (ValidateCharOrEscapeSequence()) { }
+			else if (!IsNotEnd())
+				GenerateQuoteWreck(out _, 0x9000);
+			else if (!CheckChar('\''))
+					AddChar(result);
+			if (ValidateAndAdd('\'')) { }
+			else if (!IsNotEnd())
+				GenerateQuoteWreck(out _, 0x9000);
+			else
+				GenerateQuoteWreck(out _, 0x9001);
 		}
 		else if (ValidateAndAdd('@'))
 		{
@@ -604,10 +595,10 @@ public class CodeSample(String newString)
 			if (wreckOccurred)
 			{
 				if (success)
-					lexems.AddRange(tempLexems);
-				tempLexems = [];
+					lexems.AddRange(lexemsBuffer);
+				lexemsBuffer = [];
 				success = false;
-				return (lexems, input, errorsList, true);
+				return (lexems, input, errors, true);
 			}
 			SkipSpacesAndComments();
 			if (wreckOccurred)
@@ -624,7 +615,7 @@ public class CodeSample(String newString)
 				success = true;
 				goto l1;
 			}
-			void AddLexem(String string_, LexemType lexemType, int offset) => tempLexems.Add(new Lexem(string_, lexemType, lineN, pos - offset - lineStart));
+			void AddLexem(String string_, LexemType lexemType, int offset) => lexemsBuffer.Add(new Lexem(string_, lexemType, lineN, pos - offset - lineStart));
 			void AddOperatorLexem(String string_) => AddLexem(string_, LexemType.Operator, string_.Length);
 			void AddOtherLexem(String string_) => AddLexem(string_, LexemType.Other, string_.Length);
 			String s;
@@ -704,11 +695,11 @@ public class CodeSample(String newString)
 			}
 		l1:
 			if (success)
-				lexems.AddRange(tempLexems);
-			tempLexems = [];
+				lexems.AddRange(lexemsBuffer);
+			lexemsBuffer = [];
 			success = false;
 		}
-		return (lexems, input, errorsList, wreckOccurred);
+		return (lexems, input, errors, wreckOccurred);
 		String ValidateLexemTree(LexemTree lexemTree, out bool success)
 		{
 			success = false;
@@ -741,7 +732,7 @@ public class CodeSample(String newString)
 	}
 
 	private void GenerateMessage(ushort code, int pos, params dynamic[] parameters) =>
-		Messages.GenerateMessage(errorsList, code, lineN, pos - lineStart, parameters);
+		Messages.GenerateMessage(errors, code, lineN, pos - lineStart, parameters);
 
 	public static implicit operator (List<Lexem> Lexems, String String, List<String> ErrorsList,
 		bool WreckOccurred)(CodeSample x) => x.Disassemble();

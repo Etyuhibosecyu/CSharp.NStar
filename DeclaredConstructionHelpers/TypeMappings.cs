@@ -13,7 +13,7 @@ public static class TypeMappings
 		{
 			if (UnvType.ExtraTypes.Length == 1)
 			{
-				if (UnvType.ExtraTypes[0].Info != "type" || UnvType.ExtraTypes[0].Extra is not NStarType InnerUnvType)
+				if (UnvType.ExtraTypes[0].Name != "type" || UnvType.ExtraTypes[0].Extra is not NStarType InnerUnvType)
 					throw new InvalidOperationException();
 				var netType = TypeMapping(InnerUnvType);
 				if (netType == typeof(bool))
@@ -23,31 +23,34 @@ public static class TypeMappings
 				else
 					return typeof(List<>).MakeGenericType(netType);
 			}
-			if (UnvType.ExtraTypes[0].Info == "type"
-				|| !int.TryParse(UnvType.ExtraTypes[0].Info.ToString(), out var levelsCount) || levelsCount < 1
-				|| UnvType.ExtraTypes[^1].Info != "type" || UnvType.ExtraTypes[^1].Extra is not NStarType InnerUnvType2)
-				throw new InvalidOperationException();
-			var netType2 = TypeMapping(InnerUnvType2);
-			Type outputType;
-			if (netType2 == typeof(bool))
-				outputType = typeof(BitList);
-			else if (netType2.IsUnmanaged())
-				outputType = typeof(NList<>).MakeGenericType(netType2);
 			else
-				outputType = typeof(List<>).MakeGenericType(netType2);
-			for (var i = 1; i < levelsCount; i++)
-				outputType = typeof(List<>).MakeGenericType(outputType);
-			return outputType;
+			{
+				if (UnvType.ExtraTypes[0].Name == "type"
+					|| !int.TryParse(UnvType.ExtraTypes[0].Name.ToString(), out var levelsCount) || levelsCount < 1
+					|| UnvType.ExtraTypes[^1].Name != "type" || UnvType.ExtraTypes[^1].Extra is not NStarType InnerUnvType)
+					throw new InvalidOperationException();
+				var netType = TypeMapping(InnerUnvType);
+				Type outputType;
+				if (netType == typeof(bool))
+					outputType = typeof(BitList);
+				else if (netType.IsUnmanaged())
+					outputType = typeof(NList<>).MakeGenericType(netType);
+				else
+					outputType = typeof(List<>).MakeGenericType(netType);
+				for (var i = 1; i < levelsCount; i++)
+					outputType = typeof(List<>).MakeGenericType(outputType);
+				return outputType;
+			}
 		}
 		if (UnvType.MainType.Equals(FuncBlockStack))
 		{
 			List<Type> funcComponents = [];
-			if (UnvType.ExtraTypes[0].Info != "type" || UnvType.ExtraTypes[0].Extra is not NStarType InnerUnvType)
+			if (UnvType.ExtraTypes[0].Name != "type" || UnvType.ExtraTypes[0].Extra is not NStarType InnerUnvType)
 				throw new InvalidOperationException();
 			var returnType = TypeMapping(InnerUnvType);
 			for (var i = 1; i < UnvType.ExtraTypes.Length; i++)
 			{
-				if (UnvType.ExtraTypes[i].Info != "type" || UnvType.ExtraTypes[i].Extra is not NStarType InnerUnvType2)
+				if (UnvType.ExtraTypes[i].Name != "type" || UnvType.ExtraTypes[i].Extra is not NStarType InnerUnvType2)
 					throw new InvalidOperationException();
 				funcComponents.Add(TypeMapping(InnerUnvType2));
 			}
@@ -65,7 +68,7 @@ public static class TypeMappings
 		if (UnvType.ExtraTypes.Length == 0)
 			return typeof(void);
 		List<Type> tupleComponents = [];
-		if (UnvType.ExtraTypes[0].Info != "type" || UnvType.ExtraTypes[0].Extra is not NStarType InnerUnvType3)
+		if (UnvType.ExtraTypes[0].Name != "type" || UnvType.ExtraTypes[0].Extra is not NStarType InnerUnvType3)
 			throw new InvalidOperationException();
 		var first = TypeMapping(InnerUnvType3);
 		if (UnvType.ExtraTypes.Length == 1)
@@ -73,21 +76,21 @@ public static class TypeMappings
 		var innerResult = first;
 		for (var i = 1; i < UnvType.ExtraTypes.Length; i++)
 		{
-			if (UnvType.ExtraTypes[i].Info == "type" && UnvType.ExtraTypes[i].Extra is NStarType InnerUnvType2)
+			if (UnvType.ExtraTypes[i].Name == "type" && UnvType.ExtraTypes[i].Extra is NStarType InnerUnvType2)
 			{
 				tupleComponents.Add(innerResult);
 				first = TypeMapping(InnerUnvType2);
 				continue;
 			}
 			innerResult = ConstructTupleType(RedStarLinq.FillArray(innerResult,
-				int.TryParse(UnvType.ExtraTypes[i].Info.ToString(), out var n) ? n : 1).GetSlice());
+				int.TryParse(UnvType.ExtraTypes[i].Name.ToString(), out var n) ? n : 1).GetSlice());
 		}
 		return ConstructTupleType(tupleComponents.Add(innerResult).GetSlice());
 	}
 
 	private static Type TypeMapping(TreeBranch branch)
 	{
-		if (branch.Info != "type" || branch.Extra is not NStarType UnvType)
+		if (branch.Name != "type" || branch.Extra is not NStarType UnvType)
 			throw new InvalidOperationException();
 		return TypeMapping(UnvType);
 	}
@@ -126,7 +129,7 @@ public static class TypeMappings
 			var genericArgumentsIndex = Array.IndexOf(genericArguments, netType);
 			if (genericArgumentsIndex < 0 || extraTypes.Length <= genericArgumentsIndex)
 				return new(new([new(BlockType.Extra, netType.Name, 1)]), []);
-			else if (extraTypes[genericArgumentsIndex].Info != "type"
+			else if (extraTypes[genericArgumentsIndex].Name != "type"
 				|| extraTypes[genericArgumentsIndex].Extra is not NStarType InnerUnvType)
 				throw new InvalidOperationException();
 			else
@@ -224,8 +227,8 @@ public static class TypeMappings
 		else
 		{
 			return new(originalType.MainType, [.. originalType.ExtraTypes.Convert(x =>
-				new G.KeyValuePair<String, TreeBranch>(x.Key, x.Value.Info != "type"
-				|| x.Value.Extra is not NStarType InnerUnvType ? new TreeBranch(x.Value.Info, 0, [])
+				new G.KeyValuePair<String, TreeBranch>(x.Key, x.Value.Name != "type"
+				|| x.Value.Extra is not NStarType InnerUnvType ? new TreeBranch(x.Value.Name, 0, [])
 				: new TreeBranch("type", 0, []) { Extra = ReplaceExtraType(InnerUnvType, extraType, typeToInsert) }))]);
 		}
 	}
@@ -276,7 +279,7 @@ public static class TypeMappings
 			"Add" => nameof(function.AddRange),
 			"Ceil" => "(int)" + nameof(Ceiling),
 			nameof(Ceiling) => [],
-			"Chain" => ((String)nameof(NStarBuiltInFunctions)).Add('.').AddRange(nameof(Chain)),
+			"Chain" => ((String)nameof(NStarUtilityFunctions)).Add('.').AddRange(nameof(Chain)),
 			nameof(RedStarLinq.Fill) => ((String)nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Fill)),
 			"FillList" => [],
 			nameof(Floor) => "(int)" + nameof(Floor),
@@ -285,7 +288,7 @@ public static class TypeMappings
 			"IntToReal" => "(double)",
 			"IsSummertime" => nameof(DateTime.IsDaylightSavingTime),
 			nameof(DateTime.IsDaylightSavingTime) => [],
-			"Log" => ((String)nameof(NStarBuiltInFunctions)).Add('.').AddRange(nameof(Log)),
+			"Log" => ((String)nameof(NStarUtilityFunctions)).Add('.').AddRange(nameof(Log)),
 			nameof(RedStarLinqMath.Max) => ((String)nameof(RedStarLinqMath)).Add('.').AddRange(nameof(RedStarLinqMath.Max)),
 			"Max3" => [],
 			nameof(RedStarLinqMath.Mean) => ((String)nameof(RedStarLinqMath)).Add('.').AddRange(nameof(RedStarLinqMath.Mean)),

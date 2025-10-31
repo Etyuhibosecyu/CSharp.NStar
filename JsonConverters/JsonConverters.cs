@@ -162,11 +162,11 @@ public static class JsonConverters
 		}
 	}
 
-	public class UniversalConverter : JsonConverter<NStarObject>
+	public class UniversalConverter : JsonConverter<NStarEntity>
 	{
-		public override NStarObject ReadJson(JsonReader reader, Type objectType, NStarObject existingValue,
+		public override NStarEntity ReadJson(JsonReader reader, Type objectType, NStarEntity existingValue,
 			bool hasExistingValue, JsonSerializer serializer) => throw new NotSupportedException();
-		public override void WriteJson(JsonWriter writer, NStarObject value, JsonSerializer serializer) =>
+		public override void WriteJson(JsonWriter writer, NStarEntity value, JsonSerializer serializer) =>
 			writer.WriteRaw(value.ToString(true).ToString());
 	}
 
