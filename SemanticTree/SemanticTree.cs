@@ -2501,7 +2501,7 @@ public sealed class SemanticTree
 			else
 			{
 				branch[Max(i - 3, 0)] = new(nameof(PMExpr),
-					[(branch[Max(i - 3, 0)]), branch[i - 1], branch[i]], branch[i].Container)
+					[branch[Max(i - 3, 0)], branch[i - 1], branch[i]], branch[i].Container)
 				{
 					Extra = resultType
 				};
@@ -2517,7 +2517,7 @@ public sealed class SemanticTree
 			else
 			{
 				branch[Max(i - 3, 0)] = new(nameof(PMExpr),
-					[(branch[Max(i - 3, 0)]), branch[i - 1], branch[i]], branch[i].Container)
+					[branch[Max(i - 3, 0)], branch[i - 1], branch[i]], branch[i].Container)
 				{
 					Extra = resultType
 				};
@@ -2614,7 +2614,7 @@ public sealed class SemanticTree
 				branch[Max(i - 3, 0)].AddRange(branch.GetRange(i - 1, 2));
 			else
 			{
-				branch[Max(i - 3, 0)] = new(nameof(MulDivExpr), [(branch[Max(i - 3, 0)]), branch[i - 1], branch[i]],
+				branch[Max(i - 3, 0)] = new(nameof(MulDivExpr), [branch[Max(i - 3, 0)], branch[i - 1], branch[i]],
 					branch[i].Container)
 				{ Extra = resultType };
 			}
@@ -2991,6 +2991,8 @@ public sealed class SemanticTree
 			else if (TypeEqualsToPrimitive(UnvType, "tuple", false))
 			{
 				if (UnvType.ExtraTypes.Any(x => x.Value.Name != "type" || x.Value.Extra is not NStarType))
+					Type(UnvType, branch, ref errors);
+				if (UnvType.ExtraTypes.Any(x => x.Value.Name != "type" || x.Value.Extra is not NStarType))
 					throw new InvalidOperationException();
 				for (var i = 0; i < UnvType.ExtraTypes.Length && i < branch.Length; i++)
 					branch[i].Extra = (NStarType)UnvType.ExtraTypes[i].Extra!;
@@ -3363,29 +3365,42 @@ public sealed class SemanticTree
 		}
 		else if (TypeEqualsToPrimitive(type, "tuple", false))
 		{
+			BranchCollection newBranches = [];
 			if (type.ExtraTypes.Length == 0)
 				return "void";
 			var first = Type((NStarType)type.ExtraTypes[0].Extra!, branch, ref errors);
 			if (type.ExtraTypes.Length == 1)
 				return first;
+			var innerType = type.ExtraTypes[0];
+			newBranches.Add(innerType);
 			using var innerResult = first.Copy();
 			for (var i = 1; i < type.ExtraTypes.Length; i++)
 			{
 				if (type.ExtraTypes[i].Name == "type" && type.ExtraTypes[i].Extra is NStarType InnerUnvType)
 				{
 					result.AddRange(result.Length == 0 ? "(" : ", ").AddRange(innerResult);
+					innerType = type.ExtraTypes[i];
 					innerResult.Replace(Type(InnerUnvType, branch, ref errors));
+					newBranches.Add(innerType);
 					continue;
 				}
-				using var collection = String.Join(", ", RedStarLinq.FillArray(innerResult,
-					int.TryParse(ParseAction(type.ExtraTypes[i].Name)(type.ExtraTypes[i],
-					out innerErrors).ToString(), out var n) ? n : 1));
+				if (!int.TryParse(ParseAction(type.ExtraTypes[i].Name)(type.ExtraTypes[i],
+					out innerErrors).ToString(), out var n))
+					n = 1;
+				BranchCollection innerTypeCollection = new(RedStarLinq.FillArray(innerType, n));
+				innerType = new("type", innerType.Pos, innerType.Container)
+				{
+					Extra = new NStarType(TupleBlockStack, innerTypeCollection)
+				};
+				newBranches[^1] = innerType;
+				using var innerNameCollection = String.Join(", ", RedStarLinq.FillArray(innerResult, n));
 				AddRange(ref errors, innerErrors);
 				if (i >= 2 && type.ExtraTypes[i - 1].Name != "type")
-					innerResult.Replace(((String)'(').AddRange(collection).Add(')'));
+					innerResult.Replace(((String)'(').AddRange(innerNameCollection).Add(')'));
 				else
-					innerResult.Replace(collection);
+					innerResult.Replace(innerNameCollection);
 			}
+			type.ExtraTypes.Replace(newBranches);
 			result.AddRange(result.Length == 0 ? "(" : ", ").AddRange(innerResult).Add(')');
 		}
 		else if (TypeIsPrimitive(type.MainType))

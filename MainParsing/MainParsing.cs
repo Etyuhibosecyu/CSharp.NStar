@@ -244,6 +244,7 @@ public partial class MainParsing : LexemStream
 		nameof(TypeChainIteration2) => TypeChainIteration2,
 		nameof(TupleType) => TupleType,
 		nameof(TupleType2) => TupleType2,
+		nameof(TypeInt2) => TypeInt2,
 		nameof(BasicExpr) => BasicExpr,
 		nameof(BasicExpr2) => BasicExpr2,
 		_ => Default,
@@ -2708,7 +2709,7 @@ public partial class MainParsing : LexemStream
 				goto list1;
 			}
 			else
-				return IncreaseStack("Expr", currentTask: nameof(TypeList), pos_: pos,
+				return IncreaseStack("LambdaExpr", currentTask: nameof(TypeList), pos_: pos,
 					applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
 		list0:
 			typeDepth++;
@@ -3006,23 +3007,27 @@ public partial class MainParsing : LexemStream
 	private bool TypeSingularTuple(NStarType UnvType)
 	{
 		if (pos < end && IsCurrentLexemOther("["))
+		{
 			_PosStack[_Stackpos] = ++pos;
+			return TypeInt(UnvType);
+		}
 		else
 		{
 			_ExtraStack[_Stackpos - 1] = UnvType;
 			_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = UnvType };
 			return Default();
 		}
-		return TypeInt(UnvType);
 	}
 
 	private bool TypeComma(NStarType UnvType)
 	{
 		if (pos < end && IsCurrentLexemOther(","))
+		{
 			_PosStack[_Stackpos] = ++pos;
+			return TypeInt(UnvType);
+		}
 		else
 			return TypeClosing(UnvType);
-		return TypeInt(UnvType);
 	}
 
 	private bool TypeInt(NStarType UnvType)
@@ -3039,19 +3044,45 @@ public partial class MainParsing : LexemStream
 				GenerateMessage(0x8004, pos, false);
 			else if (number >= 2)
 			{
-				var UnvType2 = UnvType;
 				UnvType = new(TupleBlockStack, new(RedStarLinq.Fill(number, _ =>
-					new TreeBranch("type", pos - 1, container) { Extra = UnvType2 })));
+					new TreeBranch("type", pos - 1, container) { Extra = UnvType })));
 			}
 			_PosStack[_Stackpos] = ++pos;
+			return TypeClosing(UnvType);
+		}
+		else if (lexems[pos].Type is LexemType.UnsignedInt or LexemType.LongInt
+			or LexemType.UnsignedLongInt or LexemType.Real or LexemType.String)
+		{
+			_ExtraStack[_Stackpos - 1] = NullType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = NullType };
+			GenerateMessage(0x2017, pos, false);
+			CloseBracket(ref pos, "]", ref errors!, false, end);
+			return Default();
 		}
 		else
 		{
-			UnvType = NullType;
-			GenerateMessage(0x2016, pos, false);
-			return _SuccessStack[_Stackpos] = false;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			return IncreaseStack("LambdaExpr", currentTask: nameof(TypeInt2), pos_: pos,
+				applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
 		}
-		return TypeClosing(UnvType);
+	}
+
+	private bool TypeInt2()
+	{
+		if (!success || treeBranch == null || _ExtraStack[_Stackpos - 1] is not NStarType OuterUnvType)
+			return _SuccessStack[_Stackpos] = false;
+		var targetBranch = treeBranch.Name == "Expr" && treeBranch.Length == 1 ? treeBranch[0] : treeBranch;
+		if (!(treeBranch.Extra == null || targetBranch.Extra is NStarType UnvType
+			&& TypesAreCompatible(UnvType, IntType, out var warning, [], out _, out _) && !warning))
+		{
+			UnvType = NullType;
+			_ExtraStack[_Stackpos - 1] = UnvType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = UnvType };
+			GenerateMessage(0x2017, pos, false);
+			return Default();
+		}
+		return TypeClosing(new(TupleBlockStack, new([new("type", OuterUnvType.ExtraTypes.Length != 0
+			? OuterUnvType.ExtraTypes[0].Pos : treeBranch.Pos - 2, container) { Extra = OuterUnvType }, targetBranch])));
 	}
 
 	private bool TypeClosing(NStarType UnvType)

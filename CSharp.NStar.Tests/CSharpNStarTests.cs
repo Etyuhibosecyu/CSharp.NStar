@@ -2904,6 +2904,330 @@ Buffer[list(bool - 1) int] Function list(Buffer[list(bool - 1) int] x)
 }
 return list(new(1, 8));
 ", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int n = 2;
+(int, int)[n] Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"const int bool = 2;
+(int, int)[bool] Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"const int n = 1;
+(int, int)[n + 1] Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"const int bool = 1;
+(int, int)[bool + 1] Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"static Class Klass
+{
+	const int n = 2;
+}
+(int, int)[Klass.n] Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"static Class Klass
+{
+	const int bool = 2;
+}
+(int, int)[Klass.bool] Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"static Class Klass
+{
+	const int n = 1;
+}
+(int, int)[Klass.n + 1] Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"static Class Klass
+{
+	const int bool = 1;
+}
+(int, int)[Klass.bool + 1] Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"const int n = 2;
+(int[n], int[n]) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"const int bool = 2;
+(int[bool], int[bool]) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"const int n = 1;
+(int[n + 1], int[n + 1]) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"const int bool = 1;
+(int[bool + 1], int[bool + 1]) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"static Class Klass
+{
+	const int n = 2;
+}
+(int[Klass.n], int[Klass.n]) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"static Class Klass
+{
+	const int bool = 2;
+}
+(int[Klass.bool], int[Klass.bool]) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"static Class Klass
+{
+	const int n = 1;
+}
+(int[Klass.n + 1], int[Klass.n + 1]) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"static Class Klass
+{
+	const int bool = 1;
+}
+(int[Klass.bool + 1], int[Klass.bool + 1]) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a));
+}
+return F();
+", "((5, 8), (5, 8))", "Ошибок нет")]
+	[DataRow(@"const int n = 2;
+(int[n], int[n], real) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a), 3.14159);
+}
+return F();
+", "((5, 8), (5, 8), 3.14159)", "Ошибок нет")]
+	[DataRow(@"const int bool = 2;
+(int[bool], int[bool], real) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a), 3.14159);
+}
+return F();
+", "((5, 8), (5, 8), 3.14159)", "Ошибок нет")]
+	[DataRow(@"const int n = 1;
+(int[n + 1], int[n + 1], real) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a), 3.14159);
+}
+return F();
+", "((5, 8), (5, 8), 3.14159)", "Ошибок нет")]
+	[DataRow(@"const int bool = 1;
+(int[bool + 1], int[bool + 1], real) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a), 3.14159);
+}
+return F();
+", "((5, 8), (5, 8), 3.14159)", "Ошибок нет")]
+	[DataRow(@"static Class Klass
+{
+	const int n = 2;
+}
+(int[Klass.n], int[Klass.n], real) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a), 3.14159);
+}
+return F();
+", "((5, 8), (5, 8), 3.14159)", "Ошибок нет")]
+	[DataRow(@"static Class Klass
+{
+	const int bool = 2;
+}
+(int[Klass.bool], int[Klass.bool], real) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a), 3.14159);
+}
+return F();
+", "((5, 8), (5, 8), 3.14159)", "Ошибок нет")]
+	[DataRow(@"static Class Klass
+{
+	const int n = 1;
+}
+(int[Klass.n + 1], int[Klass.n + 1], real) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a), 3.14159);
+}
+return F();
+", "((5, 8), (5, 8), 3.14159)", "Ошибок нет")]
+	[DataRow(@"static Class Klass
+{
+	const int bool = 1;
+}
+(int[Klass.bool + 1], int[Klass.bool + 1], real) Function F()
+{
+	Class MyClass
+	{
+		int a = 0;
+	}
+	MyClass b = new MyClass(5);
+	return ((b.a, new MyClass(8).a), (b.a, new MyClass(8).a), 3.14159);
+}
+return F();
+", "((5, 8), (5, 8), 3.14159)", "Ошибок нет")]
 	[DataRow(@"typename real = int;
 return real;
 ", "int", "Ошибок нет")]

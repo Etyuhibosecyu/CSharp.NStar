@@ -21,16 +21,16 @@ public class BranchCollection : Dictionary<String, TreeBranch>
 
 	public virtual void Add(TreeBranch item) => Add("Item" + (Length + 1).ToString(), item);
 
-	public virtual void AddRange(G.IEnumerable<TreeBranch> collection)
-	{
-		foreach (var elem in collection)
-			Add(elem);
-	}
-
 	public virtual void AddRange(BranchCollection collection)
 	{
 		foreach (var elem in collection)
 			Add(elem.Key, elem.Value);
+	}
+
+	public virtual void AddRange(G.IEnumerable<TreeBranch> collection)
+	{
+		foreach (var elem in collection)
+			Add(elem);
 	}
 
 	public override bool Equals(object? obj)
@@ -59,6 +59,18 @@ public class BranchCollection : Dictionary<String, TreeBranch>
 			}
 		}
 		return hash;
+	}
+
+	public virtual void Replace(BranchCollection collection)
+	{
+		Clear();
+		AddRange(collection);
+	}
+
+	public virtual void Replace(G.IEnumerable<TreeBranch> collection)
+	{
+		Clear();
+		AddRange(collection);
 	}
 
 	public override string ToString() => string.Join(", ", Values.ToArray(x => x.ToShortString()));
