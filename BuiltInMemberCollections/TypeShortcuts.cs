@@ -2,14 +2,14 @@
 
 namespace CSharp.NStar;
 
-public record struct UserDefinedType(GeneralArrayParameters ArrayParameters, TypeAttributes Attributes, NStarType BaseType, BranchCollection Decomposition);
-public record struct UserDefinedProperty(NStarType UnvType, PropertyAttributes Attributes, String DefaultValue);
-public record struct UserDefinedConstant(NStarType UnvType, ConstantAttributes Attributes, TreeBranch DefaultValue);
-public record struct GeneralArrayParameter(bool ArrayParameterPackage, BranchCollection ArrayParameterRestrictions, BlockStack ArrayParameterType, String ArrayParameterName);
+public record struct UserDefinedType(ExtendedArrayParameters ArrayParameters, TypeAttributes Attributes, NStarType BaseType, BranchCollection Decomposition);
+public record struct UserDefinedProperty(NStarType NStarType, PropertyAttributes Attributes, String DefaultValue);
+public record struct UserDefinedConstant(NStarType NStarType, ConstantAttributes Attributes, TreeBranch DefaultValue);
+public record struct ExtendedArrayParameter(bool ArrayParameterPackage, BranchCollection ArrayParameterRestrictions, BlockStack ArrayParameterType, String ArrayParameterName);
 public record struct MethodParameter(String Type, String Name, List<String> ExtraTypes, ParameterAttributes Attributes, String DefaultValue);
-public record struct GeneralMethodParameter(NStarType Type, String Name, ParameterAttributes Attributes, String DefaultValue);
+public record struct ExtendedMethodParameter(NStarType Type, String Name, ParameterAttributes Attributes, String DefaultValue);
 public record struct FunctionOverload(List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters);
-public record struct GeneralMethodOverload(GeneralArrayParameters ArrayParameters, NStarType ReturnUnvType, FunctionAttributes Attributes, GeneralMethodParameters Parameters);
+public record struct ExtendedMethodOverload(ExtendedArrayParameters ArrayParameters, NStarType ReturnNStarType, FunctionAttributes Attributes, ExtendedMethodParameters Parameters);
 
 public sealed class VariablesBlock<T>(IList<T> main, IList<bool> isNull)
 {
@@ -44,7 +44,7 @@ public class BlocksToJump : List<(BlockStack Container, String Type, String Name
 public class ParameterValues : List<(BlockStack Container, String Name, int ParameterIndex, int Start, int End)>
 {
 }
-public class GeneralTypes(G.IComparer<(BlockStack Container, String Type)> comparer) : SortedDictionary<(BlockStack Container, String Type), (GeneralArrayParameters ArrayParameters, TypeAttributes Attributes)>(comparer)
+public class ExtendedTypesCollection(G.IComparer<(BlockStack Container, String Type)> comparer) : SortedDictionary<(BlockStack Container, String Type), (ExtendedArrayParameters ArrayParameters, TypeAttributes Attributes)>(comparer)
 {
 }
 public class TypeVariables : SortedDictionary<String, NStarType>
@@ -57,7 +57,7 @@ public class TypeVariables : SortedDictionary<String, NStarType>
 	{
 	}
 }
-public class TypeProperties : SortedDictionary<String, (NStarType UnvType, PropertyAttributes Attributes)>
+public class TypeProperties : SortedDictionary<String, (NStarType NStarType, PropertyAttributes Attributes)>
 {
 }
 public class UserDefinedTypeProperties : Dictionary<String, UserDefinedProperty>
@@ -74,40 +74,40 @@ public class MethodParameters : List<MethodParameter>
 public class FunctionsList : SortedDictionary<String, FunctionOverload>
 {
 }
-public class GeneralArrayParameters : List<GeneralArrayParameter>
+public class ExtendedArrayParameters : List<ExtendedArrayParameter>
 {
 }
-public class GeneralMethodParameters : List<GeneralMethodParameter>
+public class ExtendedMethodParameters : List<ExtendedMethodParameter>
 {
-	public GeneralMethodParameters() : base()
+	public ExtendedMethodParameters() : base()
 	{
 	}
 
-	public GeneralMethodParameters(G.IEnumerable<GeneralMethodParameter> collection) : base(collection)
+	public ExtendedMethodParameters(G.IEnumerable<ExtendedMethodParameter> collection) : base(collection)
 	{
 	}
 }
-public class GeneralMethodOverloads : List<GeneralMethodOverload>
+public class ExtendedMethodOverloads : List<ExtendedMethodOverload>
 {
 }
-public class GeneralMethods : SortedDictionary<String, GeneralMethodOverloads>
+public class ExtendedMethods : SortedDictionary<String, ExtendedMethodOverloads>
 {
 }
-public class UserDefinedMethods : Dictionary<String, GeneralMethodOverloads>
+public class UserDefinedMethods : Dictionary<String, ExtendedMethodOverloads>
 {
 }
-public class ConstructorOverloads : List<(ConstructorAttributes Attributes, GeneralMethodParameters Parameters)>
+public class ConstructorOverloads : List<(ConstructorAttributes Attributes, ExtendedMethodParameters Parameters)>
 {
 	public ConstructorOverloads() : base() { }
-	public ConstructorOverloads(G.IEnumerable<(ConstructorAttributes Attributes, GeneralMethodParameters Parameters)> collection) : base(collection) { }
+	public ConstructorOverloads(G.IEnumerable<(ConstructorAttributes Attributes, ExtendedMethodParameters Parameters)> collection) : base(collection) { }
 }
-public class UnaryOperatorOverloads : List<(bool Postfix, NStarType ReturnUnvType, NStarType OpdUnvType)>
+public class UnaryOperatorOverloads : List<(bool Postfix, NStarType ReturnNStarType, NStarType OpdNStarType)>
 {
 }
 public class UnaryOperatorClasses(G.IComparer<BlockStack> comparer) : SortedDictionary<BlockStack, UnaryOperatorOverloads>(comparer)
 {
 }
-public class BinaryOperatorOverloads : List<(NStarType ReturnUnvType, NStarType LeftOpdUnvType, NStarType RightOpdUnvType)>
+public class BinaryOperatorOverloads : List<(NStarType ReturnNStarType, NStarType LeftOpdNStarType, NStarType RightOpdNStarType)>
 {
 }
 public class BinaryOperatorClasses(G.IComparer<BlockStack> comparer) : SortedDictionary<BlockStack, BinaryOperatorOverloads>(comparer)
@@ -122,7 +122,7 @@ public class ImplicitConversions : Dictionary<BranchCollection, DestTypes>
 	{
 	}
 }
-public class OutdatedMethodOverloads : List<(GeneralMethodParameters Parameters, String UseInstead)>
+public class OutdatedMethodOverloads : List<(ExtendedMethodParameters Parameters, String UseInstead)>
 {
 }
 public class OutdatedMethods : SortedDictionary<String, OutdatedMethodOverloads>

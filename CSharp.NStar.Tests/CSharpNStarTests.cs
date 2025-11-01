@@ -3265,6 +3265,325 @@ return real;
 typename real = list() ListHashSet[string];
 return real;
 ", "list() System.Collections.ListHashSet[string]", "Ошибок нет")]
+	[DataRow(@"typename Function F()
+{
+	return real;
+}
+return F();
+", "real", "Ошибок нет")]
+	[DataRow(@"const typename real = int;
+typename T = list() real;
+return T;
+", "list() int", "Ошибок нет")]
+	[DataRow(@"const typename real = list() int;
+typename T = list() real;
+return T;
+", "list(2) int", "Ошибок нет")]
+	[DataRow(@"const typename real = list() string;
+typename T = list() real;
+return T;
+", "list(2) string", "Ошибок нет")]
+	[DataRow(@"const typename real = list() bool;
+typename T = list() real;
+return T;
+", "list(2) bool", "Ошибок нет")]
+	[DataRow(@"const typename real = list(2) int;
+typename T = list() real;
+return T;
+", "list(3) int", "Ошибок нет")]
+	[DataRow(@"const typename real = list(2) string;
+typename T = list() real;
+return T;
+", "list(3) string", "Ошибок нет")]
+	[DataRow(@"const typename real = list(2) bool;
+typename T = list() real;
+return T;
+", "list(3) bool", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = ListHashSet[int];
+typename T = list() real;
+return T;
+", "list() System.Collections.ListHashSet[int]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = ListHashSet[string];
+typename T = list() real;
+return T;
+", "list() System.Collections.ListHashSet[string]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list() ListHashSet[int];
+typename T = list() real;
+return T;
+", "list(2) System.Collections.ListHashSet[int]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list() ListHashSet[string];
+typename T = list() real;
+return T;
+", "list(2) System.Collections.ListHashSet[string]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = int;
+typename T = Buffer[real];
+return T;
+", "System.Collections.Buffer[int]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list() int;
+typename T = Buffer[real];
+return T;
+", "System.Collections.Buffer[list() int]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list() string;
+typename T = Buffer[real];
+return T;
+", "System.Collections.Buffer[list() string]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list() bool;
+typename T = Buffer[real];
+return T;
+", "System.Collections.Buffer[list() bool]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list(2) int;
+typename T = Buffer[real];
+return T;
+", "System.Collections.Buffer[list(2) int]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list(2) string;
+typename T = Buffer[real];
+return T;
+", "System.Collections.Buffer[list(2) string]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list(2) bool;
+typename T = Buffer[real];
+return T;
+", "System.Collections.Buffer[list(2) bool]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = ListHashSet[int];
+typename T = Buffer[real];
+return T;
+", "System.Collections.Buffer[System.Collections.ListHashSet[int]]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = ListHashSet[string];
+typename T = Buffer[real];
+return T;
+", "System.Collections.Buffer[System.Collections.ListHashSet[string]]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list() ListHashSet[int];
+typename T = Buffer[real];
+return T;
+", "System.Collections.Buffer[list() System.Collections.ListHashSet[int]]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list() ListHashSet[string];
+typename T = Buffer[real];
+return T;
+", "System.Collections.Buffer[list() System.Collections.ListHashSet[string]]", "Ошибок нет")]
+	[DataRow(@"const typename real = int;
+typename T = (int, real);
+return T;
+", "int[2]", "Ошибок нет")]
+	[DataRow(@"const typename real = list() int;
+typename T = (int, real);
+return T;
+", "(int, list() int)", "Ошибок нет")]
+	[DataRow(@"const typename real = list() string;
+typename T = (int, real);
+return T;
+", "(int, list() string)", "Ошибок нет")]
+	[DataRow(@"const typename real = list() bool;
+typename T = (int, real);
+return T;
+", "(int, list() bool)", "Ошибок нет")]
+	[DataRow(@"const typename real = list(2) int;
+typename T = (int, real);
+return T;
+", "(int, list(2) int)", "Ошибок нет")]
+	[DataRow(@"const typename real = list(2) string;
+typename T = (int, real);
+return T;
+", "(int, list(2) string)", "Ошибок нет")]
+	[DataRow(@"const typename real = list(2) bool;
+typename T = (int, real);
+return T;
+", "(int, list(2) bool)", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = ListHashSet[int];
+typename T = (int, real);
+return T;
+", "(int, System.Collections.ListHashSet[int])", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = ListHashSet[string];
+typename T = (int, real);
+return T;
+", "(int, System.Collections.ListHashSet[string])", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list() ListHashSet[int];
+typename T = (int, real);
+return T;
+", "(int, list() System.Collections.ListHashSet[int])", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list() ListHashSet[string];
+typename T = (int, real);
+return T;
+", "(int, list() System.Collections.ListHashSet[string])", "Ошибок нет")]
+	[DataRow(@"Class MyClass
+{
+	const typename real = int;
+}
+typename T = (int, MyClass.real);
+return T;
+", "int[2]", "Ошибок нет")]
+	[DataRow(@"Class MyClass
+{
+	const typename real = list() int;
+}
+typename T = (int, MyClass.real);
+return T;
+", "(int, list() int)", "Ошибок нет")]
+	[DataRow(@"Class MyClass
+{
+	const typename real = list() string;
+}
+typename T = (int, MyClass.real);
+return T;
+", "(int, list() string)", "Ошибок нет")]
+	[DataRow(@"Class MyClass
+{
+	const typename real = list() bool;
+}
+typename T = (int, MyClass.real);
+return T;
+", "(int, list() bool)", "Ошибок нет")]
+	[DataRow(@"Class MyClass
+{
+	const typename real = list(2) int;
+}
+typename T = (int, MyClass.real);
+return T;
+", "(int, list(2) int)", "Ошибок нет")]
+	[DataRow(@"Class MyClass
+{
+	const typename real = list(2) string;
+}
+typename T = (int, MyClass.real);
+return T;
+", "(int, list(2) string)", "Ошибок нет")]
+	[DataRow(@"Class MyClass
+{
+	const typename real = list(2) bool;
+}
+typename T = (int, MyClass.real);
+return T;
+", "(int, list(2) bool)", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+Class MyClass
+{
+	const typename real = ListHashSet[int];
+}
+typename T = (int, MyClass.real);
+return T;
+", "(int, System.Collections.ListHashSet[int])", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+Class MyClass
+{
+	const typename real = ListHashSet[string];
+}
+typename T = (int, MyClass.real);
+return T;
+", "(int, System.Collections.ListHashSet[string])", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+Class MyClass
+{
+	const typename real = list() ListHashSet[int];
+}
+typename T = (int, MyClass.real);
+return T;
+", "(int, list() System.Collections.ListHashSet[int])", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+Class MyClass
+{
+	const typename real = list() ListHashSet[string];
+}
+typename T = (int, MyClass.real);
+return T;
+", "(int, list() System.Collections.ListHashSet[string])", "Ошибок нет")]
+	[DataRow(@"const typename real = int;
+if (true)
+{
+	typename T = (int, real);
+	return T;
+}
+", "int[2]", "Ошибок нет")]
+	[DataRow(@"const typename real = list() int;
+if (true)
+{
+	typename T = (int, real);
+	return T;
+}
+", "(int, list() int)", "Ошибок нет")]
+	[DataRow(@"const typename real = list() string;
+if (true)
+{
+	typename T = (int, real);
+	return T;
+}
+", "(int, list() string)", "Ошибок нет")]
+	[DataRow(@"const typename real = list() bool;
+if (true)
+{
+	typename T = (int, real);
+	return T;
+}
+", "(int, list() bool)", "Ошибок нет")]
+	[DataRow(@"const typename real = list(2) int;
+if (true)
+{
+	typename T = (int, real);
+	return T;
+}
+", "(int, list(2) int)", "Ошибок нет")]
+	[DataRow(@"const typename real = list(2) string;
+if (true)
+{
+	typename T = (int, real);
+	return T;
+}
+", "(int, list(2) string)", "Ошибок нет")]
+	[DataRow(@"const typename real = list(2) bool;
+if (true)
+{
+	typename T = (int, real);
+	return T;
+}
+", "(int, list(2) bool)", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = ListHashSet[int];
+if (true)
+{
+	typename T = (int, real);
+	return T;
+}
+", "(int, System.Collections.ListHashSet[int])", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = ListHashSet[string];
+if (true)
+{
+	typename T = (int, real);
+	return T;
+}
+", "(int, System.Collections.ListHashSet[string])", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list() ListHashSet[int];
+if (true)
+{
+	typename T = (int, real);
+	return T;
+}
+", "(int, list() System.Collections.ListHashSet[int])", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = list() ListHashSet[string];
+if (true)
+{
+	typename T = (int, real);
+	return T;
+}
+", "(int, list() System.Collections.ListHashSet[string])", "Ошибок нет")]
 	[DataRow(@"return 100000000000000000*100000000000000000000;
 ", "0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
 ")]

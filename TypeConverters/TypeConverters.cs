@@ -265,7 +265,7 @@ public static class TypeConverters
 			return GetListType(GetResultType(leftType, GetSubtype(rightType), leftValue, rightValue));
 	}
 
-	public static NStarType PartialTypeToGeneralType(String mainType, List<String> extraTypes) =>
+	public static NStarType BasicTypeToExtendedType(String mainType, List<String> extraTypes) =>
 		(GetBlockStack(mainType), GetBranchCollection(extraTypes));
 
 	public static BranchCollection GetBranchCollection(List<String> partialBlockStack) =>
@@ -297,7 +297,7 @@ public static class TypeConverters
 			destExpr = "default!";
 			return true;
 		}
-		if (ImplicitConversionsFromAnythingList.Contains(destinationType, new FullTypeEComparer()))
+		if (ImplicitConversionsFromAnything.Contains(destinationType, new FullTypeEComparer()))
 		{
 			if (srcExpr == null)
 				destExpr = null;
@@ -450,11 +450,11 @@ public static class TypeConverters
 				return false;
 			}
 		}
-		if (UserDefinedTypesList.TryGetValue(SplitType(sourceType.MainType), out var userDefinedType)
+		if (UserDefinedTypes.TryGetValue(SplitType(sourceType.MainType), out var userDefinedType)
 			&& userDefinedType.BaseType != NullType && TypesAreCompatible(userDefinedType.BaseType, destinationType,
 			out warning, srcExpr, out destExpr, out extraMessage))
 			return true;
-		if (!ImplicitConversionsList.TryGetValue(sourceType.MainType, out var containerConversions))
+		if (!BuiltInMemberCollections.ImplicitConversions.TryGetValue(sourceType.MainType, out var containerConversions))
 		{
 			destExpr = "default!";
 			return false;
@@ -554,9 +554,9 @@ public static class TypeConverters
 		List<(NStarType Type, bool Warning)> blackList)
 	{
 		List<(NStarType Type, bool Warning)> compatibleTypes = new(16);
-		compatibleTypes.AddRange(ImplicitConversionsFromAnythingList.Convert(x => (x, source.Warning))
+		compatibleTypes.AddRange(ImplicitConversionsFromAnything.Convert(x => (x, source.Warning))
 			.Filter(x => !blackList.Contains(x)));
-		if (ImplicitConversionsList.TryGetValue(source.Type.MainType, out var containerConversions)
+		if (BuiltInMemberCollections.ImplicitConversions.TryGetValue(source.Type.MainType, out var containerConversions)
 			&& containerConversions.TryGetValue(source.Type.ExtraTypes, out var typeConversions))
 			compatibleTypes.AddRange(typeConversions.Convert(x => (x.DestType, x.Warning || source.Warning))
 				.Filter(x => !blackList.Contains(x)));

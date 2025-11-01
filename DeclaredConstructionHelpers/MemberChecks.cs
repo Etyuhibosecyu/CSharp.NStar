@@ -31,13 +31,13 @@ public static class MemberChecks
 	public static bool PropertyExists(NStarType container, String name, [MaybeNullWhen(false)]
 		out UserDefinedProperty? property)
 	{
-		if (UserDefinedPropertiesList.TryGetValue(container.MainType, out var containerProperties)
+		if (UserDefinedProperties.TryGetValue(container.MainType, out var containerProperties)
 			&& containerProperties.TryGetValue(name, out var a))
 		{
 			property = a;
 			return true;
 		}
-		else if (UserDefinedTypesList.TryGetValue(SplitType(container.MainType), out var userDefinedType)
+		else if (UserDefinedTypes.TryGetValue(SplitType(container.MainType), out var userDefinedType)
 			&& PropertyExists(userDefinedType.BaseType, name, out property))
 			return true;
 		var containerType = SplitType(container.MainType);
@@ -63,14 +63,14 @@ public static class MemberChecks
 		[MaybeNullWhen(false)] out bool inBase)
 	{
 		UserDefinedType userDefinedType = default!;
-		if (CheckContainer(container, UserDefinedPropertiesList.ContainsKey, out matchingContainer)
-			&& UserDefinedPropertiesList[matchingContainer].TryGetValue(name, out var value))
+		if (CheckContainer(container, UserDefinedProperties.ContainsKey, out matchingContainer)
+			&& UserDefinedProperties[matchingContainer].TryGetValue(name, out var value))
 		{
 			property = value;
 			inBase = false;
 			return true;
 		}
-		else if (CheckContainer(container, x => UserDefinedTypesList.TryGetValue(SplitType(x), out userDefinedType),
+		else if (CheckContainer(container, x => UserDefinedTypes.TryGetValue(SplitType(x), out userDefinedType),
 			out matchingContainer) && PropertyExists(userDefinedType.BaseType, name, out property))
 		{
 			inBase = true;
@@ -84,10 +84,10 @@ public static class MemberChecks
 	public static List<G.KeyValuePair<String, UserDefinedProperty>> GetAllProperties(BlockStack container)
 	{
 		List<G.KeyValuePair<String, UserDefinedProperty>> result = [];
-		if (UserDefinedPropertiesList.TryGetValue(container, out var containerProperties))
+		if (UserDefinedProperties.TryGetValue(container, out var containerProperties))
 			foreach (var containerProperty in containerProperties)
 				result.Add(containerProperty);
-		if (UserDefinedTypesList.TryGetValue(SplitType(container), out var userDefinedType))
+		if (UserDefinedTypes.TryGetValue(SplitType(container), out var userDefinedType))
 			result.AddRange(GetAllProperties(userDefinedType.BaseType.MainType));
 		return result;
 	}
@@ -95,13 +95,13 @@ public static class MemberChecks
 	public static bool ConstantExists(NStarType container, String name, [MaybeNullWhen(false)]
 		out UserDefinedConstant? constant)
 	{
-		if (UserDefinedConstantsList.TryGetValue(container.MainType, out var containerConstants)
+		if (UserDefinedConstants.TryGetValue(container.MainType, out var containerConstants)
 			&& containerConstants.TryGetValue(name, out var a))
 		{
 			constant = a;
 			return true;
 		}
-		else if (UserDefinedTypesList.TryGetValue(SplitType(container.MainType), out var userDefinedType)
+		else if (UserDefinedTypes.TryGetValue(SplitType(container.MainType), out var userDefinedType)
 			&& ConstantExists(userDefinedType.BaseType, name, out constant))
 			return true;
 		var containerType = SplitType(container.MainType);
@@ -127,14 +127,14 @@ public static class MemberChecks
 		[MaybeNullWhen(false)] out bool inBase)
 	{
 		UserDefinedType userDefinedType = default!;
-		if (CheckContainer(container, UserDefinedConstantsList.ContainsKey, out matchingContainer)
-			&& UserDefinedConstantsList[matchingContainer].TryGetValue(name, out var value))
+		if (CheckContainer(container, UserDefinedConstants.ContainsKey, out matchingContainer)
+			&& UserDefinedConstants[matchingContainer].TryGetValue(name, out var value))
 		{
 			constant = value;
 			inBase = false;
 			return true;
 		}
-		else if (CheckContainer(container, x => UserDefinedTypesList.TryGetValue(SplitType(x), out userDefinedType),
+		else if (CheckContainer(container, x => UserDefinedTypes.TryGetValue(SplitType(x), out userDefinedType),
 			out matchingContainer) && ConstantExists(userDefinedType.BaseType, name, out constant))
 		{
 			inBase = true;
@@ -158,7 +158,7 @@ public static class MemberChecks
 	}
 
 	public static bool MethodExists(NStarType container, String name, List<NStarType> callParameterTypes,
-		[MaybeNullWhen(false)] out GeneralMethodOverloads functions)
+		[MaybeNullWhen(false)] out ExtendedMethodOverloads functions)
 	{
 		var containerType = SplitType(container.MainType);
 		if (!TypeExists(containerType, out var netType))
@@ -195,7 +195,7 @@ public static class MemberChecks
 			}
 			functions.Add(new([], TypeMappingBack(returnNetType, netType.GetGenericArguments(), container.ExtraTypes),
 				(method.IsAbstract ? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
-				new(functionParameterTypes.ToList((x, index) => new GeneralMethodParameter(TypeMappingBack(x,
+				new(functionParameterTypes.ToList((x, index) => new ExtendedMethodParameter(TypeMappingBack(x,
 				netType.GetGenericArguments(), container.ExtraTypes), parameters[index].Name ?? "x",
 				(parameters[index].IsOptional ? ParameterAttributes.Optional : 0)
 				| (parameters[index].ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
@@ -274,10 +274,10 @@ public static class MemberChecks
 		return false;
 	}
 
-	public static bool GeneralMethodExists(BlockStack container, String name, List<NStarType> parameterTypes,
-		[MaybeNullWhen(false)] out GeneralMethodOverloads functions, out bool user)
+	public static bool ExtendedMethodExists(BlockStack container, String name, List<NStarType> parameterTypes,
+		[MaybeNullWhen(false)] out ExtendedMethodOverloads functions, out bool user)
 	{
-		if (PublicFunctionsList.TryGetValue(name, out var functionOverload))
+		if (PublicFunctions.TryGetValue(name, out var functionOverload))
 		{
 			BlockStack? mainType;
 			if (functionOverload.ExtraTypes.Contains(functionOverload.ReturnType))
@@ -287,16 +287,16 @@ public static class MemberChecks
 			BranchCollection extraTypes = new(functionOverload.ReturnExtraTypes.ToList(GetTypeAsBranch));
 			functions = [new([], new(mainType, extraTypes),
 				functionOverload.Attributes, [.. functionOverload.Parameters.Convert((x, index) =>
-				new GeneralMethodParameter(functionOverload.ExtraTypes.Contains(x.Type)
-				? parameterTypes[index] : PartialTypeToGeneralType(x.Type, x.ExtraTypes),
+				new ExtendedMethodParameter(functionOverload.ExtraTypes.Contains(x.Type)
+				? parameterTypes[index] : BasicTypeToExtendedType(x.Type, x.ExtraTypes),
 				x.Name, x.Attributes, x.DefaultValue))])];
 			user = false;
 			return true;
 		}
-		if (!(UserDefinedFunctionsList.TryGetValue(container, out var methods)
+		if (!(UserDefinedFunctions.TryGetValue(container, out var methods)
 			&& methods.TryGetValue(name, out var overloads)))
 		{
-			if (GeneralMethodsList.TryGetValue(container, out var builtInMethods)
+			if (BuiltInMemberCollections.ExtendedMethods.TryGetValue(container, out var builtInMethods)
 				&& builtInMethods.TryGetValue(name, out overloads))
 			{
 				functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
@@ -317,9 +317,9 @@ public static class MemberChecks
 				if (!(!x.ArrayParameterPackage && x.ArrayParameterType.Length == 1
 					&& x.ArrayParameterType.Peek().BlockType == BlockType.Extra && parameterTypes.Length > j))
 					continue;
-				functions[i] = new([], ReplaceExtraType(functions[i].ReturnUnvType, x.ArrayParameterType.Peek().Name,
+				functions[i] = new([], ReplaceExtraType(functions[i].ReturnNStarType, x.ArrayParameterType.Peek().Name,
 					parameterTypes[j]), functions[i].Attributes, [.. functions[i].Parameters.Convert(y =>
-				new GeneralMethodParameter(ReplaceExtraType(y.Type, x.ArrayParameterType.Peek().Name,
+				new ExtendedMethodParameter(ReplaceExtraType(y.Type, x.ArrayParameterType.Peek().Name,
 				parameterTypes[j]), y.Name, y.Attributes, y.DefaultValue))]);
 			}
 		}
@@ -337,9 +337,9 @@ public static class MemberChecks
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name)
 	{
-		if (CheckContainer(container, UserDefinedFunctionsList.ContainsKey, out var matchingContainer) && UserDefinedFunctionsList[matchingContainer].TryGetValue(name, out var method_overloads))
+		if (CheckContainer(container, UserDefinedFunctions.ContainsKey, out var matchingContainer) && UserDefinedFunctions[matchingContainer].TryGetValue(name, out var method_overloads))
 			return true;
-		else if (UserDefinedTypesList.TryGetValue(SplitType(container), out var userDefinedType))
+		else if (UserDefinedTypes.TryGetValue(SplitType(container), out var userDefinedType))
 		{
 			if (MethodExists(userDefinedType.BaseType, name))
 				return true;
@@ -350,21 +350,21 @@ public static class MemberChecks
 	}
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name, List<NStarType> parameterTypes,
-		[MaybeNullWhen(false)] out GeneralMethodOverloads functions) =>
+		[MaybeNullWhen(false)] out ExtendedMethodOverloads functions) =>
 		UserDefinedFunctionExists(container, name, parameterTypes, out functions, out _, out _);
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name, List<NStarType> parameterTypes,
-		[MaybeNullWhen(false)] out GeneralMethodOverloads functions,
+		[MaybeNullWhen(false)] out ExtendedMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer, out bool derived)
 	{
-		if (CheckContainer(container, UserDefinedFunctionsList.ContainsKey, out matchingContainer)
-			&& UserDefinedFunctionsList[matchingContainer].TryGetValue(name, out var overloads))
+		if (CheckContainer(container, UserDefinedFunctions.ContainsKey, out matchingContainer)
+			&& UserDefinedFunctions[matchingContainer].TryGetValue(name, out var overloads))
 		{
 			functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
 			derived = false;
 			return true;
 		}
-		else if (UserDefinedTypesList.TryGetValue(SplitType(container), out var userDefinedType))
+		else if (UserDefinedTypes.TryGetValue(SplitType(container), out var userDefinedType))
 		{
 			if (MethodExists(userDefinedType.BaseType, name, parameterTypes, out functions))
 			{
@@ -381,10 +381,10 @@ public static class MemberChecks
 	}
 
 	public static bool UserDefinedNonDerivedFunctionExists(BlockStack container, String name,
-		[MaybeNullWhen(false)] out GeneralMethodOverloads functions,
+		[MaybeNullWhen(false)] out ExtendedMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer)
 	{
-		if (CheckContainer(container, UserDefinedFunctionsList.ContainsKey, out matchingContainer) && UserDefinedFunctionsList[matchingContainer].TryGetValue(name, out var overloads))
+		if (CheckContainer(container, UserDefinedFunctions.ContainsKey, out matchingContainer) && UserDefinedFunctions[matchingContainer].TryGetValue(name, out var overloads))
 		{
 			functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
 			return true;
@@ -426,7 +426,7 @@ public static class MemberChecks
 			}
 			constructors.Add(new((method.IsAbstract ? ConstructorAttributes.Abstract : 0)
 				| (method.IsStatic ? ConstructorAttributes.Static : 0),
-				new(constructorParameterTypes.ToList((x, index) => new GeneralMethodParameter(TypeMappingBack(x,
+				new(constructorParameterTypes.ToList((x, index) => new ExtendedMethodParameter(TypeMappingBack(x,
 				netType.GetGenericArguments(), [.. container.ExtraTypes.SkipWhile(x =>
 				x.Value.Name != "type" || x.Value.Extra is not NStarType)]).Wrap(y =>
 				Attribute.IsDefined(parameters[index], typeof(ParamArrayAttribute)) ? GetSubtype(y) : y),
@@ -442,8 +442,8 @@ public static class MemberChecks
 
 	public static bool UserDefinedConstructorsExist(NStarType container, List<NStarType> parameterTypes, [MaybeNullWhen(false)] out ConstructorOverloads constructors)
 	{
-		if (UserDefinedConstructorsList.TryGetValue(container.MainType, out var temp_constructors)
-			&& !(UserDefinedTypesList.TryGetValue(SplitType(container.MainType), out var userDefinedType)
+		if (UserDefinedConstructors.TryGetValue(container.MainType, out var temp_constructors)
+			&& !(UserDefinedTypes.TryGetValue(SplitType(container.MainType), out var userDefinedType)
 			&& (userDefinedType.Attributes & (TypeAttributes.Struct | TypeAttributes.Static))
 			is not (0 or TypeAttributes.Sealed or TypeAttributes.Struct)))
 		{
@@ -455,5 +455,19 @@ public static class MemberChecks
 		}
 		constructors = null;
 		return false;
+	}
+
+	public static bool TypeIsFullySpecified(BlockStack container, NStarType type)
+	{
+		if (type.MainType.Length == 0 || type.MainType.Peek().BlockType == BlockType.Extra
+			&& !ConstantExists(new(new(type.MainType.SkipLast(1)), NoBranches), type.MainType.Peek().Name, out _)
+			&& !(type.MainType.Length == 1
+			&& UserDefinedConstantExists(container, type.MainType.Peek().Name, out _, out _, out _)))
+			return false;
+		foreach (var x in type.ExtraTypes)
+			if (x.Value.Name == "type" && x.Value.Extra is NStarType InnerNStarType
+				&& !TypeIsFullySpecified(container, InnerNStarType))
+				return false;
+		return true;
 	}
 }

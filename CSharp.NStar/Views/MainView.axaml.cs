@@ -35,11 +35,11 @@ public partial class MainView : UserControl
 		"Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref",
 		"repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or",
 		"xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith",
-		"CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypesList.Keys)
-		.AddRange(ExtraTypesList.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type)))
-		.AddRange(PublicFunctionsList.Keys)];
-	private static readonly G.SortedSet<string> AutoCompletionAfterDotList = [.. PrimitiveTypesList.Values.ToList()
-		.AddRange(ExtraTypesList.Values).ConvertAndJoin(x =>
+		"CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypes.Keys)
+		.AddRange(ExtraTypes.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type)))
+		.AddRange(PublicFunctions.Keys)];
+	private static readonly G.SortedSet<string> AutoCompletionAfterDotList = [.. PrimitiveTypes.Values.ToList()
+		.AddRange(ExtraTypes.Values).ConvertAndJoin(x =>
 		x.GetProperties(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public)
 		.ToList(x => PropertyMappingBack(x.Name))
 		.AddRange(x.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public)

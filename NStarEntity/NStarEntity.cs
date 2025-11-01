@@ -642,7 +642,7 @@ public struct NStarEntity
 				};
 			}
 			else if (basic_type == "typename")
-				return Object == null ? "" : Object is NStarType UnvType ? UnvType.ToString() : NullType.ToString();
+				return Object == null ? "" : Object is NStarType NStarType ? NStarType.ToString() : NullType.ToString();
 			else if (basic_type == "string")
 			{
 				if (!takeIntoQuotes)
@@ -671,7 +671,7 @@ public struct NStarEntity
 			else if (basic_type == "tuple")
 				return ListToString();
 		}
-		else if (InnerType.MainType.Length != 0 && UserDefinedTypesList.TryGetValue(SplitType(InnerType.MainType), out var type2) && type2.Decomposition != null && type2.Decomposition.Length != 0)
+		else if (InnerType.MainType.Length != 0 && UserDefinedTypes.TryGetValue(SplitType(InnerType.MainType), out var type2) && type2.Decomposition != null && type2.Decomposition.Length != 0)
 			return ListToString(InnerType.MainType.Peek().Name.ToString());
 		return takeIntoQuotes ? "Unknown Object" : "";
 	}
@@ -757,7 +757,7 @@ public struct NStarEntity
 				a = ToPrimitiveType(type, fix);
 			else if (TypesAreEqual(type, InnerType))
 				a = this;
-			else if (type.MainType.Length != 0 && UserDefinedTypesList.TryGetValue(SplitType(type.MainType), out var type_descr) && type_descr.Decomposition != null && type_descr.Decomposition.Length != 0)
+			else if (type.MainType.Length != 0 && UserDefinedTypes.TryGetValue(SplitType(type.MainType), out var type_descr) && type_descr.Decomposition != null && type_descr.Decomposition.Length != 0)
 				a = ToTupleType(type_descr.Decomposition);
 			else
 				a = new();
@@ -874,9 +874,9 @@ public struct NStarEntity
 			}
 			else
 				tpos2 = tpos;
-			if (type_parts[tpos2].Name != "type" || type_parts[tpos2].Extra is not NStarType InnerUnvType)
+			if (type_parts[tpos2].Name != "type" || type_parts[tpos2].Extra is not NStarType InnerNStarType)
 				continue;
-			new_list[i] = old_list[i].ToType(InnerUnvType, true);
+			new_list[i] = old_list[i].ToType(InnerNStarType, true);
 			if (tpos2 == tpos || numbers[npos] == 0)
 				tpos++;
 			if (numbers[npos] == 0)

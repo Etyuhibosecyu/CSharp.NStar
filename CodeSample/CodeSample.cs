@@ -1,13 +1,5 @@
 ﻿global using NStar.Core;
-global using NStar.Dictionaries;
-global using NStar.Linq;
-global using System;
-global using G = System.Collections.Generic;
-global using static CSharp.NStar.TypeChecks;
 global using static CSharp.NStar.BuiltInMemberCollections;
-global using static CSharp.NStar.TypeConverters;
-global using static NStar.Core.Extents;
-global using static System.Math;
 global using String = NStar.Core.String;
 using System.Diagnostics;
 
@@ -647,7 +639,7 @@ public class CodeSample(String newString)
 				s = GetWord();
 				if (s.Length == 0)
 					goto l10;
-				if (KeywordsList.Contains(s))
+				if (Keywords.Contains(s))
 					AddLexem(s, LexemType.Keyword, s.Length);
 				else if (s.ToString() is "and" or "or" or "xor" or "is" or "typeof" or "sin" or "cos" or "tan" or "asin" or "acos" or "atan" or "ln" or "Infty" or "Uncty" or "CombineWith" or "CloseOnReturnWith")
 					AddOperatorLexem(s);

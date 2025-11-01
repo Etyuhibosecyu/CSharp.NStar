@@ -21,27 +21,31 @@ public static class TypeChecks
 {
 	public static bool ExtraTypeExists(BlockStack container, String typeName)
 	{
-		if (VariablesList.TryGetValue(container, out var containerVariables)
+		if (UserDefinedConstants.TryGetValue(container, out var containerConstants)
+			&& containerConstants.TryGetValue(typeName, out var constantType))
+			return TypeIsPrimitive(constantType.NStarType.MainType) && constantType.NStarType.MainType.Peek().Name == "typename"
+				&& constantType.NStarType.ExtraTypes.Length == 0;
+		if (Variables.TryGetValue(container, out var containerVariables)
 			&& containerVariables.TryGetValue(typeName, out var variableName))
 			return TypeIsPrimitive(variableName.MainType) && variableName.MainType.Peek().Name == "typename"
 				&& variableName.ExtraTypes.Length == 0;
-		if (UserDefinedPropertiesList.TryGetValue(container, out var containerProperties)
+		if (UserDefinedProperties.TryGetValue(container, out var containerProperties)
 			&& containerProperties.TryGetValue(typeName, out var a))
-			return TypeIsPrimitive(a.UnvType.MainType) && a.UnvType.MainType.Peek().Name == "typename"
-				&& a.UnvType.ExtraTypes.Length == 0;
+			return TypeIsPrimitive(a.NStarType.MainType) && a.NStarType.MainType.Peek().Name == "typename"
+				&& a.NStarType.ExtraTypes.Length == 0;
 		return false;
 	}
 
 	public static bool IsNotImplementedNamespace(String @namespace)
 	{
-		if (NotImplementedNamespacesList.Contains(@namespace))
+		if (NotImplementedNamespaces.Contains(@namespace))
 			return true;
 		return false;
 	}
 
 	public static bool IsOutdatedNamespace(String @namespace, out String useInstead)
 	{
-		if (OutdatedNamespacesList.TryGetValue(@namespace, out useInstead))
+		if (OutdatedNamespaces.TryGetValue(@namespace, out useInstead))
 			return true;
 		useInstead = [];
 		return false;
@@ -49,21 +53,21 @@ public static class TypeChecks
 
 	public static bool IsReservedNamespace(String @namespace)
 	{
-		if (ReservedNamespacesList.Contains(@namespace))
+		if (ReservedNamespaces.Contains(@namespace))
 			return true;
 		return false;
 	}
 
 	public static bool IsNotImplementedType(String @namespace, String typeName)
 	{
-		if (NotImplementedTypesList.Contains((@namespace, typeName)))
+		if (NotImplementedTypes.Contains((@namespace, typeName)))
 			return true;
 		return false;
 	}
 
 	public static bool IsOutdatedType(String @namespace, String typeName, out String useInstead)
 	{
-		if (OutdatedTypesList.TryGetValue((@namespace, typeName), out useInstead))
+		if (OutdatedTypes.TryGetValue((@namespace, typeName), out useInstead))
 			return true;
 		useInstead = [];
 		return false;
@@ -71,14 +75,14 @@ public static class TypeChecks
 
 	public static bool IsReservedType(String @namespace, String typeName)
 	{
-		if (ReservedTypesList.Contains((@namespace, typeName)))
+		if (ReservedTypes.Contains((@namespace, typeName)))
 			return true;
 		return false;
 	}
 
 	public static bool IsNotImplementedEndOfIdentifier(String identifier, out String wrongEnd)
 	{
-		foreach (var typeEnd in NotImplementedTypeEndsList)
+		foreach (var typeEnd in NotImplementedTypeEnds)
 		{
 			if (identifier.EndsWith(typeEnd))
 			{
@@ -92,7 +96,7 @@ public static class TypeChecks
 
 	public static bool IsOutdatedEndOfIdentifier(String identifier, out String wrongEnd, out String useInstead)
 	{
-		foreach (var typeEnd in OutdatedTypeEndsList)
+		foreach (var typeEnd in OutdatedTypeEnds)
 		{
 			if (identifier.EndsWith(typeEnd.Key))
 			{
@@ -108,7 +112,7 @@ public static class TypeChecks
 
 	public static bool IsReservedEndOfIdentifier(String identifier, out String wrongEnd)
 	{
-		foreach (var typeEnd in ReservedTypeEndsList)
+		foreach (var typeEnd in ReservedTypeEnds)
 		{
 			if (identifier.EndsWith(typeEnd))
 			{
@@ -122,7 +126,7 @@ public static class TypeChecks
 
 	public static bool IsNotImplementedMember(BlockStack type, String member)
 	{
-		if (NotImplementedMembersList.TryGetValue(type, out var containerMembers)
+		if (NotImplementedMembers.TryGetValue(type, out var containerMembers)
 			&& containerMembers.Contains(member))
 			return true;
 		return false;
@@ -130,7 +134,7 @@ public static class TypeChecks
 
 	public static bool IsOutdatedMember(BlockStack type, String member, out String useInstead)
 	{
-		if (OutdatedMembersList.TryGetValue(type, out var containerMembers)
+		if (OutdatedMembers.TryGetValue(type, out var containerMembers)
 			&& containerMembers.TryGetValue(member, out useInstead))
 			return true;
 		useInstead = [];
@@ -139,7 +143,7 @@ public static class TypeChecks
 
 	public static bool IsReservedMember(BlockStack type, String member)
 	{
-		if (ReservedMembersList.TryGetValue(type, out var containerMembers)
+		if (ReservedMembers.TryGetValue(type, out var containerMembers)
 			&& containerMembers.Contains(member))
 			return true;
 		return false;
@@ -147,15 +151,15 @@ public static class TypeChecks
 
 	public static bool TypeExists((BlockStack Container, String Type) containerType, [MaybeNullWhen(false)] out Type netType)
 	{
-		if (PrimitiveTypesList.TryGetValue(containerType.Type, out netType))
+		if (PrimitiveTypes.TryGetValue(containerType.Type, out netType))
 			return true;
-		if (ExtraTypesList.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out netType))
+		if (ExtraTypes.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out netType))
 			return true;
 		Type? preservedNetType = null;
 		if (containerType.Container.Length != 0)
 			return false;
-		if (ExplicitlyConnectedNamespacesList.FindIndex(x =>
-			ExtraTypesList.TryGetValue((x, containerType.Type), out preservedNetType)) < 0)
+		if (ExplicitlyConnectedNamespaces.FindIndex(x =>
+			ExtraTypes.TryGetValue((x, containerType.Type), out preservedNetType)) < 0)
 			return false;
 		if (preservedNetType == null)
 			return false;
