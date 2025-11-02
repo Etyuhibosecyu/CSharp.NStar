@@ -16,12 +16,7 @@ public static class TypeMappings
 				if (NStarType.ExtraTypes[0].Name != "type" || NStarType.ExtraTypes[0].Extra is not NStarType InnerNStarType)
 					throw new InvalidOperationException();
 				var netType = TypeMapping(InnerNStarType);
-				if (netType == typeof(bool))
-					return typeof(BitList);
-				else if (netType.IsUnmanaged())
-					return typeof(NList<>).MakeGenericType(netType);
-				else
-					return typeof(List<>).MakeGenericType(netType);
+				return ConstructListType(netType);
 			}
 			else
 			{
@@ -95,19 +90,60 @@ public static class TypeMappings
 		return TypeMapping(NStarType);
 	}
 
-	public static Type ConstructFuncType(Type returnType, Slice<Type> netTypes) => netTypes.Length switch
+	public static Type ConstructListType(Type netType)
 	{
-		0 => typeof(Func<>).MakeGenericType(returnType),
-		1 => typeof(Func<,>).MakeGenericType(netTypes[0], returnType),
-		2 => typeof(Func<,,>).MakeGenericType(netTypes[0], netTypes[1], returnType),
-		3 => typeof(Func<,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], returnType),
-		4 => typeof(Func<,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], returnType),
-		5 => typeof(Func<,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], returnType),
-		6 => typeof(Func<,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], returnType),
-		7 => typeof(Func<,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], returnType),
-		8 => typeof(Func<,,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], netTypes[7], returnType),
-		_ => throw new InvalidOperationException(),
-	};
+		if (netType == typeof(bool))
+			return typeof(BitList);
+		else if (netType.IsUnmanaged())
+			return typeof(NList<>).MakeGenericType(netType);
+		else
+			return typeof(List<>).MakeGenericType(netType);
+	}
+
+	public static Type ConstructFuncType(Type returnType)
+	{
+		if (returnType == typeof(void))
+			return typeof(Action);
+		return typeof(Func<>).MakeGenericType(returnType);
+	}
+
+	public static Type ConstructFuncType(Type returnType, Type paramType)
+	{
+		if (returnType == typeof(void))
+			return typeof(Action<>).MakeGenericType(paramType);
+		return typeof(Func<,>).MakeGenericType(paramType, returnType);
+	}
+
+	public static Type ConstructFuncType(Type returnType, Slice<Type> netTypes)
+	{
+		if (returnType == typeof(void))
+			return netTypes.Length switch
+			{
+				0 => typeof(Action),
+				1 => typeof(Action<>).MakeGenericType(netTypes[0]),
+				2 => typeof(Action<,>).MakeGenericType(netTypes[0], netTypes[1]),
+				3 => typeof(Action<,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2]),
+				4 => typeof(Action<,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3]),
+				5 => typeof(Action<,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4]),
+				6 => typeof(Action<,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5]),
+				7 => typeof(Action<,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6]),
+				8 => typeof(Action<,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], netTypes[7]),
+				_ => throw new InvalidOperationException(),
+			};
+		return netTypes.Length switch
+		{
+			0 => typeof(Func<>).MakeGenericType(returnType),
+			1 => typeof(Func<,>).MakeGenericType(netTypes[0], returnType),
+			2 => typeof(Func<,,>).MakeGenericType(netTypes[0], netTypes[1], returnType),
+			3 => typeof(Func<,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], returnType),
+			4 => typeof(Func<,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], returnType),
+			5 => typeof(Func<,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], returnType),
+			6 => typeof(Func<,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], returnType),
+			7 => typeof(Func<,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], returnType),
+			8 => typeof(Func<,,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], netTypes[7], returnType),
+			_ => throw new InvalidOperationException(),
+		};
+	}
 
 	public static Type ConstructTupleType(Slice<Type> netTypes) => netTypes.Length switch
 	{
@@ -142,6 +178,12 @@ public static class TypeMappings
 		else if (netType == typeof(Index))
 			netType = typeof(int);
 		var typeGenericArguments = netType.GetGenericArguments();
+		if (netType.Name.Contains("Action"))
+		{
+			return new(FuncBlockStack, new([new TreeBranch("type", 0, []) { Extra = NullType },
+				.. typeGenericArguments.Convert((x, index) =>
+				new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })]));
+		}
 		if (netType.Name.Contains("Func"))
 		{
 			return new(FuncBlockStack, new([typeGenericArguments[^1].Wrap(x =>

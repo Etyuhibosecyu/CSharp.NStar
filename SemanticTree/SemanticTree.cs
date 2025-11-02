@@ -524,11 +524,11 @@ public sealed partial class SemanticTree
 		return result;
 	}
 
-	private String Property(TreeBranch branch, out List<String>? errors, out String constructorTop, out String ConstructorCore)
+	private String Property(TreeBranch branch, out List<String>? errors, out String constructorTop, out String constructorCore)
 	{
 		errors = null;
 		constructorTop = [];
-		ConstructorCore = [];
+		constructorCore = [];
 		if (branch[0].Extra is not NStarType NStarType)
 			return [];
 		var name = branch[1].Name;
@@ -547,7 +547,8 @@ public sealed partial class SemanticTree
 		}
 		if (IsTypeContext(branch) && (Attributes & (PropertyAttributes.Closed | PropertyAttributes.Protected | PropertyAttributes.Internal)) == 0)
 			result.AddRange("public ");
-		if ((Attributes & PropertyAttributes.Static) != 0)
+		var @static = (Attributes & PropertyAttributes.Static) != 0;
+		if (@static)
 			result.AddRange("static ");
 		var typeName = Type(ref NStarType, branch[^1], ref errors);
 		result.AddRange(typeName).Add(' ');
@@ -564,20 +565,31 @@ public sealed partial class SemanticTree
 		if (branch[^1].Extra is not NStarType ValueNStarType)
 		{
 			GenerateMessage(ref errors, 0x4014, branch[^1].Pos, null!, NullType, NStarType);
+			ValidateStatic(constructorTop, constructorCore);
 			return "default!";
 		}
 		else if (!TypesAreCompatible(ValueNStarType, NStarType, out var warning, expr, out _, out var extraMessage) || warning)
 		{
 			GenerateMessage(ref errors, 0x4014, branch[^1].Pos, extraMessage!, ValueNStarType, NStarType);
+			ValidateStatic(constructorTop, constructorCore);
 			return "default!";
 		}
 		result.AddRange(expr);
-		ConstructorCore.AddRange("if (").AddRange(name).AddRange(" is default(");
-		ConstructorCore.AddRange(typeName).AddRange("))this.").AddRange(name).AddRange(" = ").AddRange(expr);
-		ConstructorCore.AddRange(";else this.").AddRange(name).AddRange(" = ").AddRange(name).Add(';');
+		constructorCore.AddRange("if (").AddRange(name).AddRange(" is default(");
+		constructorCore.AddRange(typeName).AddRange("))this.").AddRange(name).AddRange(" = ").AddRange(expr);
+		constructorCore.AddRange(";else this.").AddRange(name).AddRange(" = ").AddRange(name).Add(';');
 		AddRange(ref errors, innerErrors);
 		result.Add(';');
+		ValidateStatic(constructorTop, constructorCore);
 		return result;
+		void ValidateStatic(String constructorTop, String constructorCore)
+		{
+			if (@static)
+			{
+				constructorTop.Clear();
+				constructorCore.Clear();
+			}
+		}
 	}
 
 	private String Constant(TreeBranch branch, out List<String>? errors)
@@ -1215,21 +1227,8 @@ public sealed partial class SemanticTree
 		var bExtraType = !TypeIsFullySpecified(branch.Container, NStarType);
 		if (bExtraType)
 		{
-			String innerResult = [];
-			var single = false;
-			innerResult.AddRange(nameof(TypeMappings)).Add('.').AddRange(nameof(TypeMappings.TypeMapping)).Add('(');
-			var fullName = Type(ref NStarType, branch, ref errors).ToString();
-			innerResult.AddRange(RecursiveTypeRegex().Replace(fullName, x =>
-			{
-				if (fullName == x.Value)
-				{
-					single = true;
-					return fullName = x.Groups[1].Value;
-				}
-				return nameof(TypeMappingBack) + '(' + x.Groups[1].Value + ", Array.Empty<Type>(), new())";
-			}));
-			innerResult.Add(')');
-			result.AddRange(single ? fullName : innerResult);
+			var fullName = TypeReflected(ref NStarType, branch, ref errors);
+			result.AddRange(fullName);
 		}
 		else
 		{
@@ -3566,7 +3565,7 @@ public sealed partial class SemanticTree
 			if (type.ExtraTypes[i].Parent == null)
 				typeof(TreeBranch).GetProperty("Parent")?.SetValue(type.ExtraTypes[i], branch);
 		if (type.MainType.Peek().BlockType == BlockType.Extra)
-			return type.MainType.Peek().Name;
+			return type.MainType.ToShortString();
 		if (TypeEqualsToPrimitive(type, "list", false))
 		{
 			var constantsDepth = this.constantsDepth;
@@ -3609,15 +3608,7 @@ public sealed partial class SemanticTree
 					goto skip;
 				}
 				var innerTypeName = TypeReflected(ref InnerNStarType, branch, ref errors);
-				result.Add('(').AddRange(nameof(CreateVar)).Add('(').AddRange(innerTypeName);
-				var randomName = RandomVarName();
-				result.AddRange(", out var ").AddRange(randomName).AddRange(") == bool ? typeof(").AddRange(nameof(BitList));
-				result.AddRange(") : ").AddRange(randomName).Add('.').AddRange(nameof(TypeConverters.IsUnmanaged));
-				result.AddRange("() ? typeof(").AddRange(nameof(NList<bool>));
-				result.AddRange("<>).MakeGenericType(").AddRange(randomName);
-				result.AddRange(") : typeof(").AddRange(nameof(List<bool>));
-				result.AddRange("<>).MakeGenericType(").AddRange(randomName);
-				result.AddRange("))");
+				result.AddRange(nameof(ConstructListType)).Add('(').AddRange(innerTypeName).Add(')');
 			skip:
 				result.AddRange(((String)")").Repeat(levelsCount - 1));
 			}
@@ -3627,8 +3618,13 @@ public sealed partial class SemanticTree
 			BranchCollection newBranches = [];
 			if (type.ExtraTypes.Length == 0)
 				return "void";
-			if (type.ExtraTypes[0].Extra is not NStarType FirstNStarType)
+			if (type.ExtraTypes[0].Name != "type" || type.ExtraTypes[0].Extra is not NStarType FirstNStarType)
 				throw new InvalidOperationException();
+			using var prefix = ((String)nameof(ConstructTupleType)).AddRange("(new Type[] { ");
+			using var suffix = ((String)" }.").AddRange(nameof(RedStarLinq.GetSlice)).AddRange("())");
+			using var singularPrefix = ((String)nameof(ConstructTupleType)).Add('(');
+			singularPrefix.AddRange(nameof(RedStarLinq)).Add('.').AddRange(nameof(RedStarLinq.Fill)).Add('(');
+			using var singularSuffix = ((String)").").AddRange(nameof(RedStarLinq.GetSlice)).AddRange("())");
 			var first = TypeReflected(ref FirstNStarType, branch, ref errors);
 			if (type.ExtraTypes.Length == 1)
 				return first;
@@ -3639,7 +3635,7 @@ public sealed partial class SemanticTree
 			{
 				if (type.ExtraTypes[i].Name == "type" && type.ExtraTypes[i].Extra is NStarType InnerNStarType)
 				{
-					result.AddRange(result.Length == 0 ? "(" : ", ").AddRange(innerResult);
+					result.AddRange(result.Length == 0 ? prefix : ", ").AddRange(innerResult);
 					innerType = type.ExtraTypes[i];
 					innerResult.Replace(TypeReflected(ref InnerNStarType, branch, ref errors));
 					newBranches.Add(innerType);
@@ -3654,15 +3650,11 @@ public sealed partial class SemanticTree
 					Extra = new NStarType(TupleBlockStack, innerTypeCollection)
 				};
 				newBranches[^1] = innerType;
-				using var innerNameCollection = String.Join(", ", RedStarLinq.FillArray(innerResult, n));
 				AddRange(ref errors, innerErrors);
-				if (i >= 2 && type.ExtraTypes[i - 1].Name != "type")
-					innerResult.Replace(((String)'(').AddRange(innerNameCollection).Add(')'));
-				else
-					innerResult.Replace(innerNameCollection);
+				innerResult.Insert(0, singularPrefix).AddRange(", ").AddRange(n.ToString()).AddRange(singularSuffix);
 			}
 			type.ExtraTypes.Replace(newBranches);
-			result.AddRange(result.Length == 0 ? "(" : ", ").AddRange(innerResult).Add(')');
+			result.AddRange(result.Length == 0 ? prefix : ", ").AddRange(innerResult).AddRange(suffix);
 		}
 		else if (TypeIsPrimitive(type.MainType))
 		{
@@ -3693,7 +3685,12 @@ public sealed partial class SemanticTree
 				return "dynamic";
 			}
 			var noReturn = TypeEqualsToPrimitive(ReturnNStarType, "null");
-			result.AddRange(noReturn ? "Action<" : "Func<");
+			result.AddRange(nameof(ConstructFuncType)).Add('(');
+			result.AddRange(TypeReflected(ref ReturnNStarType, branch, ref errors));
+			if (type.ExtraTypes.Length >= 3)
+				result.AddRange(", new Type[] { ");
+			else if (type.ExtraTypes.Length == 2)
+				result.AddRange(", ");
 			for (var i = 1; i < type.ExtraTypes.Length; i++)
 			{
 				result.AddRange(type.ExtraTypes[i].Name != "type" || type.ExtraTypes[i].Extra is not NStarType InnerNStarType
@@ -3703,9 +3700,9 @@ public sealed partial class SemanticTree
 				if (!(noReturn && i == type.ExtraTypes.Length - 1))
 					result.AddRange(", ");
 			}
-			if (!noReturn)
-				result.AddRange(TypeReflected(ref ReturnNStarType, branch, ref errors));
-			result.Add('>');
+			if (type.ExtraTypes.Length >= 3)
+				result.AddRange(" }.").AddRange(nameof(RedStarLinq.GetSlice)).AddRange("()");
+			result.Add(')');
 		}
 		else
 		{
@@ -3719,15 +3716,14 @@ public sealed partial class SemanticTree
 				if (type.ExtraTypes[0].Name != "type" || type.ExtraTypes[0].Extra is not NStarType InnerNStarType)
 				{
 					GenerateMessage(ref errors, 0x4056, type.ExtraTypes[0].Pos);
-					result.AddRange("dynamic");
-					return "dynamic";
+					return "typeof(dynamic)";
 				}
 				if (TypeMappings.TypeMapping(InnerNStarType).IsUnmanaged())
 					result.Insert(0, 'N');
 			}
 			if (type.ExtraTypes.Length == 0)
 				return result;
-			result.Add('<');
+			result.Insert(0, "typeof(").AddRange("<>).MakeGenericType(");
 			for (var i = 0; i < type.ExtraTypes.Length; i++)
 			{
 				result.AddRange(type.ExtraTypes[i].Name != "type" || type.ExtraTypes[i].Extra is not NStarType InnerNStarType
@@ -3735,7 +3731,7 @@ public sealed partial class SemanticTree
 				if (i != type.ExtraTypes.Length - 1)
 					result.AddRange(", ");
 			}
-			result.Add('>');
+			result.Add(')');
 		}
 		return result;
 	}
