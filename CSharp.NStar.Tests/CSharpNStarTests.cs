@@ -4074,6 +4074,75 @@ if (true)
 	return T;
 }
 ", "(int, list() System.Collections.ListHashSet[string])", "Ошибок нет")]
+	[DataRow(@"typename real = int;
+repeat (10)
+{
+	real = list() real;
+}
+return real;
+", "list(10) int", "Ошибок нет")]
+	[DataRow(@"typename real = int;
+repeat (10)
+{
+	real = (int, real);
+}
+return real;
+", "(int, (int, (int, (int, (int, (int, (int, (int, (int, int[2])))))))))", "Ошибок нет")]
+	[DataRow(@"typename real = int;
+repeat (10)
+{
+	real = System.Collections.Buffer[real];
+}
+return real;
+", "System.Collections.Buffer[System.Collections.Buffer[System.Collections.Buffer[System.Collections.Buffer[System.Collections.Buffer[" +
+		"System.Collections.Buffer[System.Collections.Buffer[System.Collections.Buffer[System.Collections.Buffer[System.Collections.Buffer[int]]]]]]]]]]", "Ошибок нет")]
+	[DataRow(@"typename real = int;
+repeat (10)
+{
+	real = System.Func[real];
+}
+return real;
+", "System.Func[System.Func[System.Func[System.Func[System.Func[" +
+		"System.Func[System.Func[System.Func[System.Func[System.Func[int]]]]]]]]]]", "Ошибок нет")]
+	[DataRow(@"typename real = int;
+repeat (10)
+{
+	real = System.Func[null, real];
+}
+return real;
+", "System.Func[null, System.Func[null, System.Func[null, System.Func[null, System.Func[null, " +
+		"System.Func[null, System.Func[null, System.Func[null, System.Func[null, System.Func[null, int]]]]]]]]]]", "Ошибок нет")]
+	[DataRow(@"typename real = int;
+repeat (10)
+{
+	real = System.Func[null, int, real];
+}
+return real;
+", "System.Func[null, int, System.Func[null, int, System.Func[null, int, System.Func[null, int, System.Func[null, int, " +
+		"System.Func[null, int, System.Func[null, int, System.Func[null, int, System.Func[null, int, System.Func[null, int, int]]]]]]]]]]", "Ошибок нет")]
+	[DataRow(@"typename real = int;
+repeat (1)
+{
+	real = list() real;
+}
+real x = new(1, 123);
+return x;
+", "(123)", "Ошибок нет")]
+	[DataRow(@"typename real = int;
+repeat (1)
+{
+	real = System.Collections.Buffer[real];
+}
+real x = new(1, 123);
+return x;
+", "(123)", "Ошибок нет")]
+	[DataRow(@"const typename real = int;
+const typename string = list() real;
+const typename T = list() string;
+const typename var = System.Collections.Buffer[T];
+var x = new(1, 123);
+return x;
+", "(((123)))", "Ошибок нет")]
 	[DataRow(@"return 100000000000000000*100000000000000000000;
 ", "0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
 ")]

@@ -895,20 +895,29 @@ public sealed partial class SemanticTree
 				if (!ImplicitConstructor(branch, ref errors, parameterTypes, prepass))
 					return "default!";
 				if (branch[0].Extra is not NStarType NStarType)
-					extra = new List<object> { (String)"Constructor", NullType };
-				else if (UserDefinedConstructorsExist(NStarType, parameterTypes, out var constructors) && constructors != null)
+					extra = new List<object> { (String)"Constructor", (NStarType = NullType), innerResults };
+				Type(ref NStarType, branch, ref errors, true);
+				if (UserDefinedConstructorsExist(NStarType, parameterTypes, out var constructors) && constructors != null)
 					extra = new List<object> { (String)"Constructor", NStarType, (String)"user", constructors, innerResults };
 				else if (ConstructorsExist(NStarType, parameterTypes, out constructors) && constructors != null)
 					extra = new List<object> { (String)"Constructor", NStarType, (String)"typical", constructors, innerResults };
 				else
-					extra = new List<object> { (String)"Constructor", NullType };
+					extra = new List<object> { (String)"Constructor", NStarType, innerResults };
 				branch[1].Elements.ToList((x, index) => x.Extra is NStarType SourceType
 					&& (!TypesAreCompatible(SourceType, parameterTypes[index], out var warning,
 					innerResults[index], out _, out _) || warning));
 				if (branch[0].Extra is NStarType)
 					branch[0].Name = "new type";
-				result.AddRange("new ").AddRange(branch[0].Extra is NStarType type
-					? Type(ref type, targetBranch, ref errors) : "dynamic");
+				if (NStarType == NullType)
+					return "default!";
+				else if (TypeIsFullySpecified(branch.Container, NStarType))
+					result.AddRange("new ").AddRange(Type(ref NStarType, targetBranch, ref errors));
+				else
+				{
+					result.AddRange("Activator.CreateInstance(");
+					result.AddRange(TypeReflected(ref NStarType, targetBranch, ref errors));
+					result.AddRange(", (List<object>)");
+				}
 			}
 			else if (branchName == "new type")
 			{
@@ -918,13 +927,13 @@ public sealed partial class SemanticTree
 					return "default!";
 				}
 				if (branch[0].Extra is not NStarType NStarType)
-					extra = new List<object> { (String)"Constructor", NullType };
+					extra = new List<object> { (String)"Constructor", (NStarType = NullType), innerResults };
 				else if (UserDefinedConstructorsExist(NStarType, parameterTypes, out var constructors) && constructors != null)
 					extra = new List<object> { (String)"Constructor", NStarType, (String)"user", constructors, innerResults };
 				else if (ConstructorsExist(NStarType, parameterTypes, out constructors) && constructors != null)
 					extra = new List<object> { (String)"Constructor", NStarType, (String)"typical", constructors, innerResults };
 				else
-					extra = new List<object> { (String)"Constructor", NullType };
+					extra = new List<object> { (String)"Constructor", (NStarType = NullType), innerResults };
 				branch[1].Elements.ToList((x, index) => x.Extra is NStarType SourceType
 					&& (!TypesAreCompatible(SourceType, parameterTypes[index], out var warning,
 					innerResults[index], out _, out _) || warning));
@@ -1250,7 +1259,7 @@ public sealed partial class SemanticTree
 			if (!NStarType.MainType.TryPeek(out var block) || block.BlockType is not (BlockType.Primitive or BlockType.Extra
 				or BlockType.Class or BlockType.Struct or BlockType.Interface or BlockType.Delegate or BlockType.Enum))
 				throw new InvalidOperationException();
-			else if (block.BlockType is BlockType.Extra or BlockType.Delegate or BlockType.Enum
+			else if (block.BlockType is BlockType.Delegate or BlockType.Enum
 				|| block.BlockType == BlockType.Primitive && block.Name.ToString() is "null" or "bool" or "byte"
 				or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int" or "long char"
 				or "long int" or "unsigned long int" or "real" or "typename" or "index" or "range" or "nint" or "dynamic"
@@ -1466,6 +1475,21 @@ public sealed partial class SemanticTree
 		{
 			var parameterTypes = branch.Length <= 1 ? [] : branch[1].Elements.ToList(x =>
 				x.Extra is NStarType NStarType ? NStarType : NullType);
+			if (processingWay.Length == 3 && processingWay[1] is NStarType ReflectedNStarType
+				&& ReflectedNStarType != NullType && processingWay[2] is List<String> reflectedInnerResults)
+			{
+				result.AddRange("Activator.CreateInstance(");
+				result.AddRange(TypeReflected(ref ReflectedNStarType, branch[0], ref errors));
+				result.AddRange(", new object[] { ");
+				for (var i = 0; i < reflectedInnerResults.Length; i++)
+				{
+					reflectedInnerResults[i] = ParseAction(branch[index][i].Name)(branch[index][i], out var innerErrors);
+					AddRange(ref errors, innerErrors);
+				}
+				result.AddRange(String.Join(", ", reflectedInnerResults)).AddRange(" })");
+				Debug.Assert(branch.Extra != null);
+				return result;
+			}
 			if (!(processingWay.Length == 5 && processingWay[0] is String elem1 && elem1 == "Constructor"
 				&& processingWay[1] is NStarType ConstructingNStarType && processingWay[2] is String elem3
 				&& processingWay[3] is ConstructorOverloads constructors && constructors.Length != 0
@@ -3031,9 +3055,9 @@ public sealed partial class SemanticTree
 			}
 			else if (TypeEqualsToPrimitive(NStarType, "tuple", false))
 			{
-				if (NStarType.ExtraTypes.Any(x => x.Value.Name != "type" || x.Value.Extra is not CSharp.NStar.NStarType))
-					Type(ref NStarType, branch, ref errors);
-				if (NStarType.ExtraTypes.Any(x => x.Value.Name != "type" || x.Value.Extra is not CSharp.NStar.NStarType))
+				if (NStarType.ExtraTypes.Any(x => x.Value.Name != "type" || x.Value.Extra is not NStar.NStarType))
+					Type(ref NStarType, branch, ref errors, true);
+				if (NStarType.ExtraTypes.Any(x => x.Value.Name != "type" || x.Value.Extra is not NStar.NStarType))
 					throw new InvalidOperationException();
 				for (var i = 0; i < NStarType.ExtraTypes.Length && i < branch.Length; i++)
 					branch[i].Extra = (NStarType)NStarType.ExtraTypes[i].Extra!;
@@ -3346,7 +3370,7 @@ public sealed partial class SemanticTree
 		return [];
 	}
 
-	private String Type(ref NStarType type, TreeBranch branch, ref List<String>? errors)
+	private String Type(ref NStarType type, TreeBranch branch, ref List<String>? errors, bool earlyReturn = false)
 	{
 		String result = [];
 		List<String>? innerErrors = null;
@@ -3359,7 +3383,7 @@ public sealed partial class SemanticTree
 			if (!((ConstantExists(new(new(type.MainType.SkipLast(1)), NoBranches), name, out var constant)
 				|| UserDefinedConstantExists(branch.Container, name, out constant, out _, out _))
 				&& constant.HasValue && constant.Value.DefaultValue != null))
-				return ((String)"$").AddRange(name).Add('$');
+				return "dynamic";
 			result.AddRange(ParseAction(constant.Value.DefaultValue.Name)(constant.Value.DefaultValue, out innerErrors));
 			if (!(result.StartsWith("typeof(") && result.EndsWith(')')))
 				throw new InvalidOperationException();
@@ -3371,6 +3395,8 @@ public sealed partial class SemanticTree
 				type = NStarType;
 			return result["typeof(".Length..^1];
 		}
+		else if (earlyReturn)
+			return [];
 		else if (TypeEqualsToPrimitive(type, "list", false))
 		{
 			var constantsDepth = this.constantsDepth;
@@ -3402,6 +3428,7 @@ public sealed partial class SemanticTree
 				if (type.ExtraTypes[^1].Extra is not NStarType InnerNStarType)
 					throw new InvalidOperationException();
 				result.AddRange(Type(ref InnerNStarType, branch, ref errors));
+				type.ExtraTypes[^1].Extra = InnerNStarType;
 			}
 			else
 			{
@@ -3413,6 +3440,7 @@ public sealed partial class SemanticTree
 					goto skip;
 				}
 				var innerTypeName = Type(ref InnerNStarType, branch, ref errors);
+				type.ExtraTypes[^1].Extra = InnerNStarType;
 				var DotNetType = TypeMappings.TypeMapping(InnerNStarType);
 				if (DotNetType == typeof(bool))
 					result.AddRange(nameof(BitList));
@@ -3434,6 +3462,7 @@ public sealed partial class SemanticTree
 			if (type.ExtraTypes[0].Extra is not NStarType FirstNStarType)
 				throw new InvalidOperationException();
 			var first = Type(ref FirstNStarType, branch, ref errors);
+			type.ExtraTypes[0].Extra = FirstNStarType;
 			if (type.ExtraTypes.Length == 1)
 				return first;
 			var innerType = type.ExtraTypes[0];
@@ -3446,6 +3475,7 @@ public sealed partial class SemanticTree
 					result.AddRange(result.Length == 0 ? "(" : ", ").AddRange(innerResult);
 					innerType = type.ExtraTypes[i];
 					innerResult.Replace(Type(ref InnerNStarType, branch, ref errors));
+					type.ExtraTypes[i].Extra = InnerNStarType;
 					newBranches.Add(innerType);
 					continue;
 				}
@@ -3500,15 +3530,22 @@ public sealed partial class SemanticTree
 			result.AddRange(noReturn ? "Action<" : "Func<");
 			for (var i = 1; i < type.ExtraTypes.Length; i++)
 			{
-				result.AddRange(type.ExtraTypes[i].Name != "type" || type.ExtraTypes[i].Extra is not NStarType InnerNStarType
-					? ParseAction(type.ExtraTypes[i].Name)(type.ExtraTypes[i],
-					out innerErrors) : Type(ref InnerNStarType, branch, ref errors));
+				if (type.ExtraTypes[i].Name != "type" || type.ExtraTypes[i].Extra is not NStarType InnerNStarType)
+					result.AddRange(ParseAction(type.ExtraTypes[i].Name)(type.ExtraTypes[i], out innerErrors));
+				else
+				{
+					result.AddRange(Type(ref InnerNStarType, branch, ref errors));
+					type.ExtraTypes[i].Extra = InnerNStarType;
+				}
 				AddRange(ref errors, innerErrors);
 				if (!(noReturn && i == type.ExtraTypes.Length - 1))
 					result.AddRange(", ");
 			}
 			if (!noReturn)
+			{
 				result.AddRange(Type(ref ReturnNStarType, branch, ref errors));
+				type.ExtraTypes[0].Extra = ReturnNStarType;
+			}
 			result.Add('>');
 		}
 		else
@@ -3534,8 +3571,13 @@ public sealed partial class SemanticTree
 			result.Add('<');
 			for (var i = 0; i < type.ExtraTypes.Length; i++)
 			{
-				result.AddRange(type.ExtraTypes[i].Name != "type" || type.ExtraTypes[i].Extra is not NStarType InnerNStarType
-					? type.ExtraTypes[i].Name : Type(ref InnerNStarType, branch, ref errors));
+				if (type.ExtraTypes[i].Name != "type" || type.ExtraTypes[i].Extra is not NStarType InnerNStarType)
+					result.AddRange(type.ExtraTypes[i].Name);
+				else
+				{
+					result.AddRange(Type(ref InnerNStarType, branch, ref errors));
+					type.ExtraTypes[i].Extra = InnerNStarType;
+				}
 				if (i != type.ExtraTypes.Length - 1)
 					result.AddRange(", ");
 			}

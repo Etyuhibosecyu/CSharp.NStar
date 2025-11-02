@@ -2012,9 +2012,13 @@ public partial class MainParsing : LexemStream
 				return HypernameDeclaration();
 			}
 			if (IsCurrentLexemOperator("."))
-				return IncreaseStack(task == "HypernameNotCallType" ? "HypernameNotCall" : nameof(Hypername), currentTask: task == "HypernameNotCallType" ? "HypernameNotCallClosing" : "HypernameClosing", pos_: pos + 1, applyPos: true, applyCurrentTask: true, applyCurrentErl: true, currentBranch: new(".", pos, container), addCurrentBranch: true);
+				return IncreaseStack(task == "HypernameNotCallType" ? "HypernameNotCall" : nameof(Hypername),
+					currentTask: task == "HypernameNotCallType" ? "HypernameNotCallClosing" : "HypernameClosing",
+					pos_: pos + 1, applyPos: true, applyCurrentTask: true, applyCurrentErl: true,
+					currentBranch: new(".", pos, container), addCurrentBranch: true);
 			_ErLStack[_Stackpos].AddRange(errors ?? []);
-			if (TypeIsPrimitive(NStarType.MainType) && NStarType.ExtraTypes.Length == 0)
+			if (NStarType.MainType.Length == 1 && !NStarType.MainType.Peek().Name.Contains(' ')
+				&& NStarType.ExtraTypes.Length == 0)
 			{
 				var newBranch = UserDefinedConstantExists(container, NStarType.MainType.Peek().Name,
 					out var constant, out _, out _) && constant.HasValue && constant.Value.DefaultValue != null
@@ -2023,7 +2027,6 @@ public partial class MainParsing : LexemStream
 					: new(NStarType.MainType.Peek().Name, treeBranch?.Pos ?? -1, treeBranch?.Container ?? []);
 				_TBStack[_Stackpos]![0] = newBranch;
 			}
-
 			return HypernameBracketsAndDot();
 		}
 		errors?.Clear();
