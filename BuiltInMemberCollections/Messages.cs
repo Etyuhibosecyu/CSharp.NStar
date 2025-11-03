@@ -90,6 +90,8 @@ public static class Messages
 			0x2030 => "the \"new\" keyword is forbidden here",
 			0x2031 => "the \"new\" keyword with implicit type is under development",
 			0x2032 => "the function \"" + parameters[0] + "\" with these parameter types is already defined in this region",
+			0x2033 => "the switch expression cannot be empty",
+			0x2034 => "the switch expression cannot contain cases after \"_\"",
 			0x203A => "the identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar and cannot be used",
 			0x203B => "the end of identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar" +
 				" and cannot be used",

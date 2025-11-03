@@ -32,7 +32,8 @@ public partial class MainParsing : LexemStream
 	private static readonly Dictionary<String, (String Next, String TreeLabel, List<String> Operators)> operatorsMapping = new()
 	{
 		{ "Members", ("Member", "Members", []) }, { "Expr", ("List", "Expr", []) }, { "List", ("LambdaExpr", "List", []) },
-		{ "LambdaExpr", ("AssignedExpr", "Expr", []) }, { "AssignedExpr", ("QuestionExpr", "Expr", []) },
+		{ "LambdaExpr", ("AssignedExpr", "Expr", []) }, { "Switch", ("AssignedExpr", "Expr", []) },
+		{ "AssignedExpr", ("QuestionExpr", "Expr", []) },
 		{ "QuestionExpr", ("XorExpr", "Expr", []) }, { "XorExpr", ("OrExpr", "xorList", []) },
 		{ "OrExpr", ("AndExpr", "Expr", new("or")) }, { "AndExpr", ("Xor2Expr", "Expr", new("and")) },
 		{ "Xor2Expr", ("Or2Expr", "Expr", new("^^")) }, { "Or2Expr", ("And2Expr", "Expr", new("||")) },
@@ -211,6 +212,10 @@ public partial class MainParsing : LexemStream
 		nameof(List2) => List2,
 		nameof(LambdaExpr2) => LambdaExpr2,
 		"LambdaExpr3" or "LambdaExpr4" => LambdaExpr3_4,
+		nameof(LambdaExpr5) => LambdaExpr5,
+		nameof(Switch2)=> Switch2,
+		"Switch3" or "Switch4" => Switch3_4,
+		nameof(Switch5)=> Switch5,
 		nameof(AssignedExpr2) => AssignedExpr2,
 		nameof(QuestionExpr2) => QuestionExpr2,
 		nameof(QuestionExpr3) => QuestionExpr3,
@@ -1609,7 +1614,19 @@ public partial class MainParsing : LexemStream
 	{
 		if (!success)
 			return _SuccessStack[_Stackpos] = false;
-		if (pos >= end || !IsCurrentLexemOperator("=>"))
+		if (pos >= end)
+			return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
+		if (IsCurrentLexemKeyword("switch"))
+		{
+			pos++;
+			if (!IsCurrentLexemOther("{"))
+				return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
+			pos++;
+			_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
+			return IncreaseStack("Switch", currentTask: nameof(LambdaExpr5),
+				pos_: pos, applyPos: true, applyCurrentTask: true);
+		}
+		if (!IsCurrentLexemOperator("=>"))
 			return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
 		pos++;
 		if (IsCurrentLexemOther("{"))
@@ -1648,6 +1665,122 @@ public partial class MainParsing : LexemStream
 			return Default();
 		}
 		return EndWithAddingOrAssigning(true, treeBranch?.Length ?? 0);
+	}
+
+	private bool LambdaExpr5()
+	{
+		if (!success)
+			return _SuccessStack[_Stackpos] = false;
+		if (!IsCurrentLexemOther("}"))
+		{
+			GenerateUnexpectedEndError();
+			return EndWithEmpty();
+		}
+		pos++;
+		var treeBranch = _TBStack[_Stackpos];
+		if (treeBranch != null)
+			treeBranch.Name = "SwitchExpr";
+		return EndWithAddingOrAssigning(true, treeBranch?.Length ?? 0);
+	}
+
+	private bool Switch2()
+	{
+		if (!success || _TBStack[_Stackpos] == null || _TBStack[_Stackpos]!.Length == 0 || treeBranch == null)
+		{
+			GenerateMessage(0x2033, pos, false);
+			return SwitchFail();
+		}
+		if (pos < end && IsCurrentLexemKeyword("if"))
+		{
+			pos++;
+			_TBStack[_Stackpos]!.Add(new("case", treeBranch, container));
+			return IncreaseStack("AssignedExpr", currentTask: nameof(Switch5),
+				pos_: pos, applyPos: true, applyCurrentTask: true);
+		}
+		if (pos >= end || !IsCurrentLexemOperator("=>"))
+		{
+			GenerateMessage(0x2008, pos, false, "\"if\" or =>");
+			return SwitchFail();
+		}
+		pos++;
+		_TBStack[_Stackpos]!.Add(new("case", treeBranch, container));
+		return IncreaseStack("AssignedExpr", currentTask: "Switch3",
+			pos_: pos, applyPos: true, applyCurrentTask: true);
+	}
+
+	private bool Switch3_4()
+	{
+		if (!success || _TBStack[_Stackpos] == null || _TBStack[_Stackpos]!.Length == 0 || treeBranch == null)
+		{
+			GenerateMessage(0x200E, pos, false);
+			return SwitchFail();
+		}
+		if (IsCurrentLexemOther("}") && lexems[pos].LineN == lexems[treeBranch.Pos].LineN)
+			return Default();
+		if (pos >= end || !IsCurrentLexemOperator(","))
+		{
+			GenerateMessage(0x2008, pos, false, "comma or }");
+			return SwitchFail();
+		}
+		pos++;
+		if (IsCurrentLexemOther("}"))
+		{
+			_TBStack[_Stackpos]![^1].Add(treeBranch);
+			return Default();
+		}
+		if (task == "Switch4")
+		{
+			GenerateMessage(0x2034, pos, false);
+			return SwitchFail();
+		}
+		if (!IsCurrentLexemKeyword("_"))
+		{
+			_TBStack[_Stackpos]![^1].Add(treeBranch);
+			return IncreaseStack("AssignedExpr", currentTask: nameof(Switch2),
+				pos_: pos, applyPos: true, applyCurrentTask: true);
+		}
+		_TBStack[_Stackpos]!.Add(new("case", new TreeBranch("_", pos, container) { Extra = NullType }, container));
+		pos++;
+		if (pos < end && IsCurrentLexemKeyword("if"))
+		{
+			pos++;
+			return IncreaseStack("AssignedExpr", currentTask: nameof(Switch5),
+				pos_: pos, applyPos: true, applyCurrentTask: true);
+		}
+		if (pos >= end || !IsCurrentLexemOperator("=>"))
+		{
+			GenerateMessage(0x2008, pos, false, "=>");
+			return SwitchFail();
+		}
+		pos++;
+		return IncreaseStack("AssignedExpr", currentTask: "Switch4",
+			pos_: pos, applyPos: true, applyCurrentTask: true);
+	}
+
+	private bool Switch5()
+	{
+		if (!success || _TBStack[_Stackpos] == null || _TBStack[_Stackpos]!.Length == 0 || treeBranch == null)
+		{
+			GenerateMessage(0x200E, pos, false);
+			return SwitchFail();
+		}
+		if (pos >= end || !IsCurrentLexemOperator("=>"))
+		{
+			GenerateMessage(0x2008, pos, false, "=>");
+			CloseBracket(ref pos, "}", ref errors, false);
+			pos--;
+			return Default();
+		}
+		pos++;
+		_TBStack[_Stackpos]![^1].Add(treeBranch);
+		return IncreaseStack("AssignedExpr", currentTask: "Switch3",
+			pos_: pos, applyPos: true, applyCurrentTask: true);
+	}
+	private bool SwitchFail()
+	{
+		CloseBracket(ref pos, "}", ref errors, false);
+		pos--;
+		return Default();
 	}
 
 	private bool AssignedExpr2()
@@ -2714,7 +2847,7 @@ public partial class MainParsing : LexemStream
 			else
 				return IncreaseStack("LambdaExpr", currentTask: nameof(TypeList), pos_: pos,
 					applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
-		list0:
+			list0:
 			typeDepth++;
 			CloseBracket(ref pos, ")", ref errors!, false, end);
 			collectionTypes.Add("list");
