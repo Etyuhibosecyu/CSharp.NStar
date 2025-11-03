@@ -592,18 +592,18 @@ public struct NStarEntity
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basic_type = InnerType.MainType?.Peek().Name ?? "null";
-			if (basic_type == "null")
+			var basicType = InnerType.MainType?.Peek().Name ?? "null";
+			if (basicType == "null")
 				return addCasting ? "default!" : "null";
-			else if (basic_type == "bool")
+			else if (basicType == "bool")
 				return (Bool == false) ? "false" : "true";
-			else if (basic_type == "byte")
+			else if (basicType == "byte")
 				return ((byte)Number).ToString(InvariantCulture);
-			else if (basic_type == "short int")
+			else if (basicType == "short int")
 				return ((short)Number).ToString(InvariantCulture);
-			else if (basic_type == "unsigned short int")
+			else if (basicType == "unsigned short int")
 				return ((ushort)Number).ToString(InvariantCulture);
-			else if (basic_type == "char")
+			else if (basicType == "char")
 			{
 				return takeIntoQuotes ? "'" + (char)Number switch
 				{
@@ -621,17 +621,17 @@ public struct NStarEntity
 					_ => (char)Number,
 				} + "'" : "" + (char)Number;
 			}
-			else if (basic_type == "int")
+			else if (basicType == "int")
 				return ((int)Number).ToString(InvariantCulture);
-			else if (basic_type == "unsigned int")
+			else if (basicType == "unsigned int")
 				return ((uint)Number).ToString(InvariantCulture);
-			else if (basic_type == "long int")
+			else if (basicType == "long int")
 				return Object == null ? "" : Object is long li ? li.ToString() : "0";
-			else if (basic_type == "DateTime")
+			else if (basicType == "DateTime")
 				return Object == null ? "" : Object is DateTime dt ? dt.ToString() : new DateTime(0).ToString();
-			else if (basic_type == "unsigned long int")
+			else if (basicType == "unsigned long int")
 				return Object == null ? "" : Object is ulong uli ? uli.ToString() : "0";
-			else if (basic_type == "real")
+			else if (basicType == "real")
 			{
 				return Number switch
 				{
@@ -641,9 +641,9 @@ public struct NStarEntity
 					_ => Number.ToString(InvariantCulture)
 				};
 			}
-			else if (basic_type == "typename")
+			else if (basicType == "typename")
 				return Object == null ? "" : Object is NStarType NStarType ? NStarType.ToString() : NullType.ToString();
-			else if (basic_type == "string")
+			else if (basicType == "string")
 			{
 				if (!takeIntoQuotes)
 					return String;
@@ -652,7 +652,7 @@ public struct NStarEntity
 				else
 					return String.TakeIntoQuotes();
 			}
-			else if (basic_type == "list")
+			else if (basicType == "list")
 			{
 				return Object switch
 				{
@@ -668,10 +668,12 @@ public struct NStarEntity
 					_ => ListToString()
 				};
 			}
-			else if (basic_type == "tuple")
+			else if (basicType == "tuple")
 				return ListToString();
 		}
-		else if (InnerType.MainType.Length != 0 && UserDefinedTypes.TryGetValue(SplitType(InnerType.MainType), out var type2) && type2.Decomposition != null && type2.Decomposition.Length != 0)
+		else if (InnerType.MainType.Length != 0
+			&& UserDefinedTypes.TryGetValue(SplitType(InnerType.MainType), out var userDefinedType)
+			&& userDefinedType.Decomposition != null && userDefinedType.Decomposition.Length != 0)
 			return ListToString(InnerType.MainType.Peek().Name.ToString());
 		return takeIntoQuotes ? "Unknown Object" : "";
 	}

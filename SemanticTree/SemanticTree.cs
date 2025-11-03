@@ -31,7 +31,7 @@ public sealed partial class SemanticTree
 	private readonly List<Lexem> lexems;
 	private readonly String input, compiledClasses = [];
 	private bool wreckOccurred;
-	private ExtendedMethodOverload? currentFunction;
+	private UserDefinedMethodOverload? currentFunction;
 	private int constantsDepth;
 	private readonly TreeBranch topBranch = TreeBranch.DoNotAdd();
 	private readonly List<String>? errors = null;
@@ -312,7 +312,7 @@ public sealed partial class SemanticTree
 		var start = branch.Pos;
 		var index = UserDefinedFunctionIndexes[container][start];
 		var t = UserDefinedFunctions[branch.Container][name][index];
-		var (_, ReturnNStarType, Attributes, Parameters) = UserDefinedFunctions[branch.Container][name][index];
+		var (RealName, _, ReturnNStarType, Attributes, Parameters) = UserDefinedFunctions[branch.Container][name][index];
 		if ((Attributes & FunctionAttributes.Wrong) != 0 || name.StartsWith('?'))
 			return "";
 		if ((Attributes & FunctionAttributes.Closed) != 0)
@@ -361,15 +361,15 @@ public sealed partial class SemanticTree
 		else
 		{
 			if ((Attributes & FunctionAttributes.New) != FunctionAttributes.New)
-				GenerateMessage(ref errors, 0x8008, branch.Pos, name);
+				GenerateMessage(ref errors, 0x8008, branch.Pos, t.RealName);
 			result.AddRange("new " + ((userDefinedType.Attributes & TypeAttributes.Static)
 				== TypeAttributes.Sealed ? "" : "virtual "));
 		}
 		var targetBranch = branch.Length == 4 ? branch[3] : branch;
 		result.AddRange(Type(ref ReturnNStarType, targetBranch, ref errors)).Add(' ');
-		if (EscapedKeywords.Contains(name))
+		if (EscapedKeywords.Contains(t.RealName))
 			result.Add('@');
-		result.AddRange(name).Add('(');
+		result.AddRange(t.RealName).Add('(');
 		result.AddRange(this.Parameters(targetBranch, Parameters, out var parametersErrors)).Add(')');
 		if ((Attributes & FunctionAttributes.New) == FunctionAttributes.Abstract)
 			return result.Add(';');
@@ -422,7 +422,7 @@ public sealed partial class SemanticTree
 		result.AddRange(this.Parameters(branch[^1], parameterTypes, out var parametersErrors));
 		AddRange(ref errors, parametersErrors);
 		var currentFunction = this.currentFunction;
-		this.currentFunction = new([], NullType, FunctionAttributes.None, parameterTypes);
+		this.currentFunction = new([], [], NullType, FunctionAttributes.None, parameterTypes);
 		result.AddRange("){");
 		if (branch[^1].Name == "Main")
 			result.AddRange(ParseAction(branch[^1].Name)(branch[^1], out var coreErrors));
@@ -1054,7 +1054,7 @@ public sealed partial class SemanticTree
 				else if (HypernameExtendedMethod(branch, branchName, innerResults, ref extra, ref errors,
 					prevIndex, functionContainer, functions, "userMethod") != null)
 					return "_";
-				result.AddRange(branchName);
+				result.AddRange(functions[^1].RealName);
 				branch.Extra = new NStarType(FuncBlockStack,
 					new([new("type", branch.Pos, branch.Container) { Extra = functions[^1].ReturnNStarType },
 					.. functions[^1].Parameters.Convert(x =>
@@ -1077,7 +1077,7 @@ public sealed partial class SemanticTree
 				}
 				HypernamePublicExtendedMethod(branch, branchName, innerResults, ref extra, ref errors,
 					prevIndex, functions, user ? "user" : "general");
-				result.AddRange(branchName);
+				result.AddRange(functions[^1].RealName);
 				branch.Extra = new NStarType(FuncBlockStack,
 					new([new("type", branch.Pos, branch.Container) { Extra = functions[^1].ReturnNStarType },
 					.. functions[^1].Parameters.Convert(x =>
@@ -1199,7 +1199,7 @@ public sealed partial class SemanticTree
 				}
 				if (HypernameExtendedMethod(branch, branchName, innerResults, ref extra, ref errors, prevIndex, ContainerNStarType.MainType, functions, "userMethod") != null)
 					return "_";
-				result.AddRange(branchName);
+				result.AddRange(functions[^1].RealName);
 				branch.Extra = functions;
 			}
 			else if (MethodExists(ContainerNStarType, FunctionMapping(branchName, null), parameterTypes, out functions) && functions.Length != 0)
@@ -1211,7 +1211,7 @@ public sealed partial class SemanticTree
 				}
 				if (HypernameMethod(branch, branchName, innerResults, ref extra, ref errors, prevIndex, ContainerNStarType.MainType, functions) != null)
 					return "_";
-				result.AddRange(branchName);
+				result.AddRange(functions[^1].RealName);
 				branch.Extra = functions;
 			}
 			else
@@ -1304,172 +1304,9 @@ public sealed partial class SemanticTree
 		String result = [];
 		if (branch[index].Name == nameof(Call) && extra is List<object> paramCollection)
 		{
-			if (paramCollection.Length == 3 && paramCollection[0] is String delegateElem1
-				&& delegateElem1.ToString() is "Variable" or nameof(Property) or nameof(Expr)
-				&& paramCollection[1] is NStarType DelegateNStarType
-				&& DelegateNStarType.MainType.Equals(FuncBlockStack)
-				&& DelegateNStarType.ExtraTypes.Length != 0 && DelegateNStarType.ExtraTypes[0].Name == "type"
-				&& DelegateNStarType.ExtraTypes[0].Extra is NStarType ReturnNStarType)
-			{
-				if (index <= 1)
-					result.AddRange(branch[index - 1].Name);
-				if (branch[index].Length != DelegateNStarType.ExtraTypes.Length - 1)
-				{
-					var otherPos = branch[index].Pos;
-					GenerateMessage(ref errors, 0x4045, otherPos, DelegateNStarType.ExtraTypes.Length - 1);
-					return "default!";
-				}
-				NStarType ParameterNStarType = default!, CallNStarType = default!;
-				result.AddRange(List(branch[index], out var innerErrors));
-				var wrongParameterIndex = branch[index].Elements.Combine(DelegateNStarType.ExtraTypes.Skip(1))
-					.FindIndex(x => x.Item1.Extra is not NStarType ParameterNStarType2
-					|| !TypesAreCompatible(ParameterNStarType = ParameterNStarType2,
-					CallNStarType = x.Item2.Value.Name == "type"
-					&& x.Item2.Value.Extra is NStarType NStarType ? NStarType : NullType,
-					out var warning, [], out var destExpr, out _) || warning || destExpr != null && destExpr.Length != 0);
-				if (wrongParameterIndex >= 0)
-				{
-					var otherPos = branch[index][wrongParameterIndex].Pos;
-					GenerateMessage(ref errors, 0x4014, otherPos, null!, ParameterNStarType, CallNStarType);
-					return "default!";
-				}
-				AddRange(ref errors, innerErrors);
-				branch.Extra = ReturnNStarType;
-				return result;
-			}
-			if (!(paramCollection.Length >= 4 && paramCollection.Length <= 5
-				&& paramCollection[0] is String functionName && functionName.StartsWith("Function ")
-				&& paramCollection[1] is String processingWay && paramCollection[3] is List<String> innerResults))
-			{
-				var otherPos = branch[index].Pos;
-				GenerateMessage(ref errors, 0x4000, otherPos);
-				return "default!";
-			}
-			for (var i = 0; i < innerResults.Length; i++)
-				if (innerResults[i].ToString() is "" or "_" or "default" or "default!" or "_ = default" or "_ = default!")
-				{
-					innerResults[i] = ParseAction(branch[index][i].Name)(branch[index][i], out var innerErrors);
-					AddRange(ref errors, innerErrors);
-				}
-			var parameterTypes = branch.Length <= 1 ? [] : branch[1].Elements.ToList(x =>
-				x.Extra is NStarType NStarType ? NStarType : throw new InvalidOperationException());
-			var s = functionName["Function ".Length..];
-			if (s == "ExecuteString")
-			{
-				var @string = innerResults[0];
-				var addParameters = branch[index].Length != 1;
-				String? parameters;
-				if (addParameters)
-				{
-					parameters = ((String)", ").AddRange(List(new(nameof(List), branch[index].Elements[1..], branch.Container), out var parametersErrors));
-					AddRange(ref errors, parametersErrors);
-				}
-				else
-					parameters = [];
-				if (parameters.StartsWith(", (") && parameters.EndsWith(')'))
-				{
-					parameters.ReplaceRange(2, 1, "new[]{");
-					parameters[^1] = '}';
-				}
-				result.AddRange(nameof(ExecuteProgram)).Add('(').AddRange(nameof(TranslateProgram));
-				result.AddRange("(((String)\"").AddRange(ExecuteStringPrefix).AddRange("\").AddRange(").AddRange(@string);
-				result.AddRange(")).Wrap(x => (x.Item1.Remove(x.Item1.IndexOf(").AddRange(nameof(ExecuteStringPrefixCompiled));
-				result.AddRange("), ").AddRange(nameof(ExecuteStringPrefixCompiled));
-				result.AddRange(""".Length), x.Item2, x.Item3)), out _, out _""").AddRange(parameters).AddRange(").");
-				result.AddRange(nameof(Quotes.RemoveQuotes)).AddRange("()");
-			}
-			else if (s == "Q")
-			{
-				branch.Extra = StringType;
-				return ((String)"((String)@\"").AddRange(input.Replace("\"", "\"\"")).AddRange("\")");
-			}
-			else if (processingWay == "public" && s == nameof(RedStarLinq.Fill) && branch[index].Length == 2
-				&& branch[index][0].Extra is NStarType FirstParameterType
-				&& TypeEqualsToPrimitive(FirstParameterType, "bool"))
-			{
-				result.AddRange("new ").AddRange(nameof(BitList)).Add('(');
-				result.AddRange(ParseAction(branch[index][1].Name)(branch[index][1], out var innerErrors));
-				AddRange(ref errors, innerErrors);
-				result.AddRange(", ");
-				result.AddRange(ParseAction(branch[index][0].Name)(branch[index][0], out innerErrors));
-				AddRange(ref errors, innerErrors);
-				result.Add(')');
-				branch.Extra = BitListType;
-				extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
-			}
-			else if (!processingWay.StartsWith("user") && branch.Parent?[0].Extra is NStarType ContainerNStarType)
-			{
-				if (MethodExists(ContainerNStarType, FunctionMapping(s, null), parameterTypes, out var functions)
-					&& functions.Length != 0)
-				{
-					paramCollection[2] = functions;
-					result.AddRange(FunctionMapping(s, Call(branch[index], innerResults, out var innerErrors, extra)));
-					AddRange(ref errors, innerErrors);
-					branch.Extra = functions[^1].ReturnNStarType;
-					extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
-				}
-				else if (ExtendedMethodExists(ContainerNStarType.MainType, s, branch[index].Elements.ToList(x =>
-					x.Extra is NStarType NStarType ? NStarType : throw new InvalidOperationException()),
-					out functions, out _) && functions.Length != 0)
-				{
-					paramCollection[2] = functions;
-					result.AddRange(FunctionMapping(s, Call(branch[index], innerResults, out var innerErrors, extra)));
-					AddRange(ref errors, innerErrors);
-					branch.Extra = functions[^1].ReturnNStarType;
-					extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
-				}
-				if (!result.EndsWith(')') && !result.EndsWith(") + 1"))
-					return "default!";
-			}
-			else if ((processingWay == "user" && UserDefinedFunctionExists(new(), s, parameterTypes,
-				out var functions, out _, out var derived) || processingWay == "userMethod"
-				&& UserDefinedFunctionExists(branch.Container, s, parameterTypes, out functions, out _, out derived))
-				&& functions.Length != 0)
-			{
-				paramCollection[2] = functions;
-				List<String>? innerErrors;
-				if (derived)
-					result.AddRange(FunctionMapping(s, Call(branch[index], innerResults, out innerErrors, extra)));
-				else
-				{
-					result.AddRange(index > 1 ? [] : EscapedKeywords.Contains(s) ? ((String)"@").AddRange(s) : s);
-					result.AddRange(CallUser(branch[index], innerResults, out innerErrors, extra));
-				}
-				AddRange(ref errors, innerErrors);
-				if (!result.EndsWith(')'))
-					return "default!";
-				branch.Extra = functions[^1].ReturnNStarType;
-				extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
-			}
-			else if (processingWay == "userMethod" && branch.Parent?[0].Extra is NStarType ContainerNStarType2)
-			{
-				if (TypeEqualsToPrimitive(ContainerNStarType2, "typename")
-					&& paramCollection.Length == 5 && paramCollection[4] is String elem4
-					&& elem4 == "static" && UserDefinedFunctionExists(ContainerNStarType2.MainType, s,
-					parameterTypes, out functions) && functions.Length != 0)
-				{
-					result.AddRange(index > 1 ? [] : EscapedKeywords.Contains(s) ? ((String)"@").AddRange(s) : s).AddRange(CallUser(branch[index], innerResults, out var innerErrors, extra));
-					AddRange(ref errors, innerErrors);
-					branch.Extra = functions[^1].ReturnNStarType;
-					extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
-				}
-				else if (UserDefinedFunctionExists(ContainerNStarType2.MainType, s, parameterTypes,
-					out functions, out _, out derived) && functions.Length != 0)
-				{
-					result.AddRange(derived ? FunctionMapping(s, Call(branch[index], innerResults, out var innerErrors, extra)) : (index > 1 ? [] : EscapedKeywords.Contains(s) ? ((String)"@").AddRange(s) : s.Copy()).AddRange(CallUser(branch[index], innerResults, out innerErrors, extra)));
-					AddRange(ref errors, innerErrors);
-					branch.Extra = functions[^1].ReturnNStarType;
-					extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
-				}
-				if (!result.EndsWith(')'))
-					return "default!";
-			}
-			else
-			{
-				var otherPos = branch[index].Pos;
-				GenerateMessage(ref errors, 0x4000, otherPos);
-				return "default!";
-			}
+			var (flowControl, value) = HypernameCall(branch, ref errors, ref extra, index, result, paramCollection);
+			if (!flowControl)
+				return value;
 		}
 		else if (branch[index].Name == nameof(ConstructorCall) && extra is List<object> processingWay)
 		{
@@ -1564,6 +1401,207 @@ public sealed partial class SemanticTree
 		}
 		Debug.Assert(branch.Extra != null);
 		return result;
+	}
+
+	private (bool flowControl, String value) HypernameCall(TreeBranch branch, ref List<String>? errors, ref object? extra, int index, String result, List<object> paramCollection)
+	{
+		if (paramCollection.Length == 3 && paramCollection[0] is String delegateElem1
+			&& delegateElem1.ToString() is "Variable" or nameof(Property) or nameof(Expr)
+			&& paramCollection[1] is NStarType DelegateNStarType
+			&& DelegateNStarType.MainType.Equals(FuncBlockStack)
+			&& DelegateNStarType.ExtraTypes.Length != 0 && DelegateNStarType.ExtraTypes[0].Name == "type"
+			&& DelegateNStarType.ExtraTypes[0].Extra is NStarType ReturnNStarType)
+		{
+			if (index <= 1)
+				result.AddRange(branch[index - 1].Name);
+			if (branch[index].Length != DelegateNStarType.ExtraTypes.Length - 1)
+			{
+				var otherPos = branch[index].Pos;
+				GenerateMessage(ref errors, 0x4045, otherPos, DelegateNStarType.ExtraTypes.Length - 1);
+				return (false, "default!");
+			}
+			NStarType ParameterNStarType = default!, CallNStarType = default!;
+			result.AddRange(List(branch[index], out var innerErrors));
+			var wrongParameterIndex = branch[index].Elements.Combine(DelegateNStarType.ExtraTypes.Skip(1))
+				.FindIndex(x => x.Item1.Extra is not NStarType ParameterNStarType2
+				|| !TypesAreCompatible(ParameterNStarType = ParameterNStarType2,
+				CallNStarType = x.Item2.Value.Name == "type"
+				&& x.Item2.Value.Extra is NStarType NStarType ? NStarType : NullType,
+				out var warning, [], out var destExpr, out _) || warning || destExpr != null && destExpr.Length != 0);
+			if (wrongParameterIndex >= 0)
+			{
+				var otherPos = branch[index][wrongParameterIndex].Pos;
+				GenerateMessage(ref errors, 0x4014, otherPos, null!, ParameterNStarType, CallNStarType);
+				return (false, "default!");
+			}
+			AddRange(ref errors, innerErrors);
+			branch.Extra = ReturnNStarType;
+			return (false, result);
+		}
+		if (!(paramCollection.Length >= 4 && paramCollection.Length <= 5
+			&& paramCollection[0] is String functionName && functionName.StartsWith("Function ")
+			&& paramCollection[1] is String processingWay && paramCollection[3] is List<String> innerResults))
+		{
+			var otherPos = branch[index].Pos;
+			GenerateMessage(ref errors, 0x4000, otherPos);
+			return (false, "default!");
+		}
+		for (var i = 0; i < innerResults.Length; i++)
+			if (innerResults[i].ToString() is "" or "_" or "default" or "default!" or "_ = default" or "_ = default!")
+			{
+				innerResults[i] = ParseAction(branch[index][i].Name)(branch[index][i], out var innerErrors);
+				AddRange(ref errors, innerErrors);
+			}
+		var parameterTypes = branch.Length <= 1 ? [] : branch[1].Elements.ToList(x =>
+			x.Extra is NStarType NStarType ? NStarType : throw new InvalidOperationException());
+		var s = functionName["Function ".Length..];
+		if (s == "ExecuteString")
+		{
+			var @string = innerResults[0];
+			var addParameters = branch[index].Length != 1;
+			String? parameters;
+			if (addParameters)
+			{
+				parameters = ((String)", ").AddRange(List(new(nameof(List), branch[index].Elements[1..], branch.Container), out var parametersErrors));
+				AddRange(ref errors, parametersErrors);
+			}
+			else
+				parameters = [];
+			if (parameters.StartsWith(", (") && parameters.EndsWith(')'))
+			{
+				parameters.ReplaceRange(2, 1, "new[]{");
+				parameters[^1] = '}';
+			}
+			result.AddRange(nameof(ExecuteProgram)).Add('(').AddRange(nameof(TranslateProgram));
+			result.AddRange("(((String)\"").AddRange(ExecuteStringPrefix).AddRange("\").AddRange(").AddRange(@string);
+			result.AddRange(")).Wrap(x => (x.Item1.Remove(x.Item1.IndexOf(").AddRange(nameof(ExecuteStringPrefixCompiled));
+			result.AddRange("), ").AddRange(nameof(ExecuteStringPrefixCompiled));
+			result.AddRange(""".Length), x.Item2, x.Item3)), out _, out _""").AddRange(parameters).AddRange(").");
+			result.AddRange(nameof(Quotes.RemoveQuotes)).AddRange("()");
+		}
+		else if (s == "Q")
+		{
+			branch.Extra = StringType;
+			return (false, ((String)"((String)@\"").AddRange(input.Replace("\"", "\"\"")).AddRange("\")"));
+		}
+		else if (processingWay == "public" && s == nameof(RedStarLinq.Fill) && branch[index].Length == 2
+			&& branch[index][0].Extra is NStarType FirstParameterType
+			&& TypeEqualsToPrimitive(FirstParameterType, "bool"))
+		{
+			result.AddRange("new ").AddRange(nameof(BitList)).Add('(');
+			result.AddRange(ParseAction(branch[index][1].Name)(branch[index][1], out var innerErrors));
+			AddRange(ref errors, innerErrors);
+			result.AddRange(", ");
+			result.AddRange(ParseAction(branch[index][0].Name)(branch[index][0], out innerErrors));
+			AddRange(ref errors, innerErrors);
+			result.Add(')');
+			branch.Extra = BitListType;
+			extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
+		}
+		else if (!processingWay.StartsWith("user") && branch.Parent?[0].Extra is NStarType ContainerNStarType)
+		{
+			if (MethodExists(ContainerNStarType, FunctionMapping(s, null), parameterTypes, out var functions)
+				&& functions.Length != 0)
+			{
+				paramCollection[2] = functions;
+				var parameters = Call(branch[index], innerResults, out var innerErrors, extra);
+				result.AddRange(FunctionMapping(s, parameters));
+				AddRange(ref errors, innerErrors);
+				branch.Extra = functions[^1].ReturnNStarType;
+				extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
+			}
+			else if (ExtendedMethodExists(ContainerNStarType.MainType, s, branch[index].Elements.ToList(x =>
+				x.Extra is NStarType NStarType ? NStarType : throw new InvalidOperationException()),
+				out functions, out _) && functions.Length != 0)
+			{
+				paramCollection[2] = functions;
+				var parameters = Call(branch[index], innerResults, out var innerErrors, extra);
+				result.AddRange(FunctionMapping(s, parameters));
+				AddRange(ref errors, innerErrors);
+				branch.Extra = functions[^1].ReturnNStarType;
+				extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
+			}
+			if (!result.EndsWith(')') && !result.EndsWith(") + 1"))
+				return (false, "default!");
+		}
+		else if ((processingWay == "user" && UserDefinedFunctionExists(new(), s, parameterTypes,
+			out var functions, out _, out var derived) || processingWay == "userMethod"
+			&& UserDefinedFunctionExists(branch.Container, s, parameterTypes, out functions, out _, out derived))
+			&& functions.Length != 0)
+		{
+			paramCollection[2] = functions;
+			List<String>? innerErrors;
+			if (derived)
+			{
+				var parameters = Call(branch[index], innerResults, out innerErrors, extra);
+				result.AddRange(FunctionMapping(s, parameters));
+			}
+			else
+			{
+				var callResult = CallUser(branch[index], innerResults, out innerErrors, extra);
+				var realName = functions[^1].RealName;
+				if (EscapedKeywords.Contains(realName))
+					realName.Insert(0, '@');
+				result.AddRange(index > 1 ? [] : realName);
+				result.AddRange(callResult);
+			}
+			AddRange(ref errors, innerErrors);
+			if (!result.EndsWith(')'))
+				return (false, "default!");
+			branch.Extra = functions[^1].ReturnNStarType;
+			extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
+		}
+		else if (processingWay == "userMethod" && branch.Parent?[0].Extra is NStarType ContainerNStarType2)
+		{
+			if (TypeEqualsToPrimitive(ContainerNStarType2, "typename")
+				&& paramCollection.Length == 5 && paramCollection[4] is String elem4
+				&& elem4 == "static" && UserDefinedFunctionExists(ContainerNStarType2.MainType, s,
+				parameterTypes, out functions) && functions.Length != 0)
+			{
+				paramCollection[2] = functions;
+				var callResult = CallUser(branch[index], innerResults, out var innerErrors, extra);
+				var realName = functions[^1].RealName;
+				if (EscapedKeywords.Contains(realName))
+					realName.Insert(0, '@');
+				result.AddRange(index > 1 ? [] : realName).AddRange(callResult);
+				AddRange(ref errors, innerErrors);
+				branch.Extra = functions[^1].ReturnNStarType;
+				extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
+			}
+			else if (UserDefinedFunctionExists(ContainerNStarType2.MainType, s, parameterTypes,
+				out functions, out _, out derived) && functions.Length != 0)
+			{
+				paramCollection[2] = functions;
+				List<String>? innerErrors;
+				if (derived)
+				{
+					var parameters = Call(branch[index], innerResults, out innerErrors, extra);
+					result.AddRange(FunctionMapping(s, parameters));
+				}
+				else
+					ContainerUserDefinedFunction(extra, out innerErrors, functions);
+				AddRange(ref errors, innerErrors);
+				branch.Extra = functions[^1].ReturnNStarType;
+				extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
+			}
+			if (!result.EndsWith(')'))
+				return (false, "default!");
+		}
+		else
+		{
+			var otherPos = branch[index].Pos;
+			GenerateMessage(ref errors, 0x4000, otherPos);
+			return (false, "default!");
+		}
+		return (true, result);
+		void ContainerUserDefinedFunction(object? extra, out List<String>? errors, UserDefinedMethodOverloads functions)
+		{
+			var callResult = CallUser(branch[index], innerResults, out errors, extra);
+			var realName = functions[^1].RealName;
+			if (EscapedKeywords.Contains(realName))
+				realName.Insert(0, '@');
+			result.AddRange((index > 1 ? [] : realName.Copy()).AddRange(callResult));
+		}
 	}
 
 	private String Indexes(TreeBranch branch, ref List<String>? errors, object? extra, int index)
@@ -1661,10 +1699,10 @@ public sealed partial class SemanticTree
 		}
 	}
 
-	private bool? HypernameMethod(TreeBranch branch, String s, List<String> innerResults, ref object? refExtra, ref List<String>? errors, int prevIndex, BlockStack ContainerMainType, ExtendedMethodOverloads functions)
+	private bool? HypernameMethod(TreeBranch branch, String s, List<String> innerResults, ref object? refExtra, ref List<String>? errors, int prevIndex, BlockStack ContainerMainType, UserDefinedMethodOverloads functions)
 	{
 		NStarType NStarType;
-		object extra;
+		List<object> paramCollection;
 		foreach (var function in functions)
 		{
 			if ((function.Attributes & FunctionAttributes.Closed) != 0
@@ -1677,16 +1715,16 @@ public sealed partial class SemanticTree
 			else
 			{
 				NStarType = function.ReturnNStarType;
-				List<object> paramCollection = [((String)"Function ").AddRange(s), (String)"method", functions, innerResults];
-				extra = (function!.Attributes & FunctionAttributes.Static) != 0
-					? paramCollection.Add("static") : paramCollection;
+				List<object> innerParamCollection = [((String)"Function ").AddRange(s), (String)"method", functions, innerResults];
+				paramCollection = (function!.Attributes & FunctionAttributes.Static) != 0
+					? innerParamCollection.Add("static") : innerParamCollection;
 			}
 			TreeBranch newBranch = new("type", branch.Pos, branch.Container) { Extra = NStarType };
 			BranchCollection parameterTypes = new(function.Parameters.Convert(x =>
 			new TreeBranch("type", branch.Pos, branch.Container) { Extra = x.Type })
 				.Prepend(newBranch).ToList()
 				?? [newBranch]);
-			HypernameAddExtra(branch, NStarType, extra, ref refExtra, parameterTypes);
+			HypernameAddExtra(branch, function.RealName, NStarType, paramCollection, ref refExtra, parameterTypes);
 			PropagateParameterTypes(branch, function.Parameters.Length != 0
 				&& (function.Parameters[^1].Attributes & ParameterAttributes.Params)
 				== ParameterAttributes.Params, parameterTypes);
@@ -1698,10 +1736,10 @@ public sealed partial class SemanticTree
 		return false;
 	}
 
-	private bool? HypernameExtendedMethod(TreeBranch branch, String s, List<String> innerResults, ref object? refExtra, ref List<String>? errors, int prevIndex, BlockStack ContainerMainType, ExtendedMethodOverloads functions, String category)
+	private bool? HypernameExtendedMethod(TreeBranch branch, String s, List<String> innerResults, ref object? refExtra, ref List<String>? errors, int prevIndex, BlockStack ContainerMainType, UserDefinedMethodOverloads functions, String category)
 	{
-		NStarType extra;
-		object extra2;
+		NStarType NStarType;
+		List<object> paramCollection;
 		foreach (var function in functions)
 		{
 			if ((function.Attributes & FunctionAttributes.Closed) != 0 ^ (function.Attributes & FunctionAttributes.Protected) != 0 && !new List<Block>(branch.Container).StartsWith([.. ContainerMainType]))
@@ -1710,17 +1748,17 @@ public sealed partial class SemanticTree
 				continue;
 			else
 			{
-				extra = function!.ReturnNStarType;
-				List<object> paramCollection = [((String)"Function ").AddRange(s), category, functions, innerResults];
-				extra2 = (function.Attributes & FunctionAttributes.Static) != 0
-					? paramCollection.Add("static") : paramCollection;
+				NStarType = function!.ReturnNStarType;
+				List<object> innerParamCollection = [((String)"Function ").AddRange(s), category, functions, innerResults];
+				paramCollection = (function.Attributes & FunctionAttributes.Static) != 0
+					? innerParamCollection.Add("static") : innerParamCollection;
 			}
-			TreeBranch newBranch = new("type", branch.Pos, branch.Container) { Extra = extra };
+			TreeBranch newBranch = new("type", branch.Pos, branch.Container) { Extra = NStarType };
 			BranchCollection parameterTypes = new(function.Parameters.Convert(x =>
 			new TreeBranch("type", branch.Pos, branch.Container) { Extra = x.Type })
 				.Prepend(newBranch).ToList()
 				?? [newBranch]);
-			HypernameAddExtra(branch, extra, extra2, ref refExtra, parameterTypes);
+			HypernameAddExtra(branch, function.RealName, NStarType, paramCollection, ref refExtra, parameterTypes);
 			PropagateParameterTypes(branch, function.Parameters.Length != 0
 				&& (function.Parameters[^1].Attributes & ParameterAttributes.Params)
 				== ParameterAttributes.Params, parameterTypes);
@@ -1732,20 +1770,20 @@ public sealed partial class SemanticTree
 		return false;
 	}
 
-	private bool? HypernamePublicExtendedMethod(TreeBranch branch, String s, List<String> innerResults, ref object? refExtra, ref List<String>? errors, int prevIndex, ExtendedMethodOverloads functions, String category)
+	private bool? HypernamePublicExtendedMethod(TreeBranch branch, String s, List<String> innerResults, ref object? refExtra, ref List<String>? errors, int prevIndex, UserDefinedMethodOverloads functions, String category)
 	{
 		foreach (var function in functions)
 		{
-			NStarType extra;
-			object extra2;
-			extra = function.ReturnNStarType;
-			extra2 = new List<object> { ((String)"Function ").AddRange(s), category, functions, innerResults };
-			TreeBranch newBranch = new("type", branch.Pos, branch.Container) { Extra = extra };
+			NStarType NStarType;
+			List<object> paramCollection;
+			NStarType = function.ReturnNStarType;
+			paramCollection = new List<object> { ((String)"Function ").AddRange(s), category, functions, innerResults };
+			TreeBranch newBranch = new("type", branch.Pos, branch.Container) { Extra = NStarType };
 			BranchCollection parameterTypes = new(function.Parameters.Convert(x =>
 			new TreeBranch("type", branch.Pos, branch.Container) { Extra = x.Type })
 				.Prepend(newBranch).ToList()
 				?? [newBranch]);
-			HypernameAddExtra(branch, extra, extra2, ref refExtra, parameterTypes);
+			HypernameAddExtra(branch, function.RealName, NStarType, paramCollection, ref refExtra, parameterTypes);
 			PropagateParameterTypes(branch, function.Parameters.Length != 0
 				&& (function.Parameters[^1].Attributes & ParameterAttributes.Params)
 				== ParameterAttributes.Params, parameterTypes);
@@ -1757,17 +1795,17 @@ public sealed partial class SemanticTree
 		return false;
 	}
 
-	private static void HypernameAddExtra(TreeBranch branch, NStarType extra, object paramCollection, ref object? refExtra, BranchCollection extraTypes)
+	private static void HypernameAddExtra(TreeBranch branch, String realName, NStarType extra, List<object> paramCollection, ref object? refExtra, BranchCollection extraTypes)
 	{
 		if (branch.Length >= 2 && branch[1].Name == nameof(Call))
 		{
-			branch[0].Name += " (function)";
+			branch[0].Name.AddRange(" (function)");
 			branch[0].Extra = extra;
 			refExtra = paramCollection;
 		}
 		else
 		{
-			branch[0].Name += " (delegate)";
+			branch[0].Name.Replace(realName).AddRange(" (delegate)");
 			branch[0].Extra = new NStarType(FuncBlockStack, extraTypes);
 			branch[0].Insert(0, (TreeBranch)new("data", branch.Pos, branch.EndPos, branch.Container) { Extra = paramCollection });
 		}
@@ -1830,7 +1868,7 @@ public sealed partial class SemanticTree
 			}
 		if (!(extra is List<object> paramCollection && paramCollection.Length >= 3 && paramCollection.Length <= 5
 			&& paramCollection[0] is String elem1 && elem1.StartsWith("Function ")
-			&& paramCollection[2] is ExtendedMethodOverloads functions && functions.Length != 0))
+			&& paramCollection[2] is UserDefinedMethodOverloads functions && functions.Length != 0))
 		{
 			GenerateMessage(ref errors, 0x4000, otherPos);
 			return false;
@@ -1856,7 +1894,7 @@ public sealed partial class SemanticTree
 		int callIndex = 0, functionIndex = 0;
 		if (functions.Length == 1)
 		{
-			var (_, ReturnNStarType, Attributes, Parameters) = functions[0];
+			var (_, _, ReturnNStarType, Attributes, Parameters) = functions[0];
 			if (Parameters.Length == 0 && innerResults.Length != 0)
 			{
 				GenerateMessage(ref errors, 0x4023, otherPos, elem1);
@@ -1914,7 +1952,7 @@ public sealed partial class SemanticTree
 		var functionIndexes = new int[functions.Length];
 		for (var j = 0; j < functions.Length; j++)
 		{
-			var (_, ReturnNStarType, Attributes, Parameters) = functions[j];
+			var (_, _, ReturnNStarType, Attributes, Parameters) = functions[j];
 			if (Parameters.Length == 0)
 				continue;
 			else if (!(CallParameterNStarTypes.Length >= Parameters.Count(y => (y.Attributes & ParameterAttributes.Optional) == 0)
@@ -1935,7 +1973,6 @@ public sealed partial class SemanticTree
 		}
 		var thresholdIndexes = callIndexes.IndexesOfMax();
 		var incompatibleLength = IncompatibleOverloads.Length;
-		IncompatibleOverloads.IntersectWith(thresholdIndexes);
 		if (incompatibleLength == functions.Length)
 		{
 			GenerateMessage(ref errors, 0x4028, otherPos = branch[callIndexes[thresholdIndexes[0]]].Pos,
@@ -3141,7 +3178,7 @@ public sealed partial class SemanticTree
 		if (grandParent == null)
 			return Default(ref errors);
 		var grandParentIndex = grandParent.Elements.FindIndex(x => ReferenceEquals(x, branch.Parent));
-		if (grandParentIndex < 1 || grandParent.Extra is not ExtendedMethodOverloads functions)
+		if (grandParentIndex < 1 || grandParent.Extra is not UserDefinedMethodOverloads functions)
 			return Default(ref errors);
 		List<NStarType> parameterTypes = [];
 		List<TreeBranch> parameterBranches = [];
@@ -4100,7 +4137,7 @@ public sealed partial class SemanticTree
 	}
 
 	private bool IsFunctionDeclared(TreeBranch branch, String s, out List<String>? errors,
-		[MaybeNullWhen(false)] out ExtendedMethodOverloads functions,
+		[MaybeNullWhen(false)] out UserDefinedMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer, out object? extra)
 	{
 		errors = default!;
@@ -4122,7 +4159,7 @@ public sealed partial class SemanticTree
 		branches.Reverse();
 		for (var i = indexes.Length - 1; i >= 0; i--)
 		{
-			if (branches[i].Name == "Function" && branches[i].Length == 4
+			if (branches[i].Name == "Function" && branches[i].Length >= 3
 				&& UserDefinedNonDerivedFunctionExists(branches[i].Container,
 				branches[i][0].Name, out var innerFunctions, out _))
 			{
@@ -4145,7 +4182,7 @@ public sealed partial class SemanticTree
 			{
 				if (j == indexes[i] - 1)
 					continue;
-				if (branches[i][j].Name == "Function" && branches[i][j].Length == 4 && branches[i][j][0].Name == s)
+				if (branches[i][j].Name == "Function" && branches[i][j].Length >= 3 && branches[i][j][0].Name == s)
 				{
 					extra = branches[i][j];
 					return true;
@@ -4156,28 +4193,6 @@ public sealed partial class SemanticTree
 			GenerateMessage(ref errors, 0x4001, branch.FirstPos, s);
 		extra = null;
 		return false;
-	}
-
-	private static String GetActualFunction(TreeBranch branch, out ExtendedMethodOverloads functions,
-		out BlockStack? matchingContainer)
-	{
-		NList<int> indexes = [];
-		List<TreeBranch> branches = [branch];
-		while (branch.Parent != null)
-		{
-			indexes.Add(branch.Parent.Elements.FindIndex(x => ReferenceEquals(branch, x)) + 1);
-			branches.Add(branch = branch.Parent);
-		}
-		indexes.Reverse();
-		branches.Reverse();
-		for (var i = indexes.Length - 1; i >= 0; i--)
-			if (branches[i].Name == "Function" && branches[i].Length == 4
-				&& UserDefinedNonDerivedFunctionExists(branch.Container, branches[i][0].Name,
-				out functions!, out matchingContainer))
-				return branches[i][0].Name;
-		functions = [];
-		matchingContainer = null;
-		return [];
 	}
 
 	private static bool IsAssignment(TreeBranch branch, [MaybeNullWhen(false)] out TreeBranch assignmentBranch, out int assignmentIndex)

@@ -473,7 +473,7 @@ int Function F()
 	return 5;
 }
 return F();
-", "null", @"Error 000C in line 4 at position 13: the function ""F"" is already defined in this region; overloaded functions are under development
+", "null", @"Error 2032 in line 4 at position 0: the function ""F"" with these parameter types is already defined in this region
 ")]
 	[DataRow(@"null Function F(int x)
 {
@@ -483,8 +483,131 @@ int Function F(int x)
 	return x * x;
 }
 return F(5);
-", "null", @"Error 000C in line 4 at position 13: the function ""F"" is already defined in this region; overloaded functions are under development
+", "null", @"Error 2032 in line 4 at position 0: the function ""F"" with these parameter types is already defined in this region
 ")]
+	[DataRow(@"null Function F()
+{
+}
+int Function F(int x)
+{
+	return x * x;
+}
+F();
+return F(5);
+", "25", "Ошибок нет")]
+	[DataRow(@"{
+	F();
+	null Function F()
+	{
+	}
+}
+int Function F(int x)
+{
+	return x * x;
+}
+return F(5);
+", "25", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	null Function F()
+	{
+	}
+	int Function F(int x)
+	{
+		return x * x;
+	}
+}
+MyClass.F();
+return MyClass.F(5);
+", "25", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	int Function F(int x)
+	{
+		F();
+		null Function F()
+		{
+		}
+		return x * x;
+	}
+}
+return MyClass.F(5);
+", "25", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	int Function F(int x)
+	{
+		null Function F()
+		{
+		}
+		F();
+		return x * x;
+	}
+}
+return MyClass.F(5);
+", "25", "Ошибок нет")]
+	[DataRow(@"Class MyClass
+{
+	null Function F()
+	{
+	}
+	int Function F(int x)
+	{
+		return x * x;
+	}
+}
+new MyClass().F();
+return new MyClass().F(5);
+", "25", "Ошибок нет")]
+	[DataRow(@"Class MyClass
+{
+	int Function F(int x)
+	{
+		F();
+		null Function F()
+		{
+		}
+		return x * x;
+	}
+}
+return new MyClass().F(5);
+", "25", "Ошибок нет")]
+	[DataRow(@"Class MyClass
+{
+	int Function F(int x)
+	{
+		null Function F()
+		{
+		}
+		F();
+		return x * x;
+	}
+}
+return new MyClass().F(5);
+", "25", "Ошибок нет")]
+	[DataRow(@"null Function F(int x)
+{
+}
+int Function F(int x)
+{
+	return x * x;
+}
+F(5);
+return F(5);
+", "null", @"Error 2032 in line 4 at position 0: the function ""F"" with these parameter types is already defined in this region
+")]
+	[DataRow(@"{
+	F(5);
+	null Function F(int x)
+	{
+	}
+}
+int Function F(int x)
+{
+	return x * x;
+}
+return F(5);
+", "25", "Ошибок нет")]
 	[DataRow(@"int n = 0;
 while (n < 1000)
 {

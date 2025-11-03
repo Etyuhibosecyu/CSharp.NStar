@@ -31,8 +31,7 @@ public static class Messages
 			0x0009 => "a static class cannot be derived",
 			0x000A => "the static functions are allowed only inside the classes",
 			0x000B => "the function \"" + parameters[0] + "\" is the standard root C#.NStar function and cannot be redefined",
-			0x000C => "the function \"" + parameters[0] + "\" is already defined in this region;" +
-				" overloaded functions are under development",
+			0x000C => throw new InvalidOperationException(),
 			0x000D => "the function cannot have same name as its container class",
 			0x000E => "\";\" must follow the abstract function declaration, \"{\" - the non-abstract one",
 			0x000F => "the constructors are allowed only inside the classes",
@@ -90,7 +89,7 @@ public static class Messages
 			0x202F => "the properties can only have the proper access, no public",
 			0x2030 => "the \"new\" keyword is forbidden here",
 			0x2031 => "the \"new\" keyword with implicit type is under development",
-			0x2032 => "the method \"" + parameters[0] + "\" with these parameter types is already defined in this region",
+			0x2032 => "the function \"" + parameters[0] + "\" with these parameter types is already defined in this region",
 			0x203A => "the identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar and cannot be used",
 			0x203B => "the end of identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar" +
 				" and cannot be used",

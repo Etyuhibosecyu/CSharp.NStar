@@ -530,7 +530,7 @@ public partial class MainParsing : LexemStream
 				&& (y.Item1.Attributes & (ParameterAttributes.Ref | ParameterAttributes.Out)) == 0
 				&& (y.Item2.Attributes & (ParameterAttributes.Ref | ParameterAttributes.Out)) == 0)))
 			{
-				GenerateMessage(0x2032, pos, false, name, lexems[start].LineN, lexems[start].Pos);
+				GenerateMessage(0x2032, start, false, name, lexems[start].LineN, lexems[start].Pos);
 				t.Attributes |= FunctionAttributes.Wrong;
 				UserDefinedFunctions[blockToJumpContainer][name][index] = t;
 				return;

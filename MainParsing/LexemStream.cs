@@ -22,7 +22,7 @@ public class LexemStream
 	private readonly BlockStack? rootContainer;
 	private protected bool wreckOccurred;
 	private protected int pos;
-	private int pos2;
+	private int prevPos;
 	private readonly BlockStack nestedBlocksChain = new();
 	private int globalUnnamedIndex = 1;
 	private protected readonly BlocksToJump blocksToJump = [];
@@ -43,7 +43,7 @@ public class LexemStream
 		this.rootContainer = rootContainer;
 		this.wreckOccurred = wreckOccurred;
 		pos = 0;
-		pos2 = 0;
+		prevPos = 0;
 	}
 
 	private protected LexemStream(LexemStream lexemStream) : this(lexemStream.lexems, lexemStream.input, lexemStream.errors, lexemStream.wreckOccurred, lexemStream.rootContainer)
@@ -225,20 +225,20 @@ public class LexemStream
 
 	private void Class()
 	{
-		pos2 = pos;
+		prevPos = pos;
 		var attributes = TypeAttributes.None;
 		String name;
 		BlockStack container = new(nestedBlocksChain.ToList());
 		GetBlockStart();
-		var blockStart = pos2;
+		var blockStart = prevPos;
 		attributes = (TypeAttributes)GetAccessMethod((int)attributes);
 		attributes |= (TypeAttributes)AddOneOfAttributes(new() { { "static", TypeAttributes.Static },
 			{ "sealed", TypeAttributes.Sealed }, { "abstract", TypeAttributes.Abstract } });
 		attributes |= (TypeAttributes)AddAttribute("partial", TypeAttributes.Partial);
-		while (pos2 < pos)
+		while (prevPos < pos)
 		{
-			GenerateMessage(0x0005, pos2, "incorrect word or order of words in construction declaration");
-			pos2++;
+			GenerateMessage(0x0005, prevPos, "incorrect word or order of words in construction declaration");
+			prevPos++;
 		}
 		if (IsEnd()) return;
 		pos++;
@@ -256,7 +256,7 @@ public class LexemStream
 		else
 			ChangeNameAndGenerateError(0x0004, out name);
 		pos++;
-		pos2 = pos;
+		prevPos = pos;
 		if (IsEnd()) return;
 		if (IsCurrentLexemOperator(":"))
 		{
@@ -271,13 +271,13 @@ public class LexemStream
 		GetFigureBracketAndSetBlock(BlockType.Class, name, attributes, () =>
 		{
 			UserDefinedTypes.Add((container, name), new([], attributes, NullType, []));
-			blocksToJump.Add((container, "Class", name, blockStart, pos2));
+			blocksToJump.Add((container, "Class", name, blockStart, prevPos));
 		});
 	}
 
 	private void Function()
 	{
-		pos2 = pos;
+		prevPos = pos;
 		var attributes = FunctionAttributes.None;
 		String name;
 		BlockStack container = new(nestedBlocksChain.ToList());
@@ -286,18 +286,18 @@ public class LexemStream
 		if (IsPos2LexemKeyword("const"))
 		{
 			attributes |= FunctionAttributes.Const;
-			pos2++;
+			prevPos++;
 			goto l0;
 		}
 		if (IsClass())
 		{
 			var mask = (IsPos2LexemKeyword("static") ? 2 : 0) + (IsStatic() ? 1 : 0);
 			if (mask == 3)
-				GenerateMessage(0x8000, pos2);
+				GenerateMessage(0x8000, prevPos);
 			if (mask >= 1)
 				attributes |= FunctionAttributes.Static;
 			if (mask >= 2)
-				pos2++;
+				prevPos++;
 		}
 		else
 			CheckKeywordAndGenerateError(0x000A, "static", "static functions are allowed only inside classes");
@@ -309,14 +309,14 @@ public class LexemStream
 			attributes |= (FunctionAttributes)AddAttribute("abstract", FunctionAttributes.Abstract);
 		attributes |= (FunctionAttributes)AddAttribute("multiconst", FunctionAttributes.Multiconst);
 	l0:
-		var blockStart = pos2;
+		var blockStart = prevPos;
 		if (IsPos2LexemKeyword("null"))
 		{
-			pos2++;
-			registeredTypes.Add((container, "", pos2 - 1, pos2));
+			prevPos++;
+			registeredTypes.Add((container, "", prevPos - 1, prevPos));
 		}
 		else
-			registeredTypes.Add((container, "", pos2, pos));
+			registeredTypes.Add((container, "", prevPos, pos));
 		if (IsEnd()) return;
 		pos++;
 		if (IsEnd()) return;
@@ -325,8 +325,6 @@ public class LexemStream
 			var s = lexems[pos].String;
 			if (PublicFunctions.ContainsKey(s))
 				ChangeNameAndGenerateError(0x000B, out name, s);
-			else if (UserDefinedFunctions.TryGetValue(container, out var methods) && methods.ContainsKey(s))
-				ChangeNameAndGenerateError(0x000C, out name, s);
 			else
 				CheckAdditionalNameConditions(0x000D, out name, s);
 		}
@@ -356,10 +354,17 @@ public class LexemStream
 		{
 			UserDefinedFunctions.TryAdd(container, []);
 			var containerFunctions = UserDefinedFunctions[container];
-			containerFunctions.TryAdd(name, []);
-			containerFunctions[name].Add(new([], (new([new(BlockType.Primitive, "???", 1)]), NoBranches), attributes, []));
+			if (!containerFunctions.TryGetValue(name, out var nameFunctions))
+			{
+				nameFunctions = [];
+				containerFunctions.Add(name, nameFunctions);
+			}
+			nameFunctions.Add(new(container.TryPeek(out var block) && block.BlockType is BlockType.Class
+				or BlockType.Struct or BlockType.Interface or BlockType.Delegate
+				? name : RandomVarName().ToNString(), [],
+				(new([new(BlockType.Primitive, "???", 1)]), NoBranches), attributes, []));
 			blocksToJump.Add((container, "Function", name, blockStart, pos));
-			if (!(UserDefinedFunctionIndexes.TryGetValue(container, out var list2)
+			if (!(UserDefinedFunctionIndexes.TryGetValue(container, out var containerIndexes)
 				&& actualFunctionIndexes.TryGetValue(container, out var dic)))
 			{
 				UserDefinedFunctionIndexes[container] = new() { { blockStart, 0 } };
@@ -367,12 +372,12 @@ public class LexemStream
 			}
 			else if (!dic.TryGetValue(name, out var index))
 			{
-				list2.Add(blockStart, 0);
+				containerIndexes.Add(blockStart, 0);
 				dic.Add(name, 1);
 			}
 			else
 			{
-				list2.Add(blockStart, index);
+				containerIndexes.Add(blockStart, index);
 				dic[name]++;
 			}
 		});
@@ -386,25 +391,25 @@ public class LexemStream
 			pos++;
 			return;
 		}
-		pos2 = pos;
+		prevPos = pos;
 		var attributes = ConstructorAttributes.None;
 		BlockStack container = new(nestedBlocksChain.ToList());
 		GetBlockStart();
-		var blockStart = pos2;
+		var blockStart = prevPos;
 		attributes = (ConstructorAttributes)GetAccessMethod((int)attributes);
 		var mask = (IsPos2LexemKeyword("static") ? 2 : 0) + (IsStatic() ? 1 : 0);
 		if (mask == 3)
-			GenerateMessage(0x8000, pos2);
+			GenerateMessage(0x8000, prevPos);
 		if (mask >= 1)
 			attributes |= ConstructorAttributes.Static;
 		if (mask >= 2)
-			pos2++;
+			prevPos++;
 		attributes |= (ConstructorAttributes)AddAttribute("multiconst", ConstructorAttributes.Multiconst);
 		attributes |= (ConstructorAttributes)AddAttribute("abstract", ConstructorAttributes.Abstract);
-		while (pos2 < pos)
+		while (prevPos < pos)
 		{
-			GenerateMessage(0x0005, pos2);
-			pos2++;
+			GenerateMessage(0x0005, prevPos);
+			prevPos++;
 		}
 		if (IsEnd()) return;
 		pos++;
@@ -443,7 +448,8 @@ public class LexemStream
 
 	private void CheckAdditionalNameConditions(ushort code, out String name, String s, params dynamic[] parameters)
 	{
-		if (nestedBlocksChain.Length >= 1 && nestedBlocksChain.Peek().Name == s)
+		if (nestedBlocksChain.Length >= 1 && nestedBlocksChain.Peek().BlockType is BlockType.Class or BlockType.Struct
+			or BlockType.Interface or BlockType.Delegate && nestedBlocksChain.Peek().Name == s)
 			ChangeNameAndGenerateError(code, out name, parameters);
 		else if (IsReservedNamespaceOrType(s, out var errorPrefix))
 			ChangeNameAndGenerateError(0x0010, out name, errorPrefix);
@@ -509,12 +515,12 @@ public class LexemStream
 
 	private void GetBlockStart()
 	{
-		while (pos2 > 0)
+		while (prevPos > 0)
 		{
-			pos2--;
-			if (lexems[pos2].Type == LexemType.Other && StopLexemsList.Contains(lexems[pos2].String))
+			prevPos--;
+			if (lexems[prevPos].Type == LexemType.Other && StopLexemsList.Contains(lexems[prevPos].String))
 			{
-				pos2++;
+				prevPos++;
 				break;
 			}
 		}
@@ -522,18 +528,18 @@ public class LexemStream
 
 	private int GetAccessMethod(int attributes)
 	{
-		if (IsLexemKeyword(lexems[pos2], ["closed", "protected"]))
+		if (IsLexemKeyword(lexems[prevPos], ["closed", "protected"]))
 		{
 			if (nestedBlocksChain.Length != 0 && nestedBlocksChain.Peek().BlockType == BlockType.Class)
-				attributes |= (lexems[pos2].String == "closed") ? 2 : 4;
+				attributes |= (lexems[prevPos].String == "closed") ? 2 : 4;
 			else
-				GenerateMessage(0x0014, pos2, "closed and protected classes are allowed only inside other classes");
-			pos2++;
+				GenerateMessage(0x0014, prevPos, "closed and protected classes are allowed only inside other classes");
+			prevPos++;
 		}
 		else if (IsPos2LexemKeyword("internal"))
 		{
 			attributes |= 6;
-			pos2++;
+			prevPos++;
 		}
 		else
 			CheckKeywordAndGenerateError(0x0015, "public", "public access is under development");
@@ -544,16 +550,16 @@ public class LexemStream
 	{
 		if (IsPos2LexemKeyword(string_))
 		{
-			GenerateMessage(code, pos2, error);
-			pos2++;
+			GenerateMessage(code, prevPos, error);
+			prevPos++;
 		}
 	}
 
 	private dynamic AddOneOfAttributes(Dictionary<String, dynamic> attributes)
 	{
-		if (lexems[pos2].Type == LexemType.Keyword && attributes.TryGetValue(lexems[pos2].String, out var value))
+		if (lexems[prevPos].Type == LexemType.Keyword && attributes.TryGetValue(lexems[prevPos].String, out var value))
 		{
-			pos2++;
+			prevPos++;
 			return value;
 		}
 		return 0;
@@ -561,9 +567,9 @@ public class LexemStream
 
 	private dynamic AddAttribute(String string_, dynamic mask)
 	{
-		if (lexems[pos2].String == string_)
+		if (lexems[prevPos].String == string_)
 		{
-			pos2++;
+			prevPos++;
 			return mask;
 		}
 		return 0;
@@ -666,7 +672,7 @@ public class LexemStream
 		return false;
 	}
 
-	private bool IsPos2LexemKeyword(String string_) => IsLexemKeyword(lexems[pos2], string_);
+	private bool IsPos2LexemKeyword(String string_) => IsLexemKeyword(lexems[prevPos], string_);
 
 	private protected static bool IsValidBaseClass(TypeAttributes attributes)
 		=> (attributes & (TypeAttributes.Sealed | TypeAttributes.Abstract

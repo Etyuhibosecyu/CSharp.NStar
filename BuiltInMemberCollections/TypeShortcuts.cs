@@ -10,6 +10,7 @@ public record struct MethodParameter(String Type, String Name, List<String> Extr
 public record struct ExtendedMethodParameter(NStarType Type, String Name, ParameterAttributes Attributes, String DefaultValue);
 public record struct FunctionOverload(List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters);
 public record struct ExtendedMethodOverload(ExtendedArrayParameters ArrayParameters, NStarType ReturnNStarType, FunctionAttributes Attributes, ExtendedMethodParameters Parameters);
+public record struct UserDefinedMethodOverload(String RealName, ExtendedArrayParameters ArrayParameters, NStarType ReturnNStarType, FunctionAttributes Attributes, ExtendedMethodParameters Parameters);
 
 public sealed class VariablesBlock<T>(IList<T> main, IList<bool> isNull)
 {
@@ -93,7 +94,10 @@ public class ExtendedMethodOverloads : List<ExtendedMethodOverload>
 public class ExtendedMethods : SortedDictionary<String, ExtendedMethodOverloads>
 {
 }
-public class UserDefinedMethods : Dictionary<String, ExtendedMethodOverloads>
+public class UserDefinedMethodOverloads : List<UserDefinedMethodOverload>
+{
+}
+public class UserDefinedMethods : Dictionary<String, UserDefinedMethodOverloads>
 {
 }
 public class ConstructorOverloads : List<(ConstructorAttributes Attributes, ExtendedMethodParameters Parameters)>

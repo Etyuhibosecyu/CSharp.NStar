@@ -158,7 +158,7 @@ public static class MemberChecks
 	}
 
 	public static bool MethodExists(NStarType container, String name, List<NStarType> callParameterTypes,
-		[MaybeNullWhen(false)] out ExtendedMethodOverloads functions)
+		[MaybeNullWhen(false)] out UserDefinedMethodOverloads functions)
 	{
 		var containerType = SplitType(container.MainType);
 		if (!TypeExists(containerType, out var netType))
@@ -193,7 +193,7 @@ public static class MemberChecks
 				for (var j = 0; j < functionParameterTypes.Length; j++)
 					functionParameterTypes[j] = ReplaceExtraNetType(functionParameterTypes[j], patterns[i]);
 			}
-			functions.Add(new([], TypeMappingBack(returnNetType, netType.GetGenericArguments(), container.ExtraTypes),
+			functions.Add(new(name, [], TypeMappingBack(returnNetType, netType.GetGenericArguments(), container.ExtraTypes),
 				(method.IsAbstract ? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
 				new(functionParameterTypes.ToList((x, index) => new ExtendedMethodParameter(TypeMappingBack(x,
 				netType.GetGenericArguments(), container.ExtraTypes), parameters[index].Name ?? "x",
@@ -275,7 +275,7 @@ public static class MemberChecks
 	}
 
 	public static bool ExtendedMethodExists(BlockStack container, String name, List<NStarType> parameterTypes,
-		[MaybeNullWhen(false)] out ExtendedMethodOverloads functions, out bool user)
+		[MaybeNullWhen(false)] out UserDefinedMethodOverloads functions, out bool user)
 	{
 		if (PublicFunctions.TryGetValue(name, out var functionOverload))
 		{
@@ -285,7 +285,7 @@ public static class MemberChecks
 			else
 				mainType = GetBlockStack(functionOverload.ReturnType);
 			BranchCollection extraTypes = new(functionOverload.ReturnExtraTypes.ToList(GetTypeAsBranch));
-			functions = [new([], new(mainType, extraTypes),
+			functions = [new(name, [], new(mainType, extraTypes),
 				functionOverload.Attributes, [.. functionOverload.Parameters.Convert((x, index) =>
 				new ExtendedMethodParameter(functionOverload.ExtraTypes.Contains(x.Type)
 				? parameterTypes[index] : BasicTypeToExtendedType(x.Type, x.ExtraTypes),
@@ -297,9 +297,10 @@ public static class MemberChecks
 			&& methods.TryGetValue(name, out var overloads)))
 		{
 			if (BuiltInMemberCollections.ExtendedMethods.TryGetValue(container, out var builtInMethods)
-				&& builtInMethods.TryGetValue(name, out overloads))
+				&& builtInMethods.TryGetValue(name, out var builtInOverloads))
 			{
-				functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
+				functions = [.. builtInOverloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0).ToList(x =>
+					new UserDefinedMethodOverload(name, x.ArrayParameters, x.ReturnNStarType, x.Attributes, x.Parameters))];
 				user = false;
 				return true;
 			}
@@ -317,7 +318,7 @@ public static class MemberChecks
 				if (!(!x.ArrayParameterPackage && x.ArrayParameterType.Length == 1
 					&& x.ArrayParameterType.Peek().BlockType == BlockType.Extra && parameterTypes.Length > j))
 					continue;
-				functions[i] = new([], ReplaceExtraType(functions[i].ReturnNStarType, x.ArrayParameterType.Peek().Name,
+				functions[i] = new(functions[i].RealName, [], ReplaceExtraType(functions[i].ReturnNStarType, x.ArrayParameterType.Peek().Name,
 					parameterTypes[j]), functions[i].Attributes, [.. functions[i].Parameters.Convert(y =>
 				new ExtendedMethodParameter(ReplaceExtraType(y.Type, x.ArrayParameterType.Peek().Name,
 				parameterTypes[j]), y.Name, y.Attributes, y.DefaultValue))]);
@@ -350,11 +351,11 @@ public static class MemberChecks
 	}
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name, List<NStarType> parameterTypes,
-		[MaybeNullWhen(false)] out ExtendedMethodOverloads functions) =>
+		[MaybeNullWhen(false)] out UserDefinedMethodOverloads functions) =>
 		UserDefinedFunctionExists(container, name, parameterTypes, out functions, out _, out _);
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name, List<NStarType> parameterTypes,
-		[MaybeNullWhen(false)] out ExtendedMethodOverloads functions,
+		[MaybeNullWhen(false)] out UserDefinedMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer, out bool derived)
 	{
 		if (CheckContainer(container, UserDefinedFunctions.ContainsKey, out matchingContainer)
@@ -381,7 +382,7 @@ public static class MemberChecks
 	}
 
 	public static bool UserDefinedNonDerivedFunctionExists(BlockStack container, String name,
-		[MaybeNullWhen(false)] out ExtendedMethodOverloads functions,
+		[MaybeNullWhen(false)] out UserDefinedMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer)
 	{
 		if (CheckContainer(container, UserDefinedFunctions.ContainsKey, out matchingContainer) && UserDefinedFunctions[matchingContainer].TryGetValue(name, out var overloads))

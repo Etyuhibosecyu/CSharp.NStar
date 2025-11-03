@@ -241,26 +241,26 @@ public static class BuiltInMemberCollections
 	public static G.SortedSet<String> ReservedOperators { get; } = ["#", "G", "I", "K", "_", "g", "hexa", "hexa=", "penta", "penta=", "tetra", "tetra="];
 	// To specify non-associative N-ary operator, set OperandsCount to -1. To specify postfix unary operator, set it to -2.
 
-	public static bool TypesAreEqual(NStarType type1, NStarType type2)
+	public static bool TypesAreEqual(NStarType leftType, NStarType rightType)
 	{
-		if (type1.MainType.Length != type2.MainType.Length)
+		if (leftType.MainType.Length != rightType.MainType.Length)
 			return false;
-		for (var i = 0; i < type1.MainType.Length; i++)
+		for (var i = 0; i < leftType.MainType.Length; i++)
 		{
-			if (type1.MainType.ElementAt(i).BlockType != type2.MainType.ElementAt(i).BlockType || type1.MainType.ElementAt(i).Name != type2.MainType.ElementAt(i).Name)
+			if (leftType.MainType.ElementAt(i).BlockType != rightType.MainType.ElementAt(i).BlockType || leftType.MainType.ElementAt(i).Name != rightType.MainType.ElementAt(i).Name)
 				return false;
 		}
-		if (type1.ExtraTypes.Length == 0)
+		if (leftType.ExtraTypes.Length == 0)
 		{
-			if (type2.ExtraTypes.Length != 0)
+			if (rightType.ExtraTypes.Length != 0)
 				return false;
 			return true;
 		}
-		if (type1.ExtraTypes.Length != type2.ExtraTypes.Length)
+		if (leftType.ExtraTypes.Length != rightType.ExtraTypes.Length)
 			return false;
-		for (var i = 0; i < type1.ExtraTypes.Length; i++)
+		for (var i = 0; i < leftType.ExtraTypes.Length; i++)
 		{
-			if (type1.ExtraTypes[i] != type2.ExtraTypes[i])
+			if (leftType.ExtraTypes[i] != rightType.ExtraTypes[i])
 				return false;
 		}
 		return true;
