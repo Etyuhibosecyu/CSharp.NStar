@@ -133,6 +133,7 @@ public static class Messages
 			0x4017 => "the type \"" + parameters[0] + "\" cannot be created via the constructor",
 			0x4018 => "the abstract type \"" + parameters[0] + "\" can be created via the constructor"
 				+ " but only if you explicitly specify the constructing type (which is not abstract)",
+			0x4019 => "the source for the switch expression must have a finite-range numeric or a string type",
 			0x4020 => "the function \"" + parameters[0] + "\" cannot be used in the delegate",
 			0x4021 => "the function \"" + parameters[0] + "\" is linked with object instance so it cannot be used in delegate",
 			0x4022 => "the function \"" + parameters[0] + "\" must have " + (parameters[1] == parameters[2]

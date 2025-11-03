@@ -139,7 +139,7 @@ public partial class MainParsing : LexemStream
 		{
 			"Parameters" => IncreaseStack(nameof(Parameter), currentTask: "Parameters2",
 				applyCurrentTask: true, currentExtra: new List<object>()),
-			"Members" or "Expr" or "List" or "LambdaExpr" or "AssignedExpr" or "QuestionExpr" or "XorExpr"
+			"Members" or "Expr" or "List" or "LambdaExpr" or "Switch" or "AssignedExpr" or "QuestionExpr" or "XorExpr"
 				or "OrExpr" or "AndExpr" or "Xor2Expr" or "Or2Expr" or "And2Expr" or "EquatedExpr" or "ComparedExpr"
 				or "BitwiseXorExpr" or "BitwiseOrExpr" or "BitwiseAndExpr" or "BitwiseShiftExpr" or "PMExpr" or "MulDivExpr"
 				or "PowExpr" or "TetraExpr" or "RangeExpr" or "PrefixExpr" =>
@@ -1623,6 +1623,7 @@ public partial class MainParsing : LexemStream
 				return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
 			pos++;
 			_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
+			_TBStack[_Stackpos]?.Add(new("switch", pos - 2, container));
 			return IncreaseStack("Switch", currentTask: nameof(LambdaExpr5),
 				pos_: pos, applyPos: true, applyCurrentTask: true);
 		}
@@ -1671,6 +1672,7 @@ public partial class MainParsing : LexemStream
 	{
 		if (!success)
 			return _SuccessStack[_Stackpos] = false;
+		_ErLStack[_Stackpos].AddRange(errors ?? []);
 		if (!IsCurrentLexemOther("}"))
 		{
 			GenerateUnexpectedEndError();
@@ -1678,18 +1680,22 @@ public partial class MainParsing : LexemStream
 		}
 		pos++;
 		var treeBranch = _TBStack[_Stackpos];
-		if (treeBranch != null)
+		if (treeBranch != null && this.treeBranch != null)
+		{
 			treeBranch.Name = "SwitchExpr";
-		return EndWithAddingOrAssigning(true, treeBranch?.Length ?? 0);
+			treeBranch[^1].AddRange(this.treeBranch.Elements);
+		}
+		return Default();
 	}
 
 	private bool Switch2()
 	{
-		if (!success || _TBStack[_Stackpos] == null || _TBStack[_Stackpos]!.Length == 0 || treeBranch == null)
+		if (!success || _TBStack[_Stackpos] == null || treeBranch == null)
 		{
 			GenerateMessage(0x2033, pos, false);
 			return SwitchFail();
 		}
+		_ErLStack[_Stackpos].AddRange(errors ?? []);
 		if (pos < end && IsCurrentLexemKeyword("if"))
 		{
 			pos++;
@@ -1715,11 +1721,16 @@ public partial class MainParsing : LexemStream
 			GenerateMessage(0x200E, pos, false);
 			return SwitchFail();
 		}
-		if (IsCurrentLexemOther("}") && lexems[pos].LineN == lexems[treeBranch.Pos].LineN)
+		_ErLStack[_Stackpos].AddRange(errors ?? []);
+		if (IsCurrentLexemOther("}") && lexems[pos].LineN == lexems[_TBStack[_Stackpos - 1]!.Pos].LineN)
+		{
+			_TBStack[_Stackpos]![^1].Add(treeBranch);
 			return Default();
+		}
 		if (pos >= end || !IsCurrentLexemOperator(","))
 		{
-			GenerateMessage(0x2008, pos, false, "comma or }");
+			GenerateMessage(0x2008, pos, false, "comma" + (IsCurrentLexemOther("}")
+				? "; no final comma is allowed only if the switch expression is single-line" : ""));
 			return SwitchFail();
 		}
 		pos++;
@@ -1739,6 +1750,7 @@ public partial class MainParsing : LexemStream
 			return IncreaseStack("AssignedExpr", currentTask: nameof(Switch2),
 				pos_: pos, applyPos: true, applyCurrentTask: true);
 		}
+		_TBStack[_Stackpos]![^1].Add(treeBranch);
 		_TBStack[_Stackpos]!.Add(new("case", new TreeBranch("_", pos, container) { Extra = NullType }, container));
 		pos++;
 		if (pos < end && IsCurrentLexemKeyword("if"))
@@ -1764,12 +1776,13 @@ public partial class MainParsing : LexemStream
 			GenerateMessage(0x200E, pos, false);
 			return SwitchFail();
 		}
+		_ErLStack[_Stackpos].AddRange(errors ?? []);
 		if (pos >= end || !IsCurrentLexemOperator("=>"))
 		{
 			GenerateMessage(0x2008, pos, false, "=>");
 			CloseBracket(ref pos, "}", ref errors, false);
 			pos--;
-			return Default();
+			return EndWithEmpty();
 		}
 		pos++;
 		_TBStack[_Stackpos]![^1].Add(treeBranch);
@@ -1780,7 +1793,7 @@ public partial class MainParsing : LexemStream
 	{
 		CloseBracket(ref pos, "}", ref errors, false);
 		pos--;
-		return Default();
+		return EndWithEmpty();
 	}
 
 	private bool AssignedExpr2()

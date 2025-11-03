@@ -180,7 +180,7 @@ public class CodeSample(String newString)
 		var b = false;
 		void Validate(bool parameter = false)
 		{
-			if (CheckLetter() || parameter && CheckDigit())
+			if (CheckLetter() || parameter && CheckDigit() || CheckChar('_'))
 				b = true;
 			pos++;
 		}

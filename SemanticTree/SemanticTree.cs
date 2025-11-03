@@ -37,7 +37,7 @@ public sealed partial class SemanticTree
 	private readonly List<String>? errors = null;
 
 	private static readonly string AlphanumericCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.";
-	private static readonly List<String> ExprTypesList = [nameof(Expr), nameof(List), nameof(Lambda), nameof(Indexes),
+	private static readonly List<String> ExprTypesList = [nameof(Expr), nameof(List), nameof(Lambda), nameof(SwitchExpr), nameof(Indexes),
 		nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr), nameof(XorList), "StringConcatenation", nameof(Assignment),
 		"DeclarationAssignment", "UnaryAssignment", nameof(Declaration), nameof(Hypername), nameof(Index), nameof(Range)];
 	private static readonly List<String> CycleTypesList = ["loop", "while", "while!", "repeat", "for", "loop_while", "for_while", "repeat_while"];
@@ -121,6 +121,7 @@ public sealed partial class SemanticTree
 		nameof(List) => List,
 		"xorList" => XorList,
 		nameof(Lambda) => Lambda,
+		nameof(SwitchExpr) => SwitchExpr,
 		"return" => Return,
 		_ when ExprTypesList.Contains(branchName) => Expr,
 		_ => Default,
@@ -2262,7 +2263,7 @@ public sealed partial class SemanticTree
 		var prevIndex = branch.Parent!.Elements.FindIndex(x => ReferenceEquals(branch, x));
 		if (branch.Name == "StringConcatenation")
 		{
-			branch.Elements = branch.Elements.Filter(x => x.Name != "+");
+			branch.Elements.FilterInPlace(x => x.Name != "+");
 			branch.Extra = GetPrimitiveType("string");
 		}
 		else if (branch.Name == nameof(List))
@@ -2596,7 +2597,7 @@ public sealed partial class SemanticTree
 			GenerateMessage(ref errors, 0x4007, branch[i].Pos);
 			return @default;
 		}
-		if (isStringPrev && isStringRight == false)
+		if (isStringPrev && !isStringRight)
 		{
 			if (branch[Max(i - 3, 0)].Name == nameof(PMExpr))
 				branch[Max(i - 3, 0)].AddRange(branch.GetRange(i - 1, 2));
@@ -3317,6 +3318,117 @@ public sealed partial class SemanticTree
 			branchName = branch[0].Name;
 			return true;
 		}
+	}
+
+	private String SwitchExpr(TreeBranch branch, out List<String>? errors)
+	{
+		String result = [];
+		errors = null;
+		if (branch.Length == 0)
+			return "default!";
+		result.AddRange(ParseAction(branch[0].Name)(branch[0], out errors));
+		if (branch.Length == 1 || branch[1].Name != "switch")
+			return result;
+		if (branch[0].Extra is not NStarType SourceNStarType || !SourceNStarType.MainType.TryPeek(out var sourceBlock)
+			|| sourceBlock.BlockType is not BlockType.Primitive || sourceBlock.Name.ToString() is not ("byte" or "short int"
+			or "unsigned short int" or "int" or "unsigned int" or "long int" or "unsigned long int" or "real" or "string"))
+		{
+			GenerateMessage(ref errors, 0x4019, branch[0].FirstPos);
+			branch.Extra = NullType;
+			return "default!";
+		}
+		if (sourceBlock.Name == "string")
+			result.Insert(0, '(').AddRange(").").AddRange(nameof(RedStarLinq.ToString)).AddRange("()");
+		result.AddRange(" switch { ");
+		String innerResult = [], prevResult = [], caseResult = [], prevCaseResult = [];
+		List<String>? innerErrors;
+		var ReturnNStarType = NullType;
+		for (var i = 0; i < Max(3, branch[1].Length); i++)
+		{
+			if (i == 1)
+			{
+				(innerResult, prevResult) = ([], innerResult);
+				(caseResult, prevCaseResult) = ([], caseResult);
+			}
+			else if (i == 2)
+				innerResult = result.AddRange(prevResult).AddRange(innerResult);
+			if (i >= branch[1].Length)
+				continue;
+			var x = branch[1][i];
+			if (x.Length < 2)
+				continue;
+			var constantsDepth = this.constantsDepth;
+			this.constantsDepth++;
+			x[0].Extra ??= SourceNStarType;
+			if (x[0].Name == "_")
+				innerResult.Add('_');
+			else if (!TryReadValue(ParseAction(x[0].Name)(x[0], out innerErrors), out var value))
+			{
+				AddRange(ref errors, innerErrors);
+				GenerateMessage(ref errors, 0x4050, x[0].FirstPos);
+				branch.Extra = NullType;
+				this.constantsDepth = constantsDepth;
+				return "default!";
+			}
+			else
+			{
+				innerResult.AddRange(value.ToString(true));
+				AddRange(ref errors, innerErrors);
+			}
+			this.constantsDepth = constantsDepth;
+			if (x.Length >= 3)
+			{
+				innerResult.AddRange(" when ").AddRange(ParseAction(x[^2].Name)(x[^2], out innerErrors));
+				AddRange(ref errors, innerErrors);
+			}
+			if (i != 0)
+				x[^1].Extra ??= ReturnNStarType;
+			innerResult.AddRange(" => ");
+			caseResult = ParseAction(x[^1].Name)(x[^1], out innerErrors);
+			AddRange(ref errors, innerErrors);
+			if (x[^1].Extra is not NStarType NStarType)
+				return "default!";
+			if (i == 0)
+				ReturnNStarType = NStarType;
+			else if (TypesAreCompatible(ReturnNStarType, NStarType,
+				out var warning, prevCaseResult.Copy(), out var outExpr, out _)
+				&& !warning && outExpr != null && (i == 1 || prevCaseResult == outExpr))
+			{
+				x[^1].Extra = ReturnNStarType = NStarType;
+				if (!ReferenceEquals(prevCaseResult, outExpr))
+					prevCaseResult.Replace(outExpr);
+				prevResult.AddRange(prevCaseResult).AddRange(", ");
+			}
+			else if (i == 1)
+			{
+				var otherPos = x[^1].Pos;
+				GenerateMessage(ref errors, 0x4015, otherPos, ReturnNStarType, NStarType);
+				branch.Name = "default!";
+				branch.RemoveEnd(0);
+				branch.Extra = NullType;
+				return "default!";
+			}
+			else if (TypesAreCompatible(NStarType, ReturnNStarType, out warning, caseResult, out outExpr, out var extraMessage)
+				&& !warning && outExpr != null)
+			{
+				x[^1].Extra = ReturnNStarType;
+				if (!ReferenceEquals(caseResult, outExpr))
+					caseResult.Replace(outExpr);
+			}
+			else
+			{
+				var otherPos = x[^1].Pos;
+				GenerateMessage(ref errors, 0x4014, otherPos, extraMessage!, NStarType, ReturnNStarType);
+				branch.Name = "default!";
+				branch.RemoveEnd(0);
+				branch.Extra = NullType;
+				return "default!";
+			}
+			if (i != 0)
+				innerResult.AddRange(caseResult).AddRange(", ");
+		}
+		branch.Extra = ReturnNStarType;
+		return result.AddRange(" }");
 	}
 
 	private String Return(TreeBranch branch, out List<String>? errors)

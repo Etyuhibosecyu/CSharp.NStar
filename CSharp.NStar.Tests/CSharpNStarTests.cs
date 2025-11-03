@@ -4266,6 +4266,318 @@ const typename var = System.Collections.Buffer[T];
 var x = new(1, 123);
 return x;
 ", "(((123)))", "Ошибок нет")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0,
+	1 => 2,
+	2 => 4,
+	3 => 6,
+	4 => 8,
+	5 => 10,
+	6 => 12,
+	7 => 14,
+	_ => 16,
+};
+", "10", "Ошибок нет")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0,
+	1 => 2,
+	2 => 4,
+	3 => 6,
+	_ => 16,
+};
+", "16", "Ошибок нет")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0,
+	1 => 2,
+	2 => 4,
+	3 => 6,
+	4 => 8,
+	5 => 10,
+	6 => 12,
+	7 => 14,
+	_ => 16
+};
+", "null", @"Error 2008 in line 12 at position 0: expected: comma; no final comma is allowed only if the switch expression is single-line
+")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0,
+	1 => 2,
+	2 => 4,
+	3 => 6,
+	_ => 16
+};
+", "null", @"Error 2008 in line 8 at position 0: expected: comma; no final comma is allowed only if the switch expression is single-line
+")]
+	[DataRow(@"return 5 switch
+{
+	0 0,
+	1 => 2,
+	2 => 4,
+	3 => 6,
+	_ => 16
+};
+", "null", @"Error 2008 in line 3 at position 3: expected: ""if"" or =>
+")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0
+	1 => 2,
+	2 => 4,
+	3 => 6,
+	_ => 16
+};
+", "null", @"Error 2008 in line 4 at position 1: expected: comma
+")]
+	[DataRow(@"return 12345678905 switch
+{
+	12345678900 => 12345678900,
+	12345678901 => 12345678902,
+	12345678902 => 12345678904,
+	12345678903 => 12345678906,
+	12345678904 => 12345678908,
+	12345678905 => 123456789010,
+	12345678906 => 123456789012,
+	12345678907 => 123456789014,
+	_ => 123456789016,
+};
+", "123456789010", "Ошибок нет")]
+	[DataRow(@"return 12345678905 switch
+{
+	12345678900 => 12345678900,
+	12345678901 => 12345678902,
+	12345678902 => 12345678904,
+	12345678903 => 12345678906,
+	_ => 123456789016,
+};
+", "123456789016", "Ошибок нет")]
+	[DataRow(@"return 5.1 switch
+{
+	0.1 => 0.1,
+	1.1 => 2.1,
+	2.1 => 4.1,
+	3.1 => 6.1,
+	4.1 => 8.1,
+	5.1 => 10.1,
+	6.1 => 12.1,
+	7.1 => 14.1,
+	_ => 16.1,
+};
+", "10.1", "Ошибок нет")]
+	[DataRow(@"return 5.1 switch
+{
+	0.1 => 0.1,
+	1.1 => 2.1,
+	2.1 => 4.1,
+	3.1 => 6.1,
+	_ => 16.1,
+};
+", "16.1", "Ошибок нет")]
+	[DataRow(@"return ""5"" switch
+{
+	""0"" => ""0"",
+	""1"" => ""2"",
+	""2"" => ""4"",
+	""3"" => ""6"",
+	""4"" => ""8"",
+	""5"" => ""10"",
+	""6"" => ""12"",
+	""7"" => ""14"",
+	_ => ""16"",
+};
+", @"""10""", "Ошибок нет")]
+	[DataRow(@"return ""5"" switch
+{
+	""0"" => ""0"",
+	""1"" => ""2"",
+	""2"" => ""4"",
+	""3"" => ""6"",
+	_ => ""16"",
+};
+", @"""16""", "Ошибок нет")]
+	[DataRow(@"return ""5"" switch
+{
+	""0"" => ""0"",
+	""1"" => ""2"",
+	""2"" => ""4"",
+	""3"" => ""6"",
+	""4"" => ""8"",
+	""5"" => ""10"",
+	""6"" => ""12"",
+	""7"" => ""14"",
+	_ => ""16""
+};
+", "null", @"Error 2008 in line 12 at position 0: expected: comma; no final comma is allowed only if the switch expression is single-line
+")]
+	[DataRow(@"return ""5"" switch
+{
+	""0"" => ""0"",
+	""1"" => ""2"",
+	""2"" => ""4"",
+	""3"" => ""6"",
+	_ => ""16""
+};
+", "null", @"Error 2008 in line 8 at position 0: expected: comma; no final comma is allowed only if the switch expression is single-line
+")]
+	[DataRow(@"const string s = """";
+return s + ""5"" switch
+{
+	s + ""0"" => ""0"",
+	s + ""1"" => ""2"",
+	s + ""2"" => ""4"",
+	s + ""3"" => ""6"",
+	s + ""4"" => ""8"",
+	s + ""5"" => ""10"",
+	s + ""6"" => ""12"",
+	s + ""7"" => ""14"",
+	_ => ""16"",
+};
+", @"""10""", "Ошибок нет")]
+	[DataRow(@"const string s = """";
+return s + ""5"" switch
+{
+	s + ""0"" => ""0"",
+	s + ""1"" => ""2"",
+	s + ""2"" => ""4"",
+	s + ""3"" => ""6"",
+	_ => ""16"",
+};
+", @"""16""", "Ошибок нет")]
+	[DataRow(@"const string s = ""A"";
+return s + ""5"" switch
+{
+	s + ""0"" => ""0"",
+	s + ""1"" => ""2"",
+	s + ""2"" => ""4"",
+	s + ""3"" => ""6"",
+	s + ""4"" => ""8"",
+	s + ""5"" => ""10"",
+	s + ""6"" => ""12"",
+	s + ""7"" => ""14"",
+	_ => ""16"",
+};
+", @"""10""", "Ошибок нет")]
+	[DataRow(@"const string s = ""A"";
+return s + ""5"" switch
+{
+	s + ""0"" => ""0"",
+	s + ""1"" => ""2"",
+	s + ""2"" => ""4"",
+	s + ""3"" => ""6"",
+	_ => ""16"",
+};
+", @"""16""", "Ошибок нет")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0,
+	1 => 2,
+	2 => 4,
+	3 => 6,
+	4 => 8,
+	5 if false => 10,
+	6 => 12,
+	7 => 14,
+	_ => 16,
+};
+", "16", "Ошибок нет")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0,
+	1 => 2,
+	2 => 4,
+	3 => 6,
+	_ if false => 16,
+	_ => -42,
+};
+", "-42", "Ошибок нет")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0,
+	1 => -5,
+	2 => 49152,
+	3 => -49152,
+	_ if false => 3.14159,
+	_ => -42,
+};
+", "-42", "Ошибок нет")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0,
+	1 => -5,
+	2 => 49152,
+	3 => -49152,
+	_ if false => 3.14159,
+	_ => ""error"",
+};
+", "null", @"Error 4014 in line 8 at position 6: cannot convert from the type ""string"" to the type ""real""
+")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0,
+	1 => ""error"",
+	2 => 49152,
+	3 => -49152,
+	_ if false => 3.14159,
+	_ => -42,
+};
+", "null", @"Error 4015 in line 4 at position 6: there is no implicit conversion between the types ""byte"" and ""string""
+")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0,
+	1 => 2,
+	2 => 4,
+	3 => 6,
+	4 => 8,
+	5 if false 10,
+	6 => 12,
+	7 => 14,
+	_ => 16,
+};
+", "null", @"Error 2008 in line 8 at position 12: expected: =>
+")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0,
+	1 => 2,
+	2 => 4,
+	3 => 6,
+	_ if false 16,
+	_ => -42,
+};
+", "null", @"Error 2008 in line 7 at position 12: expected: =>
+")]
+	[DataRow(@"return 5 switch
+{
+	0 => 0,
+	1 => 2,
+	2 => 4,
+	3 => 6,
+	_ if false => 16,
+	_ => -42,
+;
+", "null", @"Wreck 9007 in line 9 at position 0: unpaired bracket; expected: }
+")]
+	[DataRow(@"return 5 switch { 0 => 0, 1 => 2, 2 => 4, 3 => 6, _ => 16 };
+", "16", "Ошибок нет")]
+	[DataRow(@"return 5
+switch { 0 => 0, 1 => 2, 2 => 4, 3 => 6, _ => 16 };
+", "null", @"Error 2008 in line 2 at position 49: expected: comma; no final comma is allowed only if the switch expression is single-line
+")]
+	[DataRow(@"return 5 switch
+{ 0 => 0, 1 => 2, 2 => 4, 3 => 6, _ => 16 };
+", "null", @"Error 2008 in line 2 at position 42: expected: comma; no final comma is allowed only if the switch expression is single-line
+")]
+	[DataRow(@"return 5 switch { 0 => 0, 1 => 2, 2 => 4, 3 => 6, _ => 16
+};
+", "null", @"Error 2008 in line 2 at position 0: expected: comma; no final comma is allowed only if the switch expression is single-line
+")]
+	[DataRow(@"return 5 switch { };
+", "null", @"Error 2033 in line 1 at position 18: the switch expression cannot be empty
+")]
 	[DataRow(@"return 100000000000000000*100000000000000000000;
 ", "0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
 ")]
