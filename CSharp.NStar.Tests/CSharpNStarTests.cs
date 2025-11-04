@@ -4578,6 +4578,57 @@ switch { 0 => 0, 1 => 2, 2 => 4, 3 => 6, _ => 16 };
 	[DataRow(@"return 5 switch { };
 ", "null", @"Error 2033 in line 1 at position 18: the switch expression cannot be empty
 ")]
+	[DataRow(@"return typeof(5);
+", "byte", "Ошибок нет")]
+	[DataRow(@"return typeof(123456);
+", "int", "Ошибок нет")]
+	[DataRow(@"return typeof(5.1);
+", "real", "Ошибок нет")]
+	[DataRow(@"return typeof(""5"");
+", "string", "Ошибок нет")]
+	[DataRow(@"var x = 5;
+return typeof(x);
+", "byte", "Ошибок нет")]
+	[DataRow(@"var x = 123456;
+return typeof(x);
+", "int", "Ошибок нет")]
+	[DataRow(@"var x = 5.1;
+return typeof(x);
+", "real", "Ошибок нет")]
+	[DataRow(@"var x = ""5"";
+return typeof(x);
+", "string", "Ошибок нет")]
+	[DataRow(@"return typeof ""5"";
+", "null", @"Error 200A in line 1 at position 14: expected: (
+Error 2002 in line 1 at position 14: expected: "";""
+Error 200A in line 1 at position 14: expected: (
+Error 2002 in line 1 at position 14: expected: "";""
+")]
+	[DataRow(@"var x = ""5"";
+return typeof x;
+", "null", @"Error 200A in line 2 at position 14: expected: (
+Error 2002 in line 2 at position 14: expected: "";""
+Error 200A in line 2 at position 14: expected: (
+Error 2002 in line 2 at position 14: expected: "";""
+")]
+	[DataRow(@"return typeof();
+", "null", @"Error 200E in line 1 at position 14: expected: expression
+")]
+	[DataRow(@"var x = 5.1;
+typename T = typeof(x);
+T y = 8;
+return typeof(y);
+", "real", "Ошибок нет")]
+	[DataRow(@"var x = ""5"";
+typename T = typeof(x);
+T y = 8;
+return typeof(y);
+", "string", "Ошибок нет")]
+	[DataRow(@"var x = 5;
+typename T = typeof(x);
+T y = ""8"";
+return typeof(y);
+", "byte", "Ошибок нет")]
 	[DataRow(@"return 100000000000000000*100000000000000000000;
 ", "0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
 ")]

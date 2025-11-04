@@ -458,7 +458,7 @@ public static class MemberChecks
 		return false;
 	}
 
-	public static bool TypeIsFullySpecified(BlockStack container, NStarType type)
+	public static bool TypeIsFullySpecified(NStarType type, BlockStack container)
 	{
 		if (type.MainType.Length == 0 || type.MainType.Peek().BlockType == BlockType.Extra
 			&& !ConstantExists(new(new(type.MainType.SkipLast(1)), NoBranches), type.MainType.Peek().Name, out _)
@@ -467,7 +467,7 @@ public static class MemberChecks
 			return false;
 		foreach (var x in type.ExtraTypes)
 			if (x.Value.Name == "type" && x.Value.Extra is NStarType InnerNStarType
-				&& !TypeIsFullySpecified(container, InnerNStarType))
+				&& !TypeIsFullySpecified(InnerNStarType, container))
 				return false;
 		return true;
 	}

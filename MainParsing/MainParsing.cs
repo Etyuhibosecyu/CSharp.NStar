@@ -3337,6 +3337,24 @@ public partial class MainParsing : LexemStream
 			return IncreaseStack("Expr", currentTask: nameof(BasicExpr2), pos_: pos, applyPos: true,
 				applyCurrentTask: true, currentBranch: new("Expr", pos, container), assignCurrentBranch: true);
 		}
+		else if (IsCurrentLexemOperator("typeof"))
+		{
+			pos++;
+			if (!IsCurrentLexemOther("("))
+			{
+				GenerateMessage(0x200A, pos, true);
+				return EndWithEmpty();
+			}
+			pos++;
+			if (IsCurrentLexemOther(")"))
+			{
+				GenerateMessage(0x200E, pos, true);
+				pos++;
+				return EndWithEmpty();
+			}
+			return IncreaseStack("Expr", currentTask: nameof(BasicExpr2), pos_: pos, applyPos: true,
+				applyCurrentTask: true, currentBranch: new("typeof", pos, container), assignCurrentBranch: true);
+		}
 		else
 			return _SuccessStack[_Stackpos] = false;
 	}
@@ -3353,10 +3371,10 @@ public partial class MainParsing : LexemStream
 			return EndWithError(0x200B, pos, true);
 		if (pos >= end)
 			return _SuccessStack[_Stackpos] = false;
+		else if (_TBStack[_Stackpos] != null && _TBStack[_Stackpos]!.Name == "typeof")
+			return EndWithAdding(true);
 		else
-			goto l0;
-		l0:
-		return pos >= end ? (_SuccessStack[_Stackpos] = false) : EndWithAssigning(true);
+			return EndWithAssigning(true);
 	}
 
 	private bool Default()

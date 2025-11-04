@@ -122,6 +122,7 @@ public sealed partial class SemanticTree
 		"xorList" => XorList,
 		nameof(Lambda) => Lambda,
 		nameof(SwitchExpr) => SwitchExpr,
+		"typeof" => Typeof,
 		"return" => Return,
 		_ when ExprTypesList.Contains(branchName) => Expr,
 		_ => Default,
@@ -849,6 +850,8 @@ public sealed partial class SemanticTree
 	{
 		String result = [];
 		errors = null;
+		if (branch.Name == "Hypername" && branch.Length == 0)
+			return "default!";
 		var targetBranch = branch.Length == 0 ? branch : branch[0];
 		var branchName = targetBranch.Name.GetBefore(" (function)");
 		var prevIndex = branch.Parent!.Elements.FindIndex(x => ReferenceEquals(branch, x));
@@ -911,7 +914,7 @@ public sealed partial class SemanticTree
 					branch[0].Name = "new type";
 				if (NStarType == NullType)
 					return "default!";
-				else if (TypeIsFullySpecified(branch.Container, NStarType))
+				else if (TypeIsFullySpecified(NStarType, branch.Container))
 					result.AddRange("new ").AddRange(Type(ref NStarType, targetBranch, ref errors));
 				else
 				{
@@ -1203,7 +1206,7 @@ public sealed partial class SemanticTree
 				result.AddRange(functions[^1].RealName);
 				branch.Extra = functions;
 			}
-			else if (MethodExists(ContainerNStarType, FunctionMapping(branchName, null), parameterTypes, out functions) && functions.Length != 0)
+			else if (MethodExists(ContainerNStarType, FunctionMapping(branchName, parameterTypes, null), parameterTypes, out functions) && functions.Length != 0)
 			{
 				if (constantsDepth != 0)
 				{
@@ -1234,7 +1237,7 @@ public sealed partial class SemanticTree
 			NStarType = NullType;
 		var extra = new List<object> { (String)"Static", NStarType };
 		var bTypename = branch.Extra is NStarType OuterNStarType && TypesAreEqual(OuterNStarType, RecursiveType);
-		var bExtraType = !TypeIsFullySpecified(branch.Container, NStarType);
+		var bExtraType = !TypeIsFullySpecified(NStarType, branch.Container);
 		if (bExtraType)
 		{
 			var fullName = TypeReflected(ref NStarType, branch, ref errors);
@@ -1501,12 +1504,12 @@ public sealed partial class SemanticTree
 		}
 		else if (!processingWay.StartsWith("user") && branch.Parent?[0].Extra is NStarType ContainerNStarType)
 		{
-			if (MethodExists(ContainerNStarType, FunctionMapping(s, null), parameterTypes, out var functions)
+			if (MethodExists(ContainerNStarType, FunctionMapping(s, parameterTypes, null), parameterTypes, out var functions)
 				&& functions.Length != 0)
 			{
 				paramCollection[2] = functions;
 				var parameters = Call(branch[index], innerResults, out var innerErrors, extra);
-				result.AddRange(FunctionMapping(s, parameters));
+				result.AddRange(FunctionMapping(s, parameterTypes, parameters));
 				AddRange(ref errors, innerErrors);
 				branch.Extra = functions[^1].ReturnNStarType;
 				extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
@@ -1517,7 +1520,7 @@ public sealed partial class SemanticTree
 			{
 				paramCollection[2] = functions;
 				var parameters = Call(branch[index], innerResults, out var innerErrors, extra);
-				result.AddRange(FunctionMapping(s, parameters));
+				result.AddRange(FunctionMapping(s, parameterTypes, parameters));
 				AddRange(ref errors, innerErrors);
 				branch.Extra = functions[^1].ReturnNStarType;
 				extra = new List<object> { (String)nameof(Expr), branch.Extra, innerResults };
@@ -1535,7 +1538,7 @@ public sealed partial class SemanticTree
 			if (derived)
 			{
 				var parameters = Call(branch[index], innerResults, out innerErrors, extra);
-				result.AddRange(FunctionMapping(s, parameters));
+				result.AddRange(FunctionMapping(s, parameterTypes, parameters));
 			}
 			else
 			{
@@ -1577,7 +1580,7 @@ public sealed partial class SemanticTree
 				if (derived)
 				{
 					var parameters = Call(branch[index], innerResults, out innerErrors, extra);
-					result.AddRange(FunctionMapping(s, parameters));
+					result.AddRange(FunctionMapping(s, parameterTypes, parameters));
 				}
 				else
 					ContainerUserDefinedFunction(extra, out innerErrors, functions);
@@ -2194,6 +2197,12 @@ public sealed partial class SemanticTree
 			else if (ExprTypesList.Contains(branch[i].Name))
 			{
 				innerResults.SetOrAdd(i, ParseAction(branch[i].Name)(branch[i], out var innerErrors));
+				AddRange(ref errors, innerErrors);
+				continue;
+			}
+			else if (branch[i].Name == "typeof")
+			{
+				innerResults.SetOrAdd(i, Typeof(branch[i], out var innerErrors));
 				AddRange(ref errors, innerErrors);
 				continue;
 			}
@@ -2893,7 +2902,14 @@ public sealed partial class SemanticTree
 		}
 		var srcBelowInt = TypeIsPrimitive(SrcNStarType.MainType)
 			&& SrcNStarType.MainType.Peek().Name.ToString() is "byte" or "short char" or "short int" or "unsigned short int";
-		if (!TypesAreCompatible(branch[i - 2].Length != 0 && srcBelowInt ? IntType : SrcNStarType, DestNStarType,
+		if (!TypeIsFullySpecified(DestNStarType, branch.Container))
+		{
+			branch[i].Extra = DestNStarType;
+			return innerResults[^1].Copy().AddRange(" = ").AddRange(nameof(CastType)).Add('(')
+				.AddRange(TypeReflected(ref DestNStarType, branch, ref errors))
+				.AddRange(", ").AddRange(innerResults[^2]).Add(')');
+		}
+		else if (!TypesAreCompatible(branch[i - 2].Length != 0 && srcBelowInt ? IntType : SrcNStarType, DestNStarType,
 			out var notPowWarning, innerResults[^2], out adaptedSource, out var extraMessage) || adaptedSource == null)
 		{
 			var otherPos = branch[i].Pos;
@@ -3431,6 +3447,23 @@ public sealed partial class SemanticTree
 		return result.AddRange(" }");
 	}
 
+	private String Typeof(TreeBranch branch, out List<String>? errors)
+	{
+		branch.Extra = RecursiveType;
+		if (branch.Length == 0)
+		{
+			errors = null;
+			return "typeof(dynamic)";
+		}
+		var parseResult = ParseAction(branch[0].Name)(branch[0], out errors);
+		if (TryReadValue(parseResult, out var value))
+		{
+			var InnerNStarType = value.InnerType;
+			return ((String)"typeof(").AddRange(Type(ref InnerNStarType, branch, ref errors)).Add(')');
+		}
+		return parseResult.Insert(0, '(').AddRange(").GetType()");
+	}
+
 	private String Return(TreeBranch branch, out List<String>? errors)
 	{
 		String result = [];
@@ -3748,7 +3781,7 @@ public sealed partial class SemanticTree
 
 	private String TypeReflected(ref NStarType type, TreeBranch branch, ref List<String>? errors)
 	{
-		if (TypeIsFullySpecified(branch.Container, type))
+		if (TypeIsFullySpecified(type, branch.Container))
 			return ((String)"typeof(").AddRange(Type(ref type, branch, ref errors)).Add(')');
 		String result = [];
 		List<String>? innerErrors = null;

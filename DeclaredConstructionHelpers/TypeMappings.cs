@@ -1,6 +1,7 @@
 ﻿using Mpir.NET;
 using NStar.ExtraHS;
 using System.Collections;
+using System.Reflection;
 using System.Text;
 
 namespace CSharp.NStar;
@@ -314,11 +315,38 @@ public static class TypeMappings
 		return result;
 	}
 
-	public static String FunctionMapping(String function, List<String>? parameters)
+	public static object? CastType(Type? type, dynamic value)
+	{
+		if (type == null || value == null)
+			return null;
+		if (value!.GetType() == type)
+			return value;
+		var valueAsString = value.ToString();
+		if (type!.IsEnum)
+		{
+			if (Enum.IsDefined(type, valueAsString))
+				return Enum.Parse(type, valueAsString);
+		}
+		if (type == typeof(bool))
+		{
+			return double.TryParse(valueAsString, out double doubleValue) && doubleValue >= 1
+				|| valueAsString == "true" || valueAsString == "on" || valueAsString == "checked";
+		}
+		else if (type == typeof(Uri))
+			return new Uri(Convert.ToString(valueAsString));
+		else if (type == typeof(String))
+			return (String)Convert.ChangeType(valueAsString, typeof(string));
+		else
+			return Convert.ChangeType(valueAsString, type);
+	}
+
+	public static String FunctionMapping(String function, List<NStarType> parameterTypes, List<String>? parameters)
 	{
 		var result = function.ToString() switch
 		{
-			"Add" => nameof(function.AddRange),
+			"Add" => parameterTypes.Length != 0 && (GetSubtype(parameterTypes[0]) == NullType
+				&& !TypeEqualsToPrimitive(parameterTypes[0], "tuple", false))
+				? nameof(function.Add) : nameof(function.AddRange),
 			"Ceil" => "(int)" + nameof(Ceiling),
 			nameof(Ceiling) => [],
 			"Chain" => ((String)nameof(NStarUtilityFunctions)).Add('.').AddRange(nameof(Chain)),
