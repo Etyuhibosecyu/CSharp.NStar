@@ -48,14 +48,26 @@ public static class MemberChecks
 		}
 		if (!netType.TryWrap(x => x.GetProperty(name.ToString()), out var netProperty))
 			netProperty = netType.GetProperties().Find(x => x.Name == name.ToString());
-		if (netProperty == null)
+		if (netProperty != null)
 		{
-			property = null;
-			return false;
+			property = new(TypeMappingBack(netProperty.PropertyType, netType.GetGenericArguments(), container.ExtraTypes),
+				PropertyAttributes.None, "null");
+			return true;
 		}
-		property = new(TypeMappingBack(netProperty.PropertyType, netType.GetGenericArguments(), container.ExtraTypes),
-			PropertyAttributes.None, "null");
-		return true;
+		if (!netType.TryWrap(x => x.GetEvent(name.ToString()), out var netEvent))
+			netEvent = netType.GetEvents().Find(x => x.Name == name.ToString());
+		if (netEvent != null)
+		{
+			var handlerType = netEvent.EventHandlerType;
+			if (handlerType != null)
+			{
+				property = new(TypeMappingBack(handlerType, netType.GetGenericArguments(), container.ExtraTypes),
+					PropertyAttributes.None, "null");
+				return true;
+			}
+		}
+		property = null;
+		return false;
 	}
 
 	public static bool UserDefinedPropertyExists(BlockStack container, String name,

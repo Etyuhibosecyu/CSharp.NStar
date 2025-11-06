@@ -1,6 +1,10 @@
 ﻿global using NStar.Core;
+global using NStar.Dictionaries;
+global using NStar.EasyEvalLib;
+global using NStar.ExtraHS;
 global using NStar.Linq;
 global using NStar.MathLib;
+global using NStar.MathLib.Extras;
 global using System;
 global using System.Diagnostics;
 global using static CSharp.NStar.BuiltInMemberCollections;
@@ -15,9 +19,6 @@ global using static System.Math;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 using Newtonsoft.Json;
-using NStar.EasyEvalLib;
-using NStar.ExtraHS;
-using NStar.MathLib.Extras;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
@@ -195,7 +196,7 @@ public sealed partial class SemanticTree
 				s.Remove(0, "return ".Length).RemoveEnd(^1);
 			if (x.Length == 0 || s.Length != 0)
 			{
-				if (branch.Name == "Main" && x.Name == "Main" && !s.EndsWith('}') && s.Length != 0 && s[..^1].Contains(';'))
+				if (branch.Name == "Main" && x.Name == "Main" && x.Length != 1 && s.Length != 0 && s[..^1].Contains(';'))
 					result.Add('{');
 				if (s.ToString() is "_" or "default" or "default!" or "_ = default" or "_ = default!")
 					s = [];
@@ -208,7 +209,7 @@ public sealed partial class SemanticTree
 				if (s.Length == 0 || ExprTypesList.Contains(x.Name) && !s.EndsWith(';')
 					|| x.Name.ToString() is "continue" or "break")
 					result.Add(';');
-				if (branch.Name == "Main" && x.Name == "Main" && !s.EndsWith('}') && s.Length != 0 && s[..^1].Contains(';'))
+				if (branch.Name == "Main" && x.Name == "Main" && x.Length != 1 && s.Length != 0 && s[..^1].Contains(';'))
 					result.Add('}');
 			}
 			if (innerErrors != null)
@@ -723,6 +724,8 @@ public sealed partial class SemanticTree
 		errors = null;
 		if (!(branch.Length == 2 && branch[0].Name == nameof(Declaration)))
 			return [];
+		if (branch[0].Length == 2 && VariableExists(branch[0], branch[0][1].Name, ref errors))
+			return [];
 		var result = ((String)"foreach (").AddRange(Declaration(branch[0], out var innerErrors));
 		AddRange(ref errors, innerErrors);
 		result.AddRange(" in ").AddRange(ParseAction(branch[1].Name)(branch[1], out innerErrors)).Add(')');
@@ -873,9 +876,9 @@ public sealed partial class SemanticTree
 		}
 		if (extra is null)
 		{
-			if (NStarEntity.TryParse(branch[0].Name.ToString(), out var value))
+			if (NStarEntity.TryParse(branchName.ToString(), out var value))
 			{
-				branch[0].Extra = value.InnerType;
+				targetBranch.Extra = value.InnerType;
 				extra = new List<object> { (String)nameof(Constant), value.InnerType };
 				return value.ToString(true, true);
 			}
@@ -980,7 +983,7 @@ public sealed partial class SemanticTree
 					branch.Extra = branch[0].Extra = NullType;
 					extra = new List<object> { (String)nameof(Constant), NullType, innerResults };
 				}
-				if (prepass && branch.Parent != null && branch.Parent.Name == nameof(Assignment))
+				if (prepass && branch.Length == 1 && branch.Parent != null && branch.Parent.Name == nameof(Assignment))
 				{
 					var targetIndex = Max(branch.Parent.Elements.FindIndex(x => ReferenceEquals(branch, x)) - 2, 0);
 					branch.Parent[targetIndex].Extra ??= branch.Extra;
@@ -1007,7 +1010,7 @@ public sealed partial class SemanticTree
 					branch.Extra = branch[0].Extra = NStarType = NullType;
 					extra = new List<object> { (String)"Variable", NStarType, innerResults };
 				}
-				if (prepass && branch.Parent != null && branch.Parent.Name == nameof(Assignment))
+				if (prepass && branch.Length == 1 && branch.Parent != null && branch.Parent.Name == nameof(Assignment))
 				{
 					var targetIndex = Max(branch.Parent.Elements.FindIndex(x => ReferenceEquals(branch, x)) - 2, 0);
 					branch.Parent[targetIndex].Extra ??= branch.Extra;
@@ -1034,7 +1037,7 @@ public sealed partial class SemanticTree
 					branch.Extra = branch[0].Extra = NullType;
 					extra = new List<object> { (String)nameof(Property), NullType, innerResults };
 				}
-				if (prepass && branch.Parent != null && branch.Parent.Name == nameof(Assignment))
+				if (prepass && branch.Length == 1 && branch.Parent != null && branch.Parent.Name == nameof(Assignment))
 				{
 					var targetIndex = Max(branch.Parent.Elements.FindIndex(x => ReferenceEquals(branch, x)) - 2, 0);
 					branch.Parent[targetIndex].Extra ??= branch.Extra;
@@ -1396,6 +1399,11 @@ public sealed partial class SemanticTree
 			}
 			result.Add('.').AddRange(innerResult);
 			extra = branch.Extra = branch[index].Extra;
+			if (branch.Parent != null && branch.Parent.Name == nameof(Assignment))
+			{
+				var targetIndex = Max(branch.Parent.Elements.FindIndex(x => ReferenceEquals(branch, x)) - 2, 0);
+				branch.Parent[targetIndex].Extra ??= branch.Extra;
+			}
 		}
 		else
 		{
@@ -1670,7 +1678,15 @@ public sealed partial class SemanticTree
 			else
 				result.Add(']');
 			if (!range)
-				CollectionNStarType = GetSubtype(CollectionNStarType);
+			{
+				if (CollectionNStarType.MainType.Equals(new BlockStack([new(BlockType.Class,
+					nameof(Dictionary<bool, bool>), 1)]))
+					|| CollectionNStarType.MainType.Equals(new BlockStack([new(BlockType.Namespace, "System", 1),
+					new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(Dictionary<bool, bool>), 1)])))
+					CollectionNStarType = (NStarType)CollectionNStarType.ExtraTypes[^1].Extra!;
+				else
+					CollectionNStarType = GetSubtype(CollectionNStarType);
+			}
 			oldRange = range;
 		}
 		result.AddRange(new(')', rangeDepth));
@@ -1703,7 +1719,8 @@ public sealed partial class SemanticTree
 		}
 	}
 
-	private bool? HypernameMethod(TreeBranch branch, String s, List<String> innerResults, ref object? refExtra, ref List<String>? errors, int prevIndex, BlockStack ContainerMainType, UserDefinedMethodOverloads functions)
+	private bool? HypernameMethod(TreeBranch branch, String name, List<String> innerResults, ref object? refExtra,
+		ref List<String>? errors, int prevIndex, BlockStack ContainerMainType, UserDefinedMethodOverloads functions)
 	{
 		NStarType NStarType;
 		List<object> paramCollection;
@@ -1719,7 +1736,7 @@ public sealed partial class SemanticTree
 			else
 			{
 				NStarType = function.ReturnNStarType;
-				List<object> innerParamCollection = [((String)"Function ").AddRange(s), (String)"method", functions, innerResults];
+				List<object> innerParamCollection = [((String)"Function ").AddRange(name), (String)"method", functions, innerResults];
 				paramCollection = (function!.Attributes & FunctionAttributes.Static) != 0
 					? innerParamCollection.Add("static") : innerParamCollection;
 			}
@@ -1729,31 +1746,36 @@ public sealed partial class SemanticTree
 				.Prepend(newBranch).ToList()
 				?? [newBranch]);
 			HypernameAddExtra(branch, function.RealName, NStarType, paramCollection, ref refExtra, parameterTypes);
-			PropagateParameterTypes(branch, function.Parameters.Length != 0
+			PropagateParameterTypes(branch, name, function.Parameters.Length != 0
 				&& (function.Parameters[^1].Attributes & ParameterAttributes.Params)
 				== ParameterAttributes.Params, parameterTypes);
 			return null;
 		}
 		var otherPos = branch.FirstPos;
-		GenerateMessage(ref errors, 0x4021, otherPos, String.Join(".", [.. ContainerMainType.ToList().Convert(x => x.Name), s]));
+		GenerateMessage(ref errors, 0x4021, otherPos, String.Join(".", [.. ContainerMainType.ToList().Convert(x => x.Name), name]));
 		branch.Parent![prevIndex] = new("null", branch.Pos, branch.EndPos, branch.Container) { Extra = NullType };
 		return false;
 	}
 
-	private bool? HypernameExtendedMethod(TreeBranch branch, String s, List<String> innerResults, ref object? refExtra, ref List<String>? errors, int prevIndex, BlockStack ContainerMainType, UserDefinedMethodOverloads functions, String category)
+	private bool? HypernameExtendedMethod(TreeBranch branch, String name, List<String> innerResults,
+		ref object? refExtra, ref List<String>? errors, int prevIndex, BlockStack ContainerMainType,
+		UserDefinedMethodOverloads functions, String category)
 	{
 		NStarType NStarType;
 		List<object> paramCollection;
 		foreach (var function in functions)
 		{
-			if ((function.Attributes & FunctionAttributes.Closed) != 0 ^ (function.Attributes & FunctionAttributes.Protected) != 0 && !new List<Block>(branch.Container).StartsWith([.. ContainerMainType]))
+			if ((function.Attributes & FunctionAttributes.Closed) != 0
+				^ (function.Attributes & FunctionAttributes.Protected) != 0
+				&& !new List<Block>(branch.Container).StartsWith([.. ContainerMainType]))
 				continue;
-			else if ((function.Attributes & FunctionAttributes.Static) == 0 && !branch.Container.Equals(ContainerMainType) && !(branch.Length >= 2 && branch[1].Name == nameof(Call)))
+			else if ((function.Attributes & FunctionAttributes.Static) == 0
+				&& !branch.Container.Equals(ContainerMainType) && !(branch.Length >= 2 && branch[1].Name == nameof(Call)))
 				continue;
 			else
 			{
 				NStarType = function!.ReturnNStarType;
-				List<object> innerParamCollection = [((String)"Function ").AddRange(s), category, functions, innerResults];
+				List<object> innerParamCollection = [((String)"Function ").AddRange(name), category, functions, innerResults];
 				paramCollection = (function.Attributes & FunctionAttributes.Static) != 0
 					? innerParamCollection.Add("static") : innerParamCollection;
 			}
@@ -1763,38 +1785,39 @@ public sealed partial class SemanticTree
 				.Prepend(newBranch).ToList()
 				?? [newBranch]);
 			HypernameAddExtra(branch, function.RealName, NStarType, paramCollection, ref refExtra, parameterTypes);
-			PropagateParameterTypes(branch, function.Parameters.Length != 0
+			PropagateParameterTypes(branch, name, function.Parameters.Length != 0
 				&& (function.Parameters[^1].Attributes & ParameterAttributes.Params)
 				== ParameterAttributes.Params, parameterTypes);
 			return null;
 		}
 		var otherPos = branch.FirstPos;
-		GenerateMessage(ref errors, 0x4021, otherPos, String.Join(".", [.. ContainerMainType.ToList().Convert(x => x.Name), s]));
+		GenerateMessage(ref errors, 0x4021, otherPos, String.Join(".", [.. ContainerMainType.ToList().Convert(x => x.Name), name]));
 		branch.Parent![prevIndex] = new("null", branch.Pos, branch.EndPos, branch.Container) { Extra = NullType };
 		return false;
 	}
 
-	private bool? HypernamePublicExtendedMethod(TreeBranch branch, String s, List<String> innerResults, ref object? refExtra, ref List<String>? errors, int prevIndex, UserDefinedMethodOverloads functions, String category)
+	private bool? HypernamePublicExtendedMethod(TreeBranch branch, String name, List<String> innerResults,
+		ref object? refExtra, ref List<String>? errors, int prevIndex, UserDefinedMethodOverloads functions, String category)
 	{
 		foreach (var function in functions)
 		{
 			NStarType NStarType;
 			List<object> paramCollection;
 			NStarType = function.ReturnNStarType;
-			paramCollection = new List<object> { ((String)"Function ").AddRange(s), category, functions, innerResults };
+			paramCollection = new List<object> { ((String)"Function ").AddRange(name), category, functions, innerResults };
 			TreeBranch newBranch = new("type", branch.Pos, branch.Container) { Extra = NStarType };
 			BranchCollection parameterTypes = new(function.Parameters.Convert(x =>
 			new TreeBranch("type", branch.Pos, branch.Container) { Extra = x.Type })
 				.Prepend(newBranch).ToList()
 				?? [newBranch]);
 			HypernameAddExtra(branch, function.RealName, NStarType, paramCollection, ref refExtra, parameterTypes);
-			PropagateParameterTypes(branch, function.Parameters.Length != 0
+			PropagateParameterTypes(branch, name, function.Parameters.Length != 0
 				&& (function.Parameters[^1].Attributes & ParameterAttributes.Params)
 				== ParameterAttributes.Params, parameterTypes);
 			return null;
 		}
 		var otherPos = branch.FirstPos;
-		GenerateMessage(ref errors, 0x4021, otherPos, s);
+		GenerateMessage(ref errors, 0x4021, otherPos, name);
 		branch.Parent![prevIndex] = new("null", branch.Pos, branch.EndPos, branch.Container) { Extra = NullType };
 		return false;
 	}
@@ -1815,7 +1838,7 @@ public sealed partial class SemanticTree
 		}
 	}
 
-	private void PropagateParameterTypes(TreeBranch branch, bool @params, BranchCollection parameterTypes)
+	private void PropagateParameterTypes(TreeBranch branch, String name, bool @params, BranchCollection parameterTypes)
 	{
 		if (branch.Length < 2)
 			return;
@@ -1824,7 +1847,8 @@ public sealed partial class SemanticTree
 			var x = branch[1][i];
 			if (parameterTypes[@params ? ^1 : i].Extra is NStarType DestinationType && (x.Extra is not NStarType SourceType
 				|| i >= parameterTypes.Length - 1 && @params && TypesAreEqual(GetSubtype(SourceType), DestinationType)
-				|| TypesAreCompatible(SourceType, DestinationType, out var warning, [], out _, out _) && !warning))
+				|| TypesAreCompatible(SourceType, DestinationType, out var warning, [], out _, out _) && !warning
+				&& !(name.StartsWith(nameof(branch.Add)) && TypesAreEqual(GetListType(SourceType), DestinationType))))
 			{
 				x.Extra = DestinationType;
 				ParseAction(x.Name)(x, out _);
@@ -2164,10 +2188,7 @@ public sealed partial class SemanticTree
 			}
 			List<String>? innerErrors;
 			if (branch[i + 2].Name == nameof(Hypername))
-			{
-				object? @ref = null;
-				Hypername1(branch[i + 2], out innerErrors, ref @ref, true);
-			}
+				Hypername(branch[i + 2], out innerErrors, null, true);
 			else
 				Declaration(branch[i + 2], out innerErrors, true);
 			AddRange(ref errors, innerErrors);
@@ -2541,11 +2562,11 @@ public sealed partial class SemanticTree
 		};
 		return branch[i].Name.ToString() switch
 		{
-			"+" => valueString.Insert(0, "+"),
-			"-" => valueString.Insert(0, "-"),
-			"!" => valueString.Insert(0, "!"),
-			"~" => valueString.Insert(0, "~"),
-			"^" => valueString.Insert(0, "^"),
+			"+" => valueString.Insert(0, "+(").Add(')'),
+			"-" => valueString.Insert(0, "-(").Add(')'),
+			"!" => valueString.Insert(0, "!(").Add(')'),
+			"~" => valueString.Insert(0, "~(").Add(')'),
+			"^" => valueString.Insert(0, "^(").Add(')'),
 			"sin" => valueString.Insert(0, "Sin(").Add(')'),
 			"cos" => valueString.Insert(0, "Cos(").Add(')'),
 			"tan" => valueString.Insert(0, "Tan(").Add(')'),
@@ -3182,11 +3203,18 @@ public sealed partial class SemanticTree
 		var otherPos = branch.FirstPos;
 		if (branch.Parent == null || branch.Parent.Name.ToString() is not (nameof(Call) or nameof(ConstructorCall)))
 		{
-			if (branch.Extra is NStarType FunctionType
-				&& FunctionType.MainType.Equals(FuncBlockStack))
-				goto alter;
-			else
+			if (branch.Extra is not NStarType FunctionType)
 				return Default(ref errors);
+			else if (FunctionType.MainType.Equals(EventHandlerBlockStack))
+			{
+				FunctionType = new(FuncBlockStack, new([new("type", 0, []) { Extra = NullType },
+					new("type", 0, []) { Extra = ObjectType }, .. FunctionType.ExtraTypes.Values]));
+				goto alter;
+			}
+			else if (!FunctionType.MainType.Equals(FuncBlockStack))
+				return Default(ref errors);
+			else
+				goto alter;
 		}
 		var parentIndex = branch.Parent.Elements.FindIndex(x => ReferenceEquals(x, branch));
 		if (parentIndex < 0)
@@ -3251,8 +3279,12 @@ public sealed partial class SemanticTree
 		}
 		goto alterEnd;
 	alter:
-		if (!(branch.Extra is NStarType FunctionNStarType
-			&& FunctionNStarType.MainType.Equals(FuncBlockStack)))
+		if (branch.Extra is not NStarType FunctionNStarType)
+			throw new InvalidOperationException();
+		else if (FunctionNStarType.MainType.Equals(EventHandlerBlockStack))
+			FunctionNStarType = new(FuncBlockStack, new([new("type", 0, []) { Extra = NullType },
+				new("type", 0, []) { Extra = ObjectType }, .. FunctionNStarType.ExtraTypes.Values]));
+		else if (!FunctionNStarType.MainType.Equals(FuncBlockStack))
 			throw new InvalidOperationException();
 		parameterTypes = [];
 		if (FunctionNStarType.ExtraTypes.Skip(1).Any(x => x.Value.Name != "type" || x.Value.Extra is not NStarType))
@@ -3301,7 +3333,8 @@ public sealed partial class SemanticTree
 				GenerateMessage(ref errors, 0x4014, branch[1].Pos, null!, NullType, ReturnNStarType);
 				return result.AddRange("default!");
 			}
-			else if (!TypesAreCompatible(ValueNStarType, ReturnNStarType, out var warning, innerResult, out _, out var extraMessage) || warning)
+			else if (!TypesAreCompatible(ValueNStarType, ReturnNStarType,
+				out var warning, innerResult, out _, out var extraMessage) || warning)
 			{
 				GenerateMessage(ref errors, 0x4014, branch[^1].Pos, extraMessage!, ValueNStarType, ReturnNStarType);
 				return result.AddRange("default!");
@@ -3311,7 +3344,11 @@ public sealed partial class SemanticTree
 		AddRange(ref errors, innerErrors);
 		if (branch[1].Extra is not NStarType ReturnNStarType2)
 			throw new InvalidOperationException();
-		branch.Extra = new NStarType(FuncBlockStack, new([new TreeBranch("type", branch.Pos, branch.Container) { Extra = ReturnNStarType2 }, .. parameterBranches]));
+		if (!((NStarType)branch.Extra!).MainType.Equals(EventHandlerBlockStack))
+			branch.Extra = new NStarType(FuncBlockStack, new([new TreeBranch("type", branch.Pos, branch.Container)
+			{
+				Extra = ReturnNStarType2
+			}, .. parameterBranches]));
 		return result;
 		String Default(ref List<String>? errors)
 		{
@@ -3733,8 +3770,10 @@ public sealed partial class SemanticTree
 		else
 		{
 			result.AddRange(TypeMapping(new BlockStack(type.MainType.Skip(type.MainType.FindLastIndex(x =>
-				x.BlockType is not (BlockType.Namespace or BlockType.Class or BlockType.Struct or BlockType.Interface)) + 1))
+				x.BlockType is not (BlockType.Namespace or BlockType.Class or BlockType.Struct
+				or BlockType.Interface or BlockType.Delegate)) + 1))
 				.ToShortString()));
+			ExplicitlyConnectedNamespaces.Reverse<String>().ForEach(x => result.ReplaceInPlace(x.Copy().Add('.'), ""));
 			if (result == nameof(G.IEnumerable<bool>))
 				result.Insert(0, "G.");
 			if (result == nameof(ListHashSet<int>) && type.ExtraTypes.Length == 1)
@@ -3963,6 +4002,7 @@ public sealed partial class SemanticTree
 	private bool VariableExists(TreeBranch branch, String s, ref List<String>? errors)
 	{
 		NList<int> indexes = [];
+		var preservedBranch = branch;
 		List<TreeBranch> branches = [branch];
 		while (branch.Parent != null)
 		{
@@ -3973,8 +4013,6 @@ public sealed partial class SemanticTree
 		branches.Reverse();
 		for (var i = indexes.Length - 1; i >= 0; i--)
 		{
-			if (branches[i].Name == "Function")
-				break;
 			for (var j = 0; j < branches[i].Length; j++)
 			{
 				if (j == indexes[i] - 1)
@@ -3982,15 +4020,17 @@ public sealed partial class SemanticTree
 				if ((branches[i][j].Name == nameof(Declaration) || branches[i][j].Name == "Parameter") && branches[i][j][1].Name == s && !(i == indexes.Length - 1 && j >= indexes[^1]))
 				{
 					var otherPos = branches[i][j].FirstPos;
-					GenerateMessage(ref errors, 0x4013, branch.Pos, s, lexems[otherPos].LineN.ToString(), lexems[otherPos].Pos.ToString());
+					GenerateMessage(ref errors, 0x4013, preservedBranch.Pos, s, lexems[otherPos].LineN.ToString(), lexems[otherPos].Pos.ToString());
 					return true;
 				}
-				else if (new List<String> { "Parameters", "if", "if!", "else if", "else if!", "repeat", "while", "while!", "for", "return", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment" }.Contains(branches[i][j].Name) && VariableExistsInsideExpr(branches[i][j], s, out var otherPos, out _) && !(i == indexes.Length - 1 && j >= indexes[^1]))
+				else if (new List<String> { "Parameters", "if", "if!", "else if", "else if!", "repeat", "while", "while!", "for", "return", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment" }.Contains(branches[i][j].Name) && (branches[i][j].Name != "for" || j == indexes[i] - 2) && VariableExistsInsideExpr(branches[i][j], s, out var otherPos, out _) && !(i == indexes.Length - 1 && j >= indexes[^1]))
 				{
-					GenerateMessage(ref errors, 0x4013, branch.FirstPos, s, lexems[otherPos].LineN.ToString(), lexems[otherPos].Pos.ToString());
+					GenerateMessage(ref errors, 0x4013, preservedBranch.FirstPos, s, lexems[otherPos].LineN.ToString(), lexems[otherPos].Pos.ToString());
 					return true;
 				}
 			}
+			if (branches[i].Name == "Function")
+				break;
 		}
 		return false;
 	}
@@ -3999,6 +4039,7 @@ public sealed partial class SemanticTree
 	{
 		errors = default!;
 		NList<int> indexes = [];
+		var preservedBranch = branch;
 		List<TreeBranch> branches = [branch];
 		var parent = branch;
 		while (parent.Parent != null)
@@ -4012,7 +4053,7 @@ public sealed partial class SemanticTree
 		{
 			if (branches[i].Name == "Function" && branches[i].Length == 4 && UserDefinedNonDerivedFunctionExists(branches[i].Container, branches[i][0].Name, out var functions, out _) && (functions[^1].Attributes & FunctionAttributes.Multiconst) != 0)
 			{
-				GenerateMessage(ref errors, 0x4010, branch.FirstPos, s);
+				GenerateMessage(ref errors, 0x4010, preservedBranch.FirstPos, s);
 				extra = null;
 				return false;
 			}
@@ -4028,7 +4069,7 @@ public sealed partial class SemanticTree
 					extra = innerExtra;
 					return true;
 				}
-				else if (new List<String> { "Parameters", "if", "if!", "else if", "else if!", "repeat", "while", "while!", "for", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment" }.Contains(branches[i][j].Name) && VariableExistsInsideExpr(branches[i][j], s, out _, out innerExtra))
+				else if (new List<String> { "Parameters", "if", "if!", "else if", "else if!", "repeat", "while", "while!", "for", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment" }.Contains(branches[i][j].Name) && (branches[i][j].Name != "for" || j == indexes[i] - 2) && VariableExistsInsideExpr(branches[i][j], s, out _, out innerExtra))
 				{
 					extra = innerExtra;
 					return true;
@@ -4039,20 +4080,20 @@ public sealed partial class SemanticTree
 				if ((branches[i][j].Name == nameof(Declaration) || branches[i][j].Name == "Parameter") && branches[i][j][1].Name == s)
 				{
 					var otherPos = branches[i][j].FirstPos;
-					GenerateMessage(ref errors, 0x4012, branch.FirstPos, s, lexems[otherPos].LineN.ToString(), lexems[otherPos].Pos.ToString());
+					GenerateMessage(ref errors, 0x4012, preservedBranch.FirstPos, s, lexems[otherPos].LineN.ToString(), lexems[otherPos].Pos.ToString());
 					extra = null;
 					return false;
 				}
-				else if (new List<String> { "Parameters", "if", "if!", "else if", "else if!", "repeat", "while", "while!", "for", "return", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment" }.Contains(branches[i][j].Name) && VariableExistsInsideExpr(branches[i][j], s, out var otherPos, out _))
+				else if (new List<String> { "Parameters", "if", "if!", "else if", "else if!", "repeat", "while", "while!", "for", "return", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment" }.Contains(branches[i][j].Name) && (branches[i][j].Name != "for" || j == indexes[i] - 2) && VariableExistsInsideExpr(branches[i][j], s, out var otherPos, out _))
 				{
-					GenerateMessage(ref errors, 0x4012, branch.FirstPos, s, lexems[otherPos].LineN.ToString(), lexems[otherPos].Pos.ToString());
+					GenerateMessage(ref errors, 0x4012, preservedBranch.FirstPos, s, lexems[otherPos].LineN.ToString(), lexems[otherPos].Pos.ToString());
 					extra = null;
 					return false;
 				}
 			}
 		}
 		if (errors == null || errors.Length == 0)
-			GenerateMessage(ref errors, 0x4001, branch.FirstPos, s);
+			GenerateMessage(ref errors, 0x4001, preservedBranch.FirstPos, s);
 		extra = null;
 		return false;
 		static bool IsValidLambdaParameter(TreeBranch branch, String branchName, out object? extra)
@@ -4108,6 +4149,7 @@ public sealed partial class SemanticTree
 		else if (inBase)
 			return true;
 		NList<int> indexes = [];
+		var preservedBranch = branch;
 		List<TreeBranch> branches = [branch];
 		while (branch.Parent != null)
 		{
@@ -4122,12 +4164,12 @@ public sealed partial class SemanticTree
 			{
 				if ((functions[^1].Attributes & FunctionAttributes.Multiconst) != 0)
 				{
-					GenerateMessage(ref errors, 0x4031, branch.FirstPos, s);
+					GenerateMessage(ref errors, 0x4031, preservedBranch.FirstPos, s);
 					return false;
 				}
 				else if ((functions[^1].Attributes & FunctionAttributes.Static) != 0 && (property?.Attributes & PropertyAttributes.Static) == 0)
 				{
-					GenerateMessage(ref errors, 0x4032, branch.FirstPos, s);
+					GenerateMessage(ref errors, 0x4032, preservedBranch.FirstPos, s);
 					return false;
 				}
 			}
@@ -4146,7 +4188,7 @@ public sealed partial class SemanticTree
 			}
 		}
 		if (errors == null || errors.Length == 0)
-			GenerateMessage(ref errors, 0x4001, branch.FirstPos, s);
+			GenerateMessage(ref errors, 0x4001, preservedBranch.FirstPos, s);
 		return false;
 	}
 
@@ -4162,6 +4204,7 @@ public sealed partial class SemanticTree
 		else if (inBase)
 			return true;
 		NList<int> indexes = [];
+		var preservedBranch = branch;
 		List<TreeBranch> branches = [branch];
 		while (branch.Parent != null)
 		{
@@ -4177,12 +4220,12 @@ public sealed partial class SemanticTree
 			{
 				if ((functions[^1].Attributes & FunctionAttributes.Multiconst) != 0)
 				{
-					GenerateMessage(ref errors, 0x4031, branch.FirstPos, s);
+					GenerateMessage(ref errors, 0x4031, preservedBranch.FirstPos, s);
 					return false;
 				}
 				else if ((functions[^1].Attributes & FunctionAttributes.Static) != 0 && (constant?.Attributes & ConstantAttributes.Static) == 0)
 				{
-					GenerateMessage(ref errors, 0x4032, branch.FirstPos, s);
+					GenerateMessage(ref errors, 0x4032, preservedBranch.FirstPos, s);
 					return false;
 				}
 			}
@@ -4208,7 +4251,7 @@ public sealed partial class SemanticTree
 			}
 		}
 		if (errors == null || errors.Length == 0)
-			GenerateMessage(ref errors, 0x4001, branch.FirstPos, s);
+			GenerateMessage(ref errors, 0x4001, preservedBranch.FirstPos, s);
 		return false;
 		static bool IsValidLambdaParameter(TreeBranch branch, String branchName)
 		{
@@ -4294,6 +4337,7 @@ public sealed partial class SemanticTree
 			return false;
 		}
 		NList<int> indexes = [];
+		var preservedBranch = branch;
 		List<TreeBranch> branches = [branch];
 		while (branch.Parent != null)
 		{
@@ -4311,14 +4355,14 @@ public sealed partial class SemanticTree
 				if ((innerFunctions[^1].Attributes & FunctionAttributes.Multiconst) != 0
 					&& (functions[^1].Attributes & FunctionAttributes.Multiconst) == 0)
 				{
-					GenerateMessage(ref errors, 0x4024, branch.FirstPos, s);
+					GenerateMessage(ref errors, 0x4024, preservedBranch.FirstPos, s);
 					extra = null;
 					return false;
 				}
 				else if ((innerFunctions[^1].Attributes & FunctionAttributes.Static) != 0
 					&& (functions[^1].Attributes & FunctionAttributes.Static) == 0)
 				{
-					GenerateMessage(ref errors, 0x4025, branch.FirstPos, s);
+					GenerateMessage(ref errors, 0x4025, preservedBranch.FirstPos, s);
 					extra = null;
 					return false;
 				}
@@ -4335,7 +4379,7 @@ public sealed partial class SemanticTree
 			}
 		}
 		if (errors == null || errors.Length == 0)
-			GenerateMessage(ref errors, 0x4001, branch.FirstPos, s);
+			GenerateMessage(ref errors, 0x4001, preservedBranch.FirstPos, s);
 		extra = null;
 		return false;
 	}
@@ -4464,7 +4508,15 @@ public sealed partial class SemanticTree
 		var sb = new StringBuilder();
 		var translateErrors = new StringWriter(sb);
 		var (s, errors, translatedClasses) = translated;
-		var bytes = EasyEval.Compile(((String)@"using Mpir.NET;
+		var bytes = EasyEval.Compile(((String)@"using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Markup.Xaml;
+using Avalonia.Media;
+using Mpir.NET;
 using NStar.BufferLib;
 using NStar.Core;
 using NStar.Dictionaries;
@@ -4473,11 +4525,14 @@ using NStar.Linq;
 using NStar.MathLib;
 using NStar.RemoveDoubles;
 using NStar.SumCollections;
+using ReactiveUI;
+using ReactiveUI.Avalonia;
 using System;
 using System.Dynamic;
 using System.Threading;
 using System.Threading.Tasks;
 using static NStar.Core.Extents;
+using static CSharp.NStar.").AddRange(nameof(BuiltInMemberCollections)).AddRange(@";
 using static CSharp.NStar.").AddRange(nameof(NStarUtilityFunctions)).AddRange(@";
 using static CSharp.NStar.").AddRange(nameof(Quotes)).AddRange(@";
 using static CSharp.NStar.").AddRange(nameof(TypeMappings)).AddRange(@";
@@ -4492,16 +4547,24 @@ public static class Program
 {
 public static dynamic? F(params dynamic?[] args)
 {
-").AddRange(s).AddRange(@"
-return null;
-}
+").AddRange(s).AddRange(""""
 
-public static void Main(string[] args)
-{
-Console.WriteLine(F(args));
-}
-}
-"), ["BuiltInMemberCollections", "CodeSample", "DeclaredConstructionHelpers", "MainParsing", "NStar.EasyEval", "NStarEntity", "QuotesAndTreeBranch", "TypeConverters", "SemanticTree"], translateErrors);
+				return null;
+			}
+
+			public static void Main(string[] args)
+			{
+			Console.WriteLine(F(args));
+			}
+			}
+
+			""""), ["Avalonia", "Avalonia.Base", "Avalonia.Controls", "Avalonia.Desktop", "Avalonia.FreeDesktop",
+			"Avalonia.Fonts.Inter", "Avalonia.Markup.Xaml", "Avalonia.Markup.Xaml.Loader", "Avalonia.Native",
+			"Avalonia.Remote.Protocol", "Avalonia.Skia", "Avalonia.Themes.Fluent", "Avalonia.Win32", "Avalonia.X11",
+			"BuiltInMemberCollections", "CodeSample", "DeclaredConstructionHelpers", "DynamicData", "HarfBuzzSharp",
+			"MainParsing", "MicroCom.Runtime", "NStar.EasyEval", "NStarEntity", "QuotesAndTreeBranch", "ReactiveUI",
+			"ReactiveUI.Avalonia", "SkiaSharp", "Splat", "Splat.Builder", "Splat.Core", "Splat.Logging", "System.ObjectModel",
+			"System.Private.Uri", "System.Reactive", "Tmds.DBus.Protocol", "TypeConverters", "SemanticTree"], translateErrors);
 		if (bytes == null || bytes.Length <= 2 || sb.ToString() != "Compilation done without any error.\r\n")
 			throw new EvaluationFailedException();
 		return (bytes, errors ?? []);

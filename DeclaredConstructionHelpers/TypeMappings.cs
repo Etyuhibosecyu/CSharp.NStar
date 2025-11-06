@@ -1,7 +1,7 @@
-﻿using Mpir.NET;
+﻿using Avalonia.Controls;
+using Mpir.NET;
 using NStar.ExtraHS;
 using System.Collections;
-using System.Reflection;
 using System.Text;
 
 namespace CSharp.NStar;
@@ -185,7 +185,7 @@ public static class TypeMappings
 				.. typeGenericArguments.Convert((x, index) =>
 				new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })]));
 		}
-		if (netType.Name.Contains("Func"))
+		if (netType.Name.Contains(nameof(Func<bool>)))
 		{
 			return new(FuncBlockStack, new([typeGenericArguments[^1].Wrap(x =>
 			new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) }),
@@ -207,9 +207,10 @@ public static class TypeMappings
 			netType = netType.GetGenericTypeDefinition();
 		l1:
 		if (CreateVar(PrimitiveTypes.Find(x => x.Value == netType).Key, out var typename) != null)
-			return typename == "list" ? GetListType(TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes))
+			return typename == "list" ? GetListType(TypeMappingBack(typeGenericArguments[0], genericArguments,
+				new(extraTypes.Values.TakeLast(genericArguments.Length))))
 				: GetPrimitiveType(typename);
-		else if (CreateVar(ExtraTypes.Find(x => x.Value == netType).Key, out var type2) != default)
+		else if (ExtraTypes.TryGetKey(netType, out var type2))
 			return new(GetBlockStack(type2.Namespace + "." + type2.Type),
 				new([.. typeGenericArguments.Convert((x, index) =>
 				new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })]));
@@ -378,7 +379,8 @@ public static class TypeMappings
 			or nameof(parameters.RemoveEnd) or nameof(parameters.Reverse) && parameters.Length >= 1
 			|| function.ToString() is nameof(parameters.GetRange) or nameof(parameters.Remove) && parameters.Length == 2)
 			parameters[0].Insert(0, '(').AddRange(") - 1");
-		if (function.ToString() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf) && parameters.Length >= 2)
+		if (function.ToString() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf)
+			or nameof(Grid.SetColumn) or nameof(Grid.SetRow) && parameters.Length >= 2)
 			parameters[1].Insert(0, '(').AddRange(") - 1");
 		result.AddRange(String.Join(", ", parameters)).Add(')');
 		if (function.ToString() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf))

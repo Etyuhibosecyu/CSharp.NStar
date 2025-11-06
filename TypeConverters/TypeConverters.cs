@@ -292,6 +292,16 @@ public static class TypeConverters
 			destExpr = srcExpr;
 			return true;
 		}
+		if (TypesAreEqual(sourceType, StringType) && TypesAreEqual(destinationType, UnsafeStringType))
+		{
+			destExpr = srcExpr?.Insert(0, '(').AddRange(").ToString()");
+			return true;
+		}
+		if (TypesAreEqual(sourceType, UnsafeStringType) && TypesAreEqual(destinationType, StringType))
+		{
+			destExpr = srcExpr?.Insert(0, "((String)").Add(')');
+			return true;
+		}
 		if (TypeEqualsToPrimitive(sourceType, "null", false))
 		{
 			destExpr = "default!";
@@ -334,6 +344,11 @@ public static class TypeConverters
 			if (TypeEqualsToPrimitive(sourceType, "tuple", false))
 			{
 				var subtype = GetSubtype(destinationType);
+				if (TypesAreEqual(subtype, sourceType))
+				{
+					destExpr = srcExpr;
+					return true;
+				}
 				if (sourceType.ExtraTypes.Length > 16)
 				{
 					destExpr = "default!";
@@ -454,6 +469,25 @@ public static class TypeConverters
 			&& userDefinedType.BaseType != NullType && TypesAreCompatible(userDefinedType.BaseType, destinationType,
 			out warning, srcExpr, out destExpr, out extraMessage))
 			return true;
+		if (ExtraTypes.TryGetValue((new BlockStack(sourceType.MainType.SkipLast(1)).ToShortString(),
+			sourceType.MainType.TryPeek(out var sourceBlock) ? sourceBlock.Name : ""), out var sourceNetType)
+			&& sourceNetType.GetGenericArguments().Length == 0
+			&& ExtraTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToShortString(),
+			sourceType.MainType.TryPeek(out var destinationBlock) ? sourceBlock.Name : ""), out var destinationNetType)
+			&& destinationNetType.GetGenericArguments().Length == 0
+			&& destinationNetType.IsAssignableFrom(sourceNetType)
+			|| ExplicitlyConnectedNamespaces.FindIndex(x =>
+			ExtraTypes.TryGetValue((x,
+			sourceType.MainType.TryPeek(out var sourceBlock) ? sourceBlock.Name : ""), out var sourceNetType)
+			&& sourceNetType.GetGenericArguments().Length == 0
+			&& ExtraTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToShortString(),
+			sourceType.MainType.TryPeek(out var destinationBlock) ? sourceBlock.Name : ""), out var destinationNetType)
+			&& destinationNetType.GetGenericArguments().Length == 0
+			&& destinationNetType.IsAssignableFrom(sourceNetType)) >= 0)
+		{
+			destExpr = srcExpr;
+			return true;
+		}
 		if (!BuiltInMemberCollections.ImplicitConversions.TryGetValue(sourceType.MainType, out var containerConversions))
 		{
 			destExpr = "default!";

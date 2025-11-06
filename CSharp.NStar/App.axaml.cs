@@ -1,21 +1,16 @@
 ﻿global using Avalonia;
 global using Avalonia.Controls.ApplicationLifetimes;
 global using Avalonia.Markup.Xaml;
-global using NStar.Core;
-global using CSharp.NStar.ViewModels;
 global using CSharp.NStar.Views;
-global using NStar.Dictionaries;
+global using NStar.Core;
 global using NStar.Linq;
 global using System;
 global using System.Diagnostics;
 global using System.IO;
-global using System.Net.Http;
-global using System.Threading;
 global using System.Threading.Tasks;
-global using G = System.Collections.Generic;
-global using static CSharp.NStar.Quotes;
 global using static CSharp.NStar.BuiltInMemberCollections;
 global using static System.Math;
+global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 
 namespace CSharp.NStar;

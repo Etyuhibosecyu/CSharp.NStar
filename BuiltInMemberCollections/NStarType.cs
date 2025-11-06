@@ -6,6 +6,7 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 {
 	public static readonly BranchCollection NoBranches = [];
 	public static readonly NStarType NullType = GetPrimitiveType("null");
+	public static readonly NStarType ObjectType = GetPrimitiveType("object");
 	public static readonly NStarType BoolType = GetPrimitiveType("bool");
 	public static readonly NStarType ByteType = GetPrimitiveType("byte");
 	public static readonly NStarType ShortIntType = GetPrimitiveType("short int");
@@ -20,10 +21,12 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 	public static readonly NStarType StringType = GetPrimitiveType("string");
 	public static readonly NStarType IndexType = GetPrimitiveType("index");
 	public static readonly NStarType RangeType = GetPrimitiveType("range");
+	public static readonly NStarType UnsafeStringType = new(new([new(BlockType.Namespace, "System", 1), new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "UnsafeString", 1)]), NoBranches);
 	public static readonly BlockStack EmptyBlockStack = new();
 	public static readonly BlockStack ListBlockStack = new([new(BlockType.Primitive, "list", 1)]);
 	public static readonly BlockStack TupleBlockStack = new([new(BlockType.Primitive, "tuple", 1)]);
-	public static readonly BlockStack FuncBlockStack = new([new(BlockType.Namespace, "System", 1), new(BlockType.Class, "Func", 1)]);
+	public static readonly BlockStack EventHandlerBlockStack = new([new(BlockType.Namespace, "System", 1), new(BlockType.Delegate, "EventHandler", 1)]);
+	public static readonly BlockStack FuncBlockStack = new([new(BlockType.Namespace, "System", 1), new(BlockType.Delegate, nameof(Func<bool>), 1)]);
 	public static readonly BlockStack IEnumerableBlockStack = new([new(BlockType.Namespace, "System", 1), new(BlockType.Namespace, "Collections", 1), new(BlockType.Interface, nameof(G.IEnumerable<bool>), 1)]);
 	public static readonly BlockStack BaseIndexableBlockStack = new([new(BlockType.Namespace, "System", 1), new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(BaseIndexable<bool>), 1)]);
 	public static readonly BlockStack ListHashSetBlockStack = new([new(BlockType.Namespace, "System", 1), new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(ListHashSet<bool>), 1)]);

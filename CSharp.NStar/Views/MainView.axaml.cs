@@ -72,7 +72,6 @@ public partial class MainView : UserControl
 		ButtonSaveExe.IsEnabled = false;
 #endif
 		TextBoxInput.Text = $"Loading ({0:F2}%)\r\n";
-
 	}
 
 	private void UserControl_Loaded(object? sender, RoutedEventArgs e) => Task.Factory.StartNew(async () =>

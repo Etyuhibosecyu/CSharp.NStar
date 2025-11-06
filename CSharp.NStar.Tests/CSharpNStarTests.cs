@@ -418,6 +418,48 @@ return F(-5);
 	[DataRow(@"int Function F(int x)
 {
 	if (x < 0)
+	if (x % 2 == 0)
+		return 0;
+	else
+		return 1;
+	else
+	{
+		x++;
+		if (x > 1)
+		{
+			x++;
+			return x;
+		}
+	}
+	return x * ++x;
+}
+return (F(-5), F(3), F(0));
+", "(1, 5, 2)", "Ошибок нет")]
+	[DataRow(@"int Function F(int x)
+{
+	if (x < 0)
+	if (x % 2 == 0)
+		return 0;
+	else
+		return 1;
+	else
+	{
+		x++;
+		if (x > 1)
+			for (int x in Chain(1, 20))
+			{
+				x++;
+				return x;
+			}
+	}
+	return x * ++x;
+}
+return (F(-5), F(3), F(0));
+", "(1, 5, 2)", @"Error 4013 in line 12 at position 8: the variable ""x"" is already defined in this location or in the location that contains this in line 1 at position 15
+")]
+	[DataRow(@"int Function F(int x)
+{
+	if (x < 0)
 	if (x > -100)
 	if (x % 2 == 0)
 		return 0;
@@ -903,6 +945,16 @@ dic.TryAdd(""2"", 2);
 dic.TryAdd(""3"", 3);
 return dic;
 ", """(("1", 1), ("2", 2), ("3", 3))""", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+Dictionary[string, int] dic = new(((""0"", 0), (""1"", 1), (""2"", 2), (""3"", 3)));
+return (dic, dic[""1""]);
+", """((("0", 0), ("1", 1), ("2", 2), ("3", 3)), 1)""", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+int x = 123;
+Dictionary[string, int] dic = new(((""0"", 0), (""1"", 1), (""2"", 2), (""3"", 3)));
+var x2 = x * 3;
+return (dic, dic[""1""], x2);
+", """((("0", 0), ("1", 1), ("2", 2), ("3", 3)), 1, 369)""", "Ошибок нет")]
 	[DataRow(@"list() int list = (1, 2, 3);
 list.Add(4);
 list.Add((5, 6, 7));

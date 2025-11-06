@@ -10,7 +10,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Avalonia.Desktop" Version="11.3.8" />
 		<ProjectReference Include="..\CSharp.NStar\CSharp.NStar.csproj" />
 	</ItemGroup>
 </Project>
