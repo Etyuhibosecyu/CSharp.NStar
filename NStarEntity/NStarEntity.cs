@@ -3,11 +3,12 @@ global using NStar.Linq;
 global using System;
 global using System.Diagnostics;
 global using static CSharp.NStar.BuiltInMemberCollections;
-global using static CSharp.NStar.TypeConverters;
 global using static CSharp.NStar.NStarType;
+global using static CSharp.NStar.TypeConverters;
 global using static NStar.Core.Extents;
 global using static System.Math;
 global using String = NStar.Core.String;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace CSharp.NStar;
@@ -229,18 +230,86 @@ public struct NStarEntity
 		}
 	}
 
-	public static bool TryParse(string s, out NStarEntity result)
+	public static bool TryParse(string s, [MaybeNullWhen(false)] out NStarEntity result)
 	{
-		try
-		{
-			result = Parse(s);
-			return true;
-		}
-		catch
-		{
-			result = new();
+		result = default!;
+		string s2;
+		if (s.Length == 0)
 			return false;
+		else if (s == "null")
+			result = new();
+		else if (s is "true" or "false")
+			result = s == "true";
+		else if (s == "Infty")
+			result = Infinity;
+		else if (s == "-Infty")
+			result = MinusInfinity;
+		else if (s == "Uncty")
+			result = Uncertainty;
+		else if (s == "Pi")
+			result = PI;
+		else if (s == "E")
+			result = E;
+		else if (s[0] is not (>= '0' and <= '9' or '+' or '-') && s[^1] is not ('\"' or '\'' or '\\'))
+			return false;
+		else if (s[^1] == 'i')
+		{
+			if (int.TryParse(s[..^1], InvariantCulture, out var i))
+				result = i;
+			else
+				return false;
 		}
+		else if (s[^1] == 'u')
+		{
+			if (uint.TryParse(s[..^1], InvariantCulture, out var ui))
+				result = ui;
+			else
+				return false;
+		}
+		else if (s[^1] == 'L')
+		{
+			s2 = s[..^1];
+			if (int.TryParse(s2, out var i))
+				result = (NStarEntity)i;
+			else if (uint.TryParse(s2, out var ui))
+				result = (NStarEntity)ui;
+			else if (long.TryParse(s2, out var l))
+				result = new(l, LongIntType);
+			else if (ulong.TryParse(s2, out var ul))
+				result = new(ul, LongIntType);
+			else
+				return false;
+		}
+		else if (s[^1] == 'r')
+		{
+			if (!(s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
+				return false;
+			double n;
+			if (int.TryParse(s2, InvariantCulture, out var i))
+				n = i;
+			else if (!double.TryParse(s2, InvariantCulture, out n))
+				return false;
+			result = ValidateFixing(n, RealType, true);
+		}
+		else if (s[0] == '\"' && s[^1] == '\"')
+			result = ((String)s).RemoveQuotes();
+		else if (s[0] == '\'' && s[^1] == '\'')
+			result = s.Length <= 2 ? (NStarEntity)'\0' : (NStarEntity)((String)s).RemoveQuotes()[0];
+		else if (s.Length >= 3 && s[0] == '@' && s[1] == '\"' && s[^1] == '\"')
+			result = ((String)s)[2..^1].Replace("\"\"", "\"");
+		else if (Quotes.IsRawString(s, out var output))
+			result = output;
+		else if (int.TryParse(s, NumberStyles.Integer, InvariantCulture, out var i))
+			result = i;
+		else if (long.TryParse(s, NumberStyles.Integer, InvariantCulture, out var l))
+			result = (NStarEntity)l;
+		else if (ulong.TryParse(s, NumberStyles.Integer, InvariantCulture, out var ul))
+			result = (NStarEntity)ul;
+		else if (double.TryParse(s, NumberStyles.Float, InvariantCulture, out var d))
+			result = d;
+		else
+			return false;
+		return true;
 	}
 
 	public static NStarEntity TryConstruct(object? element) => element switch

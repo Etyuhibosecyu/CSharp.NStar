@@ -3514,34 +3514,31 @@ public sealed partial class SemanticTree
 	{
 		String result = [];
 		errors = null;
-		result.AddRange("return ");
-		if (branch[0].Length == 0)
-		{
-			result.AddRange("default!;");
-			return result;
-		}
 		branch[0].Extra ??= currentFunction.HasValue ? currentFunction.Value.ReturnNStarType : null;
 		var expr = Expr(branch[0], out var innerErrors);
 		var otherPos = branch.FirstPos;
 		if (!currentFunction.HasValue || branch[0].Extra is not NStarType ExprNStarType)
-			result.AddRange(expr == "_" || branch[0].Extra is NStarType ExprNStarType2
+			result.AddRange("return ").AddRange(expr == "_" || branch[0].Extra is NStarType ExprNStarType2
 				&& ExprNStarType2.Equals(NullType) ? "default!" : expr);
 		else if (currentFunction.Value.ReturnNStarType.Equals(NullType))
 		{
 			branch.Extra ??= NullType;
-			return "return;";
+			result.Add('{');
+			if (expr.ToString() is not ("_" or "default" or "default!" or "_ = default" or "_ = default!"))
+				result.AddRange(expr).Add(';');
+			return result.AddRange("return;}");
 		}
 		else if (!TypesAreCompatible(ExprNStarType, currentFunction.Value.ReturnNStarType, out var warning, expr,
 			out var adapterExpr, out var extraMessage))
 		{
 			GenerateMessage(ref errors, 0x4039, otherPos, extraMessage!, ExprNStarType, currentFunction.Value.ReturnNStarType);
-			result.AddRange("default!");
+			result.AddRange("return default!");
 		}
 		else
 		{
 			if (warning)
 				GenerateMessage(ref errors, 0x800A, otherPos, extraMessage!, ExprNStarType, currentFunction.Value.ReturnNStarType);
-			result.AddRange(adapterExpr ?? "default!");
+			result.AddRange("return ").AddRange(adapterExpr ?? "default!");
 		}
 		result.Add(';');
 		branch.Extra ??= branch[0].Extra;
