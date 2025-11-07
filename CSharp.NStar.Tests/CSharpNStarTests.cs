@@ -4681,6 +4681,213 @@ typename T = typeof(x);
 T y = ""8"";
 return typeof(y);
 ", "byte", "Ошибок нет")]
+	[DataRow(@"() int list = (5, 8);
+var a = DateTime.IsLeapYear(2025) ? list : DateTime.IsLeapYear(2024) ? 12 : 20;
+return a;
+", @"(12)", "Ошибок нет")]
+	[DataRow(@"() int list = (5, 8);
+var a = DateTime.IsLeapYear(2025) ? (DateTime.IsLeapYear(2024) ? 12 : 20) : list;
+return a;
+", @"(5, 8)", "Ошибок нет")]
+	[DataRow(@"() (string, int, real) a = Fill((""A"", 77777, 3.14159), 3);
+() (() (string, int, real), () (string, int, real),
+	() (string, int, real)) b = ((a, a, a), (a, a, a), (a, a, a));
+() (() (() (string, int, real), () (string, int, real), () (string, int, real)),
+	() (() (string, int, real), () (string, int, real), () (string, int, real)),
+	() (() (string, int, real), () (string, int, real), () (string, int, real))) c
+	= ((b, b, b), (b, b, b), (b, b, b));
+return c[1, 2, 3];
+", """((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)))""", "Ошибок нет")]
+	[DataRow(@"(2) (string, int, real) a = Fill((""A"", 77777, 3.14159), 3);
+() ((2) (string, int, real), (2) (string, int, real),
+	(2) (string, int, real)) b = ((a, a, a), (a, a, a), (a, a, a));
+() (() ((2) (string, int, real), (2) (string, int, real), (2) (string, int, real)),
+	() ((2) (string, int, real), (2) (string, int, real), (2) (string, int, real)),
+	() ((2) (string, int, real), (2) (string, int, real), (2) (string, int, real))) c
+	= ((b, b, b), (b, b, b), (b, b, b));
+return c[1, 2, 3];
+", """(((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159))), ((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159))), ((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159))))""", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+var dic = new [string, int]();
+dic.TryAdd(""1"", 1);
+dic.TryAdd(""2"", 2);
+dic.TryAdd(""3"", 3);
+return dic;
+", """(("1", 1), ("2", 2), ("3", 3))""", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+[string, int] dic = new(((""0"", 0), (""1"", 1), (""2"", 2), (""3"", 3)));
+return (dic, dic[""1""]);
+", """((("0", 0), ("1", 1), ("2", 2), ("3", 3)), 1)""", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+int x = 123;
+[string, int] dic = new(((""0"", 0), (""1"", 1), (""2"", 2), (""3"", 3)));
+var x2 = x * 3;
+return (dic, dic[""1""], x2);
+", """((("0", 0), ("1", 1), ("2", 2), ("3", 3)), 1, 369)""", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const int n = 3;
+	(n) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const int bool = 3;
+	(bool) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int n = 3;
+(n) int list = 8;
+list = 123;
+return list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int bool = 3;
+(bool) int list = 8;
+list = 123;
+return list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const int n = 2;
+	(n + 1) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const int bool = 2;
+	(bool + 1) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int n = 2;
+(n + 1) int list = 8;
+list = 123;
+return list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const int bool = 2;
+(bool + 1) int list = 8;
+list = 123;
+return list;
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	int n = 3;
+	(n) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(123)", @"Error 4057 in line 4 at position 2: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"static Class MyClass
+{
+	int bool = 3;
+	(bool) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(123)", @"Error 4057 in line 4 at position 2: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"int n = 3;
+(n) int list = 8;
+list = 123;
+return list;
+", @"(123)", @"Error 4057 in line 2 at position 1: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 2 at position 1: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"int bool = 3;
+(bool) int list = 8;
+list = 123;
+return list;
+", @"(123)", @"Error 4057 in line 2 at position 1: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 2 at position 1: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"static Class MyClass
+{
+	int n = 2;
+	(n + 1) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(123)", @"Error 4057 in line 4 at position 2: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"static Class MyClass
+{
+	int bool = 2;
+	(bool + 1) int list = 8;
+}
+MyClass.list = 123;
+return MyClass.list;
+", @"(123)", @"Error 4057 in line 4 at position 2: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"int n = 2;
+(n + 1) int list = 8;
+list = 123;
+return list;
+", @"(123)", @"Error 4057 in line 2 at position 1: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 2 at position 1: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"int bool = 2;
+(bool + 1) int list = 8;
+list = 123;
+return list;
+", @"(123)", @"Error 4057 in line 2 at position 1: this expression must be constant and implicitly convertible to the ""int"" type
+Error 4057 in line 2 at position 1: this expression must be constant and implicitly convertible to the ""int"" type
+")]
+	[DataRow(@"const typename real = int;
+typename T = () real;
+return T;
+", "list() int", "Ошибок нет")]
+	[DataRow(@"const typename real = () int;
+typename T = () real;
+return T;
+", "list(2) int", "Ошибок нет")]
+	[DataRow(@"const typename real = () string;
+typename T = () real;
+return T;
+", "list(2) string", "Ошибок нет")]
+	[DataRow(@"const typename real = () bool;
+typename T = () real;
+return T;
+", "list(2) bool", "Ошибок нет")]
+	[DataRow(@"const typename real = (2) int;
+typename T = () real;
+return T;
+", "list(3) int", "Ошибок нет")]
+	[DataRow(@"const typename real = (2) string;
+typename T = () real;
+return T;
+", "list(3) string", "Ошибок нет")]
+	[DataRow(@"const typename real = (2) bool;
+typename T = () real;
+return T;
+", "list(3) bool", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = ListHashSet[int];
+typename T = () real;
+return T;
+", "list() System.Collections.ListHashSet[int]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = ListHashSet[string];
+typename T = () real;
+return T;
+", "list() System.Collections.ListHashSet[string]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = () ListHashSet[int];
+typename T = () real;
+return T;
+", "list(2) System.Collections.ListHashSet[int]", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const typename real = () ListHashSet[string];
+typename T = () real;
+return T;
+", "list(2) System.Collections.ListHashSet[string]", "Ошибок нет")]
 	[DataRow(@"return 100000000000000000*100000000000000000000;
 ", "0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
 ")]

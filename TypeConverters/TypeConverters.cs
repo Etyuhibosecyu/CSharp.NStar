@@ -131,7 +131,7 @@ public static class TypeConverters
 	{
 		try
 		{
-			if (TypesAreEqual(leftType, rightType))
+			if (leftType.Equals(rightType))
 				return leftType;
 			if (TypeIsPrimitive(leftType.MainType) && TypeIsPrimitive(rightType.MainType))
 			{
@@ -287,17 +287,17 @@ public static class TypeConverters
 			&& destinationType.ExtraTypes[0].Name == "type"
 			&& destinationType.ExtraTypes[0].Extra is NStarType DestinationSubtype)
 			destinationType = DestinationSubtype;
-		if (TypesAreEqual(sourceType, destinationType))
+		if (sourceType.Equals(destinationType))
 		{
 			destExpr = srcExpr;
 			return true;
 		}
-		if (TypesAreEqual(sourceType, StringType) && TypesAreEqual(destinationType, UnsafeStringType))
+		if (sourceType.Equals(StringType) && destinationType.Equals(UnsafeStringType))
 		{
 			destExpr = srcExpr?.Insert(0, '(').AddRange(").ToString()");
 			return true;
 		}
-		if (TypesAreEqual(sourceType, UnsafeStringType) && TypesAreEqual(destinationType, StringType))
+		if (sourceType.Equals(UnsafeStringType) && destinationType.Equals(StringType))
 		{
 			destExpr = srcExpr?.Insert(0, "((String)").Add(')');
 			return true;
@@ -344,7 +344,7 @@ public static class TypeConverters
 			if (TypeEqualsToPrimitive(sourceType, "tuple", false))
 			{
 				var subtype = GetSubtype(destinationType);
-				if (TypesAreEqual(subtype, sourceType))
+				if (subtype.Equals(sourceType))
 				{
 					destExpr = srcExpr;
 					return true;
@@ -380,6 +380,16 @@ public static class TypeConverters
 			{
 				if (srcExpr == null)
 					destExpr = null;
+				else if (!SourceLeafType.Equals(DestinationLeafType) && TypeIsPrimitive(SourceLeafType.MainType)
+					&& TypeIsPrimitive(DestinationLeafType.MainType) && SourceLeafType.MainType.Peek().Name != "string"
+					&& DestinationLeafType.MainType.Peek().Name != "string")
+				{
+					srcExpr.Replace(AdaptTerminalType(srcExpr, SourceLeafType, DestinationLeafType));
+					srcExpr.Insert(0, ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth));
+					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth));
+					destExpr = srcExpr;
+					return true;
+				}
 				else
 				{
 					srcExpr.Insert(0, ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth));
@@ -389,7 +399,7 @@ public static class TypeConverters
 				return true;
 			}
 			else if (SourceDepth <= DestinationDepth + 1
-				&& TypesAreEqual(SourceLeafType, StringType) && TypesAreEqual(DestinationLeafType, CharType))
+				&& SourceLeafType.Equals(StringType) && DestinationLeafType.Equals(CharType))
 			{
 				if (srcExpr == null)
 					destExpr = null;
@@ -498,7 +508,7 @@ public static class TypeConverters
 			destExpr = "default!";
 			return false;
 		}
-		var foundIndex = typeConversions.FindIndex(x => TypesAreEqual(x.DestType, destinationType));
+		var foundIndex = typeConversions.FindIndex(x => x.DestType.Equals(destinationType));
 		if (foundIndex != -1)
 		{
 			warning = typeConversions[foundIndex].Warning;
@@ -513,7 +523,7 @@ public static class TypeConverters
 			for (var i = 0; i < new_types_list.Length; i++)
 			{
 				var new_types3_list = GetCompatibleTypes(new_types_list[i], types_list);
-				foundIndex = new_types3_list.FindIndex(x => TypesAreEqual(x.Type, destinationType));
+				foundIndex = new_types3_list.FindIndex(x => x.Type.Equals(destinationType));
 				if (foundIndex != -1)
 				{
 					warning = new_types3_list[foundIndex].Warning;
@@ -538,7 +548,7 @@ public static class TypeConverters
 		var srcTypeBlockName = srcType.MainType.Peek().Name.ToString();
 		var destTypeBlockName = destType.MainType.Peek().Name.ToString();
 		Debug.Assert(destTypeBlockName != "string");
-		var destTypeconverter = destTypeBlockName switch
+		var destTypeConverter = destTypeBlockName switch
 		{
 			"null" => "void",
 			"short char" => "byte",
@@ -560,14 +570,14 @@ public static class TypeConverters
 			if (destTypeBlockName is "bool" or "byte" or "char" or "short" or "ushort"
 				or "int" or "uint" or "long" or "ulong" or "double")
 			{
-				var result = ((String)"(").AddRange(destTypeconverter).Add('.').AddRange(nameof(int.TryParse)).Add('(');
+				var result = ((String)"(").AddRange(destTypeConverter).Add('.').AddRange(nameof(int.TryParse)).Add('(');
 				var varName = RedStarLinq.NFill(32, _ =>
 					(char)(globalRandom.Next(2) == 1 ? globalRandom.Next('A', 'Z' + 1) : globalRandom.Next('a', 'z' + 1)));
 				result.AddRange(source).AddRange(", out var ").AddRange(varName).AddRange(") ? ").AddRange(varName);
 				return result.AddRange(" : ").AddRange(destTypeBlockName == "bool" ? "false)" : "0)");
 			}
 			else
-				return ((String)"(").AddRange(destTypeconverter).AddRange(")(").AddRange(source).Add(')');
+				return ((String)"(").AddRange(destTypeConverter).AddRange(")(").AddRange(source).Add(')');
 		}
 		else if (destTypeBlockName == "bool")
 		{
@@ -577,11 +587,11 @@ public static class TypeConverters
 		else if (srcTypeBlockName == "real")
 		{
 			Debug.Assert(destTypeBlockName != "real");
-			return ((String)"(").AddRange(destTypeconverter).Add(')')
+			return ((String)"(").AddRange(destTypeConverter).Add(')')
 				.AddRange(nameof(Truncate)).Add('(').AddRange(source).Add(')');
 		}
 		else
-			return ((String)"unchecked((").AddRange(destTypeconverter).AddRange(")(").AddRange(source).AddRange("))");
+			return ((String)"unchecked((").AddRange(destTypeConverter).AddRange(")(").AddRange(source).AddRange("))");
 	}
 
 	private static List<(NStarType Type, bool Warning)> GetCompatibleTypes((NStarType Type, bool Warning) source,

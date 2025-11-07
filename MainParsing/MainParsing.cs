@@ -287,7 +287,7 @@ public partial class MainParsing : LexemStream
 			_ExtraStack[_Stackpos] = currentExtra;
 		_Stackpos++;
 		_PosStack.Add(pos_);
-		_StartStack.Add(start_);
+		_StartStack.Add(pos_);
 		_EndStack.Add(end_);
 		_TaskStack.Add(newTask);
 		_ErLStack.Add(erl);
@@ -531,7 +531,7 @@ public partial class MainParsing : LexemStream
 			var t = UserDefinedFunctions[blockToJumpContainer][name][index];
 			if (UserDefinedFunctions[blockToJumpContainer][name].Take(index)
 				.Exists(x => x.Parameters.Length == parameters.Length
-				&& x.Parameters.Combine(parameters).All(y => TypesAreEqual(y.Item1.Type, y.Item2.Type)
+				&& x.Parameters.Combine(parameters).All(y => y.Item1.Type.Equals(y.Item2.Type)
 				&& (y.Item1.Attributes & (ParameterAttributes.Ref | ParameterAttributes.Out)) == 0
 				&& (y.Item2.Attributes & (ParameterAttributes.Ref | ParameterAttributes.Out)) == 0)))
 			{
@@ -2374,7 +2374,7 @@ public partial class MainParsing : LexemStream
 			pos++;
 			return TypeSingularTuple(NStarType);
 		}
-		else if (lexems[pos].Type == LexemType.Identifier)
+		else if (lexems[pos].Type == LexemType.Identifier || IsCurrentLexemOther("["))
 			return IdentifierType(constraints);
 		else if (!IsCurrentLexemOther("("))
 		{
@@ -2384,6 +2384,8 @@ public partial class MainParsing : LexemStream
 			GenerateMessage(0x2014, pos, false);
 			return _SuccessStack[_Stackpos] = false;
 		}
+		else if (IdentifierType(constraints))
+			return true;
 		else if (constraints == TypeConstraints.None)
 			return TupleType();
 		else
@@ -2401,7 +2403,9 @@ public partial class MainParsing : LexemStream
 		String s, namespace_ = [], outerClass = [];
 		var mainContainer = this.container;
 		BlockStack container = [], innerContainer = [], innerUserDefinedContainer;
+		Type? netType = null;
 		NStarType NStarType;
+		BranchCollection typeParts = [];
 	l0:
 		s = lexems[pos].String;
 		if (PrimitiveType(constraints, s) is bool b)
@@ -2481,7 +2485,7 @@ public partial class MainParsing : LexemStream
 				return TypeSingularTuple(NStarType);
 			}
 		}
-		else if ((ExtraTypes.TryGetValue((namespace_, s), out var netType) || namespace_ == ""
+		else if ((ExtraTypes.TryGetValue((namespace_, s), out netType) || namespace_ == ""
 			&& ExplicitlyConnectedNamespaces.FindIndex(x => ExtraTypes.TryGetValue((x, s), out netType)) >= 0)
 			&& netType != null)
 		{
@@ -2504,34 +2508,7 @@ public partial class MainParsing : LexemStream
 			}
 			_PosStack[_Stackpos] = ++pos;
 			if (netType.GetGenericArguments().Length == 0)
-			{
 				return TypeSingularTuple(NStarType);
-			}
-			if (pos >= end)
-			{
-				NStarType = NullType;
-				_ExtraStack[_Stackpos - 1] = NStarType;
-				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = NStarType };
-				GenerateUnexpectedEndOfTypeError(ref errors);
-				goto end;
-			}
-			else if (IsCurrentLexemOther("["))
-				_PosStack[_Stackpos] = ++pos;
-			else
-			{
-				NStarType = NullType;
-				GenerateMessage(0x200C, pos, false);
-				return TypeSingularTuple(NStarType);
-			}
-			ExtendedArrayParameters template = [];
-			BranchCollection typeParts = [];
-			for (var i = 0; i < netType.GetGenericArguments().Length; i++)
-				template.Add(new(false, NoBranches, new([new(BlockType.Primitive, "typename", 1)]), ""));
-			typeChainTemplate.Add(template);
-			collectionTypes.Add("associativeArray");
-			return IncreaseStack(nameof(TypeChain), currentTask: nameof(IdentifierType2), pos_: pos,
-				applyPos: true, applyCurrentTask: true, applyCurrentErl: true,
-				currentExtra: (container = NStarType.MainType, s, typeParts));
 		}
 		else if (ExtendedTypes.TryGetValue((innerContainer = container, s), out var value) || namespace_ == ""
 			&& ExplicitlyConnectedNamespaces.FindIndex(x => ExtendedTypes.TryGetValue((innerContainer
@@ -2558,9 +2535,7 @@ public partial class MainParsing : LexemStream
 				GenerateMessage(0x2024, pos, false, NStarType.ToString());
 			_PosStack[_Stackpos] = ++pos;
 			if (ArrayParameters.Length == 0)
-			{
 				return TypeSingularTuple(NStarType);
-			}
 			if (pos >= end)
 			{
 				NStarType = NullType;
@@ -2579,7 +2554,6 @@ public partial class MainParsing : LexemStream
 				GenerateMessage(0x200C, pos, false);
 				goto end;
 			}
-			BranchCollection typeParts = [];
 			typeChainTemplate.Add(ArrayParameters);
 			collectionTypes.Add("associativeArray");
 			return IncreaseStack(nameof(TypeChain), currentTask: nameof(IdentifierType2), pos_: pos,
@@ -2685,7 +2659,7 @@ public partial class MainParsing : LexemStream
 			_TBStack[_Stackpos] = new("type", pos, container) { Extra = NStarType };
 			GenerateMessage(0x203B, pos, false, s2);
 		}
-		else
+		else if (!IsCurrentLexemOther("["))
 		{
 			if (container.Length == 0)
 			{
@@ -2701,6 +2675,38 @@ public partial class MainParsing : LexemStream
 				return TypeSingularTuple(NStarType);
 			}
 		}
+		else
+		{
+			netType = typeof(Dictionary<,>);
+			NStarType = (new(container.ToList().Append(new(BlockType.Class, nameof(Dictionary<bool, bool>), 1))), NoBranches);
+		}
+		if (pos >= end)
+		{
+			NStarType = NullType;
+			_ExtraStack[_Stackpos - 1] = NStarType;
+			_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = NStarType };
+			GenerateUnexpectedEndOfTypeError(ref errors);
+			goto end;
+		}
+		else if (IsCurrentLexemOther("["))
+			_PosStack[_Stackpos] = ++pos;
+		else
+		{
+			if (s != nameof(Dictionary<bool, bool>))
+				goto end;
+			NStarType = NullType;
+			GenerateMessage(0x200C, pos, false);
+			return TypeSingularTuple(NStarType);
+		}
+		ExtendedArrayParameters template = [];
+		typeParts = [];
+		for (var i = 0; i < netType!.GetGenericArguments().Length; i++)
+			template.Add(new(false, NoBranches, new([new(BlockType.Primitive, "typename", 1)]), ""));
+		typeChainTemplate.Add(template);
+		collectionTypes.Add("associativeArray");
+		return IncreaseStack(nameof(TypeChain), currentTask: nameof(IdentifierType2), pos_: pos,
+			applyPos: true, applyCurrentTask: true, applyCurrentErl: true,
+			currentExtra: (container = NStarType.MainType, s, typeParts));
 	end:
 		return _SuccessStack[_Stackpos] = false;
 	}
@@ -2811,79 +2817,79 @@ public partial class MainParsing : LexemStream
 			}
 			if (pos > 0 && lexems[pos - 1].String == ".")
 				return null;
-			if (collectionTypes[^1] == "list")
-				GenerateMessage(0x8003, pos, false);
 			_PosStack[_Stackpos] = ++pos;
-			BranchCollection typeParts = [];
-			if (pos >= end)
-			{
-				NStarType = NullType;
-				_ExtraStack[_Stackpos - 1] = NStarType;
-				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = NStarType };
-				GenerateUnexpectedEndOfTypeError(ref errors);
-				return _SuccessStack[_Stackpos] = false;
-			}
-			else if (IsCurrentLexemOther("("))
-				_PosStack[_Stackpos] = ++pos;
-			else
-			{
-				NStarType = NullType;
-				GenerateMessage(0x200A, pos, false);
-				goto list0;
-			}
-			if (pos >= end)
-			{
-				NStarType = NullType;
-				_ExtraStack[_Stackpos - 1] = NStarType;
-				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = NStarType };
-				GenerateUnexpectedEndOfTypeError(ref errors);
-				return _SuccessStack[_Stackpos] = false;
-			}
-			else if (lexems[pos].Type == LexemType.Int)
-			{
-				_ExtraStack[_Stackpos - 1] = typeParts;
-				typeParts.Add(new(lexems[pos].String, 0, []));
-				_PosStack[_Stackpos] = ++pos;
-			}
-			else if (lexems[pos].Type is LexemType.UnsignedInt or LexemType.LongInt
-				or LexemType.UnsignedLongInt or LexemType.Real or LexemType.String)
-			{
-				NStarType = NullType;
-				_ExtraStack[_Stackpos - 1] = NStarType;
-				_TBStack[_Stackpos] = new("type", pos, container) { Extra = NStarType };
-				GenerateMessage(0x2017, pos, false);
-				_PosStack[_Stackpos] = ++pos;
-			}
-			if (pos >= end)
-			{
-				NStarType = NullType;
-				_ExtraStack[_Stackpos - 1] = NStarType;
-				_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = NStarType };
-				GenerateUnexpectedEndOfTypeError(ref errors);
-				return _SuccessStack[_Stackpos] = false;
-			}
-			else if (IsCurrentLexemOther(")"))
-			{
-				_PosStack[_Stackpos] = ++pos;
-				goto list1;
-			}
-			else
-				return IncreaseStack("LambdaExpr", currentTask: nameof(TypeList), pos_: pos,
-					applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
-			list0:
-			typeDepth++;
-			CloseBracket(ref pos, ")", ref errors!, false, end);
-			collectionTypes.Add("list");
-			return IncreaseStack(nameof(Type), currentTask: nameof(TypeListFail), pos_: pos,
-				applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
-		list1:
-			typeDepth++;
-			collectionTypes.Add("list");
-			return IncreaseStack(nameof(Type), currentTask: nameof(TypeList2), pos_: pos,
-				applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
 		}
-		NStarType = NullType;
-		return null;
+		if (collectionTypes[^1] == "list")
+			GenerateMessage(0x8003, pos - 1, false);
+		BranchCollection typeParts = [];
+		if (pos >= end)
+		{
+			NStarType = NullType;
+			_ExtraStack[_Stackpos - 1] = NStarType;
+			_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = NStarType };
+			GenerateUnexpectedEndOfTypeError(ref errors);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		else if (IsCurrentLexemOther("("))
+			_PosStack[_Stackpos] = ++pos;
+		else
+		{
+			NStarType = NullType;
+			if (s != "list")
+				return null;
+			GenerateMessage(0x200A, pos, false);
+			goto list0;
+		}
+		if (pos >= end)
+		{
+			NStarType = NullType;
+			_ExtraStack[_Stackpos - 1] = NStarType;
+			_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = NStarType };
+			GenerateUnexpectedEndOfTypeError(ref errors);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		else if (lexems[pos].Type == LexemType.Int)
+		{
+			_ExtraStack[_Stackpos - 1] = typeParts;
+			typeParts.Add(new(lexems[pos].String, 0, []));
+			_PosStack[_Stackpos] = ++pos;
+		}
+		else if (lexems[pos].Type is LexemType.UnsignedInt or LexemType.LongInt
+			or LexemType.UnsignedLongInt or LexemType.Real or LexemType.String)
+		{
+			NStarType = NullType;
+			_ExtraStack[_Stackpos - 1] = NStarType;
+			_TBStack[_Stackpos] = new("type", pos, container) { Extra = NStarType };
+			GenerateMessage(0x2017, pos, false);
+			_PosStack[_Stackpos] = ++pos;
+		}
+		if (pos >= end)
+		{
+			NStarType = NullType;
+			_ExtraStack[_Stackpos - 1] = NStarType;
+			_TBStack[_Stackpos] = new("type", pos - 1, container) { Extra = NStarType };
+			GenerateUnexpectedEndOfTypeError(ref errors);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		else if (IsCurrentLexemOther(")"))
+		{
+			_PosStack[_Stackpos] = ++pos;
+			goto list1;
+		}
+		else
+			return IncreaseStack("LambdaExpr", currentTask: nameof(TypeList), pos_: pos,
+				applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
+		list0:
+		typeDepth++;
+		CloseBracket(ref pos, ")", ref errors!, false, end);
+		collectionTypes.Add("list");
+		return IncreaseStack(nameof(Type), currentTask: nameof(TypeListFail), pos_: pos,
+			applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
+	list1:
+		typeDepth++;
+		collectionTypes.Add("list");
+		return IncreaseStack(nameof(Type), currentTask: nameof(TypeList2), pos_: pos,
+			applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
 	}
 
 	private bool TypeList()
@@ -2917,6 +2923,11 @@ public partial class MainParsing : LexemStream
 		}
 		else
 		{
+			if (IsLexemOther(lexems[start], "("))
+			{
+				_PosStack[_Stackpos] = pos = start;
+				return TupleType();
+			}
 			NStarType = NullType;
 			_ExtraStack[_Stackpos - 1] = NStarType;
 			_TBStack[_Stackpos] = new("type", pos, container) { Extra = NStarType };
@@ -2925,8 +2936,8 @@ public partial class MainParsing : LexemStream
 		}
 	list0:
 		typeDepth++;
-		CloseBracket(ref pos, ")", ref errors!, false, end);
 		collectionTypes.Add("list");
+		CloseBracket(ref pos, ")", ref errors!, false, end);
 		return IncreaseStack(nameof(Type), currentTask: nameof(TypeListFail), pos_: pos,
 			applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
 	}
@@ -2953,6 +2964,9 @@ public partial class MainParsing : LexemStream
 		collectionTypes.RemoveAt(^1);
 		if (!success || extra is not NStarType InnerNStarType)
 		{
+			_PosStack[_Stackpos] = pos = start;
+			if (IsCurrentLexemOther("("))
+				return TupleType();
 			GenerateUnexpectedEndOfTypeError(ref errors);
 			return _SuccessStack[_Stackpos] = false;
 		}
@@ -2969,12 +2983,13 @@ public partial class MainParsing : LexemStream
 		typeChainTemplate.Add([new(true, NoBranches, new([new(BlockType.Primitive, "typename", 1)]), "")]);
 		collectionTypes.Add("tuple");
 		return IncreaseStack(nameof(TypeChain), currentTask: nameof(TupleType2), pos_: pos,
-			applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
+			applyPos: true, applyCurrentTask: true);
 	}
 
 	private bool TupleType2()
 	{
 		NStarType NStarType;
+		collectionTypes.RemoveAt(^1);
 		if (!success || extra is not BranchCollection innerArrayParameters)
 			return _SuccessStack[_Stackpos] = false;
 		if (pos >= end)

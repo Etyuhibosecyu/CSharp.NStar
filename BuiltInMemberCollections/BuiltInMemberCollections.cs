@@ -249,31 +249,6 @@ public static class BuiltInMemberCollections
 	public static G.SortedSet<String> ReservedOperators { get; } = ["#", "G", "I", "K", "_", "g", "hexa", "hexa=", "penta", "penta=", "tetra", "tetra="];
 	// To specify non-associative N-ary operator, set OperandsCount to -1. To specify postfix unary operator, set it to -2.
 
-	public static bool TypesAreEqual(NStarType leftType, NStarType rightType)
-	{
-		if (leftType.MainType.Length != rightType.MainType.Length)
-			return false;
-		for (var i = 0; i < leftType.MainType.Length; i++)
-		{
-			if (leftType.MainType.ElementAt(i).BlockType != rightType.MainType.ElementAt(i).BlockType || leftType.MainType.ElementAt(i).Name != rightType.MainType.ElementAt(i).Name)
-				return false;
-		}
-		if (leftType.ExtraTypes.Length == 0)
-		{
-			if (rightType.ExtraTypes.Length != 0)
-				return false;
-			return true;
-		}
-		if (leftType.ExtraTypes.Length != rightType.ExtraTypes.Length)
-			return false;
-		for (var i = 0; i < leftType.ExtraTypes.Length; i++)
-		{
-			if (leftType.ExtraTypes[i] != rightType.ExtraTypes[i])
-				return false;
-		}
-		return true;
-	}
-
 	public static bool TypeEqualsToPrimitive(NStarType type, String primitive, bool noExtra = true) => TypeIsPrimitive(type.MainType) && type.MainType.Peek().Name == primitive && (!noExtra || type.ExtraTypes.Length == 0);
 
 	public static bool TypeIsPrimitive(BlockStack type) => type is null || type.Length == 1 && type.Peek().BlockType == BlockType.Primitive;

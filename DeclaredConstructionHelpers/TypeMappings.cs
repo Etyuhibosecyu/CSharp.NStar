@@ -369,6 +369,8 @@ public static class TypeMappings
 			"Random" => nameof(RandomNumber),
 			nameof(RandomNumber) => [],
 			nameof(Round) => "(int)" + nameof(Round),
+			nameof(ToString) => [],
+			"ToUnsafeString" => nameof(ToString),
 			nameof(Truncate) => "(int)" + nameof(Truncate),
 			_ => function.Copy(),
 		};

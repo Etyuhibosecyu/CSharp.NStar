@@ -61,7 +61,7 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 			{
 				if (ExtraTypes[i].Name != "type" || ExtraTypes[i].Extra is not NStarType current)
 					return "()";
-				if (TypesAreEqual(prev, current))
+				if (prev.Equals(current))
 				{
 					repeats++;
 					continue;

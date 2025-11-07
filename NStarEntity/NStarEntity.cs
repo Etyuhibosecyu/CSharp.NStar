@@ -757,7 +757,7 @@ public struct NStarEntity
 			NStarEntity a;
 			if (TypeIsPrimitive(type.MainType))
 				a = ToPrimitiveType(type, fix);
-			else if (TypesAreEqual(type, InnerType))
+			else if (type.Equals(InnerType))
 				a = this;
 			else if (type.MainType.Length != 0 && UserDefinedTypes.TryGetValue(SplitType(type.MainType), out var type_descr) && type_descr.Decomposition != null && type_descr.Decomposition.Length != 0)
 				a = ToTupleType(type_descr.Decomposition);
