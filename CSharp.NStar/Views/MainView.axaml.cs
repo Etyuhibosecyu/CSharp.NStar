@@ -30,12 +30,12 @@ public partial class MainView : UserControl
 	private static readonly ImmutableArray<string> langs = ["C#"];
 	private static readonly string AlphanumericCharactersWithoutDot = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	private static readonly G.SortedSet<String> AutoCompletionList = [.. new List<String>("abstract", "break", "case", "Class",
-		"closed", "const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event",
-		"Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst",
-		"Namespace", "new", "null", "Operator", "out", "override", "params", "protected", "public", "readonly", "ref",
-		"repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and", "or",
-		"xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E", "CombineWith",
-		"CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypes.Keys)
+		"const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent",
+		"extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst",
+		"Namespace", "new", "null", "Operator", "out", "override", "params", "private", "protected", "public", "readonly",
+		"ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and",
+		"or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E",
+		"CombineWith", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypes.Keys)
 		.AddRange(ExtraTypes.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type)))
 		.AddRange(PublicFunctions.Keys)];
 	private static readonly G.SortedSet<string> AutoCompletionAfterDotList = [.. PrimitiveTypes.Values.ToList()

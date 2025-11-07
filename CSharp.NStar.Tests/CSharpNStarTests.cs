@@ -1895,8 +1895,8 @@ return (a1, a2, a3, a4);
 ")]
 	[DataRow(@"Class Person
 {
-	closed string name;
-	closed int age;
+	private string name;
+	private int age;
 
 	string Function GetName()
 	{
@@ -1914,8 +1914,8 @@ return (a1, a2, a3, a4);
 ", @"(""Alice"", 30)", "Ошибок нет")]
 	[DataRow(@"Class Person
 {
-	closed string name;
-	closed int age;
+	private string name;
+	private int age;
 
 	string Function GetName()
 	{
@@ -1965,7 +1965,7 @@ return (dog.GetSpecies(), dog.Speak(), dog.Bark());
 ", @"(""Dog"", ""Animal sound"", ""Woof!"")", "Ошибок нет")]
 	[DataRow(@"Class BankAccount
 {
-	closed real balance;
+	private real balance;
 
 	Constructor(real initialBalance)
 	{
@@ -2024,7 +2024,7 @@ return vehicle.Start();
 
 Class Car
 {
-	closed Engine engine = new Engine();
+	private Engine engine = new Engine();
 
 	string Function Start()
 	{
@@ -2659,33 +2659,33 @@ Error 4033 in line 7 at position 16: the type ""MyClass"" does not contain membe
 	[DataRow(@"static Class MyClass
 {
 	const string A1000000 = A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000;
-	closed const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
-	closed const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
-	closed const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
-	closed const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
-	closed const string A10 = ""AAAAAAAAAA"";
+	private const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
+	private const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
+	private const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
+	private const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+	private const string A10 = ""AAAAAAAAAA"";
 }
 return MyClass.A1000000;
 ", A1000000, "Ошибок нет")]
 	[DataRow(@"static Class MyClass
 {
 	const string A1000000 = MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000;
-	closed const string A100000 = MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000;
-	closed const string A10000 = MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000;
-	closed const string A1000 = MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100;
-	closed const string A100 = MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10;
-	closed const string A10 = ""AAAAAAAAAA"";
+	private const string A100000 = MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000;
+	private const string A10000 = MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000;
+	private const string A1000 = MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100;
+	private const string A100 = MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10;
+	private const string A10 = ""AAAAAAAAAA"";
 }
 return MyClass.A1000000;
 ", A1000000, "Ошибок нет")]
 	[DataRow(@"static Class MyClass
 {
-	closed const string A1000000 = A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000;
-	closed const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
-	closed const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
-	closed const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
-	closed const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
-	closed const string A10 = ""AAAAAAAAAA"";
+	private const string A1000000 = A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000;
+	private const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
+	private const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
+	private const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
+	private const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+	private const string A10 = ""AAAAAAAAAA"";
 }
 return MyClass.A1000000;
 ", "null", @"Error 4030 in line 10 at position 15: the property ""MyClass.A1000000"" is inaccessible from here
@@ -2731,8 +2731,8 @@ return A1000000;
 ", A1000000, "Ошибок нет")]
 	[DataRow(@"static Class MyClass
 {
-	closed const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
-	closed string A10 = ""AAAAAAAAAA"";
+	private const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+	private string A10 = ""AAAAAAAAAA"";
 }
 return MyClass.A100;
 ", "null", @"Error 4050 in line 3 at position 28: this expression must be constant but it isn't

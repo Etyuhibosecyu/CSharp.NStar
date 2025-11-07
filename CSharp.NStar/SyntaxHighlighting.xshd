@@ -37,7 +37,7 @@
 			\^[\^=]?|\|[\|=]?|&amp;[&amp;=]?|&gt;(?:&gt;&gt;?)?=?|&lt;(?:&lt;&lt;?)?=?|![!=]?|\?(?:!?=|&gt;=?|&lt;=?|\?|\.|\[)?|,|\:|\$|~|\+[+=]?|-[\-=]?|\*=?|/=?|%=?|=[=&gt;]?|\.(?:\.\.?)?
 		</Rule>
 		<Rule fontWeight="bold" foreground="#008080">
-			(?:abstract|break|case|Class|closed|const|Constructor|continue|default|Delegate|delete|Destructor|else|Enum|Event|Extent|extern|false|for|foreach|Function|if|Interface|internal|lock|loop|multiconst|Namespace|new|null|Operator|out|override|params|protected|public|readonly|ref|repeat|return|sealed|static|Struct|switch|this|throw|true|using|while)(?![0-9A-Za-z_])
+			(?:abstract|break|case|Class|const|Constructor|continue|default|Delegate|delete|Destructor|else|Enum|Event|Extent|extern|false|for|foreach|Function|if|Interface|internal|lock|loop|multiconst|Namespace|new|null|Operator|out|override|params|private|protected|public|readonly|ref|repeat|return|sealed|static|Struct|switch|this|throw|true|using|while)(?![0-9A-Za-z_])
 		</Rule>
 		<Rule foreground="#00BF00">
 			[A-Za-z_][0-9A-Za-z_]*

@@ -528,12 +528,12 @@ public class LexemStream
 
 	private int GetAccessMethod(int attributes)
 	{
-		if (IsLexemKeyword(lexems[prevPos], ["closed", "protected"]))
+		if (IsLexemKeyword(lexems[prevPos], ["private", "protected"]))
 		{
 			if (nestedBlocksChain.Length != 0 && nestedBlocksChain.Peek().BlockType == BlockType.Class)
-				attributes |= (lexems[prevPos].String == "closed") ? 2 : 4;
+				attributes |= (lexems[prevPos].String == "private") ? 2 : 4;
 			else
-				GenerateMessage(0x0014, prevPos, "closed and protected classes are allowed only inside other classes");
+				GenerateMessage(0x0014, prevPos, "private and protected classes are allowed only inside other classes");
 			prevPos++;
 		}
 		else if (IsPos2LexemKeyword("internal"))

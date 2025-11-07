@@ -49,7 +49,7 @@ public partial class MainParsing : LexemStream
 	private static readonly G.Dictionary<String, dynamic> attributesMapping = new()
 	{
 		{ "ref", ParameterAttributes.Ref }, { "out", ParameterAttributes.Out },
-		{ "params", ParameterAttributes.Params }, { "closed", PropertyAttributes.Closed },
+		{ "params", ParameterAttributes.Params }, { "private", PropertyAttributes.Closed },
 		{ "protected", PropertyAttributes.Protected }, { "internal", PropertyAttributes.Internal },
 		{ "public", PropertyAttributes.None }
 	};
@@ -916,7 +916,7 @@ public partial class MainParsing : LexemStream
 	private bool Property()
 	{
 		var oldPos = pos;
-		if (IsLexemKeyword(lexems[pos], ["closed", "protected", "internal", "public"]))
+		if (IsLexemKeyword(lexems[pos], ["private", "protected", "internal", "public"]))
 		{
 			AddPropertyAttribute(attributesMapping[lexems[pos].String], nameof(Property));
 			if (lexems[pos].String == "public")
