@@ -7,7 +7,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-		<ProjectReference Include="..\DeclaredConstructionHelpers\DeclaredConstructionHelpers.csproj" />
 		<ProjectReference Include="..\NStarEntity\NStarEntity.csproj" />
 	</ItemGroup>
 </Project>

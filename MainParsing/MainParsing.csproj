@@ -7,5 +7,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\CodeSample\CodeSample.csproj" />
+		<ProjectReference Include="..\MemberConverters\MemberConverters.csproj" />
 	</ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 ﻿global using System;
 global using String = NStar.Core.String;
-using static CSharp.NStar.SemanticTree;
 using System.Globalization;
+using static CSharp.NStar.SemanticTree;
 
 namespace CSharp.NStar.Tests;
 
@@ -1170,7 +1170,7 @@ int Function G(string s)
 }
 string a = 8;
 return (G(12), new ListHashSet[string](1, ""A"", 10), new MyClass(77777));
-", "null", @"Error 4039 in line 8 at position 8: incompatibility between the type of the returning value ""byte"" and the function return type ""string"" - use an addition of zero-length string for this
+", "null", @"Error 402B in line 8 at position 8: incompatibility between the type of the returning value ""byte"" and the function return type ""string"" - use an addition of zero-length string for this
 Error 4014 in line 14 at position 9: cannot convert from the type ""byte"" to the type ""string"" - use an addition of zero-length string for this
 Error 4026 in line 15 at position 10: incompatibility between the type of the parameter of the call ""byte"" and the type of the parameter of the function ""string"" - use an addition of zero-length string for this
 Error 4036 in line 15 at position 47: incompatibility between the type of the parameter of the call ""byte"" and the type of the parameter of the constructor ""System.Collections.IEqualityComparer[string]""
@@ -1930,7 +1930,7 @@ return (a1, a2, a3, a4);
 
  Person person = new Person(""Alice"", 30);
  return (person.GetName(), person.GetAge());
-", @"(""Alice"", null)", @"Error 4039 in line 13 at position 9: incompatibility between the type of the returning value ""int"" and the function return type ""string"" - use an addition of zero-length string for this
+", @"(""Alice"", null)", @"Error 402B in line 13 at position 9: incompatibility between the type of the returning value ""int"" and the function return type ""string"" - use an addition of zero-length string for this
 ")]
 	[DataRow(@"Class Animal
 {
@@ -2735,16 +2735,16 @@ return A1000000;
 	private string A10 = ""AAAAAAAAAA"";
 }
 return MyClass.A100;
-", "null", @"Error 4050 in line 3 at position 28: this expression must be constant but it isn't
-Error 4050 in line 3 at position 34: this expression must be constant but it isn't
-Error 4050 in line 3 at position 40: this expression must be constant but it isn't
-Error 4050 in line 3 at position 46: this expression must be constant but it isn't
-Error 4050 in line 3 at position 52: this expression must be constant but it isn't
-Error 4050 in line 3 at position 58: this expression must be constant but it isn't
-Error 4050 in line 3 at position 64: this expression must be constant but it isn't
-Error 4050 in line 3 at position 70: this expression must be constant but it isn't
-Error 4050 in line 3 at position 76: this expression must be constant but it isn't
-Error 4050 in line 3 at position 82: this expression must be constant but it isn't
+", "null", @"Error 4050 in line 3 at position 29: this expression must be constant but it isn't
+Error 4050 in line 3 at position 35: this expression must be constant but it isn't
+Error 4050 in line 3 at position 41: this expression must be constant but it isn't
+Error 4050 in line 3 at position 47: this expression must be constant but it isn't
+Error 4050 in line 3 at position 53: this expression must be constant but it isn't
+Error 4050 in line 3 at position 59: this expression must be constant but it isn't
+Error 4050 in line 3 at position 65: this expression must be constant but it isn't
+Error 4050 in line 3 at position 71: this expression must be constant but it isn't
+Error 4050 in line 3 at position 77: this expression must be constant but it isn't
+Error 4050 in line 3 at position 83: this expression must be constant but it isn't
 ")]
 	[DataRow(@"const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
 string A10 = ""AAAAAAAAAA"";
@@ -4990,6 +4990,346 @@ const typename real = () ListHashSet[string];
 typename T = () real;
 return T;
 ", "list(2) System.Collections.ListHashSet[string]", "Ошибок нет")]
+	[DataRow(@"Class Person
+{
+	string Name { get, private set };
+}
+var p = new Person();
+p.Name = ""Alice"";
+return p;
+", "new Person(null)", @"Error 4039 in line 6 at position 2: the property ""Person.Name"" cannot be set from here
+")]
+	[DataRow(@"Class Config
+{
+   int Timeout { get, init };
+}
+var c = new Config[100]();
+c.Timeout = 200;
+return c;
+", "new Config(100)", @"Error 403A in line 6 at position 2: the property ""Config.Timeout"" is declared with ""init"" modifier so it can be set only in the initializer or constructor
+")]
+	[DataRow(@"Class Config
+{
+   int Timeout { get, init };
+}
+var c = new Config[100]();
+return c;
+", "new Config(100)", "Ошибок нет")]
+	[DataRow(@"Class Config
+{
+   int Timeout { get, init };
+}
+var c = new Config[""100""]();
+return c;
+", "null", @"Error 4014 in line 5 at position 19: cannot convert from the type ""string"" to the type ""int""
+")]
+	[DataRow(@"Class Secret
+{
+   string Code { get, private init };
+}
+var s = new Secret[""AAA""]();
+return s;
+", "null", @"Error 403F in line 5 at position 19: redundant property initializer - this class does not have so many open settable properties
+")]
+	[DataRow(@"Class Item
+{
+	string Label { get, init, set };
+}
+", "null", @"Error 2008 in line 3 at position 25: expected: }
+")]
+	[DataRow(@"Class Record
+{
+	required string Title { get, init };
+}
+var r = new Record();
+return r;
+", "null", @"Error 403C in line 5 at position 18: you must set the required properties - it is done with the square brackets
+")]
+	[DataRow(@"Class Outer
+{
+	Inner Nested { get, init };
+}
+
+Class Inner
+{
+	required int Value { get, init };
+}
+var o = new Outer[new Inner()]();
+return o;
+", "new Outer(null)", @"Error 403C in line 10 at position 27: you must set the required properties - it is done with the square brackets
+")]
+	[DataRow(@"Class Outer
+{
+	Inner Nested { get, init };
+}
+
+Class Inner
+{
+	required int Value { get, init };
+}
+var o = new Outer[new Inner[123]()]();
+return o;
+", "new Outer(new Inner(123))", "Ошибок нет")]
+	[DataRow(@"Class Record
+{
+	required string Title { get, init };
+	required string Data { get, init };
+}
+var r = new Record[""MyRecord""]();
+return r;
+", "null", @"Error 403D in line 6 at position 29: the required property ""Data"" must be set during the construction
+")]
+	[DataRow(@"Class User
+{
+	required string Name { get, init };
+	required int Age { get, init };
+	string Email { get, init }; // не required
+}
+var user = new User[""Alice""]();
+return user;
+", "null", @"Error 403D in line 7 at position 27: the required property ""Age"" must be set during the construction
+")]
+	[DataRow(@"Class User
+{
+	required string Name { get, init };
+	int Age { get, init };
+	string Email { get, init }; // не required
+}
+var user = new User[""Alice"", 25, ""admin@example.com""]();
+return user;
+", @"new User(""Alice"", 25, ""admin@example.com"")", "Ошибок нет")]
+	[DataRow(@"Class Product
+{
+	string Id { get, init };
+	real Price { get, init };
+}
+var p = new Product[""P123"", 10.5, ""Electronics""]();
+return p;
+", "null", @"Error 403F in line 6 at position 34: redundant property initializer - this class does not have so many open settable properties
+")]
+	[DataRow(@"Class Settings
+{
+	bool IsActive { get, init };
+	int Timeout { get, init };
+}
+var settings = new Settings[true, 30]();
+settings.IsActive = false;
+return settings;
+", "new Settings(true, 30)", @"Error 403A in line 7 at position 9: the property ""Settings.IsActive"" is declared with ""init"" modifier so it can be set only in the initializer or constructor
+")]
+	[DataRow(@"Class Account
+{
+	string Username { get, private set };
+	real Balance { get, init };
+	bool IsLocked { get, set }; // публичный set
+}
+var acc = new Account[""user1"", 100.0]();
+return acc;
+", "null", @"Error 4014 in line 7 at position 22: cannot convert from the type ""string"" to the type ""real""
+")]
+	[DataRow(@"Class Company
+{
+	required string Name { get, init };
+	Address Location { get, init };
+}
+
+Class Address
+{
+	required string City { get, init };
+	required string Street { get, init };
+}
+
+// Код, вызывающий ошибку:
+var company = new Company[""Acme"", new Address[""New York""]()]();
+return company;
+", @"new Company(""Acme"", null)", @"Error 403D in line 14 at position 56: the required property ""Street"" must be set during the construction
+")]
+	[DataRow(@"Class Batch
+{
+	() int Items { get, init };
+	string Status { get, init };
+}
+var batch = new Batch[(1, 2, 3), ""Pending""]();
+return batch;
+", @"new Batch((1, 2, 3), ""Pending"")", "Ошибок нет")]
+	[DataRow(@"Class Person
+{
+	string Name { get, private set };
+}
+Person p = new();
+p.Name = ""Alice"";
+return p;
+", "new Person(null)", @"Error 4039 in line 6 at position 2: the property ""Person.Name"" cannot be set from here
+")]
+	[DataRow(@"Class Config
+{
+   int Timeout { get, init };
+}
+Config[100] c = new();
+c.Timeout = 200;
+return c;
+", "new Config(100)", @"Error 403A in line 6 at position 2: the property ""Config.Timeout"" is declared with ""init"" modifier so it can be set only in the initializer or constructor
+")]
+	[DataRow(@"Class Config
+{
+   int Timeout { get, init };
+}
+Config[100] c = new();
+return c;
+", "new Config(100)", "Ошибок нет")]
+	[DataRow(@"Class Config
+{
+   int Timeout { get, init };
+}
+Config[""100""] c = new();
+return c;
+", "null", @"Error 4014 in line 5 at position 7: cannot convert from the type ""string"" to the type ""int""
+")]
+	[DataRow(@"Class Secret
+{
+   string Code { get, private init };
+}
+Secret[""AAA""] s = new();
+return s;
+", "null", @"Error 403F in line 5 at position 7: redundant property initializer - this class does not have so many open settable properties
+")]
+	[DataRow(@"Class Record
+{
+	required string Title { get, init };
+}
+Record r = new();
+return r;
+", "null", @"Error 403C in line 5 at position 14: you must set the required properties - it is done with the square brackets
+")]
+	[DataRow(@"Class Outer
+{
+	Inner Nested { get, init };
+}
+
+Class Inner
+{
+	required int Value { get, init };
+}
+Outer[new Inner()] o = new();
+return o;
+", "new Outer(null)", @"Error 403C in line 10 at position 15: you must set the required properties - it is done with the square brackets
+")]
+	[DataRow(@"Class Outer
+{
+	Inner Nested { get, init };
+}
+
+Class Inner
+{
+	required int Value { get, init };
+}
+Outer[new Inner[123]()] o = new();
+return o;
+", "new Outer(new Inner(123))", "Ошибок нет")]
+	[DataRow(@"Class Record
+{
+	required string Title { get, init };
+	required string Data { get, init };
+}
+Record[""MyRecord""] r = new();
+return r;
+", "null", @"Error 403D in line 6 at position 17: the required property ""Data"" must be set during the construction
+")]
+	[DataRow(@"Class User
+{
+	required string Name { get, init };
+	required int Age { get, init };
+	string Email { get, init }; // не required
+}
+User[""Alice""] user = new();
+return user;
+", "null", @"Error 403D in line 7 at position 12: the required property ""Age"" must be set during the construction
+")]
+	[DataRow(@"Class User
+{
+	required string Name { get, init };
+	int Age { get, init };
+	string Email { get, init }; // не required
+}
+User[""Alice"", 25, ""admin@example.com""] user = new();
+return user;
+", @"new User(""Alice"", 25, ""admin@example.com"")", "Ошибок нет")]
+	[DataRow(@"Class Product
+{
+	string Id { get, init };
+	real Price { get, init };
+}
+Product[""P123"", 10.5, ""Electronics""] p = new();
+return p;
+", "null", @"Error 403F in line 6 at position 22: redundant property initializer - this class does not have so many open settable properties
+")]
+	[DataRow(@"Class Settings
+{
+	bool IsActive { get, init };
+	int Timeout { get, init };
+}
+Settings[true, 30] settings = new();
+settings.IsActive = false;
+return settings;
+", "new Settings(true, 30)", @"Error 403A in line 7 at position 9: the property ""Settings.IsActive"" is declared with ""init"" modifier so it can be set only in the initializer or constructor
+")]
+	[DataRow(@"Class Account
+{
+	string Username { get, private set };
+	real Balance { get, init };
+	bool IsLocked { get, set }; // публичный set
+}
+Account[""user1"", 100.0] acc = new();
+return acc;
+", "null", @"Error 4014 in line 7 at position 8: cannot convert from the type ""string"" to the type ""real""
+")]
+	[DataRow(@"Class Company
+{
+	required string Name { get, init };
+	Address Location { get, init };
+}
+
+Class Address
+{
+	required string City { get, init };
+	required string Street { get, init };
+}
+
+// Код, вызывающий ошибку:
+Company[""Acme"", new Address[""New York""]()] company = new();
+return company;
+", @"new Company(""Acme"", null)", @"Error 403D in line 14 at position 38: the required property ""Street"" must be set during the construction
+")]
+	[DataRow(@"Class Batch
+{
+	() int Items { get, init };
+	string Status { get, init };
+}
+Batch[(1, 2, 3), ""Pending""] batch = new();
+return batch;
+", @"new Batch((1, 2, 3), ""Pending"")", "Ошибок нет")]
+//	[DataRow(@"return Sqrt(I);
+//", "0.7071067811865476+0.7071067811865475I", "Ошибок нет")]
+//	[DataRow(@"return Sqrt(-I);
+//", "0.7071067811865476-0.7071067811865475I", "Ошибок нет")]
+//	[DataRow(@"return Exp(I);
+//", "0.5403023058681398+0.8414709848078965I", "Ошибок нет")]
+//	[DataRow(@"return Exp(-I);
+//", "0.5403023058681398-0.8414709848078965I", "Ошибок нет")]
+//	[DataRow(@"return ln I;
+//", "0+1.5707963267948966I", "Ошибок нет")]
+//	[DataRow(@"return ln (-I);
+//", "0-1.5707963267948966I", "Ошибок нет")]
+//	[DataRow(@"return Log(E, I);
+//", "0+1.5707963267948966I", "Ошибок нет")]
+//	[DataRow(@"return Log(E, -I);
+//", "0-1.5707963267948966I", "Ошибок нет")]
+//	[DataRow(@"return Log(I, I);
+//", "null", @"Error 4026 in line 1 at position 11: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
+//")]
+//	[DataRow(@"return Log(I, -I);
+//", "null", @"Error 4026 in line 1 at position 11: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
+//")]
 	[DataRow(@"return 100000000000000000*100000000000000000000;
 ", "0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
 ")]

@@ -1,4 +1,20 @@
-﻿using System.Drawing;
+﻿global using NStar.Core;
+global using NStar.Linq;
+global using NStar.MathLib;
+global using NStar.MathLib.Extras;
+global using System;
+global using System.Diagnostics.CodeAnalysis;
+global using System.Reflection;
+global using static CSharp.NStar.BuiltInMemberCollections;
+global using static CSharp.NStar.NStarType;
+global using static CSharp.NStar.TypeChecks;
+global using static CSharp.NStar.TypeConverters;
+global using static NStar.Core.Extents;
+global using static System.Math;
+global using G = System.Collections.Generic;
+global using String = NStar.Core.String;
+using System.Drawing;
+using System.Numerics;
 
 namespace CSharp.NStar;
 
@@ -54,7 +70,7 @@ public static class NStarUtilityFunctions
 		return a;
 	}
 
-	public static double Log(double a, double x) => Math.Log(x, a);
+	public static Complex Log(double a, Complex x) => Complex.Log(x, a);
 
 	public static double RandomNumber(double max)
 	{

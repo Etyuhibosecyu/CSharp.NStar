@@ -12,6 +12,7 @@ public enum LexemType
 	LongInt,
 	UnsignedLongInt,
 	Real,
+	Complex,
 	Identifier,
 	Keyword,
 	Operator,
@@ -128,10 +129,23 @@ public class CodeSample(String newString)
 			numberParts.Add(GetNumber2(out _));
 			if (CheckOverflow(numberParts[^1], ref lexemType) is String s2) return s2;
 		}
-		if (numberParts[0].Length != 0 && ValidateChar('r'))
+		if (numberParts[0].Length != 0)
 		{
-			lexemType = LexemType.Real;
-			numberParts.Add("r");
+			if (ValidateChar('r'))
+			{
+				lexemType = LexemType.Real;
+				numberParts.Add("r");
+			}
+			else if (ValidateChar('c'))
+			{
+				lexemType = LexemType.Complex;
+				numberParts.Add("c");
+			}
+			else if (ValidateChar('I'))
+			{
+				lexemType = LexemType.Complex;
+				numberParts.Add("I");
+			}
 		}
 		return String.Join([], [.. numberParts]);
 		String? CheckOverflow(String s, ref LexemType lexemType)

@@ -6,6 +6,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\MainParsing\MainParsing.csproj" />
+		<ProjectReference Include="..\NStarUtilityFunctions\NStarUtilityFunctions.csproj" />
 	</ItemGroup>
 </Project>

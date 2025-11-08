@@ -1,4 +1,13 @@
-﻿namespace CSharp.NStar;
+﻿global using NStar.Core;
+global using NStar.Dictionaries;
+global using NStar.Linq;
+global using NStar.MathLib;
+global using System;
+global using System.Diagnostics;
+global using G = System.Collections.Generic;
+global using String = NStar.Core.String;
+
+namespace CSharp.NStar;
 
 [DebuggerDisplay("{ToString()}")]
 public sealed class TreeBranch

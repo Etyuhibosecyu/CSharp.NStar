@@ -1,6 +1,17 @@
-﻿using NStar.MathLib.Extras;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
+﻿global using NStar.Core;
+global using NStar.Linq;
+global using NStar.MathLib.Extras;
+global using System;
+global using System.Diagnostics.CodeAnalysis;
+global using System.Reflection;
+global using static CSharp.NStar.BuiltInMemberCollections;
+global using static CSharp.NStar.NStarType;
+global using static CSharp.NStar.TypeChecks;
+global using static CSharp.NStar.TypeConverters;
+global using static NStar.Core.Extents;
+global using G = System.Collections.Generic;
+global using String = NStar.Core.String;
+using System.Runtime.CompilerServices;
 
 namespace CSharp.NStar;
 
@@ -312,7 +323,7 @@ public static class MemberChecks
 				&& builtInMethods.TryGetValue(name, out var builtInOverloads))
 			{
 				functions = [.. builtInOverloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0).ToList(x =>
-					new UserDefinedMethodOverload(name, x.ArrayParameters, x.ReturnNStarType, x.Attributes, x.Parameters))];
+					new UserDefinedMethodOverload(name, x.Restrictions, x.ReturnNStarType, x.Attributes, x.Parameters))];
 				user = false;
 				return true;
 			}
@@ -323,17 +334,18 @@ public static class MemberChecks
 		functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
 		for (var i = 0; i < functions.Length; i++)
 		{
-			var arrayParameters = functions[i].ArrayParameters;
+			var arrayParameters = functions[i].Restrictions;
 			for (var j = 0; j < arrayParameters.Length; j++)
 			{
 				var x = arrayParameters[j];
-				if (!(!x.ArrayParameterPackage && x.ArrayParameterType.Length == 1
-					&& x.ArrayParameterType.Peek().BlockType == BlockType.Extra && parameterTypes.Length > j))
+				if (!(!x.Package && x.RestrictionType.ExtraTypes.Length == 0
+					&& x.RestrictionType.MainType.Length == 1
+					&& x.RestrictionType.MainType.Peek().BlockType == BlockType.Extra && parameterTypes.Length > j))
 					continue;
-				functions[i] = new(functions[i].RealName, [], ReplaceExtraType(functions[i].ReturnNStarType, x.ArrayParameterType.Peek().Name,
-					parameterTypes[j]), functions[i].Attributes, [.. functions[i].Parameters.Convert(y =>
-				new ExtendedMethodParameter(ReplaceExtraType(y.Type, x.ArrayParameterType.Peek().Name,
-				parameterTypes[j]), y.Name, y.Attributes, y.DefaultValue))]);
+				functions[i] = new(functions[i].RealName, [], ReplaceExtraType(functions[i].ReturnNStarType,
+					x.RestrictionType.MainType.Peek().Name, parameterTypes[j]), functions[i].Attributes,
+					[.. functions[i].Parameters.Convert(y => new ExtendedMethodParameter(ReplaceExtraType(y.Type,
+					x.RestrictionType.MainType.Peek().Name, parameterTypes[j]), y.Name, y.Attributes, y.DefaultValue))]);
 			}
 		}
 		user = true;

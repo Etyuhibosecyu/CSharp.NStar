@@ -1,18 +1,7 @@
-﻿global using NStar.Core;
-global using NStar.Linq;
-global using NStar.MathLib;
-global using System;
+﻿global using System;
 global using System.Diagnostics.CodeAnalysis;
-global using System.Runtime.CompilerServices;
 global using static CSharp.NStar.BuiltInMemberCollections;
 global using static CSharp.NStar.NStarType;
-global using static CSharp.NStar.NStarUtilityFunctions;
-global using static CSharp.NStar.TypeChecks;
-global using static CSharp.NStar.TypeConverters;
-global using static CSharp.NStar.TypeMappings;
-global using static NStar.Core.Extents;
-global using static System.Math;
-global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 
 namespace CSharp.NStar;

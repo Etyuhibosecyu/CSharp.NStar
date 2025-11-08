@@ -6,6 +6,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\MainParsing\MainParsing.csproj" />
+		<ProjectReference Include="..\BuiltInTypeCollections\BuiltInTypeCollections.csproj" />
 	</ItemGroup>
 </Project>

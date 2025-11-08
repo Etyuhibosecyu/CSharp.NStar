@@ -6,6 +6,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\BuiltInMemberCollections\BuiltInMemberCollections.csproj" />
+		<ProjectReference Include="..\..\.NStar\Sources\NStar.ExtraHS\NStar.ExtraHS.csproj" />
+		<ProjectReference Include="..\TypeChecks\TypeChecks.csproj" />
 	</ItemGroup>
 </Project>

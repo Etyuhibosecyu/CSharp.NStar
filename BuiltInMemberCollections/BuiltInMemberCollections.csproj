@@ -14,6 +14,9 @@
 		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
 		<PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.8" />
 		<PackageReference Include="ReactiveUI.Avalonia" Version="11.3.8" />
-		<ProjectReference Include="..\..\.NStar\Sources\NStar.EasyEval\NStar.EasyEval.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\NStarType\NStarType.csproj" />
 	</ItemGroup>
 </Project>

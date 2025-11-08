@@ -6,6 +6,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\MainParsing\MainParsing.csproj" />
+		<ProjectReference Include="..\..\.NStar\Sources\NStar.EasyEval\NStar.EasyEval.csproj" />
 	</ItemGroup>
 </Project>

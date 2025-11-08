@@ -1,11 +1,11 @@
-﻿using NStar.Core;
-using NStar.Linq;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using NStar.Core;
 using System;
 using System.Collections;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using static CSharp.NStar.TypeMappings;
+using static CSharp.NStar.TypeConverters;
 using static System.Math;
 using String = NStar.Core.String;
 
@@ -16,8 +16,23 @@ public static class JsonConverters
 	public static JsonSerializerSettings SerializerSettings { get; } = new()
 	{
 		Converters = [new StringConverter(), new IEnumerableConverter(), new TypeConverter(), new TupleConverter(),
-			new UniversalConverter(), new ValueTypeConverter(), new IClassConverter(), new DoubleConverter()]
+			new UniversalConverter(), new ComplexConverter(), new ValueTypeConverter(), new IClassConverter(),
+			new DoubleConverter()]
 	};
+
+	public class ComplexConverter : JsonConverter<Complex>
+	{
+		public override Complex ReadJson(JsonReader reader, Type objectType, Complex existingValue,
+			bool hasExistingValue, JsonSerializer serializer) => throw new NotImplementedException();
+		public override void WriteJson(JsonWriter writer, Complex value, JsonSerializer serializer)
+		{
+			writer.WriteRaw(JsonConvert.SerializeObject(value.Real, SerializerSettings));
+			if (value.Imaginary >= 0)
+				writer.WriteRaw("+");
+			writer.WriteRaw(JsonConvert.SerializeObject(value.Imaginary, SerializerSettings));
+			writer.WriteRaw("I");
+		}
+	}
 
 	public class DoubleConverter : JsonConverter<double>
 	{
@@ -59,7 +74,6 @@ public static class JsonConverters
 				writer.WriteNull();
 				return;
 			}
-
 			var netType = value.GetType();
 			writer.WriteRaw("new " + netType.Name + "(");
 			List<Type> types = [];

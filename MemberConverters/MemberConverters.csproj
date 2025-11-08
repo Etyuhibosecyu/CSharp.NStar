@@ -6,6 +6,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\MainParsing\MainParsing.csproj" />
+		<ProjectReference Include="..\MemberChecks\MemberChecks.csproj" />
 	</ItemGroup>
 </Project>

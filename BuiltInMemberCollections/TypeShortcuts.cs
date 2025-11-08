@@ -2,15 +2,15 @@
 
 namespace CSharp.NStar;
 
-public record struct UserDefinedType(ExtendedArrayParameters ArrayParameters, TypeAttributes Attributes, NStarType BaseType, BranchCollection Decomposition);
+public record struct UserDefinedType(ExtendedRestrictions Restrictions, TypeAttributes Attributes, NStarType BaseType, BranchCollection Decomposition);
 public record struct UserDefinedProperty(NStarType NStarType, PropertyAttributes Attributes, String DefaultValue);
 public record struct UserDefinedConstant(NStarType NStarType, ConstantAttributes Attributes, TreeBranch DefaultValue);
-public record struct ExtendedArrayParameter(bool ArrayParameterPackage, BranchCollection ArrayParameterRestrictions, BlockStack ArrayParameterType, String ArrayParameterName);
+public record struct ExtendedRestriction(bool Package, NStarType RestrictionType, String Name);
 public record struct MethodParameter(String Type, String Name, List<String> ExtraTypes, ParameterAttributes Attributes, String DefaultValue);
 public record struct ExtendedMethodParameter(NStarType Type, String Name, ParameterAttributes Attributes, String DefaultValue);
 public record struct FunctionOverload(List<String> ExtraTypes, String ReturnType, List<String> ReturnExtraTypes, FunctionAttributes Attributes, MethodParameters Parameters);
-public record struct ExtendedMethodOverload(ExtendedArrayParameters ArrayParameters, NStarType ReturnNStarType, FunctionAttributes Attributes, ExtendedMethodParameters Parameters);
-public record struct UserDefinedMethodOverload(String RealName, ExtendedArrayParameters ArrayParameters, NStarType ReturnNStarType, FunctionAttributes Attributes, ExtendedMethodParameters Parameters);
+public record struct ExtendedMethodOverload(ExtendedRestrictions Restrictions, NStarType ReturnNStarType, FunctionAttributes Attributes, ExtendedMethodParameters Parameters);
+public record struct UserDefinedMethodOverload(String RealName, ExtendedRestrictions Restrictions, NStarType ReturnNStarType, FunctionAttributes Attributes, ExtendedMethodParameters Parameters);
 
 public sealed class VariablesBlock<T>(IList<T> main, IList<bool> isNull)
 {
@@ -45,7 +45,7 @@ public class BlocksToJump : List<(BlockStack Container, String Type, String Name
 public class ParameterValues : List<(BlockStack Container, String Name, int ParameterIndex, int Start, int End)>
 {
 }
-public class ExtendedTypesCollection(G.IComparer<(BlockStack Container, String Type)> comparer) : SortedDictionary<(BlockStack Container, String Type), (ExtendedArrayParameters ArrayParameters, TypeAttributes Attributes)>(comparer)
+public class ExtendedTypesCollection(G.IComparer<(BlockStack Container, String Type)> comparer) : SortedDictionary<(BlockStack Container, String Type), (ExtendedRestrictions Restrictions, TypeAttributes Attributes)>(comparer)
 {
 }
 public class TypeVariables : SortedDictionary<String, NStarType>
@@ -75,7 +75,7 @@ public class MethodParameters : List<MethodParameter>
 public class FunctionsList : SortedDictionary<String, FunctionOverload>
 {
 }
-public class ExtendedArrayParameters : List<ExtendedArrayParameter>
+public class ExtendedRestrictions : List<ExtendedRestriction>
 {
 }
 public class ExtendedMethodParameters : List<ExtendedMethodParameter>

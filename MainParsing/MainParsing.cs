@@ -24,7 +24,7 @@ public partial class MainParsing : LexemStream
 	private readonly NList<int> _BTJPStack = new(16, 0), _RTPStack = new(16, 0), _PLPStack = new(16, 0);
 	private int typeDepth;
 	private readonly List<String> collectionTypes = new(16) { "" };
-	private readonly List<ExtendedArrayParameters> typeChainTemplate = new(16);
+	private readonly List<ExtendedRestrictions> typeChainTemplate = new(16);
 	private readonly NList<int> tpos = new(16);
 	private int globalUnnamedIndex = 1;
 	private int _Stackpos;
@@ -49,7 +49,7 @@ public partial class MainParsing : LexemStream
 	private static readonly G.Dictionary<String, dynamic> attributesMapping = new()
 	{
 		{ "ref", ParameterAttributes.Ref }, { "out", ParameterAttributes.Out },
-		{ "params", ParameterAttributes.Params }, { "private", PropertyAttributes.Closed },
+		{ "params", ParameterAttributes.Params }, { "private", PropertyAttributes.Private },
 		{ "protected", PropertyAttributes.Protected }, { "internal", PropertyAttributes.Internal },
 		{ "public", PropertyAttributes.None }
 	};
@@ -213,9 +213,9 @@ public partial class MainParsing : LexemStream
 		nameof(LambdaExpr2) => LambdaExpr2,
 		"LambdaExpr3" or "LambdaExpr4" => LambdaExpr3_4,
 		nameof(LambdaExpr5) => LambdaExpr5,
-		nameof(Switch2)=> Switch2,
+		nameof(Switch2) => Switch2,
 		"Switch3" or "Switch4" => Switch3_4,
-		nameof(Switch5)=> Switch5,
+		nameof(Switch5) => Switch5,
 		nameof(AssignedExpr2) => AssignedExpr2,
 		nameof(QuestionExpr2) => QuestionExpr2,
 		nameof(QuestionExpr3) => QuestionExpr3,
@@ -481,6 +481,18 @@ public partial class MainParsing : LexemStream
 
 	private bool Function2()
 	{
+		if (!CheckBlockToJump2(nameof(Function)))
+			return _SuccessStack[_Stackpos] = false;
+		CheckSuccess();
+		TransformErrorMessage2();
+		if (parameterListsPos < parameterLists.Length && parameterLists[parameterListsPos].Start >= blocksToJump[blocksToJumpPos].Start && parameterLists[parameterListsPos].End <= blocksToJump[blocksToJumpPos].End)
+			return IncreaseStack("Parameters", currentTask: nameof(Function3), pos_: parameterLists[parameterListsPos].Start, applyCurrentTask: true, start_: parameterLists[parameterListsPos].Start, end_: parameterLists[parameterListsPos].End, currentExtra: new ExtendedMethodParameters(), plp: parameterListsPos + 1);
+		else
+		{
+			_TaskStack[_Stackpos] = nameof(Function3);
+			_ExtraStack[_Stackpos] = new ExtendedMethodParameters();
+			return true;
+		}
 		void CheckSuccess()
 		{
 			if (!success || extra is not NStarType NStarType)
@@ -497,25 +509,24 @@ public partial class MainParsing : LexemStream
 			UserDefinedFunctions[container2][name][index] = t;
 			_TBStack[_Stackpos] = new(nameof(Function), [new(name, start, blocksToJump[blocksToJumpPos].End, container), treeBranch ?? TreeBranch.DoNotAdd()], container);
 		}
-		if (CheckBlockToJump2(nameof(Function)))
-		{
-			CheckSuccess();
-			TransformErrorMessage2();
-			if (parameterListsPos < parameterLists.Length && parameterLists[parameterListsPos].Start >= blocksToJump[blocksToJumpPos].Start && parameterLists[parameterListsPos].End <= blocksToJump[blocksToJumpPos].End)
-				return IncreaseStack("Parameters", currentTask: nameof(Function3), pos_: parameterLists[parameterListsPos].Start, applyCurrentTask: true, start_: parameterLists[parameterListsPos].Start, end_: parameterLists[parameterListsPos].End, currentExtra: new ExtendedMethodParameters(), plp: parameterListsPos + 1);
-			else
-			{
-				_TaskStack[_Stackpos] = nameof(Function3);
-				_ExtraStack[_Stackpos] = new ExtendedMethodParameters();
-				return true;
-			}
-		}
-		else
-			return _SuccessStack[_Stackpos] = false;
 	}
 
 	private bool Function3()
 	{
+		if (!CheckBlockToJump2(nameof(Function)))
+			return _SuccessStack[_Stackpos] = false;
+		CheckSuccess();
+		TransformErrorMessage2();
+		pos = blocksToJump[blocksToJumpPos].End;
+		if (success && (UserDefinedFunctions[blocksToJump[blocksToJumpPos].Container]
+			[blocksToJump[blocksToJumpPos].Name][0].Attributes & FunctionAttributes.New) == FunctionAttributes.Abstract)
+		{
+			SkipSemicolonsAndNewLines();
+			blocksToJumpPos++;
+			return EndWithAdding(true);
+		}
+		else
+			return CheckOpeningBracketAndAddTask(nameof(Main), "Function}", BlockType.Function);
 		void CheckSuccess()
 		{
 			if (!success || extra is not ExtendedMethodParameters parameters)
@@ -551,23 +562,6 @@ public partial class MainParsing : LexemStream
 			_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
 			return;
 		}
-		if (CheckBlockToJump2(nameof(Function)))
-		{
-			CheckSuccess();
-			TransformErrorMessage2();
-			pos = blocksToJump[blocksToJumpPos].End;
-			if (success && (UserDefinedFunctions[blocksToJump[blocksToJumpPos].Container]
-				[blocksToJump[blocksToJumpPos].Name][0].Attributes & FunctionAttributes.New) == FunctionAttributes.Abstract)
-			{
-				SkipSemicolonsAndNewLines();
-				blocksToJumpPos++;
-				return EndWithAdding(true);
-			}
-			else
-				return CheckOpeningBracketAndAddTask(nameof(Main), "Function}", BlockType.Function);
-		}
-		else
-			return _SuccessStack[_Stackpos] = false;
 	}
 
 	private bool FunctionClosing() => IsClosingFigureBracket() ? EndWithAdding(true) : EndWithError(0x2004, pos, false);
@@ -593,6 +587,15 @@ public partial class MainParsing : LexemStream
 
 	private bool Constructor2()
 	{
+		if (CheckBlockToJump2(nameof(Constructor)))
+		{
+			CheckSuccess();
+			TransformErrorMessage2();
+			pos = blocksToJump[blocksToJumpPos].End;
+			return CheckOpeningBracketAndAddTask(nameof(Main), "Constructor}", BlockType.Constructor);
+		}
+		else
+			return _SuccessStack[_Stackpos] = false;
 		void CheckSuccess()
 		{
 			if (!success || extra is not ExtendedMethodParameters parameters || parameters.Length == 0)
@@ -607,15 +610,6 @@ public partial class MainParsing : LexemStream
 			UserDefinedConstructors[blockToJumpContainer][index] = t;
 			_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
 		}
-		if (CheckBlockToJump2(nameof(Constructor)))
-		{
-			CheckSuccess();
-			TransformErrorMessage2();
-			pos = blocksToJump[blocksToJumpPos].End;
-			return CheckOpeningBracketAndAddTask(nameof(Main), "Constructor}", BlockType.Constructor);
-		}
-		else
-			return _SuccessStack[_Stackpos] = false;
 	}
 
 	private bool ConstructorClosing() => IsClosingFigureBracket() ? EndWithAdding(true) : EndWithError(0x2004, pos, false);
@@ -825,11 +819,9 @@ public partial class MainParsing : LexemStream
 
 	private bool ClassMain3()
 	{
+		_ErLStack[_Stackpos].AddRange(errors ?? []);
 		if (success && treeBranch != null && treeBranch.Length != 0)
-		{
-			_ErLStack[_Stackpos].AddRange(errors ?? []);
 			_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
-		}
 		return Default();
 	}
 
@@ -940,6 +932,14 @@ public partial class MainParsing : LexemStream
 			AddPropertyAttribute2(PropertyAttributes.Static | PropertyAttributes.Const);
 			pos++;
 		}
+		else if (pos < end && lexems[pos].Type == LexemType.Identifier && lexems[pos].String == "required")
+		{
+			if (mask >= 2)
+				GenerateMessage(0x2035, pos - 1, false);
+			else
+				AddPropertyAttribute2(PropertyAttributes.Required);
+			pos++;
+		}
 		if (IsCurrentLexemKeyword(nameof(Constructor)))
 		{
 			pos = _PosStack[_Stackpos] = oldPos;
@@ -953,34 +953,21 @@ public partial class MainParsing : LexemStream
 
 	private bool Property2()
 	{
-		bool CheckIdentifier(String string_)
-		{
-			if (lexems[pos].Type == LexemType.Identifier && lexems[pos].String == string_)
-			{
-				pos++;
-				return true;
-			}
-			else
-				return EndWithError(0x2008, pos, false, "\"" + string_ + "\"");
-		}
 		if (IsCurrentLexemKeyword(nameof(Function)))
 			return _SuccessStack[_Stackpos] = false;
 		CreateObjectList(out var l);
 		if (!AddExtraAndIdentifier())
 			return EndWithError(0x2001, pos, false);
-		if (IsCurrentLexemOther("{"))
-		{
-			pos++;
-			if (((PropertyAttributes)l![0] & PropertyAttributes.Const) == PropertyAttributes.Const)
-			{
-				GenerateMessage(0x203C, pos - 1, false);
-				CloseBracket(ref pos, "}", ref errors, false);
-				for (; !IsLexemOther(lexems[pos++], ";");) ;
-				return EndWithEmpty();
-			}
-		}
-		else
+		if (!IsCurrentLexemOther("{"))
 			goto l0;
+		pos++;
+		if (((PropertyAttributes)l![0] & PropertyAttributes.Const) == PropertyAttributes.Const)
+		{
+			GenerateMessage(0x203C, pos - 1, false);
+			CloseBracket(ref pos, "}", ref errors, false);
+			for (; !IsLexemOther(lexems[pos++], ";");) ;
+			return EndWithEmpty();
+		}
 		if (!CheckIdentifier("get"))
 			return false;
 		if (IsCurrentLexemOperator(","))
@@ -990,7 +977,24 @@ public partial class MainParsing : LexemStream
 			AddPropertyAttribute2(PropertyAttributes.NoSet);
 			goto l0;
 		}
-		if (!CheckIdentifier("set") || !CheckLexemAndEndWithError("}"))
+		if (IsLexemKeyword(lexems[pos], ["private", "protected"]))
+		{
+			AddPropertyAttribute2(lexems[pos].String == "private" ? PropertyAttributes.PrivateSet
+				: PropertyAttributes.ProtectedSet);
+			pos++;
+		}
+		if (pos < end && lexems[pos].Type == LexemType.Identifier && lexems[pos].String == "init")
+		{
+			AddPropertyAttribute2(PropertyAttributes.SetOnce);
+			pos++;
+			if (!ValidateLexemOrEndWithError("}"))
+			{
+				CloseBracket(ref pos, "}", ref errors, false);
+				for (; !IsLexemOther(lexems[pos++], ";");) ;
+				return EndWithEmpty();
+			}
+		}
+		else if (!CheckIdentifier("set") || !ValidateLexemOrEndWithError("}"))
 			return false;
 		l0:
 		if (IsCurrentLexemOperator("="))
@@ -1003,11 +1007,21 @@ public partial class MainParsing : LexemStream
 				for (; !IsLexemOther(lexems[pos++], ";");) ;
 				return EndWithEmpty();
 			}
-			if (!CheckLexemAndEndWithError(";", true))
+			if (!ValidateLexemOrEndWithError(";", true))
 				return false;
 			_ErLStack[_Stackpos].AddRange(errors ?? []);
 			_TBStack[_Stackpos]?.Add(new("null", pos - 1, container));
 			return AddUserDefinedProperty();
+		}
+		bool CheckIdentifier(String string_)
+		{
+			if (pos < end && lexems[pos].Type == LexemType.Identifier && lexems[pos].String == string_)
+			{
+				pos++;
+				return true;
+			}
+			else
+				return EndWithError(0x2008, pos, false, "\"" + string_ + "\"");
 		}
 	}
 
@@ -1086,6 +1100,14 @@ public partial class MainParsing : LexemStream
 			}
 			var attributes = (PropertyAttributes)l[0];
 			var name = (String)l[2];
+			if ((attributes & (PropertyAttributes.Private | PropertyAttributes.Protected | PropertyAttributes.Internal
+				| PropertyAttributes.SetOnce | PropertyAttributes.Required))
+				== (PropertyAttributes.SetOnce | PropertyAttributes.Required))
+			{
+				var userDefinedType = UserDefinedTypes[SplitType(container)];
+				userDefinedType.Restrictions.Add(new(false, NStarType, name));
+				return EndWithEmpty();
+			}
 			containerProperties.Add(name, new(NStarType, attributes, treeBranch == null ? "" : treeBranch.Length == 0
 				&& NStarEntity.TryParse(treeBranch.Name.ToString(), out var value) ? value.ToString(true)
 				: treeBranch.Name == "Expr" && treeBranch.Length == 1 && treeBranch[0].Length == 0
@@ -1153,7 +1175,7 @@ public partial class MainParsing : LexemStream
 		return Default();
 	}
 
-	private bool CheckLexemAndEndWithError(String string_, bool addQuotes = false)
+	private bool ValidateLexemOrEndWithError(String string_, bool addQuotes = false)
 	{
 		if (IsLexemOther(lexems[pos], string_))
 		{
@@ -1587,7 +1609,9 @@ public partial class MainParsing : LexemStream
 			return _SuccessStack[_Stackpos] = false;
 		if (pos < end && IsCurrentLexemOperator(","))
 		{
-			if (_TaskStack[_Stackpos - 1] == nameof(HypernameCall) || _TaskStack[_Stackpos - 1] == nameof(Expr2) && _TaskStack[_Stackpos - 2] == nameof(BasicExpr2))
+			if (_TaskStack[_Stackpos - 1] == nameof(HypernameCall)
+				|| _TaskStack[_Stackpos - 1] == nameof(Expr2) && _TaskStack[_Stackpos - 2] == nameof(BasicExpr2)
+				|| _TaskStack[_Stackpos - 1] == nameof(TypeChainIteration2))
 			{
 				pos++;
 				_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
@@ -1601,7 +1625,10 @@ public partial class MainParsing : LexemStream
 		else
 		{
 			_ErLStack[_Stackpos].AddRange(errors ?? []);
-			if (_TaskStack[_Stackpos - 1] == nameof(HypernameCall) || _TBStack[_Stackpos] != null && _TBStack[_Stackpos]?.Length != 0 && _TaskStack[_Stackpos - 1] == nameof(Expr2) && _TaskStack[_Stackpos - 2] == nameof(BasicExpr2))
+			if (_TaskStack[_Stackpos - 1] == nameof(HypernameCall)
+				|| _TBStack[_Stackpos] != null && _TBStack[_Stackpos]?.Length != 0
+				&& _TaskStack[_Stackpos - 1] == nameof(Expr2) && _TaskStack[_Stackpos - 2] == nameof(BasicExpr2)
+				|| _TaskStack[_Stackpos - 1] == nameof(TypeChainIteration2))
 				_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
 			else
 				_TBStack[_Stackpos] = treeBranch;
@@ -2406,7 +2433,7 @@ public partial class MainParsing : LexemStream
 		Type? netType = null;
 		NStarType NStarType;
 		BranchCollection typeParts = [];
-	l0:
+	start:
 		s = lexems[pos].String;
 		if (PrimitiveType(constraints, s) is bool b)
 			return b;
@@ -2451,7 +2478,7 @@ public partial class MainParsing : LexemStream
 				container.Push(new(BlockType.Namespace, s, 1));
 				namespace_ = namespace_ == "" ? s : namespace_ + "." + s;
 				_PosStack[_Stackpos] = ++pos;
-				goto l0;
+				goto start;
 			}
 			else
 			{
@@ -2514,7 +2541,7 @@ public partial class MainParsing : LexemStream
 			&& ExplicitlyConnectedNamespaces.FindIndex(x => ExtendedTypes.TryGetValue((innerContainer
 			= new(x.Split('.').Convert(x => new Block(BlockType.Namespace, x, 1))), s), out value)) >= 0)
 		{
-			var (ArrayParameters, Attributes) = value;
+			var (Restrictions, Attributes) = value;
 			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
 				&& !IsValidBaseClass(Attributes))
 			{
@@ -2534,7 +2561,7 @@ public partial class MainParsing : LexemStream
 				or TypeAttributes.Struct or TypeAttributes.Enum))
 				GenerateMessage(0x2024, pos, false, NStarType.ToString());
 			_PosStack[_Stackpos] = ++pos;
-			if (ArrayParameters.Length == 0)
+			if (Restrictions.Length == 0)
 				return TypeSingularTuple(NStarType);
 			if (pos >= end)
 			{
@@ -2554,11 +2581,11 @@ public partial class MainParsing : LexemStream
 				GenerateMessage(0x200C, pos, false);
 				goto end;
 			}
-			typeChainTemplate.Add(ArrayParameters);
+			typeChainTemplate.Add(Restrictions);
 			collectionTypes.Add("associativeArray");
 			return IncreaseStack(nameof(TypeChain), currentTask: nameof(IdentifierType2), pos_: pos,
 				applyPos: true, applyCurrentTask: true, applyCurrentErl: true,
-				currentExtra: (innerContainer = NStarType.MainType, s, typeParts));
+				currentExtra: (innerContainer = NStarType.MainType, typeParts));
 		}
 		else if (UserDefinedTypes.TryGetValue((innerUserDefinedContainer = container, s), out var value2)
 			|| container.Length == 0 && CheckContainer(mainContainer, stack =>
@@ -2573,21 +2600,18 @@ public partial class MainParsing : LexemStream
 				GenerateMessage(0x2015, pos, false);
 				goto end;
 			}
+			NStarType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))), NoBranches);
 			if (constraints == TypeConstraints.NotAbstract
 				&& (value2.Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) == TypeAttributes.Static
 				&& !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
 			{
-				NStarType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))),
-					NoBranches);
-				GenerateMessage(0x2024, pos, false, NStarType.ToString());
+				GenerateMessage(0x2024, pos, false, NStarType);
 			}
 			else if (constraints == TypeConstraints.NotAbstract
 				&& (value2.Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) is not (0 or TypeAttributes.Sealed
 				or TypeAttributes.Struct or TypeAttributes.Enum) && !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
 			{
-				NStarType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))),
-					NoBranches);
-				GenerateMessage(0x2023, pos, false, NStarType.ToString());
+				GenerateMessage(0x2023, pos, false, NStarType);
 			}
 			_PosStack[_Stackpos] = ++pos;
 			if (pos < end && IsCurrentLexemOperator("."))
@@ -2595,19 +2619,28 @@ public partial class MainParsing : LexemStream
 				container.Push(new(BlockType.Class, s, 1));
 				outerClass = outerClass == "" ? s : outerClass + "." + s;
 				_PosStack[_Stackpos] = ++pos;
-				goto l0;
+				goto start;
+			}
+			if (pos < end && IsCurrentLexemOther("["))
+			{
+				_PosStack[_Stackpos] = ++pos;
+				typeChainTemplate.Add([new(true, ObjectType, "")]);
+				collectionTypes.Add("associativeArray");
+				return IncreaseStack(nameof(TypeChain), currentTask: nameof(IdentifierType2), pos_: pos,
+					applyPos: true, applyCurrentTask: true, applyCurrentErl: true,
+					currentExtra: (innerContainer = NStarType.MainType, typeParts));
 			}
 			NStarType = (new(innerUserDefinedContainer.ToList()
 				.Append(new((value2.Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) switch
-			{
-				TypeAttributes.None or TypeAttributes.Sealed or TypeAttributes.Abstract
-					or TypeAttributes.Static => BlockType.Class,
-				TypeAttributes.Struct => BlockType.Struct,
-				TypeAttributes.Enum => BlockType.Enum,
-				TypeAttributes.Interface => BlockType.Interface,
-				TypeAttributes.Delegate => BlockType.Delegate,
-				_ => throw new InvalidOperationException(),
-			}, s, 1))), NoBranches);
+				{
+					TypeAttributes.None or TypeAttributes.Sealed or TypeAttributes.Abstract
+						or TypeAttributes.Static => BlockType.Class,
+					TypeAttributes.Struct => BlockType.Struct,
+					TypeAttributes.Enum => BlockType.Enum,
+					TypeAttributes.Interface => BlockType.Interface,
+					TypeAttributes.Delegate => BlockType.Delegate,
+					_ => throw new InvalidOperationException(),
+				}, s, 1))), NoBranches);
 			return TypeSingularTuple(NStarType);
 		}
 		else if (IsNotImplementedNamespace(String.Join(".", [.. container.ToList().Convert(X => X.Name), s])) || IsNotImplementedType(String.Join(".", [.. container.ToList().Convert(X => X.Name)]), s))
@@ -2698,15 +2731,15 @@ public partial class MainParsing : LexemStream
 			GenerateMessage(0x200C, pos, false);
 			return TypeSingularTuple(NStarType);
 		}
-		ExtendedArrayParameters template = [];
+		ExtendedRestrictions template = [];
 		typeParts = [];
 		for (var i = 0; i < netType!.GetGenericArguments().Length; i++)
-			template.Add(new(false, NoBranches, new([new(BlockType.Primitive, "typename", 1)]), ""));
+			template.Add(new(false, RecursiveType, ""));
 		typeChainTemplate.Add(template);
 		collectionTypes.Add("associativeArray");
 		return IncreaseStack(nameof(TypeChain), currentTask: nameof(IdentifierType2), pos_: pos,
 			applyPos: true, applyCurrentTask: true, applyCurrentErl: true,
-			currentExtra: (container = NStarType.MainType, s, typeParts));
+			currentExtra: (container = NStarType.MainType, typeParts));
 	end:
 		return _SuccessStack[_Stackpos] = false;
 	}
@@ -2715,7 +2748,7 @@ public partial class MainParsing : LexemStream
 	{
 		typeChainTemplate.RemoveAt(^1);
 		collectionTypes.RemoveAt(^1);
-		if (!success || extra is not (BlockStack innerContainer, String s, BranchCollection types))
+		if (!success || extra is not (BlockStack innerContainer, BranchCollection types))
 		{
 			GenerateUnexpectedEndOfTypeError(ref errors);
 			return _SuccessStack[_Stackpos] = false;
@@ -2855,7 +2888,7 @@ public partial class MainParsing : LexemStream
 			_PosStack[_Stackpos] = ++pos;
 		}
 		else if (lexems[pos].Type is LexemType.UnsignedInt or LexemType.LongInt
-			or LexemType.UnsignedLongInt or LexemType.Real or LexemType.String)
+			or LexemType.UnsignedLongInt or LexemType.Real or LexemType.Complex or LexemType.String)
 		{
 			NStarType = NullType;
 			_ExtraStack[_Stackpos - 1] = NStarType;
@@ -2980,7 +3013,7 @@ public partial class MainParsing : LexemStream
 	private bool TupleType()
 	{
 		_PosStack[_Stackpos] = ++pos;
-		typeChainTemplate.Add([new(true, NoBranches, new([new(BlockType.Primitive, "typename", 1)]), "")]);
+		typeChainTemplate.Add([new(true, RecursiveType, "")]);
 		collectionTypes.Add("tuple");
 		return IncreaseStack(nameof(TypeChain), currentTask: nameof(TupleType2), pos_: pos,
 			applyPos: true, applyCurrentTask: true);
@@ -2990,7 +3023,7 @@ public partial class MainParsing : LexemStream
 	{
 		NStarType NStarType;
 		collectionTypes.RemoveAt(^1);
-		if (!success || extra is not BranchCollection innerArrayParameters)
+		if (!success || extra is not BranchCollection innerRestrictions)
 			return _SuccessStack[_Stackpos] = false;
 		if (pos >= end)
 		{
@@ -3011,7 +3044,7 @@ public partial class MainParsing : LexemStream
 			CloseBracket(ref pos, ")", ref errors, false, end);
 			return _SuccessStack[_Stackpos] = false;
 		}
-		NStarType = (new([new(BlockType.Primitive, "tuple", 1)]), innerArrayParameters);
+		NStarType = (new([new(BlockType.Primitive, "tuple", 1)]), innerRestrictions);
 		return TypeSingularTuple(NStarType);
 	}
 
@@ -3030,13 +3063,13 @@ public partial class MainParsing : LexemStream
 	private bool TypeChain2()
 	{
 		if (!success || _TaskStack[_Stackpos] == nameof(IdentifierType2)
-			&& _ExtraStack[_Stackpos - 1] is not (BlockStack, String, BranchCollection)
+			&& _ExtraStack[_Stackpos - 1] is not (BlockStack, BranchCollection)
 			|| extra is not BranchCollection typesBuffer)
 		{
 			GenerateUnexpectedEndOfTypeError(ref errors);
 			return _SuccessStack[_Stackpos] = false;
 		}
-		if (_ExtraStack[_Stackpos - 1] is (BlockStack, String, BranchCollection types))
+		if (_ExtraStack[_Stackpos - 1] is (BlockStack, BranchCollection types))
 			types.AddRange(typesBuffer);
 		else
 			_ExtraStack[_Stackpos - 1] = typesBuffer;
@@ -3050,7 +3083,7 @@ public partial class MainParsing : LexemStream
 			GenerateUnexpectedEndOfTypeError(ref errors);
 			return _SuccessStack[_Stackpos] = false;
 		}
-		if (TypeIsPrimitive(typeChainTemplate[^1][0].ArrayParameterType) && typeChainTemplate[^1][0].ArrayParameterType.Peek().Name == "typename")
+		if (typeChainTemplate[^1][0].RestrictionType.MainType.Equals(RecursiveBlockStack))
 		{
 			tpos.Add(0);
 			typeDepth++;
@@ -3058,7 +3091,16 @@ public partial class MainParsing : LexemStream
 			return IncreaseStack(nameof(Type), currentTask: nameof(TypeChainIteration2), pos_: pos,
 				applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
 		}
-		else if (TypeIsPrimitive(typeChainTemplate[^1][tpos[^1]].ArrayParameterType) && typeChainTemplate[^1][tpos[^1]].ArrayParameterType.Peek().Name == "int")
+		else if (typeChainTemplate[^1][0].RestrictionType.Equals(ObjectType))
+		{
+			tpos.Add(0);
+			typeDepth++;
+			collectionTypes.Add(collectionTypes[^1]);
+			return IncreaseStack("List", currentTask: nameof(TypeChainIteration2), pos_: pos,
+				applyPos: true, applyCurrentTask: true, applyCurrentErl: true,
+				currentBranch: new("List", pos, pos + 1, container));
+		}
+		else if (TypeEqualsToPrimitive(typeChainTemplate[^1][tpos[^1]].RestrictionType, "int"))
 		{
 			var minus = false;
 			if (pos >= end)
@@ -3094,7 +3136,21 @@ public partial class MainParsing : LexemStream
 
 	private bool TypeChainIteration2()
 	{
-		if (extra is not NStarType InnerNStarType || _ExtraStack[_Stackpos - 1] is not BranchCollection types)
+		if (_ExtraStack[_Stackpos - 1] is not BranchCollection types)
+		{
+			ReduceStack();
+			GenerateUnexpectedEndOfTypeError(ref errors);
+			return _SuccessStack[_Stackpos] = false;
+		}
+		if (typeChainTemplate[^1][0].RestrictionType.Equals(ObjectType))
+		{
+			ReduceStack();
+			if (treeBranch == null)
+				return _SuccessStack[_Stackpos] = false;
+			types.Add(treeBranch);
+			return Default();
+		}
+		if (extra is not NStarType InnerNStarType)
 		{
 			ReduceStack();
 			GenerateUnexpectedEndOfTypeError(ref errors);
@@ -3136,14 +3192,13 @@ public partial class MainParsing : LexemStream
 		if (pos >= end)
 		{
 			ReduceStack();
-			types = NoBranches;
-			_ExtraStack[_Stackpos - 1] = types;
+			_ExtraStack[_Stackpos - 1] = types = NoBranches;
 			GenerateUnexpectedEndOfTypeError(ref errors);
 			return _SuccessStack[_Stackpos] = false;
 		}
 		else if (IsCurrentLexemOperator(","))
 		{
-			if (typeChainTemplate[^1][tpos[^1]].ArrayParameterPackage == false)
+			if (typeChainTemplate[^1][tpos[^1]].Package == false)
 			{
 				tpos[^1]++;
 				if (tpos[^1] >= typeChainTemplate[^1].Length)
@@ -3156,7 +3211,7 @@ public partial class MainParsing : LexemStream
 		}
 		else
 		{
-			if (tpos[^1] >= typeChainTemplate[^1].Length - 1 || tpos[^1] >= typeChainTemplate[^1].Length - 2 && typeChainTemplate[^1][tpos[^1] + 1].ArrayParameterPackage)
+			if (tpos[^1] >= typeChainTemplate[^1].Length - 1 || tpos[^1] >= typeChainTemplate[^1].Length - 2 && typeChainTemplate[^1][tpos[^1] + 1].Package)
 			{
 				ReduceStack();
 				_ExtraStack[_Stackpos - 1] = types;
@@ -3165,8 +3220,7 @@ public partial class MainParsing : LexemStream
 			else
 			{
 				ReduceStack();
-				types = NoBranches;
-				_ExtraStack[_Stackpos - 1] = types;
+				_ExtraStack[_Stackpos - 1] = types = NoBranches;
 				GenerateMessage(0x2018, pos, false);
 				return _SuccessStack[_Stackpos] = false;
 			}
@@ -3226,7 +3280,7 @@ public partial class MainParsing : LexemStream
 			return TypeClosing(NStarType);
 		}
 		else if (lexems[pos].Type is LexemType.UnsignedInt or LexemType.LongInt
-			or LexemType.UnsignedLongInt or LexemType.Real or LexemType.String)
+			or LexemType.UnsignedLongInt or LexemType.Real or LexemType.Complex or LexemType.String)
 		{
 			_ExtraStack[_Stackpos - 1] = NullType;
 			_TBStack[_Stackpos] = new("type", pos, container) { Extra = NullType };
@@ -3345,6 +3399,12 @@ public partial class MainParsing : LexemStream
 			_TBStack[_Stackpos] = new(s[^1] == 'r' ? s : s.Add('r'), pos - 1, pos, container) { Extra = RealType };
 			return Default();
 		}
+		//else if (lexems[pos].Type == LexemType.Complex)
+		//{
+		//	pos++;
+		//	_TBStack[_Stackpos] = new(s[^1] is 'c' or 'I' ? s : s.Add('c'), pos - 1, pos, container) { Extra = RealType };
+		//	return Default();
+		//}
 		else if (lexems[pos].Type == LexemType.String)
 		{
 			pos++;

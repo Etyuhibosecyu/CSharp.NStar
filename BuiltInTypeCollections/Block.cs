@@ -1,8 +1,15 @@
-﻿namespace CSharp.NStar;
+﻿global using NStar.Core;
+global using NStar.Linq;
+global using System.Diagnostics;
+global using G = System.Collections.Generic;
+global using String = NStar.Core.String;
+
+namespace CSharp.NStar;
 
 [DebuggerDisplay("{ToString()}")]
 public sealed class Block(BlockType blockType, String name, int unnamedIndex)
 {
+	public static readonly List<BlockType> ExplicitNameBlockTypes = new(BlockType.Constructor, BlockType.Destructor, BlockType.Operator, BlockType.Other);
 	public BlockType BlockType { get; private set; } = blockType;
 	public String Name { get; private set; } = name;
 	public int UnnamedIndex { get; set; } = unnamedIndex;

@@ -10,7 +10,7 @@ public enum TypeAttributes
 	Enum = 5,
 	Interface = 6,
 	Delegate = 7,
-	Closed = 16,
+	Private = 16,
 	Protected = 32,
 	Internal = 64,
 	Partial = 256,
@@ -20,20 +20,22 @@ public enum PropertyAttributes
 {
 	None = 0,
 	Static = 1,
-	Closed = 2,
+	Private = 2,
 	Protected = 4,
 	Internal = 8,
 	Const = 16,
 	NoSet = 32,
-	ClosedSet = 64,
-	ProtectedSet = 128,
+	SetOnce = 64,
+	PrivateSet = 128,
+	ProtectedSet = 256,
+	Required = 512,
 }
 
 public enum ConstantAttributes
 {
 	None = 0,
 	Static = 1,
-	Closed = 2,
+	Private = 2,
 	Protected = 4,
 	Internal = 8,
 }
@@ -42,7 +44,7 @@ public enum FunctionAttributes
 {
 	None = 0,
 	Static = 1,
-	Closed = 2,
+	Private = 2,
 	Protected = 4,
 	Internal = 8,
 	Const = 16,
@@ -66,7 +68,7 @@ public enum ConstructorAttributes
 {
 	None = 0,
 	Static = 1,
-	Closed = 2,
+	Private = 2,
 	Protected = 4,
 	Internal = 8,
 	Multiconst = 16,

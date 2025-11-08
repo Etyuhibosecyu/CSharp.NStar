@@ -10,6 +10,7 @@ global using static System.Math;
 global using String = NStar.Core.String;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 
 namespace CSharp.NStar;
 [DebuggerDisplay("{ToString(true)}")]
@@ -195,21 +196,30 @@ public struct NStarEntity
 		}
 		else if (s[^1] == 'r')
 		{
-			if ((s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
-			{
-				double n;
-				try
-				{
-					n = int.Parse(s2, InvariantCulture);
-				}
-				catch
-				{
-					n = double.Parse(s2, InvariantCulture);
-				}
-				return ValidateFixing(n, RealType, true);
-			}
-			else
+			if (!(s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
 				throw new FormatException();
+			double n;
+			try
+			{
+				n = int.Parse(s2, InvariantCulture);
+			}
+			catch
+			{
+				n = double.Parse(s2, InvariantCulture);
+			}
+			return ValidateFixing(n, RealType, true);
+		}
+		else if (s[^1] == 'c')
+		{
+			if (!(s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
+				throw new FormatException();
+			return new(new Complex(double.Parse(s2), 0), ComplexType);
+		}
+		else if (s[^1] == 'I')
+		{
+			if (!(s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
+				throw new FormatException();
+			return new(new Complex(0, double.Parse(s2)), ComplexType);
 		}
 		else if (s[0] == '\"' && s[^1] == '\"')
 			return ((String)s).RemoveQuotes();
@@ -290,6 +300,22 @@ public struct NStarEntity
 			else if (!double.TryParse(s2, InvariantCulture, out n))
 				return false;
 			result = ValidateFixing(n, RealType, true);
+		}
+		else if (s[^1] == 'c')
+		{
+			if (!(s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
+				return false;
+			if (!double.TryParse(s2, InvariantCulture, out var n))
+				return false;
+			result = new(new Complex(n, 0), ComplexType);
+		}
+		else if (s[^1] == 'I')
+		{
+			if (!(s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
+				return false;
+			if (!double.TryParse(s2, InvariantCulture, out var n))
+				return false;
+			result = new(new Complex(0, n), ComplexType);
 		}
 		else if (s[0] == '\"' && s[^1] == '\"')
 			result = ((String)s).RemoveQuotes();
@@ -709,6 +735,22 @@ public struct NStarEntity
 					(double)0 / 0 => addCasting ? "((double)0 / 0)" : "Uncty",
 					_ => Number.ToString(InvariantCulture)
 				};
+			}
+			else if (basicType == "complex" && Object is Complex c)
+			{
+				return (addCasting ? "new Complex(" : "") + c.Real switch
+				{
+					(double)1 / 0 => addCasting ? "((double)1 / 0)" : "Infty",
+					(double)-1 / 0 => addCasting ? "((double)-1 / 0)" : "-Infty",
+					(double)0 / 0 => addCasting ? "((double)0 / 0)" : "Uncty",
+					_ => c.Real.ToString(InvariantCulture)
+				} + (addCasting ? ", " : "+") + c.Imaginary switch
+				{
+					(double)1 / 0 => addCasting ? "((double)1 / 0)" : "Infty",
+					(double)-1 / 0 => addCasting ? "((double)-1 / 0)" : "-Infty",
+					(double)0 / 0 => addCasting ? "((double)0 / 0)" : "Uncty",
+					_ => c.Imaginary.ToString(InvariantCulture)
+				} + (addCasting ? ")" : "I");
 			}
 			else if (basicType == "typename")
 				return Object == null ? "" : Object is NStarType NStarType ? NStarType.ToString() : NullType.ToString();

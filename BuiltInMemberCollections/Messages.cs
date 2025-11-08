@@ -1,6 +1,4 @@
-﻿using static CSharp.NStar.BuiltInMemberCollections;
-
-namespace CSharp.NStar;
+﻿namespace CSharp.NStar;
 
 public static class Messages
 {
@@ -92,6 +90,7 @@ public static class Messages
 			0x2032 => "the function \"" + parameters[0] + "\" with these parameter types is already defined in this region",
 			0x2033 => "the switch expression cannot be empty",
 			0x2034 => "the switch expression cannot contain cases after \"_\"",
+			0x2035 => "the property cannot be static and required at the same time",
 			0x203A => "the identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar and cannot be used",
 			0x203B => "the end of identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar" +
 				" and cannot be used",
@@ -149,7 +148,7 @@ public static class Messages
 					+ (TypeEqualsToPrimitive(parameters[3], "string")
 					? " - use an addition of zero-length string for this" : ""),
 			0x4027 => parameters[0] ?? "the conversion from the type \"" + parameters[1] + "\" to the type \""
-					+ parameters[2] + "\" is possible only in the function return,"
+				+ parameters[2] + "\" is possible only in the function return,"
 				+ " not in the direct assignment and not in the call",
 			0x4028 => "incompatibility between the type of the parameter of the call \""
 				+ parameters[0] + "\" and all possible types of the parameter of the function (\""
@@ -159,6 +158,10 @@ public static class Messages
 				+ parameters[1] + "\" is possible only in the function return,"
 				+ " not in the direct assignment and not in the call",
 			0x402A => "this function or lambda must return the value on all execution paths",
+			0x402B => parameters[0] ?? "incompatibility between the type of the returning value \"" + parameters[1]
+				+ "\" and the function return type \"" + parameters[2] + "\""
+				+ (TypeEqualsToPrimitive(parameters[2], "string")
+				? " - use an addition of zero-length string for this" : ""),
 			0x4030 => "the property \"" + parameters[0] + "\" is inaccessible from here",
 			0x4031 => "the property \"" + parameters[0] + "\" is not defined in this location;" +
 				" multiconst functions cannot use external properties",
@@ -178,10 +181,15 @@ public static class Messages
 				+ parameters[1] + "\")" + (parameters[2] == 1 && TypeEqualsToPrimitive(parameters[3], "string")
 				? " - use an addition of zero-length string for this" : ""),
 			0x4038 => "this call is forbidden",
-			0x4039 => parameters[0] ?? "incompatibility between the type of the returning value \"" + parameters[1]
-				+ "\" and the function return type \"" + parameters[2] + "\""
-				+ (TypeEqualsToPrimitive(parameters[2], "string")
-				? " - use an addition of zero-length string for this" : ""),
+			0x4039 => "the property \"" + parameters[0] + "\" cannot be set from here",
+			0x403A => "the property \"" + parameters[0] + "\" is declared with \"init\" modifier so it can be set"
+				+ " only in the initializer or constructor",
+			0x403B => "the property \"" + parameters[0] + "\" is at the same time declared with \"init\" modifier"
+				+ " and static so it can be set only in the initializer",
+			0x403C => "you must set the required properties - it is done with the square brackets",
+			0x403D => "the required property \"" + parameters[0] + "\" must be set during the construction",
+			0x403E => "there must be a constant type here; variables at this place are temporarily unavailable",
+			0x403F => "redundant property initializer - this class does not have so many open settable properties",
 			0x4040 => "unexpected lambda expression here",
 			0x4041 => "there is no overload of this function with the delegate parameter on this place",
 			0x4042 => "incorrect list of the parameters of the lambda expression",
