@@ -21,8 +21,8 @@ using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 
-namespace AvaloniaEdit.Rendering
-{
+namespace AvaloniaEdit.Rendering;
+
     internal sealed class CurrentLineHighlightRenderer : IBackgroundRenderer
     {
         #region Fields
@@ -97,4 +97,3 @@ namespace AvaloniaEdit.Rendering
             }
         }
     }
-}

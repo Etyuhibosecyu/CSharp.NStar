@@ -22,8 +22,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     /// <summary>
     /// Margin for use with the text area.
     /// A vertical dotted line to separate the line numbers from the text view.
@@ -52,13 +52,8 @@ namespace AvaloniaEdit.Editing
             return line;
         }
 
-        /// <summary>
-        /// Gets whether the specified UIElement is the result of a DottedLineMargin.Create call.
-        /// </summary>
-        public static bool IsDottedLineMargin(Control element)
-        {
-            var l = element as Line;
-            return l != null && l.Tag == Tag;
-        }
-    }
+	/// <summary>
+	/// Gets whether the specified UIElement is the result of a DottedLineMargin.Create call.
+	/// </summary>
+	public static bool IsDottedLineMargin(Control element) => element is Line l && l.Tag == Tag;
 }

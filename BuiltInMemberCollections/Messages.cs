@@ -169,17 +169,9 @@ public static class Messages
 				" static functions cannot use non-static properties",
 			0x4033 => "the type \"" + parameters[0] + "\" does not contain member \"" + parameters[1] + "\"",
 			0x4034 => "the type \"" + parameters[0] + "\" does not have constructors with parameters",
-			0x4035 => "the constructor of the type \"" + parameters[0] + "\" must have " + (parameters[1] == parameters[2]
-				? parameters[1].ToString() : "from " + parameters[2].ToString() + " to " + parameters[1].ToString())
-				+ " parameters",
-			0x4036 => parameters[0] ?? "incompatibility between the type of the parameter of the call \"" + parameters[1]
-					+ "\" and the type of the parameter of the constructor \"" + parameters[2] + "\""
-					+ (TypeEqualsToPrimitive(parameters[3], "string")
-					? " - use an addition of zero-length string for this" : ""),
-			0x4037 => "incompatibility between the type of the parameter of the call \""
-				+ parameters[0] + "\" and all possible types of the parameter of the constructor (\""
-				+ parameters[1] + "\")" + (parameters[2] == 1 && TypeEqualsToPrimitive(parameters[3], "string")
-				? " - use an addition of zero-length string for this" : ""),
+			0x4035 => throw new InvalidOperationException(),
+			0x4036 => throw new InvalidOperationException(),
+			0x4037 => throw new InvalidOperationException(),
 			0x4038 => "this call is forbidden",
 			0x4039 => "the property \"" + parameters[0] + "\" cannot be set from here",
 			0x403A => "the property \"" + parameters[0] + "\" is declared with \"init\" modifier so it can be set"
@@ -204,6 +196,20 @@ public static class Messages
 			0x4055 => "too deep constant definition tree",
 			0x4056 => "this expression must be the type but it isn't",
 			0x4057 => "this expression must be constant and implicitly convertible to the \"int\" type",
+			0x4060 => "the constructor of the type \"" + parameters[0] + "\" must have " + (parameters[1] == parameters[2]
+				? parameters[1].ToString() : "from " + parameters[2].ToString() + " to " + parameters[1].ToString())
+				+ " parameters",
+			0x4061 => parameters[0] ?? "incompatibility between the type of the parameter of the call \"" + parameters[1]
+					+ "\" and the type of the parameter of the constructor \"" + parameters[2] + "\""
+					+ (TypeEqualsToPrimitive(parameters[3], "string")
+					? " - use an addition of zero-length string for this" : ""),
+			0x4062 => "incompatibility between the type of the parameter of the call \""
+				+ parameters[0] + "\" and all possible types of the parameter of the constructor (\""
+				+ parameters[1] + "\")" + (parameters[2] == 1 && TypeEqualsToPrimitive(parameters[3], "string")
+				? " - use an addition of zero-length string for this" : ""),
+			0x4063 => "a loop detected while analyzing if all the required properties are initialized"
+				+ " in the constructor the type \"" + parameters[0] + "\"; consider reordering the class members,"
+				+ " especially placing the properties before the constructors",
 			0x8000 => "the properties and the methods are static in the static class implicitly;" +
 				" the word \"static\" is not necessary",
 			0x8001 => "the semicolon in the end of the line with condition or cycle may easily be unnoticed" +

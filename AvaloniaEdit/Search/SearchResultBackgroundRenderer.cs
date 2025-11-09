@@ -22,8 +22,8 @@ using Avalonia.Media;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 
-namespace AvaloniaEdit.Search
-{
+namespace AvaloniaEdit.Search;
+
     using Avalonia.Media.Immutable;
 
     internal class SearchResultBackgroundRenderer : IBackgroundRenderer
@@ -32,12 +32,9 @@ namespace AvaloniaEdit.Search
 
         public KnownLayer Layer => KnownLayer.Background;
 
-        public SearchResultBackgroundRenderer(IBrush brush)
-        {
-            _markerBrush = brush;
-        }
+	public SearchResultBackgroundRenderer(IBrush brush) => _markerBrush = brush;
 
-        private IBrush _markerBrush;
+	private IBrush _markerBrush;
 
         public IBrush MarkerBrush
         {
@@ -50,12 +47,10 @@ namespace AvaloniaEdit.Search
 
         public void Draw(TextView textView, DrawingContext drawingContext)
         {
-            if (textView == null)
-                throw new ArgumentNullException(nameof(textView));
-            if (drawingContext == null)
-                throw new ArgumentNullException(nameof(drawingContext));
+		ArgumentNullException.ThrowIfNull(textView);
+		ArgumentNullException.ThrowIfNull(drawingContext);
 
-            if (CurrentResults == null || !textView.VisualLinesValid)
+		if (CurrentResults == null || !textView.VisualLinesValid)
                 return;
 
             var visualLines = textView.VisualLines;
@@ -81,4 +76,3 @@ namespace AvaloniaEdit.Search
             }
         }
     }
-}

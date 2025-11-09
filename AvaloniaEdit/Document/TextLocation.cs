@@ -20,8 +20,8 @@ using System;
 using System.Globalization;
 using System.ComponentModel;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// A line/column position.
     /// Text editor lines/columns are counted started from one.
@@ -62,43 +62,34 @@ namespace AvaloniaEdit.Document
         /// </summary>
         public bool IsEmpty => Column <= 0 && Line <= 0;
 
-        /// <summary>
-        /// Gets a string representation for debugging purposes.
-        /// </summary>
-        public override string ToString()
-        {
-            return string.Format(CultureInfo.InvariantCulture, "(Line {1}, Col {0})", Column, Line);
-        }
+	/// <summary>
+	/// Gets a string representation for debugging purposes.
+	/// </summary>
+	public override string ToString() => string.Format(CultureInfo.InvariantCulture, "(Line {1}, Col {0})", Column, Line);
 
-        /// <summary>
-        /// Gets a hash code.
-        /// </summary>
-        public override int GetHashCode()
-        {
-            return unchecked(191 * Column.GetHashCode() ^ Line.GetHashCode());
-        }
+	/// <summary>
+	/// Gets a hash code.
+	/// </summary>
+	public override int GetHashCode() => unchecked(191 * Column.GetHashCode() ^ Line.GetHashCode());
 
-        /// <summary>
-        /// Equality test.
-        /// </summary>
-        public override bool Equals(object obj)
+	/// <summary>
+	/// Equality test.
+	/// </summary>
+	public override bool Equals(object obj)
         {
             if (!(obj is TextLocation)) return false;
             return (TextLocation)obj == this;
         }
 
-        /// <summary>
-        /// Equality test.
-        /// </summary>
-        public bool Equals(TextLocation other)
-        {
-            return this == other;
-        }
+	/// <summary>
+	/// Equality test.
+	/// </summary>
+	public bool Equals(TextLocation other) => this == other;
 
-        /// <summary>
-        /// Equality test.
-        /// </summary>
-        public static bool operator ==(TextLocation left, TextLocation right)
+	/// <summary>
+	/// Equality test.
+	/// </summary>
+	public static bool operator ==(TextLocation left, TextLocation right)
         {
             return left.Column == right.Column && left.Line == right.Line;
         }
@@ -169,20 +160,14 @@ namespace AvaloniaEdit.Document
     /// </summary>
     public class TextLocationConverter : TypeConverter
     {
-        /// <inheritdoc/>
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
-        {
-            return sourceType == typeof(string);
-        }
+	/// <inheritdoc/>
+	public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType) => sourceType == typeof(string);
 
-        /// <inheritdoc/>
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
-        {
-            return destinationType == typeof(TextLocation);
-        }
+	/// <inheritdoc/>
+	public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) => destinationType == typeof(TextLocation);
 
-        /// <inheritdoc/>
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+	/// <inheritdoc/>
+	public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             var s = value as string;
             var parts = s?.Split(';', ',');
@@ -232,24 +217,17 @@ namespace AvaloniaEdit.Document
     /// </summary>
     public static class SegmentExtensions
     {
-        /// <summary>
-        /// Gets whether <paramref name="segment"/> fully contains the specified segment.
-        /// </summary>
-        /// <remarks>
-        /// Use <c>segment.Contains(offset, 0)</c> to detect whether a segment (end inclusive) contains offset;
-        /// use <c>segment.Contains(offset, 1)</c> to detect whether a segment (end exclusive) contains offset.
-        /// </remarks>
-        public static bool Contains(this ISegment segment, int offset, int length)
-        {
-            return segment.Offset <= offset && offset + length <= segment.EndOffset;
-        }
+	/// <summary>
+	/// Gets whether <paramref name="segment"/> fully contains the specified segment.
+	/// </summary>
+	/// <remarks>
+	/// Use <c>segment.Contains(offset, 0)</c> to detect whether a segment (end inclusive) contains offset;
+	/// use <c>segment.Contains(offset, 1)</c> to detect whether a segment (end exclusive) contains offset.
+	/// </remarks>
+	public static bool Contains(this ISegment segment, int offset, int length) => segment.Offset <= offset && offset + length <= segment.EndOffset;
 
-        /// <summary>
-        /// Gets whether <paramref name="thisSegment"/> fully contains the specified segment.
-        /// </summary>
-        public static bool Contains(this ISegment thisSegment, ISegment segment)
-        {
-            return segment != null && thisSegment.Offset <= segment.Offset && segment.EndOffset <= thisSegment.EndOffset;
-        }
-    }
+	/// <summary>
+	/// Gets whether <paramref name="thisSegment"/> fully contains the specified segment.
+	/// </summary>
+	public static bool Contains(this ISegment thisSegment, ISegment segment) => segment != null && thisSegment.Offset <= segment.Offset && segment.EndOffset <= thisSegment.EndOffset;
 }

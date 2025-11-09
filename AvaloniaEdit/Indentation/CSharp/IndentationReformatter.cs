@@ -21,8 +21,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
-namespace AvaloniaEdit.Indentation.CSharp
-{
+namespace AvaloniaEdit.Indentation.CSharp;
+
     internal sealed class IndentationSettings
     {
         public string IndentString { get; set; } = "\t";
@@ -91,12 +91,9 @@ namespace AvaloniaEdit.Indentation.CSharp
             /// </summary>
             public int StartLine;
 
-            public void Indent(IndentationSettings set)
-            {
-                Indent(set.IndentString);
-            }
+		public void Indent(IndentationSettings set) => Indent(set.IndentString);
 
-            public void Indent(string indentationString)
+		public void Indent(string indentationString)
             {
                 OuterIndent = InnerIndent;
                 InnerIndent += indentationString;
@@ -105,14 +102,11 @@ namespace AvaloniaEdit.Indentation.CSharp
                 LastWord = "";
             }
 
-            public override string ToString()
-            {
-                return string.Format(
-                    CultureInfo.InvariantCulture,
-                    "[Block StartLine={0}, LastWord='{1}', Continuation={2}, OneLineBlock={3}, PreviousOneLineBlock={4}]",
-                    StartLine, LastWord, Continuation, OneLineBlock, PreviousOneLineBlock);
-            }
-        }
+		public override string ToString() => string.Format(
+				CultureInfo.InvariantCulture,
+				"[Block StartLine={0}, LastWord='{1}', Continuation={2}, OneLineBlock={3}, PreviousOneLineBlock={4}]",
+				StartLine, LastWord, Continuation, OneLineBlock, PreviousOneLineBlock);
+	}
 
         private StringBuilder _wordBuilder;
         private Stack<Block> _blocks; // blocks contains all blocks outside of the current
@@ -305,17 +299,17 @@ namespace AvaloniaEdit.Indentation.CSharp
                         {
                             _block.Indent(set.IndentString + set.IndentString);
                             /* oldBlock refers to the previous line, not the previous block
-							 * The block we want is not available anymore because it was never pushed.
-							 * } else if (oldBlock.OneLineBlock) {
-							// Inside a one-line-block is another statement
-							// with a full block: indent the inner full block
-							// by one additional level
-							block.Indent(set, set.IndentString + set.IndentString);
-							block.OuterIndent += set.IndentString;
-							// Indent current line if it starts with the '{' character
-							if (i == 0) {
-								oldBlock.InnerIndent += set.IndentString;
-							}*/
+						 * The block we want is not available anymore because it was never pushed.
+						 * } else if (oldBlock.OneLineBlock) {
+						// Inside a one-line-block is another statement
+						// with a full block: indent the inner full block
+						// by one additional level
+						block.Indent(set, set.IndentString + set.IndentString);
+						block.OuterIndent += set.IndentString;
+						// Indent current line if it starts with the '{' character
+						if (i == 0) {
+							oldBlock.InnerIndent += set.IndentString;
+						}*/
                         }
                         else
                         {
@@ -528,4 +522,3 @@ namespace AvaloniaEdit.Indentation.CSharp
             return true;
         }
     }
-}

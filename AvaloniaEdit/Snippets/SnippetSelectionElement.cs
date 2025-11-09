@@ -18,8 +18,8 @@
 
 using System.Text;
 
-namespace AvaloniaEdit.Snippets
-{
+namespace AvaloniaEdit.Snippets;
+
     /// <summary>
     /// Inserts the previously selected text at the selection marker.
     /// </summary>
@@ -54,4 +54,3 @@ namespace AvaloniaEdit.Snippets
                 SnippetCaretElement.SetCaret(context);
         }
     }
-}

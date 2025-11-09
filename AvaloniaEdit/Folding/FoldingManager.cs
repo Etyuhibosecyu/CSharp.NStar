@@ -25,8 +25,8 @@ using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
 using Avalonia.Threading;
 
-namespace AvaloniaEdit.Folding
-{
+namespace AvaloniaEdit.Folding;
+
     /// <summary>
     /// Stores a list of foldings for a specific TextView and TextDocument.
     /// </summary>
@@ -144,9 +144,8 @@ namespace AvaloniaEdit.Folding
         /// </summary>
         public void RemoveFolding(FoldingSection fs)
         {
-            if (fs == null)
-                throw new ArgumentNullException(nameof(fs));
-            fs.IsFolded = false;
+		ArgumentNullException.ThrowIfNull(fs);
+		fs.IsFolded = false;
             _foldings.Remove(fs);
             Redraw(fs);
         }
@@ -184,21 +183,19 @@ namespace AvaloniaEdit.Folding
             return fs?.StartOffset ?? -1;
         }
 
-        /// <summary>
-        /// Gets the first folding with a <see cref="TextSegment.StartOffset"/> greater or equal to
-        /// <paramref name="startOffset"/>.
-        /// Returns null if there are no foldings after <paramref name="startOffset"/>.
-        /// </summary>
-        public FoldingSection GetNextFolding(int startOffset)
-        {
-            // TODO: returns the longest folding instead of any folding at the first position after startOffset
-            return _foldings.FindFirstSegmentWithStartAfter(startOffset);
-        }
+	/// <summary>
+	/// Gets the first folding with a <see cref="TextSegment.StartOffset"/> greater or equal to
+	/// <paramref name="startOffset"/>.
+	/// Returns null if there are no foldings after <paramref name="startOffset"/>.
+	/// </summary>
+	public FoldingSection GetNextFolding(int startOffset) =>
+		// TODO: returns the longest folding instead of any folding at the first position after startOffset
+		_foldings.FindFirstSegmentWithStartAfter(startOffset);
 
-        /// <summary>
-        /// Gets all foldings that start exactly at <paramref name="startOffset"/>.
-        /// </summary>
-        public ReadOnlyCollection<FoldingSection> GetFoldingsAt(int startOffset)
+	/// <summary>
+	/// Gets all foldings that start exactly at <paramref name="startOffset"/>.
+	/// </summary>
+	public ReadOnlyCollection<FoldingSection> GetFoldingsAt(int startOffset)
         {
             var result = new List<FoldingSection>();
             var fs = _foldings.FindFirstSegmentWithStartAfter(startOffset);
@@ -210,31 +207,27 @@ namespace AvaloniaEdit.Folding
             return new ReadOnlyCollection<FoldingSection>(result);
         }
 
-        /// <summary>
-        /// Gets all foldings that contain <paramref name="offset" />.
-        /// </summary>
-        public ReadOnlyCollection<FoldingSection> GetFoldingsContaining(int offset)
-        {
-            return _foldings.FindSegmentsContaining(offset);
-        }
-        #endregion
+	/// <summary>
+	/// Gets all foldings that contain <paramref name="offset" />.
+	/// </summary>
+	public ReadOnlyCollection<FoldingSection> GetFoldingsContaining(int offset) => _foldings.FindSegmentsContaining(offset);
+	#endregion
 
-        #region UpdateFoldings
-        /// <summary>
-        /// Updates the foldings in this <see cref="FoldingManager"/> using the given new foldings.
-        /// This method will try to detect which new foldings correspond to which existing foldings; and will keep the state
-        /// (<see cref="FoldingSection.IsFolded"/>) for existing foldings.
-        /// </summary>
-        /// <param name="newFoldings">The new set of foldings. These must be sorted by starting offset.</param>
-        /// <param name="firstErrorOffset">The first position of a parse error. Existing foldings starting after
-        /// this offset will be kept even if they don't appear in <paramref name="newFoldings"/>.
-        /// Use -1 for this parameter if there were no parse errors.</param>
-        public void UpdateFoldings(IEnumerable<NewFolding> newFoldings, int firstErrorOffset)
+	#region UpdateFoldings
+	/// <summary>
+	/// Updates the foldings in this <see cref="FoldingManager"/> using the given new foldings.
+	/// This method will try to detect which new foldings correspond to which existing foldings; and will keep the state
+	/// (<see cref="FoldingSection.IsFolded"/>) for existing foldings.
+	/// </summary>
+	/// <param name="newFoldings">The new set of foldings. These must be sorted by starting offset.</param>
+	/// <param name="firstErrorOffset">The first position of a parse error. Existing foldings starting after
+	/// this offset will be kept even if they don't appear in <paramref name="newFoldings"/>.
+	/// Use -1 for this parameter if there were no parse errors.</param>
+	public void UpdateFoldings(IEnumerable<NewFolding> newFoldings, int firstErrorOffset)
         {
-            if (newFoldings == null)
-                throw new ArgumentNullException(nameof(newFoldings));
+		ArgumentNullException.ThrowIfNull(newFoldings);
 
-            if (firstErrorOffset < 0)
+		if (firstErrorOffset < 0)
                 firstErrorOffset = int.MaxValue;
 
             var oldFoldings = AllFoldings.ToArray();
@@ -298,9 +291,8 @@ namespace AvaloniaEdit.Folding
         /// <returns>The <see cref="FoldingManager"/> that manages the list of foldings inside the text area.</returns>
         public static FoldingManager Install(TextArea textArea)
         {
-            if (textArea == null)
-                throw new ArgumentNullException(nameof(textArea));
-            return new FoldingManagerInstallation(textArea);
+		ArgumentNullException.ThrowIfNull(textArea);
+		return new FoldingManagerInstallation(textArea);
         }
 
         /// <summary>
@@ -309,9 +301,8 @@ namespace AvaloniaEdit.Folding
         /// <exception cref="ArgumentException">The specified manager was not created using <see cref="Install"/>.</exception>
         public static void Uninstall(FoldingManager manager)
         {
-            if (manager == null)
-                throw new ArgumentNullException(nameof(manager));
-            if (manager is FoldingManagerInstallation installation)
+		ArgumentNullException.ThrowIfNull(manager);
+		if (manager is FoldingManagerInstallation installation)
             {
                 installation.Uninstall();
             }
@@ -340,28 +331,28 @@ namespace AvaloniaEdit.Folding
             }
 
             /*
-			void DemoMode()
-			{
-				foldingGenerator = new FoldingElementGenerator() { FoldingManager = fm };
-				foldingMargin = new FoldingMargin { FoldingManager = fm };
-				foldingMarginBorder = new Border {
-					Child = foldingMargin,
-					Background = new LinearGradientBrush(Colors.White, Colors.Transparent, 0)
-				};
-				foldingMarginBorder.SizeChanged += UpdateTextViewClip;
-				textEditor.TextArea.TextView.ElementGenerators.Add(foldingGenerator);
-				textEditor.TextArea.LeftMargins.Add(foldingMarginBorder);
-			}
-			
-			void UpdateTextViewClip(object sender, SizeChangedEventArgs e)
-			{
-				textEditor.TextArea.TextView.Clip = new RectangleGeometry(
-					new Rect(-foldingMarginBorder.ActualWidth,
-					         0,
-					         textEditor.TextArea.TextView.ActualWidth + foldingMarginBorder.ActualWidth,
-					         textEditor.TextArea.TextView.ActualHeight));
-			}
-			 */
+		void DemoMode()
+		{
+			foldingGenerator = new FoldingElementGenerator() { FoldingManager = fm };
+			foldingMargin = new FoldingMargin { FoldingManager = fm };
+			foldingMarginBorder = new Border {
+				Child = foldingMargin,
+				Background = new LinearGradientBrush(Colors.White, Colors.Transparent, 0)
+			};
+			foldingMarginBorder.SizeChanged += UpdateTextViewClip;
+			textEditor.TextArea.TextView.ElementGenerators.Add(foldingGenerator);
+			textEditor.TextArea.LeftMargins.Add(foldingMarginBorder);
+		}
+		
+		void UpdateTextViewClip(object sender, SizeChangedEventArgs e)
+		{
+			textEditor.TextArea.TextView.Clip = new RectangleGeometry(
+				new Rect(-foldingMarginBorder.ActualWidth,
+				         0,
+				         textEditor.TextArea.TextView.ActualWidth + foldingMarginBorder.ActualWidth,
+				         textEditor.TextArea.TextView.ActualHeight));
+		}
+		 */
 
             public void Uninstall()
             {
@@ -393,4 +384,3 @@ namespace AvaloniaEdit.Folding
         }
         #endregion
     }
-}

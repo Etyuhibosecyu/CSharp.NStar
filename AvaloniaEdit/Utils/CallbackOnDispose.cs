@@ -19,28 +19,24 @@
 using System;
 using System.Threading;
 
-namespace AvaloniaEdit.Utils
+namespace AvaloniaEdit.Utils;
+
+/// <summary>
+/// Invokes an action when it is disposed.
+/// </summary>
+/// <remarks>
+/// This class ensures the callback is invoked at most once,
+/// even when Dispose is called on multiple threads.
+/// </remarks>
+internal sealed class CallbackOnDispose : IDisposable
 {
-	/// <summary>
-	/// Invokes an action when it is disposed.
-	/// </summary>
-	/// <remarks>
-	/// This class ensures the callback is invoked at most once,
-	/// even when Dispose is called on multiple threads.
-	/// </remarks>
-	internal sealed class CallbackOnDispose : IDisposable
+    private Action _action;
+
+	public CallbackOnDispose(Action action) => _action = action ?? throw new ArgumentNullException(nameof(action));
+
+	public void Dispose()
 	{
-	    private Action _action;
-		
-		public CallbackOnDispose(Action action)
-		{
-		    _action = action ?? throw new ArgumentNullException(nameof(action));
-		}
-		
-		public void Dispose()
-		{
-			var a = Interlocked.Exchange(ref _action, null);
-		    a?.Invoke();
-		}
+		var a = Interlocked.Exchange(ref _action, null);
+	    a?.Invoke();
 	}
 }

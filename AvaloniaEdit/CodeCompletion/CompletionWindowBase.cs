@@ -32,8 +32,8 @@ using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
-namespace AvaloniaEdit.CodeCompletion
-{
+namespace AvaloniaEdit.CodeCompletion;
+
     /// <summary>
     /// Base class for completion windows. Handles positioning the window at the caret.
     /// </summary>
@@ -93,12 +93,9 @@ namespace AvaloniaEdit.CodeCompletion
             Initialize();
         }
 
-        protected virtual void OnClosed()
-        {
-            DetachEvents();
-        }
+	protected virtual void OnClosed() => DetachEvents();
 
-        private void Initialize()
+	private void Initialize()
         {
             if (_document != null && StartOffset != TextArea.Caret.Offset)
             {
@@ -240,49 +237,32 @@ namespace AvaloniaEdit.CodeCompletion
             }
         }
 
-        private void TextAreaDocumentChanged(object sender, EventArgs e)
-        {
-            Hide();
-        }
+	private void TextAreaDocumentChanged(object sender, EventArgs e) => Hide();
 
-        private void TextAreaLostFocus(object sender, RoutedEventArgs e)
-        {
-            Dispatcher.UIThread.Post(CloseIfFocusLost, DispatcherPriority.Background);
-        }
+	private void TextAreaLostFocus(object sender, RoutedEventArgs e) => Dispatcher.UIThread.Post(CloseIfFocusLost, DispatcherPriority.Background);
 
-        private void ParentWindow_Deactivated(object sender, EventArgs e)
-        {
-            Hide();
-        }
+	private void ParentWindow_Deactivated(object sender, EventArgs e) => Hide();
 
-        private void ParentWindow_LocationChanged(object sender, EventArgs e)
-        {
-            UpdatePosition();
-        }
+	private void ParentWindow_LocationChanged(object sender, EventArgs e) => UpdatePosition();
 
-        private void OnDeactivated(object sender, EventArgs e)
-        {
-            Dispatcher.UIThread.Post(CloseIfFocusLost, DispatcherPriority.Background);
-        }
+	private void OnDeactivated(object sender, EventArgs e) => Dispatcher.UIThread.Post(CloseIfFocusLost, DispatcherPriority.Background);
 
-        #endregion
+	#endregion
 
-        /// <summary>
-        /// Raises a tunnel/bubble event pair for a control.
-        /// </summary>
-        /// <param name="target">The control for which the event should be raised.</param>
-        /// <param name="previewEvent">The tunneling event.</param>
-        /// <param name="event">The bubbling event.</param>
-        /// <param name="args">The event args to use.</param>
-        /// <returns>The <see cref="RoutedEventArgs.Handled"/> value of the event args.</returns>
-        [SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
+	/// <summary>
+	/// Raises a tunnel/bubble event pair for a control.
+	/// </summary>
+	/// <param name="target">The control for which the event should be raised.</param>
+	/// <param name="previewEvent">The tunneling event.</param>
+	/// <param name="event">The bubbling event.</param>
+	/// <param name="args">The event args to use.</param>
+	/// <returns>The <see cref="RoutedEventArgs.Handled"/> value of the event args.</returns>
+	[SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
         protected static bool RaiseEventPair(Control target, RoutedEvent previewEvent, RoutedEvent @event, RoutedEventArgs args)
         {
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
-            if (args == null)
-                throw new ArgumentNullException(nameof(args));
-            if (previewEvent != null)
+		ArgumentNullException.ThrowIfNull(target);
+		ArgumentNullException.ThrowIfNull(args);
+		if (previewEvent != null)
             {
                 args.RoutedEvent = previewEvent;
                 target.RaiseEvent(args);
@@ -292,21 +272,15 @@ namespace AvaloniaEdit.CodeCompletion
             return args.Handled;
         }
 
-        // Special handler: handledEventsToo
-        private void OnMouseUp(object sender, PointerReleasedEventArgs e)
-        {
-            ActivateParentWindow();
-        }
+	// Special handler: handledEventsToo
+	private void OnMouseUp(object sender, PointerReleasedEventArgs e) => ActivateParentWindow();
 
-        /// <summary>
-        /// Activates the parent window.
-        /// </summary>
-        protected virtual void ActivateParentWindow()
-        {
-            _parentWindow?.Activate();
-        }
+	/// <summary>
+	/// Activates the parent window.
+	/// </summary>
+	protected virtual void ActivateParentWindow() => _parentWindow?.Activate();
 
-        private void CloseIfFocusLost()
+	private void CloseIfFocusLost()
         {
             if (CloseOnFocusLost)
             {
@@ -411,4 +385,3 @@ namespace AvaloniaEdit.CodeCompletion
             EndOffset = e.GetNewOffset(EndOffset, AnchorMovementType.AfterInsertion);
         }
     }
-}

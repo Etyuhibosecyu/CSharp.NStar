@@ -19,29 +19,25 @@
 using System.Collections.Generic;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Highlighting.Xshd
+namespace AvaloniaEdit.Highlighting.Xshd;
+
+/// <summary>
+/// A list of keywords.
+/// </summary>
+public class XshdKeywords : XshdElement
 {
 	/// <summary>
-	/// A list of keywords.
+	/// The color.
 	/// </summary>
-	public class XshdKeywords : XshdElement
-	{
-		/// <summary>
-		/// The color.
-		/// </summary>
-		public XshdReference<XshdColor> ColorReference { get; set; }
-		
-		readonly NullSafeCollection<string> _words = new NullSafeCollection<string>();
-		
-		/// <summary>
-		/// Gets the list of key words.
-		/// </summary>
-		public IList<string> Words => _words;
+	public XshdReference<XshdColor> ColorReference { get; set; }
+	
+	readonly NullSafeCollection<string> _words = new NullSafeCollection<string>();
+	
+	/// <summary>
+	/// Gets the list of key words.
+	/// </summary>
+	public IList<string> Words => _words;
 
-	    /// <inheritdoc/>
-		public override object AcceptVisitor(IXshdVisitor visitor)
-		{
-			return visitor.VisitKeywords(this);
-		}
-	}
+	/// <inheritdoc/>
+	public override object AcceptVisitor(IXshdVisitor visitor) => visitor.VisitKeywords(this);
 }

@@ -430,7 +430,7 @@ public class LexemStream
 		GetFigureBracketAndSetBlock(BlockType.Constructor, "", attributes, () =>
 		{
 			UserDefinedConstructors.TryAdd(container, []);
-			UserDefinedConstructors[container].Add((attributes, []));
+			UserDefinedConstructors[container].Add((attributes, [], [-1]));
 			blocksToJump.Add((container, "Constructor", "", blockStart, pos));
 			if (UserDefinedConstructorIndexes.TryGetValue(container, out var containerConstructorIndexes)
 				&& actualConstructorIndexes.TryGetValue(container, out var index))

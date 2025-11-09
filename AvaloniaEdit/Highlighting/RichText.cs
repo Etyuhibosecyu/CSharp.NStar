@@ -22,8 +22,8 @@ using System.Diagnostics;
 using System.Linq;
 using AvaloniaEdit.Document;
 
-namespace AvaloniaEdit.Highlighting
-{
+namespace AvaloniaEdit.Highlighting;
+
     /// <summary>
     /// Represents a immutable piece text with highlighting information.
     /// </summary>
@@ -110,19 +110,16 @@ namespace AvaloniaEdit.Highlighting
             return Text.Length;
         }
 
-        /// <summary>
-        /// Gets the HighlightingColor for the specified offset.
-        /// </summary>
-        public HighlightingColor GetHighlightingAt(int offset)
-        {
-            return StateChanges[GetIndexForOffset(offset)];
-        }
+	/// <summary>
+	/// Gets the HighlightingColor for the specified offset.
+	/// </summary>
+	public HighlightingColor GetHighlightingAt(int offset) => StateChanges[GetIndexForOffset(offset)];
 
-        /// <summary>
-        /// Retrieves the highlighted sections in the specified range.
-        /// The highlighted sections will be sorted by offset, and there will not be any nested or overlapping sections.
-        /// </summary>
-        public IEnumerable<HighlightedSection> GetHighlightedSections(int offset, int length)
+	/// <summary>
+	/// Retrieves the highlighted sections in the specified range.
+	/// The highlighted sections will be sorted by offset, and there will not be any nested or overlapping sections.
+	/// </summary>
+	public IEnumerable<HighlightedSection> GetHighlightedSections(int offset, int length)
         {
             var index = GetIndexForOffset(offset);
             var pos = offset;
@@ -141,79 +138,73 @@ namespace AvaloniaEdit.Highlighting
             }
         }
 
-        /// <summary>
-        /// Creates a new RichTextModel with the formatting from this RichText.
-        /// </summary>
-        public RichTextModel ToRichTextModel()
-        {
-            return new RichTextModel(StateChangeOffsets, StateChanges.Select(ch => ch.Clone()).ToArray());
-        }
+	/// <summary>
+	/// Creates a new RichTextModel with the formatting from this RichText.
+	/// </summary>
+	public RichTextModel ToRichTextModel() => new RichTextModel(StateChangeOffsets, StateChanges.Select(ch => ch.Clone()).ToArray());
 
-        /// <summary>
-        /// Gets the text.
-        /// </summary>
-        public override string ToString()
-        {
-            return Text;
-        }
+	/// <summary>
+	/// Gets the text.
+	/// </summary>
+	public override string ToString() => Text;
 
-        ///// <summary>
-        ///// Creates Run instances that can be used for TextBlock.Inlines.
-        ///// </summary>
-        //public Run[] CreateRuns()
-        //{
-        //	Run[] runs = new Run[stateChanges.Length];
-        //	for (int i = 0; i < runs.Length; i++) {
-        //		int startOffset = stateChangeOffsets[i];
-        //		int endOffset = i + 1 < stateChangeOffsets.Length ? stateChangeOffsets[i + 1] : text.Length;
-        //		Run r = new Run(text.Substring(startOffset, endOffset - startOffset));
-        //		HighlightingColor state = stateChanges[i];
-        //		ApplyColorToTextElement(r, state);
-        //		runs[i] = r;
-        //	}
-        //	return runs;
-        //}
+	///// <summary>
+	///// Creates Run instances that can be used for TextBlock.Inlines.
+	///// </summary>
+	//public Run[] CreateRuns()
+	//{
+	//	Run[] runs = new Run[stateChanges.Length];
+	//	for (int i = 0; i < runs.Length; i++) {
+	//		int startOffset = stateChangeOffsets[i];
+	//		int endOffset = i + 1 < stateChangeOffsets.Length ? stateChangeOffsets[i + 1] : text.Length;
+	//		Run r = new Run(text.Substring(startOffset, endOffset - startOffset));
+	//		HighlightingColor state = stateChanges[i];
+	//		ApplyColorToTextElement(r, state);
+	//		runs[i] = r;
+	//	}
+	//	return runs;
+	//}
 
-        //internal static void ApplyColorToTextElement(TextElement r, HighlightingColor state)
-        //{
-        //	if (state.Foreground != null)
-        //		r.Foreground = state.Foreground.GetBrush(null);
-        //	if (state.Background != null)
-        //		r.Background = state.Background.GetBrush(null);
-        //	if (state.FontWeight != null)
-        //		r.FontWeight = state.FontWeight.Value;
-        //	if (state.FontStyle != null)
-        //		r.FontStyle = state.FontStyle.Value;
-        //}
+	//internal static void ApplyColorToTextElement(TextElement r, HighlightingColor state)
+	//{
+	//	if (state.Foreground != null)
+	//		r.Foreground = state.Foreground.GetBrush(null);
+	//	if (state.Background != null)
+	//		r.Background = state.Background.GetBrush(null);
+	//	if (state.FontWeight != null)
+	//		r.FontWeight = state.FontWeight.Value;
+	//	if (state.FontStyle != null)
+	//		r.FontStyle = state.FontStyle.Value;
+	//}
 
-        ///// <summary>
-        ///// Produces HTML code for the line, with &lt;span style="..."&gt; tags.
-        ///// </summary>
-        //public string ToHtml(HtmlOptions options = null)
-        //{
-        //	StringWriter stringWriter = new StringWriter(CultureInfo.InvariantCulture);
-        //	using (var htmlWriter = new HtmlRichTextWriter(stringWriter, options)) {
-        //		htmlWriter.Write(this);
-        //	}
-        //	return stringWriter.ToString();
-        //}
+	///// <summary>
+	///// Produces HTML code for the line, with &lt;span style="..."&gt; tags.
+	///// </summary>
+	//public string ToHtml(HtmlOptions options = null)
+	//{
+	//	StringWriter stringWriter = new StringWriter(CultureInfo.InvariantCulture);
+	//	using (var htmlWriter = new HtmlRichTextWriter(stringWriter, options)) {
+	//		htmlWriter.Write(this);
+	//	}
+	//	return stringWriter.ToString();
+	//}
 
-        ///// <summary>
-        ///// Produces HTML code for a section of the line, with &lt;span style="..."&gt; tags.
-        ///// </summary>
-        //public string ToHtml(int offset, int length, HtmlOptions options = null)
-        //{
-        //	StringWriter stringWriter = new StringWriter(CultureInfo.InvariantCulture);
-        //	using (var htmlWriter = new HtmlRichTextWriter(stringWriter, options)) {
-        //		htmlWriter.Write(this, offset, length);
-        //	}
-        //	return stringWriter.ToString();
-        //}
+	///// <summary>
+	///// Produces HTML code for a section of the line, with &lt;span style="..."&gt; tags.
+	///// </summary>
+	//public string ToHtml(int offset, int length, HtmlOptions options = null)
+	//{
+	//	StringWriter stringWriter = new StringWriter(CultureInfo.InvariantCulture);
+	//	using (var htmlWriter = new HtmlRichTextWriter(stringWriter, options)) {
+	//		htmlWriter.Write(this, offset, length);
+	//	}
+	//	return stringWriter.ToString();
+	//}
 
-        /// <summary>
-        /// Creates a substring of this rich text.
-        /// </summary>
-        public RichText Substring(int offset, int length)
+	/// <summary>
+	/// Creates a substring of this rich text.
+	/// </summary>
+	public RichText Substring(int offset, int length)
         {
             if (offset == 0 && length == Length)
                 return this;
@@ -266,4 +257,3 @@ namespace AvaloniaEdit.Highlighting
             return null;
         }
     }
-}

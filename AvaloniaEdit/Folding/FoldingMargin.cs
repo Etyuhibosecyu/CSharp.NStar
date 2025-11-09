@@ -27,8 +27,8 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
 
-namespace AvaloniaEdit.Folding
-{
+namespace AvaloniaEdit.Folding;
+
     /// <summary>
     /// A margin that shows markers for foldings and allows to expand/collapse the foldings.
     /// </summary>
@@ -360,4 +360,3 @@ namespace AvaloniaEdit.Folding
             return -1;
         }
     }
-}

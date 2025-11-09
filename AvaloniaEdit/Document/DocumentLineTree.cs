@@ -23,8 +23,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Avalonia.Threading;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// Data structure for efficient management of the document lines (most operations are O(lg n)).
     /// This implements an augmented red-black tree.
@@ -72,30 +72,16 @@ namespace AvaloniaEdit.Document
             }
         }
 
-        private static void UpdateAfterRotateLeft(DocumentLine node)
-        {
-            UpdateAfterChildrenChange(node);
+	private static void UpdateAfterRotateLeft(DocumentLine node) => UpdateAfterChildrenChange(node);// not required: rotations only happen on insertions/deletions// -> totalCount changes -> the parent is always updated//UpdateAfterChildrenChange(node.parent);
 
-            // not required: rotations only happen on insertions/deletions
-            // -> totalCount changes -> the parent is always updated
-            //UpdateAfterChildrenChange(node.parent);
-        }
+	private static void UpdateAfterRotateRight(DocumentLine node) => UpdateAfterChildrenChange(node);// not required: rotations only happen on insertions/deletions// -> totalCount changes -> the parent is always updated//UpdateAfterChildrenChange(node.parent);
+	#endregion
 
-        private static void UpdateAfterRotateRight(DocumentLine node)
-        {
-            UpdateAfterChildrenChange(node);
-
-            // not required: rotations only happen on insertions/deletions
-            // -> totalCount changes -> the parent is always updated
-            //UpdateAfterChildrenChange(node.parent);
-        }
-        #endregion
-
-        #region RebuildDocument
-        /// <summary>
-        /// Rebuild the tree, in O(n).
-        /// </summary>
-        public void RebuildTree(List<DocumentLine> documentLines)
+	#region RebuildDocument
+	/// <summary>
+	/// Rebuild the tree, in O(n).
+	/// </summary>
+	public void RebuildTree(List<DocumentLine> documentLines)
         {
             var nodes = new DocumentLine[documentLines.Count];
             for (var i = 0; i < documentLines.Count; i++)
@@ -233,22 +219,16 @@ namespace AvaloniaEdit.Document
             }
             return offset;
         }
-        #endregion
+	#endregion
 
-        #region GetLineBy
-        public DocumentLine GetByNumber(int number)
-        {
-            return GetNodeByIndex(number - 1);
-        }
+	#region GetLineBy
+	public DocumentLine GetByNumber(int number) => GetNodeByIndex(number - 1);
 
-        public DocumentLine GetByOffset(int offset)
-        {
-            return GetNodeByOffset(offset);
-        }
-        #endregion
+	public DocumentLine GetByOffset(int offset) => GetNodeByOffset(offset);
+	#endregion
 
-        #region LineCount
-        public int LineCount => _root.NodeTotalCount;
+	#region LineCount
+	public int LineCount => _root.NodeTotalCount;
 
         #endregion
 
@@ -286,12 +266,12 @@ namespace AvaloniaEdit.Document
         }
 
         /*
-		1. A node is either red or black.
-		2. The root is black.
-		3. All leaves are black. (The leaves are the NIL children.)
-		4. Both children of every red node are black. (So every red node must have a black parent.)
-		5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
-		 */
+	1. A node is either red or black.
+	2. The root is black.
+	3. All leaves are black. (The leaves are the NIL children.)
+	4. Both children of every red node are black. (So every red node must have a black parent.)
+	5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
+	 */
         [SuppressMessage("ReSharper", "UnusedParameter.Local")]
         private void CheckNodeProperties(DocumentLine node, DocumentLine parentNode, bool parentColor, int blackCount, ref int expectedBlackCount)
         {
@@ -671,14 +651,11 @@ namespace AvaloniaEdit.Document
                 return parentNode.Left;
         }
 
-        private static bool GetColor(DocumentLine node)
-        {
-            return node != null && node.Color;
-        }
-        #endregion
+	private static bool GetColor(DocumentLine node) => node != null && node.Color;
+	#endregion
 
-        #region IList implementation
-        DocumentLine IList<DocumentLine>.this[int index]
+	#region IList implementation
+	DocumentLine IList<DocumentLine>.this[int index]
         {
             get
             {
@@ -711,27 +688,15 @@ namespace AvaloniaEdit.Document
                 return -1;
         }
 
-        void IList<DocumentLine>.Insert(int index, DocumentLine item)
-        {
-            throw new NotSupportedException();
-        }
+	void IList<DocumentLine>.Insert(int index, DocumentLine item) => throw new NotSupportedException();
 
-        void IList<DocumentLine>.RemoveAt(int index)
-        {
-            throw new NotSupportedException();
-        }
+	void IList<DocumentLine>.RemoveAt(int index) => throw new NotSupportedException();
 
-        void ICollection<DocumentLine>.Add(DocumentLine item)
-        {
-            throw new NotSupportedException();
-        }
+	void ICollection<DocumentLine>.Add(DocumentLine item) => throw new NotSupportedException();
 
-        void ICollection<DocumentLine>.Clear()
-        {
-            throw new NotSupportedException();
-        }
+	void ICollection<DocumentLine>.Clear() => throw new NotSupportedException();
 
-        bool ICollection<DocumentLine>.Contains(DocumentLine item)
+	bool ICollection<DocumentLine>.Contains(DocumentLine item)
         {
             IList<DocumentLine> self = this;
             return self.IndexOf(item) >= 0;
@@ -739,9 +704,8 @@ namespace AvaloniaEdit.Document
 
         void ICollection<DocumentLine>.CopyTo(DocumentLine[] array, int arrayIndex)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (array.Length < LineCount)
+		ArgumentNullException.ThrowIfNull(array);
+		if (array.Length < LineCount)
                 throw new ArgumentException("The array is too small", nameof(array));
             if (arrayIndex < 0 || arrayIndex + LineCount > array.Length)
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, "Value must be between 0 and " + (array.Length - LineCount));
@@ -751,12 +715,9 @@ namespace AvaloniaEdit.Document
             }
         }
 
-        bool ICollection<DocumentLine>.Remove(DocumentLine item)
-        {
-            throw new NotSupportedException();
-        }
+	bool ICollection<DocumentLine>.Remove(DocumentLine item) => throw new NotSupportedException();
 
-        public IEnumerator<DocumentLine> GetEnumerator()
+	public IEnumerator<DocumentLine> GetEnumerator()
         {
             Dispatcher.UIThread.VerifyAccess();
             return Enumerate();
@@ -773,10 +734,6 @@ namespace AvaloniaEdit.Document
             }
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-        #endregion
-    }
+	System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+	#endregion
 }

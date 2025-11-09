@@ -19,8 +19,8 @@
 using System;
 using AvaloniaEdit.Document;
 
-namespace AvaloniaEdit.Indentation
-{
+namespace AvaloniaEdit.Indentation;
+
     /// <summary>
     /// Handles indentation by copying the indentation from the previous line.
     /// Does not support indenting multiple lines.
@@ -30,9 +30,9 @@ namespace AvaloniaEdit.Indentation
         /// <inheritdoc/>
         public virtual void IndentLine(TextDocument document, DocumentLine line)
         {
-            if (document == null) throw new ArgumentNullException(nameof(document));
-            if (line == null) throw new ArgumentNullException(nameof(line));
-            var previousLine = line.PreviousLine;
+		ArgumentNullException.ThrowIfNull(document);
+		ArgumentNullException.ThrowIfNull(line);
+		var previousLine = line.PreviousLine;
             if (previousLine != null)
             {
                 var indentationSegment = TextUtilities.GetWhitespaceAfter(document, previousLine.Offset);
@@ -52,4 +52,3 @@ namespace AvaloniaEdit.Indentation
         {
         }
     }
-}

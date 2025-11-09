@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
-namespace AvaloniaEdit.Utils
-{
+namespace AvaloniaEdit.Utils;
+
     /// <summary>
     /// This class is used to prevent stack overflows by representing a 'busy' flag
     /// that prevents reentrance when another call is running.
@@ -21,22 +21,16 @@ namespace AvaloniaEdit.Utils
             public static readonly BusyLock Failed = new BusyLock(null);
 
             private readonly List<object> _objectList;
-			
-            internal BusyLock(List<object> objectList)
-            {
-                _objectList = objectList;
-            }
-			
-            public bool Success => _objectList != null;
 
-            public void Dispose()
-            {
-                _objectList?.RemoveAt(_objectList.Count - 1);
-            }
-        }
-		
+		internal BusyLock(List<object> objectList) => _objectList = objectList;
+
+		public bool Success => _objectList != null;
+
+		public void Dispose() => _objectList?.RemoveAt(_objectList.Count - 1);
+	}
+	
         [ThreadStatic] private static List<object> _activeObjects;
-		
+	
         public static BusyLock Enter(object obj)
         {
             var activeObjects = _activeObjects ?? (_activeObjects = new List<object>());
@@ -48,4 +42,3 @@ namespace AvaloniaEdit.Utils
             return new BusyLock(activeObjects);
         }
     }
-}

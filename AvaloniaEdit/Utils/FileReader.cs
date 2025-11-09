@@ -20,8 +20,8 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace AvaloniaEdit.Utils
-{
+namespace AvaloniaEdit.Utils;
+
     /// <summary>
     /// Class that can open text files with auto-detection of the encoding.
     /// </summary>
@@ -36,9 +36,8 @@ namespace AvaloniaEdit.Utils
         /// </remarks>
         public static bool IsUnicode(Encoding encoding)
         {
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            switch (encoding)
+		ArgumentNullException.ThrowIfNull(encoding);
+		switch (encoding)
             {
                 case UnicodeEncoding _:
                 case UTF8Encoding _:
@@ -96,59 +95,38 @@ namespace AvaloniaEdit.Utils
             }
         }
 
-        /// <summary>
-        /// Reads the content of the file.
-        /// </summary>
-        /// <param name="fileName">The file name.</param>
-        /// <param name="defaultEncoding">The encoding to use if the encoding cannot be auto-detected.</param>
-        /// <returns>The file content as string.</returns>
-        public static string ReadFileContent(string fileName, Encoding defaultEncoding)
-        {
-            throw new NotImplementedException();
-            //using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-            //	return ReadFileContent(fs, defaultEncoding);
-            //}
-        }
+	/// <summary>
+	/// Reads the content of the file.
+	/// </summary>
+	/// <param name="fileName">The file name.</param>
+	/// <param name="defaultEncoding">The encoding to use if the encoding cannot be auto-detected.</param>
+	/// <returns>The file content as string.</returns>
+	public static string ReadFileContent(string fileName, Encoding defaultEncoding) => throw new NotImplementedException();//using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read)) {//	return ReadFileContent(fs, defaultEncoding);//}
 
-        /// <summary>
-        /// Opens the specified file for reading.
-        /// </summary>
-        /// <param name="fileName">The file to open.</param>
-        /// <param name="defaultEncoding">The encoding to use if the encoding cannot be auto-detected.</param>
-        /// <returns>Returns a StreamReader that reads from the stream. Use
-        /// <see cref="StreamReader.CurrentEncoding"/> to get the encoding that was used.</returns>
-        public static StreamReader OpenFile(string fileName, Encoding defaultEncoding)
-        {
-            throw new NotImplementedException();
-            //if (fileName == null)
-            //	throw new ArgumentNullException("fileName");
-            //FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            //try {
-            //	return OpenStream(fs, defaultEncoding);
-            //	// don't use finally: the stream must be kept open until the StreamReader closes it
-            //} catch {
-            //	fs.Dispose();
-            //	throw;
-            //}
-        }
+	/// <summary>
+	/// Opens the specified file for reading.
+	/// </summary>
+	/// <param name="fileName">The file to open.</param>
+	/// <param name="defaultEncoding">The encoding to use if the encoding cannot be auto-detected.</param>
+	/// <returns>Returns a StreamReader that reads from the stream. Use
+	/// <see cref="StreamReader.CurrentEncoding"/> to get the encoding that was used.</returns>
+	public static StreamReader OpenFile(string fileName, Encoding defaultEncoding) => throw new NotImplementedException();//if (fileName == null)//	throw new ArgumentNullException("fileName");//FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);//try {//	return OpenStream(fs, defaultEncoding);//	// don't use finally: the stream must be kept open until the StreamReader closes it//} catch {//	fs.Dispose();//	throw;//}
 
-        /// <summary>
-        /// Opens the specified stream for reading.
-        /// </summary>
-        /// <param name="stream">The stream to open.</param>
-        /// <param name="defaultEncoding">The encoding to use if the encoding cannot be auto-detected.</param>
-        /// <returns>Returns a StreamReader that reads from the stream. Use
-        /// <see cref="StreamReader.CurrentEncoding"/> to get the encoding that was used.</returns>
-        public static StreamReader OpenStream(Stream stream, Encoding defaultEncoding)
+	/// <summary>
+	/// Opens the specified stream for reading.
+	/// </summary>
+	/// <param name="stream">The stream to open.</param>
+	/// <param name="defaultEncoding">The encoding to use if the encoding cannot be auto-detected.</param>
+	/// <returns>Returns a StreamReader that reads from the stream. Use
+	/// <see cref="StreamReader.CurrentEncoding"/> to get the encoding that was used.</returns>
+	public static StreamReader OpenStream(Stream stream, Encoding defaultEncoding)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-            if (stream.Position != 0)
+		ArgumentNullException.ThrowIfNull(stream);
+		if (stream.Position != 0)
                 throw new ArgumentException("stream is not positioned at beginning.", nameof(stream));
-            if (defaultEncoding == null)
-                throw new ArgumentNullException(nameof(defaultEncoding));
+		ArgumentNullException.ThrowIfNull(defaultEncoding);
 
-            if (stream.Length >= 2)
+		if (stream.Length >= 2)
             {
                 // the autodetection of StreamReader is not capable of detecting the difference
                 // between ISO-8859-1 and UTF-8 without BOM.
@@ -285,4 +263,3 @@ namespace AvaloniaEdit.Utils
             }
         }
     }
-}

@@ -19,8 +19,8 @@
 using System;
 using System.Collections.ObjectModel;
 
-namespace AvaloniaEdit.Utils
-{
+namespace AvaloniaEdit.Utils;
+
     /// <summary>
     /// A collection that cannot contain null values.
     /// </summary>
@@ -29,17 +29,14 @@ namespace AvaloniaEdit.Utils
         /// <inheritdoc/>
         protected override void InsertItem(int index, T item)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-            base.InsertItem(index, item);
+		ArgumentNullException.ThrowIfNull(item);
+		base.InsertItem(index, item);
         }
 
         /// <inheritdoc/>
         protected override void SetItem(int index, T item)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-            base.SetItem(index, item);
+		ArgumentNullException.ThrowIfNull(item);
+		base.SetItem(index, item);
         }
     }
-}

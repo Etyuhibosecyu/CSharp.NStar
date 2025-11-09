@@ -20,8 +20,8 @@ using System;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 
-namespace AvaloniaEdit.Snippets
-{
+namespace AvaloniaEdit.Snippets;
+
     /// <summary>
     /// A code snippet that can be inserted into the text editor.
     /// </summary>
@@ -32,10 +32,9 @@ namespace AvaloniaEdit.Snippets
         /// </summary>
         public InsertionContext Insert(TextArea textArea)
         {
-            if (textArea == null)
-                throw new ArgumentNullException(nameof(textArea));
+		ArgumentNullException.ThrowIfNull(textArea);
 
-            var selection = textArea.Selection.SurroundingSegment;
+		var selection = textArea.Selection.SurroundingSegment;
             var insertionPosition = textArea.Caret.Offset;
 
             if (selection != null) // if something is selected
@@ -57,4 +56,3 @@ namespace AvaloniaEdit.Snippets
             return context;
         }
     }
-}

@@ -20,8 +20,8 @@ using System;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 
-namespace AvaloniaEdit.Highlighting
-{
+namespace AvaloniaEdit.Highlighting;
+
     /// <summary>
     /// A colorizer that applies the highlighting from a <see cref="RichTextModel"/> to the editor.
     /// </summary>
@@ -29,16 +29,13 @@ namespace AvaloniaEdit.Highlighting
     {
         private readonly RichTextModel _richTextModel;
 
-        /// <summary>
-        /// Creates a new RichTextColorizer instance.
-        /// </summary>
-        public RichTextColorizer(RichTextModel richTextModel)
-        {
-            _richTextModel = richTextModel ?? throw new ArgumentNullException(nameof(richTextModel));
-        }
+	/// <summary>
+	/// Creates a new RichTextColorizer instance.
+	/// </summary>
+	public RichTextColorizer(RichTextModel richTextModel) => _richTextModel = richTextModel ?? throw new ArgumentNullException(nameof(richTextModel));
 
-        /// <inheritdoc/>
-        protected override void ColorizeLine(DocumentLine line)
+	/// <inheritdoc/>
+	protected override void ColorizeLine(DocumentLine line)
         {
             var sections = _richTextModel.GetHighlightedSections(line.Offset, line.Length);
             foreach (var section in sections)
@@ -50,4 +47,3 @@ namespace AvaloniaEdit.Highlighting
             }
         }
     }
-}

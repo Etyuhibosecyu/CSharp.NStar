@@ -100,10 +100,10 @@ public class UserDefinedMethodOverloads : List<UserDefinedMethodOverload>
 public class UserDefinedMethods : Dictionary<String, UserDefinedMethodOverloads>
 {
 }
-public class ConstructorOverloads : List<(ConstructorAttributes Attributes, ExtendedMethodParameters Parameters)>
+public class ConstructorOverloads : List<(ConstructorAttributes Attributes, ExtendedMethodParameters Parameters, ListHashSet<int> UnsetRequiredProperties)>
 {
 	public ConstructorOverloads() : base() { }
-	public ConstructorOverloads(G.IEnumerable<(ConstructorAttributes Attributes, ExtendedMethodParameters Parameters)> collection) : base(collection) { }
+	public ConstructorOverloads(G.IEnumerable<(ConstructorAttributes Attributes, ExtendedMethodParameters Parameters, ListHashSet<int> UnsetRequiredProperties)> collection) : base(collection) { }
 }
 public class UnaryOperatorOverloads : List<(bool Postfix, NStarType ReturnNStarType, NStarType OpdNStarType)>
 {

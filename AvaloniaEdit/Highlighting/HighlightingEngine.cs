@@ -25,8 +25,8 @@ using AvaloniaEdit.Document;
 using AvaloniaEdit.Utils;
 using SpanStack = System.Collections.Immutable.ImmutableStack<AvaloniaEdit.Highlighting.HighlightingSpan>;
 
-namespace AvaloniaEdit.Highlighting
-{
+namespace AvaloniaEdit.Highlighting;
+
     /// <summary>
     /// Regex-based highlighting engine.
     /// </summary>
@@ -35,18 +35,15 @@ namespace AvaloniaEdit.Highlighting
         private readonly HighlightingRuleSet _mainRuleSet;
         private SpanStack _spanStack = SpanStack.Empty;
 
-        /// <summary>
-        /// Creates a new HighlightingEngine instance.
-        /// </summary>
-        public HighlightingEngine(HighlightingRuleSet mainRuleSet)
-        {
-            _mainRuleSet = mainRuleSet ?? throw new ArgumentNullException(nameof(mainRuleSet));
-        }
+	/// <summary>
+	/// Creates a new HighlightingEngine instance.
+	/// </summary>
+	public HighlightingEngine(HighlightingRuleSet mainRuleSet) => _mainRuleSet = mainRuleSet ?? throw new ArgumentNullException(nameof(mainRuleSet));
 
-        /// <summary>
-        /// Gets/sets the current span stack.
-        /// </summary>
-        public SpanStack CurrentSpanStack
+	/// <summary>
+	/// Gets/sets the current span stack.
+	/// </summary>
+	public SpanStack CurrentSpanStack
         {
             get => _spanStack;
             set => _spanStack = value ?? SpanStack.Empty;
@@ -347,4 +344,3 @@ namespace AvaloniaEdit.Highlighting
         }
         #endregion
     }
-}

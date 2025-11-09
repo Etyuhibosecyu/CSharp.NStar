@@ -20,8 +20,8 @@ using System;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace AvaloniaEdit.Search
-{
+namespace AvaloniaEdit.Search;
+
     /// <summary>
     /// Provides factory methods for ISearchStrategies.
     /// </summary>
@@ -32,9 +32,8 @@ namespace AvaloniaEdit.Search
         /// </summary>
         public static ISearchStrategy Create(string searchPattern, bool ignoreCase, bool matchWholeWords, SearchMode mode)
         {
-            if (searchPattern == null)
-                throw new ArgumentNullException(nameof(searchPattern));
-            var options = RegexOptions.Multiline;
+		ArgumentNullException.ThrowIfNull(searchPattern);
+		var options = RegexOptions.Multiline;
             if (ignoreCase)
                 options |= RegexOptions.IgnoreCase;
 
@@ -85,4 +84,3 @@ namespace AvaloniaEdit.Search
             return builder.ToString();
         }
     }
-}

@@ -21,8 +21,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using AvaloniaEdit.Document;
 
-namespace AvaloniaEdit
-{
+namespace AvaloniaEdit;
+
     /// <summary>
     /// Represents a text location with a visual column.
     /// </summary>
@@ -107,20 +107,17 @@ namespace AvaloniaEdit
         {
         }
 
-        /// <inheritdoc/>
-        public override string ToString()
-        {
-            return string.Format(CultureInfo.InvariantCulture,
-                                 "[TextViewPosition Line={0} Column={1} VisualColumn={2} IsAtEndOfLine={3}]",
-                                 Line, Column, VisualColumn, IsAtEndOfLine);
-        }
+	/// <inheritdoc/>
+	public override string ToString() => string.Format(CultureInfo.InvariantCulture,
+							 "[TextViewPosition Line={0} Column={1} VisualColumn={2} IsAtEndOfLine={3}]",
+							 Line, Column, VisualColumn, IsAtEndOfLine);
 
-        #region Equals and GetHashCode implementation
-        // The code in this region is useful if you want to use this structure in collections.
-        // If you don't need it, you can just remove the region and the ": IEquatable<Struct1>" declaration.
+	#region Equals and GetHashCode implementation
+	// The code in this region is useful if you want to use this structure in collections.
+	// If you don't need it, you can just remove the region and the ": IEquatable<Struct1>" declaration.
 
-        /// <inheritdoc/>
-        public override bool Equals(object obj)
+	/// <inheritdoc/>
+	public override bool Equals(object obj)
         {
             if (obj is TextViewPosition)
                 return Equals((TextViewPosition)obj); // use Equals method below
@@ -141,18 +138,15 @@ namespace AvaloniaEdit
             return hashCode;
         }
 
-        /// <summary>
-        /// Equality test.
-        /// </summary>
-        public bool Equals(TextViewPosition other)
-        {
-            return Line == other.Line && Column == other.Column && VisualColumn == other.VisualColumn && IsAtEndOfLine == other.IsAtEndOfLine;
-        }
+	/// <summary>
+	/// Equality test.
+	/// </summary>
+	public bool Equals(TextViewPosition other) => Line == other.Line && Column == other.Column && VisualColumn == other.VisualColumn && IsAtEndOfLine == other.IsAtEndOfLine;
 
-        /// <summary>
-        /// Equality test.
-        /// </summary>
-        public static bool operator ==(TextViewPosition left, TextViewPosition right)
+	/// <summary>
+	/// Equality test.
+	/// </summary>
+	public static bool operator ==(TextViewPosition left, TextViewPosition right)
         {
             return left.Equals(right);
         }
@@ -182,4 +176,3 @@ namespace AvaloniaEdit
             return 0;
         }
     }
-}

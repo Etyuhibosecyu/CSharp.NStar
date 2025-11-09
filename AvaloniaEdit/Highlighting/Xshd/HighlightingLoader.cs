@@ -19,27 +19,23 @@
 using System;
 using System.Xml;
 
-namespace AvaloniaEdit.Highlighting.Xshd
-{
+namespace AvaloniaEdit.Highlighting.Xshd;
+
     /// <summary>
     /// Static class with helper methods to load XSHD highlighting files.
     /// </summary>
     public static class HighlightingLoader
     {
-        #region XSHD loading
-        /// <summary>
-        /// Lodas a syntax definition from the xml reader.
-        /// </summary>
-        public static XshdSyntaxDefinition LoadXshd(XmlReader reader)
-        {
-            return LoadXshd(reader, false);
-        }
+	#region XSHD loading
+	/// <summary>
+	/// Lodas a syntax definition from the xml reader.
+	/// </summary>
+	public static XshdSyntaxDefinition LoadXshd(XmlReader reader) => LoadXshd(reader, false);
 
-        internal static XshdSyntaxDefinition LoadXshd(XmlReader reader, bool skipValidation)
+	internal static XshdSyntaxDefinition LoadXshd(XmlReader reader, bool skipValidation)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-            try
+		ArgumentNullException.ThrowIfNull(reader);
+		try
             {
                 reader.MoveToContent();
                 //if (reader.NamespaceURI == V2Loader.Namespace)
@@ -57,12 +53,9 @@ namespace AvaloniaEdit.Highlighting.Xshd
             }
         }
 
-        static Exception WrapException(Exception ex, int lineNumber, int linePosition)
-        {
-            return new HighlightingDefinitionInvalidException(FormatExceptionMessage(ex.Message, lineNumber, linePosition), ex);
-        }
+	static Exception WrapException(Exception ex, int lineNumber, int linePosition) => new HighlightingDefinitionInvalidException(FormatExceptionMessage(ex.Message, lineNumber, linePosition), ex);
 
-        internal static string FormatExceptionMessage(string message, int lineNumber, int linePosition)
+	internal static string FormatExceptionMessage(string message, int lineNumber, int linePosition)
         {
             if (lineNumber <= 0)
                 return message;
@@ -104,18 +97,13 @@ namespace AvaloniaEdit.Highlighting.Xshd
         /// </summary>
         public static IHighlightingDefinition Load(XshdSyntaxDefinition syntaxDefinition, IHighlightingDefinitionReferenceResolver resolver)
         {
-            if (syntaxDefinition == null)
-                throw new ArgumentNullException(nameof(syntaxDefinition));
-            return new XmlHighlightingDefinition(syntaxDefinition, resolver);
+		ArgumentNullException.ThrowIfNull(syntaxDefinition);
+		return new XmlHighlightingDefinition(syntaxDefinition, resolver);
         }
 
-        /// <summary>
-        /// Creates a highlighting definition from the XSHD file.
-        /// </summary>
-        public static IHighlightingDefinition Load(XmlReader reader, IHighlightingDefinitionReferenceResolver resolver)
-        {
-            return Load(LoadXshd(reader), resolver);
-        }
-        #endregion
-    }
+	/// <summary>
+	/// Creates a highlighting definition from the XSHD file.
+	/// </summary>
+	public static IHighlightingDefinition Load(XmlReader reader, IHighlightingDefinitionReferenceResolver resolver) => Load(LoadXshd(reader), resolver);
+	#endregion
 }

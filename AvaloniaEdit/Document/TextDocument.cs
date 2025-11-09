@@ -27,8 +27,8 @@ using System.IO;
 using AvaloniaEdit.Utils;
 using System.Threading;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// This class is the main class of the text model. Basically, it is a <see cref="System.Text.StringBuilder"/> with events.
     /// </summary>
@@ -65,9 +65,8 @@ namespace AvaloniaEdit.Document
         /// </summary>
         public TextDocument(IEnumerable<char> initialText)
         {
-            if (initialText == null)
-                throw new ArgumentNullException(nameof(initialText));
-            _rope = new Rope<char>(initialText);
+		ArgumentNullException.ThrowIfNull(initialText);
+		_rope = new Rope<char>(initialText);
             _lineTree = new DocumentLineTree(this);
             _lineManager = new LineManager(_lineTree, this);
             _lineTrackers.CollectionChanged += delegate
@@ -91,10 +90,9 @@ namespace AvaloniaEdit.Document
         // gets the text from a text source, directly retrieving the underlying rope where possible
         private static IEnumerable<char> GetTextFromTextSource(ITextSource textSource)
         {
-            if (textSource == null)
-                throw new ArgumentNullException(nameof(textSource));
+		ArgumentNullException.ThrowIfNull(textSource);
 
-            if (textSource is RopeTextSource rts)
+		if (textSource is RopeTextSource rts)
             {
                 return rts.GetRope();
             }
@@ -131,26 +129,26 @@ namespace AvaloniaEdit.Document
 
         private Thread ownerThread = Thread.CurrentThread;
 
-		/// <summary>
-		/// Transfers ownership of the document to another thread. 
-		/// </summary>
-		/// <remarks>
-		/// <para>
-		/// The owner can be set to null, which means that no thread can access the document. But, if the document
-		/// has no owner thread, any thread may take ownership by calling <see cref="SetOwnerThread"/>.
-		/// </para>
-		/// </remarks>
-		public void SetOwnerThread(Thread newOwner)
-		{
+	/// <summary>
+	/// Transfers ownership of the document to another thread. 
+	/// </summary>
+	/// <remarks>
+	/// <para>
+	/// The owner can be set to null, which means that no thread can access the document. But, if the document
+	/// has no owner thread, any thread may take ownership by calling <see cref="SetOwnerThread"/>.
+	/// </para>
+	/// </remarks>
+	public void SetOwnerThread(Thread newOwner)
+	{
             // We need to lock here to ensure that in the null owner case,
-			// only one thread succeeds in taking ownership.
-			lock (_lockObject) {
-				if (ownerThread != null) {
-					VerifyAccess();
-				}
-				ownerThread = newOwner;
+		// only one thread succeeds in taking ownership.
+		lock (_lockObject) {
+			if (ownerThread != null) {
+				VerifyAccess();
 			}
-		}	
+			ownerThread = newOwner;
+		}
+	}	
 
         private void VerifyAccess()
         {
@@ -165,9 +163,8 @@ namespace AvaloniaEdit.Document
         /// </summary>
         public string GetText(ISegment segment)
         {
-            if (segment == null)
-                throw new ArgumentNullException(nameof(segment));
-            return GetText(segment.Offset, segment.Length);
+		ArgumentNullException.ThrowIfNull(segment);
+		return GetText(segment.Offset, segment.Length);
         }
 
         /// <inheritdoc/>
@@ -222,20 +219,18 @@ namespace AvaloniaEdit.Document
             get
             {
                 VerifyAccess();
-                var completeText = _cachedText?.Target as string;
-                if (completeText == null)
-                {
-                    completeText = _rope.ToString();
-                    _cachedText = new WeakReference(completeText);
-                }
-                return completeText;
+			if (_cachedText?.Target is not string completeText)
+			{
+				completeText = _rope.ToString();
+				_cachedText = new WeakReference(completeText);
+			}
+			return completeText;
             }
             set
             {
                 VerifyAccess();
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-                Replace(0, _rope.Length, value);
+			ArgumentNullException.ThrowIfNull(value);
+			Replace(0, _rope.Length, value);
             }
         }
 
@@ -396,12 +391,9 @@ namespace AvaloniaEdit.Document
             _rope.WriteTo(writer, offset, length);
         }
 
-        private void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+	private void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-        public event PropertyChangedEventHandler PropertyChanged;
+	public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
 
@@ -492,25 +484,16 @@ namespace AvaloniaEdit.Document
         /// <remarks><inheritdoc cref="Changing"/></remarks>
         public event EventHandler UpdateFinished;
 
-        void IDocument.StartUndoableAction()
-        {
-            BeginUpdate();
-        }
+	void IDocument.StartUndoableAction() => BeginUpdate();
 
-        void IDocument.EndUndoableAction()
-        {
-            EndUpdate();
-        }
+	void IDocument.EndUndoableAction() => EndUpdate();
 
-        IDisposable IDocument.OpenUndoGroup()
-        {
-            return RunUpdate();
-        }
-        #endregion
+	IDisposable IDocument.OpenUndoGroup() => RunUpdate();
+	#endregion
 
-        #region Fire events after update
+	#region Fire events after update
 
-        private int _oldTextLength;
+	private int _oldTextLength;
         private int _oldLineCount;
         private bool _fireTextChanged;
 
@@ -544,50 +527,44 @@ namespace AvaloniaEdit.Document
             }
         }
 
-        #endregion
+	#endregion
 
-        #region Insert / Remove  / Replace
-        /// <summary>
-        /// Inserts text.
-        /// </summary>
-        /// <param name="offset">The offset at which the text is inserted.</param>
-        /// <param name="text">The new text.</param>
-        /// <remarks>
-        /// Anchors positioned exactly at the insertion offset will move according to their movement type.
-        /// For AnchorMovementType.Default, they will move behind the inserted text.
-        /// The caret will also move behind the inserted text.
-        /// </remarks>
-        public void Insert(int offset, string text)
-        {
-            Replace(offset, 0, new StringTextSource(text), null);
-        }
+	#region Insert / Remove  / Replace
+	/// <summary>
+	/// Inserts text.
+	/// </summary>
+	/// <param name="offset">The offset at which the text is inserted.</param>
+	/// <param name="text">The new text.</param>
+	/// <remarks>
+	/// Anchors positioned exactly at the insertion offset will move according to their movement type.
+	/// For AnchorMovementType.Default, they will move behind the inserted text.
+	/// The caret will also move behind the inserted text.
+	/// </remarks>
+	public void Insert(int offset, string text) => Replace(offset, 0, new StringTextSource(text), null);
 
-        /// <summary>
-        /// Inserts text.
-        /// </summary>
-        /// <param name="offset">The offset at which the text is inserted.</param>
-        /// <param name="text">The new text.</param>
-        /// <remarks>
-        /// Anchors positioned exactly at the insertion offset will move according to their movement type.
-        /// For AnchorMovementType.Default, they will move behind the inserted text.
-        /// The caret will also move behind the inserted text.
-        /// </remarks>
-        public void Insert(int offset, ITextSource text)
-        {
-            Replace(offset, 0, text, null);
-        }
+	/// <summary>
+	/// Inserts text.
+	/// </summary>
+	/// <param name="offset">The offset at which the text is inserted.</param>
+	/// <param name="text">The new text.</param>
+	/// <remarks>
+	/// Anchors positioned exactly at the insertion offset will move according to their movement type.
+	/// For AnchorMovementType.Default, they will move behind the inserted text.
+	/// The caret will also move behind the inserted text.
+	/// </remarks>
+	public void Insert(int offset, ITextSource text) => Replace(offset, 0, text, null);
 
-        /// <summary>
-        /// Inserts text.
-        /// </summary>
-        /// <param name="offset">The offset at which the text is inserted.</param>
-        /// <param name="text">The new text.</param>
-        /// <param name="defaultAnchorMovementType">
-        /// Anchors positioned exactly at the insertion offset will move according to the anchor's movement type.
-        /// For AnchorMovementType.Default, they will move according to the movement type specified by this parameter.
-        /// The caret will also move according to the <paramref name="defaultAnchorMovementType"/> parameter.
-        /// </param>
-        public void Insert(int offset, string text, AnchorMovementType defaultAnchorMovementType)
+	/// <summary>
+	/// Inserts text.
+	/// </summary>
+	/// <param name="offset">The offset at which the text is inserted.</param>
+	/// <param name="text">The new text.</param>
+	/// <param name="defaultAnchorMovementType">
+	/// Anchors positioned exactly at the insertion offset will move according to the anchor's movement type.
+	/// For AnchorMovementType.Default, they will move according to the movement type specified by this parameter.
+	/// The caret will also move according to the <paramref name="defaultAnchorMovementType"/> parameter.
+	/// </param>
+	public void Insert(int offset, string text, AnchorMovementType defaultAnchorMovementType)
         {
             if (defaultAnchorMovementType == AnchorMovementType.BeforeInsertion)
             {
@@ -621,34 +598,27 @@ namespace AvaloniaEdit.Document
             }
         }
 
-        /// <summary>
-        /// Removes text.
-        /// </summary>
-        public void Remove(ISegment segment)
-        {
-            Replace(segment, string.Empty);
-        }
+	/// <summary>
+	/// Removes text.
+	/// </summary>
+	public void Remove(ISegment segment) => Replace(segment, string.Empty);
 
-        /// <summary>
-        /// Removes text.
-        /// </summary>
-        /// <param name="offset">Starting offset of the text to be removed.</param>
-        /// <param name="length">Length of the text to be removed.</param>
-        public void Remove(int offset, int length)
-        {
-            Replace(offset, length, StringTextSource.Empty);
-        }
+	/// <summary>
+	/// Removes text.
+	/// </summary>
+	/// <param name="offset">Starting offset of the text to be removed.</param>
+	/// <param name="length">Length of the text to be removed.</param>
+	public void Remove(int offset, int length) => Replace(offset, length, StringTextSource.Empty);
 
-        internal bool InDocumentChanging;
+	internal bool InDocumentChanging;
 
         /// <summary>
         /// Replaces text.
         /// </summary>
         public void Replace(ISegment segment, string text)
         {
-            if (segment == null)
-                throw new ArgumentNullException(nameof(segment));
-            Replace(segment.Offset, segment.Length, new StringTextSource(text), null);
+		ArgumentNullException.ThrowIfNull(segment);
+		Replace(segment.Offset, segment.Length, new StringTextSource(text), null);
         }
 
         /// <summary>
@@ -656,60 +626,49 @@ namespace AvaloniaEdit.Document
         /// </summary>
         public void Replace(ISegment segment, ITextSource text)
         {
-            if (segment == null)
-                throw new ArgumentNullException(nameof(segment));
-            Replace(segment.Offset, segment.Length, text, null);
+		ArgumentNullException.ThrowIfNull(segment);
+		Replace(segment.Offset, segment.Length, text, null);
         }
 
-        /// <summary>
-        /// Replaces text.
-        /// </summary>
-        /// <param name="offset">The starting offset of the text to be replaced.</param>
-        /// <param name="length">The length of the text to be replaced.</param>
-        /// <param name="text">The new text.</param>
-        public void Replace(int offset, int length, string text)
-        {
-            Replace(offset, length, new StringTextSource(text), null);
-        }
+	/// <summary>
+	/// Replaces text.
+	/// </summary>
+	/// <param name="offset">The starting offset of the text to be replaced.</param>
+	/// <param name="length">The length of the text to be replaced.</param>
+	/// <param name="text">The new text.</param>
+	public void Replace(int offset, int length, string text) => Replace(offset, length, new StringTextSource(text), null);
 
-        /// <summary>
-        /// Replaces text.
-        /// </summary>
-        /// <param name="offset">The starting offset of the text to be replaced.</param>
-        /// <param name="length">The length of the text to be replaced.</param>
-        /// <param name="text">The new text.</param>
-        public void Replace(int offset, int length, ITextSource text)
-        {
-            Replace(offset, length, text, null);
-        }
+	/// <summary>
+	/// Replaces text.
+	/// </summary>
+	/// <param name="offset">The starting offset of the text to be replaced.</param>
+	/// <param name="length">The length of the text to be replaced.</param>
+	/// <param name="text">The new text.</param>
+	public void Replace(int offset, int length, ITextSource text) => Replace(offset, length, text, null);
 
-        /// <summary>
-        /// Replaces text.
-        /// </summary>
-        /// <param name="offset">The starting offset of the text to be replaced.</param>
-        /// <param name="length">The length of the text to be replaced.</param>
-        /// <param name="text">The new text.</param>
-        /// <param name="offsetChangeMappingType">The offsetChangeMappingType determines how offsets inside the old text are mapped to the new text.
-        /// This affects how the anchors and segments inside the replaced region behave.</param>
-        public void Replace(int offset, int length, string text, OffsetChangeMappingType offsetChangeMappingType)
-        {
-            Replace(offset, length, new StringTextSource(text), offsetChangeMappingType);
-        }
+	/// <summary>
+	/// Replaces text.
+	/// </summary>
+	/// <param name="offset">The starting offset of the text to be replaced.</param>
+	/// <param name="length">The length of the text to be replaced.</param>
+	/// <param name="text">The new text.</param>
+	/// <param name="offsetChangeMappingType">The offsetChangeMappingType determines how offsets inside the old text are mapped to the new text.
+	/// This affects how the anchors and segments inside the replaced region behave.</param>
+	public void Replace(int offset, int length, string text, OffsetChangeMappingType offsetChangeMappingType) => Replace(offset, length, new StringTextSource(text), offsetChangeMappingType);
 
-        /// <summary>
-        /// Replaces text.
-        /// </summary>
-        /// <param name="offset">The starting offset of the text to be replaced.</param>
-        /// <param name="length">The length of the text to be replaced.</param>
-        /// <param name="text">The new text.</param>
-        /// <param name="offsetChangeMappingType">The offsetChangeMappingType determines how offsets inside the old text are mapped to the new text.
-        /// This affects how the anchors and segments inside the replaced region behave.</param>
-        public void Replace(int offset, int length, ITextSource text, OffsetChangeMappingType offsetChangeMappingType)
+	/// <summary>
+	/// Replaces text.
+	/// </summary>
+	/// <param name="offset">The starting offset of the text to be replaced.</param>
+	/// <param name="length">The length of the text to be replaced.</param>
+	/// <param name="text">The new text.</param>
+	/// <param name="offsetChangeMappingType">The offsetChangeMappingType determines how offsets inside the old text are mapped to the new text.
+	/// This affects how the anchors and segments inside the replaced region behave.</param>
+	public void Replace(int offset, int length, ITextSource text, OffsetChangeMappingType offsetChangeMappingType)
         {
-            if (text == null)
-                throw new ArgumentNullException(nameof(text));
-            // Please see OffsetChangeMappingType XML comments for details on how these modes work.
-            switch (offsetChangeMappingType)
+		ArgumentNullException.ThrowIfNull(text);
+		// Please see OffsetChangeMappingType XML comments for details on how these modes work.
+		switch (offsetChangeMappingType)
             {
                 case OffsetChangeMappingType.Normal:
                     Replace(offset, length, text, null);
@@ -765,42 +724,39 @@ namespace AvaloniaEdit.Document
             }
         }
 
-        /// <summary>
-        /// Replaces text.
-        /// </summary>
-        /// <param name="offset">The starting offset of the text to be replaced.</param>
-        /// <param name="length">The length of the text to be replaced.</param>
-        /// <param name="text">The new text.</param>
-        /// <param name="offsetChangeMap">The offsetChangeMap determines how offsets inside the old text are mapped to the new text.
-        /// This affects how the anchors and segments inside the replaced region behave.
-        /// If you pass null (the default when using one of the other overloads), the offsets are changed as
-        /// in OffsetChangeMappingType.Normal mode.
-        /// If you pass OffsetChangeMap.Empty, then everything will stay in its old place (OffsetChangeMappingType.CharacterReplace mode).
-        /// The offsetChangeMap must be a valid 'explanation' for the document change. See <see cref="OffsetChangeMap.IsValidForDocumentChange"/>.
-        /// Passing an OffsetChangeMap to the Replace method will automatically freeze it to ensure the thread safety of the resulting
-        /// DocumentChangeEventArgs instance.
-        /// </param>
-        public void Replace(int offset, int length, string text, OffsetChangeMap offsetChangeMap)
-        {
-            Replace(offset, length, new StringTextSource(text), offsetChangeMap);
-        }
+	/// <summary>
+	/// Replaces text.
+	/// </summary>
+	/// <param name="offset">The starting offset of the text to be replaced.</param>
+	/// <param name="length">The length of the text to be replaced.</param>
+	/// <param name="text">The new text.</param>
+	/// <param name="offsetChangeMap">The offsetChangeMap determines how offsets inside the old text are mapped to the new text.
+	/// This affects how the anchors and segments inside the replaced region behave.
+	/// If you pass null (the default when using one of the other overloads), the offsets are changed as
+	/// in OffsetChangeMappingType.Normal mode.
+	/// If you pass OffsetChangeMap.Empty, then everything will stay in its old place (OffsetChangeMappingType.CharacterReplace mode).
+	/// The offsetChangeMap must be a valid 'explanation' for the document change. See <see cref="OffsetChangeMap.IsValidForDocumentChange"/>.
+	/// Passing an OffsetChangeMap to the Replace method will automatically freeze it to ensure the thread safety of the resulting
+	/// DocumentChangeEventArgs instance.
+	/// </param>
+	public void Replace(int offset, int length, string text, OffsetChangeMap offsetChangeMap) => Replace(offset, length, new StringTextSource(text), offsetChangeMap);
 
-        /// <summary>
-        /// Replaces text.
-        /// </summary>
-        /// <param name="offset">The starting offset of the text to be replaced.</param>
-        /// <param name="length">The length of the text to be replaced.</param>
-        /// <param name="text">The new text.</param>
-        /// <param name="offsetChangeMap">The offsetChangeMap determines how offsets inside the old text are mapped to the new text.
-        /// This affects how the anchors and segments inside the replaced region behave.
-        /// If you pass null (the default when using one of the other overloads), the offsets are changed as
-        /// in OffsetChangeMappingType.Normal mode.
-        /// If you pass OffsetChangeMap.Empty, then everything will stay in its old place (OffsetChangeMappingType.CharacterReplace mode).
-        /// The offsetChangeMap must be a valid 'explanation' for the document change. See <see cref="OffsetChangeMap.IsValidForDocumentChange"/>.
-        /// Passing an OffsetChangeMap to the Replace method will automatically freeze it to ensure the thread safety of the resulting
-        /// DocumentChangeEventArgs instance.
-        /// </param>
-        public void Replace(int offset, int length, ITextSource text, OffsetChangeMap offsetChangeMap)
+	/// <summary>
+	/// Replaces text.
+	/// </summary>
+	/// <param name="offset">The starting offset of the text to be replaced.</param>
+	/// <param name="length">The length of the text to be replaced.</param>
+	/// <param name="text">The new text.</param>
+	/// <param name="offsetChangeMap">The offsetChangeMap determines how offsets inside the old text are mapped to the new text.
+	/// This affects how the anchors and segments inside the replaced region behave.
+	/// If you pass null (the default when using one of the other overloads), the offsets are changed as
+	/// in OffsetChangeMappingType.Normal mode.
+	/// If you pass OffsetChangeMap.Empty, then everything will stay in its old place (OffsetChangeMappingType.CharacterReplace mode).
+	/// The offsetChangeMap must be a valid 'explanation' for the document change. See <see cref="OffsetChangeMap.IsValidForDocumentChange"/>.
+	/// Passing an OffsetChangeMap to the Replace method will automatically freeze it to ensure the thread safety of the resulting
+	/// DocumentChangeEventArgs instance.
+	/// </param>
+	public void Replace(int offset, int length, ITextSource text, OffsetChangeMap offsetChangeMap)
         {
             text = text?.CreateSnapshot() ?? throw new ArgumentNullException(nameof(text));
             offsetChangeMap?.Freeze();
@@ -944,16 +900,13 @@ namespace AvaloniaEdit.Document
             return _lineTree.GetByNumber(number);
         }
 
-        IDocumentLine IDocument.GetLineByNumber(int lineNumber)
-        {
-            return GetLineByNumber(lineNumber);
-        }
+	IDocumentLine IDocument.GetLineByNumber(int lineNumber) => GetLineByNumber(lineNumber);
 
-        /// <summary>
-        /// Gets a document lines by offset.
-        /// Runtime: O(log n)
-        /// </summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", MessageId = "System.Int32.ToString")]
+	/// <summary>
+	/// Gets a document lines by offset.
+	/// Runtime: O(log n)
+	/// </summary>
+	[SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", MessageId = "System.Int32.ToString")]
         public DocumentLine GetLineByOffset(int offset)
         {
             VerifyAccess();
@@ -964,27 +917,21 @@ namespace AvaloniaEdit.Document
             return _lineTree.GetByOffset(offset);
         }
 
-        IDocumentLine IDocument.GetLineByOffset(int offset)
-        {
-            return GetLineByOffset(offset);
-        }
-        #endregion
+	IDocumentLine IDocument.GetLineByOffset(int offset) => GetLineByOffset(offset);
+	#endregion
 
-        #region GetOffset / GetLocation
-        /// <summary>
-        /// Gets the offset from a text location.
-        /// </summary>
-        /// <seealso cref="GetLocation"/>
-        public int GetOffset(TextLocation location)
-        {
-            return GetOffset(location.Line, location.Column);
-        }
+	#region GetOffset / GetLocation
+	/// <summary>
+	/// Gets the offset from a text location.
+	/// </summary>
+	/// <seealso cref="GetLocation"/>
+	public int GetOffset(TextLocation location) => GetOffset(location.Line, location.Column);
 
-        /// <summary>
-        /// Gets the offset from a text location.
-        /// </summary>
-        /// <seealso cref="GetLocation"/>
-        public int GetOffset(int line, int column)
+	/// <summary>
+	/// Gets the offset from a text location.
+	/// </summary>
+	/// <seealso cref="GetLocation"/>
+	public int GetOffset(int line, int column)
         {
             var docLine = GetLineByNumber(line);
             if (column <= 0)
@@ -1036,9 +983,8 @@ namespace AvaloniaEdit.Document
             get => _undoStack;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException();
-                if (value != _undoStack)
+			ArgumentNullException.ThrowIfNull(value);
+			if (value != _undoStack)
                 {
                     _undoStack.ClearAll(); // first clear old undo stack, so that it can't be used to perform unexpected changes on this document
                                           // ClearAll() will also throw an exception when it's not safe to replace the undo stack (e.g. update is currently in progress)
@@ -1064,18 +1010,15 @@ namespace AvaloniaEdit.Document
             return _anchorTree.CreateAnchor(offset);
         }
 
-        ITextAnchor IDocument.CreateAnchor(int offset)
-        {
-            return CreateAnchor(offset);
-        }
-        #endregion
+	ITextAnchor IDocument.CreateAnchor(int offset) => CreateAnchor(offset);
+	#endregion
 
-        #region LineCount
-        /// <summary>
-        /// Gets the total number of lines in the document.
-        /// Runtime: O(1).
-        /// </summary>
-        public int LineCount
+	#region LineCount
+	/// <summary>
+	/// Gets the total number of lines in the document.
+	/// Runtime: O(1).
+	/// </summary>
+	public int LineCount
         {
             get
             {
@@ -1088,47 +1031,42 @@ namespace AvaloniaEdit.Document
         /// Is raised when the LineCount property changes.
         /// </summary>
         public event EventHandler LineCountChanged;
-        #endregion
+	#endregion
 
-        #region Debugging
-        [Conditional("DEBUG")]
-        internal void DebugVerifyAccess()
-        {
-            VerifyAccess();
-        }
+	#region Debugging
+	[Conditional("DEBUG")]
+	internal void DebugVerifyAccess() => VerifyAccess();
 
-        /// <summary>
-        /// Gets the document lines tree in string form.
-        /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        internal string GetLineTreeAsString()
-        {
+	/// <summary>
+	/// Gets the document lines tree in string form.
+	/// </summary>
+	[SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+	[SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+	internal string GetLineTreeAsString() =>
 #if DEBUG
-            return _lineTree.GetTreeAsString();
+		_lineTree.GetTreeAsString();
 #else
-			return "Not available in release build.";
+		return "Not available in release build.";
 #endif
-        }
 
-        /// <summary>
-        /// Gets the text anchor tree in string form.
-        /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        internal string GetTextAnchorTreeAsString()
-        {
+
+	/// <summary>
+	/// Gets the text anchor tree in string form.
+	/// </summary>
+	[SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
+	[SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+	internal string GetTextAnchorTreeAsString() =>
 #if DEBUG
-            return _anchorTree.GetTreeAsString();
+		_anchorTree.GetTreeAsString();
 #else
-			return "Not available in release build.";
+		return "Not available in release build.";
 #endif
-        }
-        #endregion
 
-        #region Service Provider
+	#endregion
 
-        private IServiceProvider _serviceProvider;
+	#region Service Provider
+
+	private IServiceProvider _serviceProvider;
 
         internal IServiceProvider ServiceProvider
         {
@@ -1151,27 +1089,21 @@ namespace AvaloniaEdit.Document
             }
         }
 
-        object IServiceProvider.GetService(Type serviceType)
-        {
-            return ServiceProvider.GetService(serviceType);
-        }
+	object IServiceProvider.GetService(Type serviceType) => ServiceProvider.GetService(serviceType);
 
-        #endregion
+	#endregion
 
-        #region FileName
+	#region FileName
 
-        private string _fileName;
+	private string _fileName;
 
         /// <inheritdoc/>
         public event EventHandler FileNameChanged;
 
-        private void OnFileNameChanged(EventArgs e)
-        {
-            FileNameChanged?.Invoke(this, e);
-        }
+	private void OnFileNameChanged(EventArgs e) => FileNameChanged?.Invoke(this, e);
 
-        /// <inheritdoc/>
-        public string FileName
+	/// <inheritdoc/>
+	public string FileName
         {
             get { return _fileName; }
             set
@@ -1185,4 +1117,3 @@ namespace AvaloniaEdit.Document
         }
         #endregion
     }
-}

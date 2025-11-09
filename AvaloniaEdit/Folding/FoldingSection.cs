@@ -21,8 +21,8 @@ using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Folding
-{
+namespace AvaloniaEdit.Folding;
+
     /// <summary>
     /// A section that can be folded.
     /// </summary>
@@ -149,4 +149,3 @@ namespace AvaloniaEdit.Folding
             }
         }
     }
-}

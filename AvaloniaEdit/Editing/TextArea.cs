@@ -40,8 +40,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     /// <summary>
     /// Control that wraps a TextView and adds support for user input and the caret.
     /// </summary>
@@ -135,18 +135,15 @@ namespace AvaloniaEdit.Editing
             InvalidateArrange();
         }
 
-        internal void RemoveChild(Visual visual)
-        {
-            VisualChildren.Remove(visual);
-        }
+	internal void RemoveChild(Visual visual) => VisualChildren.Remove(visual);
 
-        #endregion
+	#endregion
 
-        #region Watermark
-        /// <summary>
-        /// Defines the <see cref="Watermark"/> property
-        /// </summary>
-        public static readonly StyledProperty<string> WatermarkProperty =
+	#region Watermark
+	/// <summary>
+	/// Defines the <see cref="Watermark"/> property
+	/// </summary>
+	public static readonly StyledProperty<string> WatermarkProperty =
             AvaloniaProperty.Register<TextArea, string>(nameof(Watermark));
 
         /// <summary>
@@ -232,9 +229,8 @@ namespace AvaloniaEdit.Editing
         /// <remarks><inheritdoc cref="ITextAreaInputHandler"/></remarks>
         public void PushStackedInputHandler(TextAreaStackedInputHandler inputHandler)
         {
-            if (inputHandler == null)
-                throw new ArgumentNullException(nameof(inputHandler));
-            StackedInputHandlers = StackedInputHandlers.Push(inputHandler);
+		ArgumentNullException.ThrowIfNull(inputHandler);
+		StackedInputHandlers = StackedInputHandlers.Push(inputHandler);
             inputHandler.Attach();
         }
 
@@ -286,12 +282,9 @@ namespace AvaloniaEdit.Editing
             get => ReadOnlySectionProvider == ReadOnlySectionDocument.Instance;
         }
 
-        private static void OnDocumentChanged(AvaloniaPropertyChangedEventArgs e)
-        {
-            (e.Sender as TextArea)?.OnDocumentChanged((TextDocument)e.OldValue, (TextDocument)e.NewValue);
-        }
+	private static void OnDocumentChanged(AvaloniaPropertyChangedEventArgs e) => (e.Sender as TextArea)?.OnDocumentChanged((TextDocument)e.OldValue, (TextDocument)e.NewValue);
 
-        private void OnDocumentChanged(TextDocument oldValue, TextDocument newValue)
+	private void OnDocumentChanged(TextDocument oldValue, TextDocument newValue)
         {
             if (oldValue != null)
             {
@@ -340,25 +333,16 @@ namespace AvaloniaEdit.Editing
         /// </summary>
         public event PropertyChangedEventHandler OptionChanged;
 
-        private void OnOptionChanged(object sender, PropertyChangedEventArgs e)
-        {
-            OnOptionChanged(e);
-        }
+	private void OnOptionChanged(object sender, PropertyChangedEventArgs e) => OnOptionChanged(e);
 
-        /// <summary>
-        /// Raises the <see cref="OptionChanged"/> event.
-        /// </summary>
-        protected virtual void OnOptionChanged(PropertyChangedEventArgs e)
-        {
-            OptionChanged?.Invoke(this, e);
-        }
+	/// <summary>
+	/// Raises the <see cref="OptionChanged"/> event.
+	/// </summary>
+	protected virtual void OnOptionChanged(PropertyChangedEventArgs e) => OptionChanged?.Invoke(this, e);
 
-        private static void OnOptionsChanged(AvaloniaPropertyChangedEventArgs e)
-        {
-            (e.Sender as TextArea)?.OnOptionsChanged((TextEditorOptions)e.OldValue, (TextEditorOptions)e.NewValue);
-        }
+	private static void OnOptionsChanged(AvaloniaPropertyChangedEventArgs e) => (e.Sender as TextArea)?.OnOptionsChanged((TextEditorOptions)e.OldValue, (TextEditorOptions)e.NewValue);
 
-        private void OnOptionsChanged(TextEditorOptions oldValue, TextEditorOptions newValue)
+	private void OnOptionsChanged(TextEditorOptions oldValue, TextEditorOptions newValue)
         {
             if (oldValue != null)
             {
@@ -371,32 +355,23 @@ namespace AvaloniaEdit.Editing
             }
             OnOptionChanged(new PropertyChangedEventArgs(null));
         }
-        #endregion
+	#endregion
 
-        #region Caret handling on document changes
+	#region Caret handling on document changes
 
-        private void OnDocumentChanging(object sender, DocumentChangeEventArgs e)
-        {
-            Caret.OnDocumentChanging();
-        }
+	private void OnDocumentChanging(object sender, DocumentChangeEventArgs e) => Caret.OnDocumentChanging();
 
-        private void OnDocumentChanged(object sender, DocumentChangeEventArgs e)
+	private void OnDocumentChanged(object sender, DocumentChangeEventArgs e)
         {
             Caret.OnDocumentChanged(e);
             Selection = _selection.UpdateOnDocumentChange(e);
         }
 
-        private void OnUpdateStarted(object sender, EventArgs e)
-        {
-            Document.UndoStack.PushOptional(new RestoreCaretAndSelectionUndoAction(this));
-        }
+	private void OnUpdateStarted(object sender, EventArgs e) => Document.UndoStack.PushOptional(new RestoreCaretAndSelectionUndoAction(this));
 
-        private void OnUpdateFinished(object sender, EventArgs e)
-        {
-            Caret.OnDocumentUpdateFinished();
-        }
+	private void OnUpdateFinished(object sender, EventArgs e) => Caret.OnDocumentUpdateFinished();
 
-        private sealed class RestoreCaretAndSelectionUndoAction : IUndoableOperation
+	private sealed class RestoreCaretAndSelectionUndoAction : IUndoableOperation
         {
             // keep textarea in weak reference because the IUndoableOperation is stored with the document
             private readonly WeakReference _textAreaReference;
@@ -423,12 +398,10 @@ namespace AvaloniaEdit.Editing
                 }
             }
 
-            public void Redo()
-            {
-                // redo=undo: we just restore the caret/selection state
-                Undo();
-            }
-        }
+		public void Redo() =>
+			// redo=undo: we just restore the caret/selection state
+			Undo();
+	}
         #endregion
 
         #region TextView property
@@ -458,9 +431,8 @@ namespace AvaloniaEdit.Editing
             get => _selection;
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-                if (value.TextArea != this)
+			ArgumentNullException.ThrowIfNull(value);
+			if (value.TextArea != this)
                     throw new ArgumentException("Cannot use a Selection instance that belongs to another text area.");
                 if (!Equals(_selection, value))
                 {
@@ -501,18 +473,15 @@ namespace AvaloniaEdit.Editing
             }
         }
 
-        /// <summary>
-        /// Clears the current selection.
-        /// </summary>
-        public void ClearSelection()
-        {
-            Selection = EmptySelection;
-        }
+	/// <summary>
+	/// Clears the current selection.
+	/// </summary>
+	public void ClearSelection() => Selection = EmptySelection;
 
-        /// <summary>
-        /// The <see cref="SelectionBrush"/> property.
-        /// </summary>
-        public static readonly StyledProperty<IBrush> SelectionBrushProperty =
+	/// <summary>
+	/// The <see cref="SelectionBrush"/> property.
+	/// </summary>
+	public static readonly StyledProperty<IBrush> SelectionBrushProperty =
             AvaloniaProperty.Register<TextArea, IBrush>("SelectionBrush");
 
         /// <summary>
@@ -655,23 +624,20 @@ namespace AvaloniaEdit.Editing
             }
         }
 
-        /// <summary>
-        /// Scrolls the textview to a position with n lines above and below it.
-        /// </summary>
-        /// <param name="line">the requested line number.</param>
-        /// <param name="linesEitherSide">The number of lines above and below.</param>
-        public void ScrollToLine(int line, int linesEitherSide)
-        {
-            ScrollToLine(line, linesEitherSide, linesEitherSide);
-        }
+	/// <summary>
+	/// Scrolls the textview to a position with n lines above and below it.
+	/// </summary>
+	/// <param name="line">the requested line number.</param>
+	/// <param name="linesEitherSide">The number of lines above and below.</param>
+	public void ScrollToLine(int line, int linesEitherSide) => ScrollToLine(line, linesEitherSide, linesEitherSide);
 
-        /// <summary>
-        /// Scrolls the textview to a position with n lines above and below it.
-        /// </summary>
-        /// <param name="line">the requested line number.</param>
-        /// <param name="linesAbove">The number of lines above.</param>
-        /// <param name="linesBelow">The number of lines below.</param>
-        public void ScrollToLine(int line, int linesAbove, int linesBelow)
+	/// <summary>
+	/// Scrolls the textview to a position with n lines above and below it.
+	/// </summary>
+	/// <param name="line">the requested line number.</param>
+	/// <param name="linesAbove">The number of lines above.</param>
+	/// <param name="linesBelow">The number of lines below.</param>
+	public void ScrollToLine(int line, int linesAbove, int linesBelow)
         {
             var offset = line - linesAbove;
 
@@ -816,23 +782,17 @@ namespace AvaloniaEdit.Editing
         /// </summary>
         public event EventHandler<TextInputEventArgs> TextEntered;
 
-        /// <summary>
-        /// Raises the TextEntering event.
-        /// </summary>
-        protected virtual void OnTextEntering(TextInputEventArgs e)
-        {
-            TextEntering?.Invoke(this, e);
-        }
+	/// <summary>
+	/// Raises the TextEntering event.
+	/// </summary>
+	protected virtual void OnTextEntering(TextInputEventArgs e) => TextEntering?.Invoke(this, e);
 
-        /// <summary>
-        /// Raises the TextEntered event.
-        /// </summary>
-        protected virtual void OnTextEntered(TextInputEventArgs e)
-        {
-            TextEntered?.Invoke(this, e);
-        }
+	/// <summary>
+	/// Raises the TextEntered event.
+	/// </summary>
+	protected virtual void OnTextEntered(TextInputEventArgs e) => TextEntered?.Invoke(this, e);
 
-        protected override void OnTextInput(TextInputEventArgs e)
+	protected override void OnTextInput(TextInputEventArgs e)
         {
             base.OnTextInput(e);
             if (!e.Handled && Document != null)
@@ -878,9 +838,8 @@ namespace AvaloniaEdit.Editing
         /// </summary>
         public void PerformTextInput(TextInputEventArgs e)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
-            if (Document == null)
+		ArgumentNullException.ThrowIfNull(e);
+		if (Document == null)
                 throw ThrowUtil.NoDocumentAssigned();
             OnTextEntering(e);
             if (!e.Handled)
@@ -936,9 +895,8 @@ namespace AvaloniaEdit.Editing
 
         internal void ReplaceSelectionWithText(string newText)
         {
-            if (newText == null)
-                throw new ArgumentNullException(nameof(newText));
-            if (Document == null)
+		ArgumentNullException.ThrowIfNull(newText);
+		if (Document == null)
                 throw ThrowUtil.NoDocumentAssigned();
             _selection.ReplaceSelectionWithText(newText);
         }
@@ -1101,19 +1059,16 @@ namespace AvaloniaEdit.Editing
             }
         }
 
-        /// <summary>
-        /// Gets the requested service.
-        /// </summary>
-        /// <returns>Returns the requested service instance, or null if the service cannot be found.</returns>
-        public virtual object GetService(Type serviceType)
-        {
-            return TextView.GetService(serviceType);
-        }
+	/// <summary>
+	/// Gets the requested service.
+	/// </summary>
+	/// <returns>Returns the requested service instance, or null if the service cannot be found.</returns>
+	public virtual object GetService(Type serviceType) => TextView.GetService(serviceType);
 
-        /// <summary>
-        /// Occurs when text inside the TextArea was copied.
-        /// </summary>
-        public event EventHandler<TextEventArgs> TextCopied;
+	/// <summary>
+	/// Occurs when text inside the TextArea was copied.
+	/// </summary>
+	public event EventHandler<TextEventArgs> TextCopied;
 
 
         event EventHandler ILogicalScrollable.ScrollInvalidated
@@ -1122,12 +1077,9 @@ namespace AvaloniaEdit.Editing
             remove { if (_logicalScrollable != null) _logicalScrollable.ScrollInvalidated -= value; }
         }
 
-        internal void OnTextCopied(TextEventArgs e)
-        {
-            TextCopied?.Invoke(this, e);
-        }
+	internal void OnTextCopied(TextEventArgs e) => TextCopied?.Invoke(this, e);
 
-        public IList<RoutedCommandBinding> CommandBindings { get; } = new List<RoutedCommandBinding>();
+	public IList<RoutedCommandBinding> CommandBindings { get; } = new List<RoutedCommandBinding>();
 
         bool ILogicalScrollable.IsLogicalScrollEnabled => _logicalScrollable?.IsLogicalScrollEnabled ?? default(bool);
 
@@ -1181,12 +1133,9 @@ namespace AvaloniaEdit.Editing
         Control ILogicalScrollable.GetControlInDirection(NavigationDirection direction, Control from)
             => _logicalScrollable?.GetControlInDirection(direction, from);
 
-        public void RaiseScrollInvalidated(EventArgs e)
-        {
-            _logicalScrollable?.RaiseScrollInvalidated(e);
-        }
+	public void RaiseScrollInvalidated(EventArgs e) => _logicalScrollable?.RaiseScrollInvalidated(e);
 
-        private class TextAreaTextInputMethodClient : TextInputMethodClient
+	private class TextAreaTextInputMethodClient : TextInputMethodClient
         {
             private TextArea _textArea;
 
@@ -1311,12 +1260,8 @@ namespace AvaloniaEdit.Editing
         /// </summary>
         public string Text { get; }
 
-        /// <summary>
-        /// Creates a new TextEventArgs instance.
-        /// </summary>
-        public TextEventArgs(string text)
-        {
-            Text = text ?? throw new ArgumentNullException(nameof(text));
-        }
-    }
+	/// <summary>
+	/// Creates a new TextEventArgs instance.
+	/// </summary>
+	public TextEventArgs(string text) => Text = text ?? throw new ArgumentNullException(nameof(text));
 }

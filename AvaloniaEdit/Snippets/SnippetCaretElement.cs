@@ -18,8 +18,8 @@
 
 using AvaloniaEdit.Document;
 
-namespace AvaloniaEdit.Snippets
-{
+namespace AvaloniaEdit.Snippets;
+
     /// <summary>
     /// Sets the caret position after interactive mode has finished.
     /// </summary>
@@ -34,20 +34,17 @@ namespace AvaloniaEdit.Snippets
         {
         }
 
-        /// <summary>
-        /// Creates a new SnippetCaretElement.
-        /// </summary>
-        /// <param name="setCaretOnlyIfTextIsSelected">
-        /// If set to true, the caret is set only when some text was selected.
-        /// This is useful when both SnippetCaretElement and SnippetSelectionElement are used in the same snippet.
-        /// </param>
-        public SnippetCaretElement(bool setCaretOnlyIfTextIsSelected)
-        {
-            _setCaretOnlyIfTextIsSelected = setCaretOnlyIfTextIsSelected;
-        }
+	/// <summary>
+	/// Creates a new SnippetCaretElement.
+	/// </summary>
+	/// <param name="setCaretOnlyIfTextIsSelected">
+	/// If set to true, the caret is set only when some text was selected.
+	/// This is useful when both SnippetCaretElement and SnippetSelectionElement are used in the same snippet.
+	/// </param>
+	public SnippetCaretElement(bool setCaretOnlyIfTextIsSelected) => _setCaretOnlyIfTextIsSelected = setCaretOnlyIfTextIsSelected;
 
-        /// <inheritdoc/>
-        public override void Insert(InsertionContext context)
+	/// <inheritdoc/>
+	public override void Insert(InsertionContext context)
         {
             if (!_setCaretOnlyIfTextIsSelected || !string.IsNullOrEmpty(context.SelectedText))
                 SetCaret(context);
@@ -67,4 +64,3 @@ namespace AvaloniaEdit.Snippets
             };
         }
     }
-}

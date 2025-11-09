@@ -24,8 +24,8 @@ using AvaloniaEdit.Rendering;
 using Avalonia.Controls;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     /// <summary>
     /// Base class for margins.
     /// Margins don't have to derive from this class, it just helps maintaining a reference to the TextView
@@ -35,19 +35,16 @@ namespace AvaloniaEdit.Editing
     /// </summary>
     public abstract class AbstractMargin : Control, ITextViewConnect
     {
-        public AbstractMargin()
-        {
-            this.GetPropertyChangedObservable(TextViewProperty).Subscribe(o =>
-            {
-                _wasAutoAddedToTextView = false;
-                OnTextViewChanged(o.OldValue as TextView, o.NewValue as TextView);
-            });
-        }
+	public AbstractMargin() => this.GetPropertyChangedObservable(TextViewProperty).Subscribe(o =>
+										{
+											_wasAutoAddedToTextView = false;
+											OnTextViewChanged(o.OldValue as TextView, o.NewValue as TextView);
+										});
 
-        /// <summary>
-        /// TextView property.
-        /// </summary>
-        public static readonly StyledProperty<TextView> TextViewProperty =
+	/// <summary>
+	/// TextView property.
+	/// </summary>
+	public static readonly StyledProperty<TextView> TextViewProperty =
             AvaloniaProperty.Register<AbstractMargin, TextView>(nameof(TextView));
 
         /// <summary>
@@ -127,31 +124,18 @@ namespace AvaloniaEdit.Editing
             }
         }
 
-        /// <summary>
-        /// Called when the attached textviews visual lines change.
-        /// Default behavior is to Invalidate Margins Visual.
-        /// </summary>
-        protected virtual void OnTextViewVisualLinesChanged()
-        {
-            InvalidateVisual();
-        }
+	/// <summary>
+	/// Called when the attached textviews visual lines change.
+	/// Default behavior is to Invalidate Margins Visual.
+	/// </summary>
+	protected virtual void OnTextViewVisualLinesChanged() => InvalidateVisual();
 
-        private void TextViewVisualLinesChanged(object sender, EventArgs e)
-        {
-            OnTextViewVisualLinesChanged();
-        }
+	private void TextViewVisualLinesChanged(object sender, EventArgs e) => OnTextViewVisualLinesChanged();
 
-        private void TextViewDocumentChanged(object sender, EventArgs e)
-        {
-            OnDocumentChanged(Document, TextView?.Document);
-        }
+	private void TextViewDocumentChanged(object sender, EventArgs e) => OnDocumentChanged(Document, TextView?.Document);
 
-        /// <summary>
-        /// Called when the <see cref="Document"/> is changing.
-        /// </summary>
-        protected virtual void OnDocumentChanged(TextDocument oldDocument, TextDocument newDocument)
-        {
-            Document = newDocument;
-        }
-    }
+	/// <summary>
+	/// Called when the <see cref="Document"/> is changing.
+	/// </summary>
+	protected virtual void OnDocumentChanged(TextDocument oldDocument, TextDocument newDocument) => Document = newDocument;
 }

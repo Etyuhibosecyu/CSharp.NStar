@@ -27,8 +27,8 @@ using AvaloniaEdit.Utils;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     /// <summary>
     /// We re-use the CommandBinding and InputBinding instances between multiple text areas,
     /// so this class is static.
@@ -56,12 +56,9 @@ namespace AvaloniaEdit.Editing
             KeyBindings.Add(TextAreaDefaultInputHandler.CreateKeyBinding(command, modifiers, key));
         }
 
-        private static void AddBinding(RoutedCommand command, EventHandler<ExecutedRoutedEventArgs> handler, EventHandler<CanExecuteRoutedEventArgs> canExecuteHandler = null)
-        {
-            CommandBindings.Add(new RoutedCommandBinding(command, handler, canExecuteHandler));
-        }
+	private static void AddBinding(RoutedCommand command, EventHandler<ExecutedRoutedEventArgs> handler, EventHandler<CanExecuteRoutedEventArgs> canExecuteHandler = null) => CommandBindings.Add(new RoutedCommandBinding(command, handler, canExecuteHandler));
 
-        static EditingCommandHandler()
+	static EditingCommandHandler()
         {            
             AddBinding(EditingCommands.Delete, KeyModifiers.None, Key.Delete, OnDelete(CaretMovementType.CharRight));
             AddBinding(EditingCommands.DeleteNextWord, KeyModifiers.Control, Key.Delete,
@@ -96,14 +93,11 @@ namespace AvaloniaEdit.Editing
             AddBinding(AvaloniaEditCommands.IndentSelection, OnIndentSelection);
         }
 
-        private static TextArea GetTextArea(object target)
-        {
-            return target as TextArea;
-        }
+	private static TextArea GetTextArea(object target) => target as TextArea;
 
-        #region Text Transformation Helpers
+	#region Text Transformation Helpers
 
-        private enum DefaultSegmentType
+	private enum DefaultSegmentType
         {
             WholeDocument,
             CurrentLine
@@ -265,69 +259,63 @@ namespace AvaloniaEdit.Editing
             }
         }
 
-        public static void OnShiftTab(object target, RoutedEventArgs args)
-        {
-            TransformSelectedLines(
-                delegate (TextArea textArea, DocumentLine line)
-                {
-                    var offset = line.Offset;
-                    var s = TextUtilities.GetSingleIndentationSegment(textArea.Document, offset,
-                        textArea.Options.IndentationSize);
-                    if (s.Length > 0)
-                    {
-                        s = textArea.GetDeletableSegments(s).FirstOrDefault();
-                        if (s != null && s.Length > 0)
-                        {
-                            textArea.Document.Remove(s.Offset, s.Length);
-                        }
-                    }
-                }, target, args, DefaultSegmentType.CurrentLine);
-        }
+	public static void OnShiftTab(object target, RoutedEventArgs args) => TransformSelectedLines(
+			delegate (TextArea textArea, DocumentLine line)
+			{
+				var offset = line.Offset;
+				var s = TextUtilities.GetSingleIndentationSegment(textArea.Document, offset,
+					textArea.Options.IndentationSize);
+				if (s.Length > 0)
+				{
+					s = textArea.GetDeletableSegments(s).FirstOrDefault();
+					if (s != null && s.Length > 0)
+					{
+						textArea.Document.Remove(s.Offset, s.Length);
+					}
+				}
+			}, target, args, DefaultSegmentType.CurrentLine);
 
-        #endregion
+	#endregion
 
-        #region Delete
+	#region Delete
 
-        private static EventHandler<ExecutedRoutedEventArgs> OnDelete(CaretMovementType caretMovement)
-        {
-            return (target, args) =>
-            {
-                var textArea = GetTextArea(target);
-                if (textArea?.Document != null)
-                {
-                    if (textArea.Selection.IsEmpty)
-                    {
-                        var startPos = textArea.Caret.Position;
-                        var enableVirtualSpace = textArea.Options.EnableVirtualSpace;
-                        // When pressing delete; don't move the caret further into virtual space - instead delete the newline
-                        if (caretMovement == CaretMovementType.CharRight)
-                            enableVirtualSpace = false;
-                        var desiredXPos = textArea.Caret.DesiredXPos;
-                        var endPos = CaretNavigationCommandHandler.GetNewCaretPosition(
-                            textArea.TextView, startPos, caretMovement, enableVirtualSpace, ref desiredXPos);
-                        // GetNewCaretPosition may return (0,0) as new position,
-                        // thus we need to validate endPos before using it in the selection.
-                        if (endPos.Line < 1 || endPos.Column < 1)
-                            endPos = new TextViewPosition(Math.Max(endPos.Line, 1), Math.Max(endPos.Column, 1));
-                        // Don't do anything if the number of lines of a rectangular selection would be changed by the deletion.
-                        if (textArea.Selection is RectangleSelection && startPos.Line != endPos.Line)
-                            return;
-                        // Don't select the text to be deleted; just reuse the ReplaceSelectionWithText logic
-                        // Reuse the existing selection, so that we continue using the same logic
-                        textArea.Selection.StartSelectionOrSetEndpoint(startPos, endPos)
-                            .ReplaceSelectionWithText(string.Empty);
-                    }
-                    else
-                    {
-                        textArea.RemoveSelectedText();
-                    }
-                    textArea.Caret.BringCaretToView();
-                    args.Handled = true;
-                }
-            };
-        }
+	private static EventHandler<ExecutedRoutedEventArgs> OnDelete(CaretMovementType caretMovement) => (target, args) =>
+																											   {
+																												   var textArea = GetTextArea(target);
+																												   if (textArea?.Document != null)
+																												   {
+																													   if (textArea.Selection.IsEmpty)
+																													   {
+																														   var startPos = textArea.Caret.Position;
+																														   var enableVirtualSpace = textArea.Options.EnableVirtualSpace;
+																														   // When pressing delete; don't move the caret further into virtual space - instead delete the newline
+																														   if (caretMovement == CaretMovementType.CharRight)
+																															   enableVirtualSpace = false;
+																														   var desiredXPos = textArea.Caret.DesiredXPos;
+																														   var endPos = CaretNavigationCommandHandler.GetNewCaretPosition(
+																															   textArea.TextView, startPos, caretMovement, enableVirtualSpace, ref desiredXPos);
+																														   // GetNewCaretPosition may return (0,0) as new position,
+																														   // thus we need to validate endPos before using it in the selection.
+																														   if (endPos.Line < 1 || endPos.Column < 1)
+																															   endPos = new TextViewPosition(Math.Max(endPos.Line, 1), Math.Max(endPos.Column, 1));
+																														   // Don't do anything if the number of lines of a rectangular selection would be changed by the deletion.
+																														   if (textArea.Selection is RectangleSelection && startPos.Line != endPos.Line)
+																															   return;
+																														   // Don't select the text to be deleted; just reuse the ReplaceSelectionWithText logic
+																														   // Reuse the existing selection, so that we continue using the same logic
+																														   textArea.Selection.StartSelectionOrSetEndpoint(startPos, endPos)
+																															   .ReplaceSelectionWithText(string.Empty);
+																													   }
+																													   else
+																													   {
+																														   textArea.RemoveSelectedText();
+																													   }
+																													   textArea.Caret.BringCaretToView();
+																													   args.Handled = true;
+																												   }
+																											   };
 
-        private static void CanDelete(object target, CanExecuteRoutedEventArgs args)
+	private static void CanDelete(object target, CanExecuteRoutedEventArgs args)
         {
             var textArea = GetTextArea(target);
             if (textArea is { Document: not null })
@@ -421,15 +409,9 @@ namespace AvaloniaEdit.Editing
             return true;
         }
 
-        public static bool ConfirmDataFormat(TextArea textArea, DataObject dataObject, string format)
-        {
-            return true;
-            ////var e = new DataObjectSettingDataEventArgs(dataObject, format);
-            ////textArea.RaiseEvent(e);
-            ////return !e.CommandCancelled;
-        }
+	public static bool ConfirmDataFormat(TextArea textArea, DataObject dataObject, string format) => true;////var e = new DataObjectSettingDataEventArgs(dataObject, format);////textArea.RaiseEvent(e);////return !e.CommandCancelled;
 
-        private static void SetClipboardText(string text, Visual visual)
+	private static void SetClipboardText(string text, Visual visual)
         {
             try
             {
@@ -620,43 +602,31 @@ namespace AvaloniaEdit.Editing
             }
         }
 
-        #endregion
+	#endregion
 
-        #region Remove..Whitespace / Convert Tabs-Spaces
+	#region Remove..Whitespace / Convert Tabs-Spaces
 
-        private static void OnRemoveLeadingWhitespace(object target, ExecutedRoutedEventArgs args)
-        {
-            TransformSelectedLines(
-                delegate (TextArea textArea, DocumentLine line)
-                {
-                    textArea.Document.Remove(TextUtilities.GetLeadingWhitespace(textArea.Document, line));
-                }, target, args, DefaultSegmentType.WholeDocument);
-        }
+	private static void OnRemoveLeadingWhitespace(object target, ExecutedRoutedEventArgs args) => TransformSelectedLines(
+			delegate (TextArea textArea, DocumentLine line)
+			{
+				textArea.Document.Remove(TextUtilities.GetLeadingWhitespace(textArea.Document, line));
+			}, target, args, DefaultSegmentType.WholeDocument);
 
-        private static void OnRemoveTrailingWhitespace(object target, ExecutedRoutedEventArgs args)
-        {
-            TransformSelectedLines(
-                delegate (TextArea textArea, DocumentLine line)
-                {
-                    textArea.Document.Remove(TextUtilities.GetTrailingWhitespace(textArea.Document, line));
-                }, target, args, DefaultSegmentType.WholeDocument);
-        }
+	private static void OnRemoveTrailingWhitespace(object target, ExecutedRoutedEventArgs args) => TransformSelectedLines(
+			delegate (TextArea textArea, DocumentLine line)
+			{
+				textArea.Document.Remove(TextUtilities.GetTrailingWhitespace(textArea.Document, line));
+			}, target, args, DefaultSegmentType.WholeDocument);
 
-        private static void OnConvertTabsToSpaces(object target, ExecutedRoutedEventArgs args)
-        {
-            TransformSelectedSegments(ConvertTabsToSpaces, target, args, DefaultSegmentType.WholeDocument);
-        }
+	private static void OnConvertTabsToSpaces(object target, ExecutedRoutedEventArgs args) => TransformSelectedSegments(ConvertTabsToSpaces, target, args, DefaultSegmentType.WholeDocument);
 
-        private static void OnConvertLeadingTabsToSpaces(object target, ExecutedRoutedEventArgs args)
-        {
-            TransformSelectedLines(
-                delegate (TextArea textArea, DocumentLine line)
-                {
-                    ConvertTabsToSpaces(textArea, TextUtilities.GetLeadingWhitespace(textArea.Document, line));
-                }, target, args, DefaultSegmentType.WholeDocument);
-        }
+	private static void OnConvertLeadingTabsToSpaces(object target, ExecutedRoutedEventArgs args) => TransformSelectedLines(
+			delegate (TextArea textArea, DocumentLine line)
+			{
+				ConvertTabsToSpaces(textArea, TextUtilities.GetLeadingWhitespace(textArea.Document, line));
+			}, target, args, DefaultSegmentType.WholeDocument);
 
-        private static void ConvertTabsToSpaces(TextArea textArea, ISegment segment)
+	private static void ConvertTabsToSpaces(TextArea textArea, ISegment segment)
         {
             var document = textArea.Document;
             var endOffset = segment.EndOffset;
@@ -671,21 +641,15 @@ namespace AvaloniaEdit.Editing
             }
         }
 
-        private static void OnConvertSpacesToTabs(object target, ExecutedRoutedEventArgs args)
-        {
-            TransformSelectedSegments(ConvertSpacesToTabs, target, args, DefaultSegmentType.WholeDocument);
-        }
+	private static void OnConvertSpacesToTabs(object target, ExecutedRoutedEventArgs args) => TransformSelectedSegments(ConvertSpacesToTabs, target, args, DefaultSegmentType.WholeDocument);
 
-        private static void OnConvertLeadingSpacesToTabs(object target, ExecutedRoutedEventArgs args)
-        {
-            TransformSelectedLines(
-                delegate (TextArea textArea, DocumentLine line)
-                {
-                    ConvertSpacesToTabs(textArea, TextUtilities.GetLeadingWhitespace(textArea.Document, line));
-                }, target, args, DefaultSegmentType.WholeDocument);
-        }
+	private static void OnConvertLeadingSpacesToTabs(object target, ExecutedRoutedEventArgs args) => TransformSelectedLines(
+			delegate (TextArea textArea, DocumentLine line)
+			{
+				ConvertSpacesToTabs(textArea, TextUtilities.GetLeadingWhitespace(textArea.Document, line));
+			}, target, args, DefaultSegmentType.WholeDocument);
 
-        private static void ConvertSpacesToTabs(TextArea textArea, ISegment segment)
+	private static void ConvertSpacesToTabs(TextArea textArea, ISegment segment)
         {
             var document = textArea.Document;
             var endOffset = segment.EndOffset;
@@ -712,44 +676,28 @@ namespace AvaloniaEdit.Editing
             }
         }
 
-        #endregion
+	#endregion
 
-        #region Convert...Case
+	#region Convert...Case
 
-        private static void ConvertCase(Func<string, string> transformText, object target, ExecutedRoutedEventArgs args)
-        {
-            TransformSelectedSegments(
-                delegate (TextArea textArea, ISegment segment)
-                {
-                    var oldText = textArea.Document.GetText(segment);
-                    var newText = transformText(oldText);
-                    textArea.Document.Replace(segment.Offset, segment.Length, newText,
-                        OffsetChangeMappingType.CharacterReplace);
-                }, target, args, DefaultSegmentType.WholeDocument);
-        }
+	private static void ConvertCase(Func<string, string> transformText, object target, ExecutedRoutedEventArgs args) => TransformSelectedSegments(
+			delegate (TextArea textArea, ISegment segment)
+			{
+				var oldText = textArea.Document.GetText(segment);
+				var newText = transformText(oldText);
+				textArea.Document.Replace(segment.Offset, segment.Length, newText,
+					OffsetChangeMappingType.CharacterReplace);
+			}, target, args, DefaultSegmentType.WholeDocument);
 
-        private static void OnConvertToUpperCase(object target, ExecutedRoutedEventArgs args)
-        {
-            ConvertCase(CultureInfo.CurrentCulture.TextInfo.ToUpper, target, args);
-        }
+	private static void OnConvertToUpperCase(object target, ExecutedRoutedEventArgs args) => ConvertCase(CultureInfo.CurrentCulture.TextInfo.ToUpper, target, args);
 
-        private static void OnConvertToLowerCase(object target, ExecutedRoutedEventArgs args)
-        {
-            ConvertCase(CultureInfo.CurrentCulture.TextInfo.ToLower, target, args);
-        }
+	private static void OnConvertToLowerCase(object target, ExecutedRoutedEventArgs args) => ConvertCase(CultureInfo.CurrentCulture.TextInfo.ToLower, target, args);
 
-        private static void OnConvertToTitleCase(object target, ExecutedRoutedEventArgs args)
-        {
-            throw new NotSupportedException();
-            //ConvertCase(CultureInfo.CurrentCulture.TextInfo.ToTitleCase, target, args);
-        }
+	private static void OnConvertToTitleCase(object target, ExecutedRoutedEventArgs args) => throw new NotSupportedException();//ConvertCase(CultureInfo.CurrentCulture.TextInfo.ToTitleCase, target, args);
 
-        private static void OnInvertCase(object target, ExecutedRoutedEventArgs args)
-        {
-            ConvertCase(InvertCase, target, args);
-        }
+	private static void OnInvertCase(object target, ExecutedRoutedEventArgs args) => ConvertCase(InvertCase, target, args);
 
-        private static string InvertCase(string text)
+	private static string InvertCase(string text)
         {
             // TODO: culture
             //var culture = CultureInfo.CurrentCulture;
@@ -791,4 +739,3 @@ namespace AvaloniaEdit.Editing
             }
         }
     }
-}

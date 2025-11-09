@@ -23,8 +23,8 @@ using AvaloniaEdit.Editing;
 using Avalonia.Controls;
 using Avalonia.Input;
 
-namespace AvaloniaEdit.CodeCompletion
-{
+namespace AvaloniaEdit.CodeCompletion;
+
     /// <summary>
     /// The code completion window.
     /// </summary>
@@ -148,12 +148,9 @@ namespace AvaloniaEdit.CodeCompletion
             item?.Complete(TextArea, new AnchorSegment(TextArea.Document, StartOffset, EndOffset - StartOffset), e);
         }
 
-        private void CompletionList_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            MinWidth = Math.Max(MinWidth, CompletionList.Bounds.Width);
-        }
+	private void CompletionList_SizeChanged(object sender, SizeChangedEventArgs e) => MinWidth = Math.Max(MinWidth, CompletionList.Bounds.Width);
 
-        private void AttachEvents()
+	private void AttachEvents()
         {
             CompletionList.InsertionRequested += CompletionList_InsertionRequested;
             CompletionList.SelectionChanged += CompletionList_SelectionChanged;
@@ -185,19 +182,13 @@ namespace AvaloniaEdit.CodeCompletion
             }
         }
 
-        private void TextArea_PreviewTextInput(object sender, TextInputEventArgs e)
-        {
-            e.Handled = RaiseEventPair(this, null, TextInputEvent,
-                                       new TextInputEventArgs { Text = e.Text });
-        }
+	private void TextArea_PreviewTextInput(object sender, TextInputEventArgs e) => e.Handled = RaiseEventPair(this, null, TextInputEvent,
+								   new TextInputEventArgs { Text = e.Text });
 
-        private void TextArea_MouseWheel(object sender, PointerWheelEventArgs e)
-        {
-            e.Handled = RaiseEventPair(GetScrollEventTarget(),
-                                       null, PointerWheelChangedEvent, e);
-        }
+	private void TextArea_MouseWheel(object sender, PointerWheelEventArgs e) => e.Handled = RaiseEventPair(GetScrollEventTarget(),
+								   null, PointerWheelChangedEvent, e);
 
-        private Control GetScrollEventTarget()
+	private Control GetScrollEventTarget()
         {
             if (CompletionList == null)
                 return this;
@@ -259,4 +250,3 @@ namespace AvaloniaEdit.CodeCompletion
             }
         }
     }
-}

@@ -19,18 +19,15 @@
 using System;
 using AvaloniaEdit.Rendering;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     internal sealed class SelectionColorizer : ColorizingTransformer
     {
         private readonly TextArea _textArea;
 
-        public SelectionColorizer(TextArea textArea)
-        {
-            _textArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
-        }
+	public SelectionColorizer(TextArea textArea) => _textArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
-        protected override void Colorize(ITextRunConstructionContext context)
+	protected override void Colorize(ITextRunConstructionContext context)
         {
             // if SelectionForeground is null, keep the existing foreground color
             if (_textArea.SelectionForeground == null)
@@ -68,4 +65,3 @@ namespace AvaloniaEdit.Editing
             }
         }
     }
-}

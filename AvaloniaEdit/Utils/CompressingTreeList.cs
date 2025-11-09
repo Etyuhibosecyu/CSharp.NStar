@@ -23,8 +23,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-namespace AvaloniaEdit.Utils
-{
+namespace AvaloniaEdit.Utils;
+
     /// <summary>
     /// A IList{T} implementation that has efficient insertion and removal (in O(lg n) time)
     /// and that saves memory by allocating only one node when a value is repeated in adjacent indices.
@@ -130,11 +130,8 @@ namespace AvaloniaEdit.Utils
                 }
             }
 
-            public override string ToString()
-            {
-                return "[TotalCount=" + TotalCount + " Count=" + Count + " Value=" + Value + "]";
-            }
-        }
+		public override string ToString() => "[TotalCount=" + TotalCount + " Count=" + Count + " Value=" + Value + "]";
+	}
         #endregion
 
         #region Fields and Constructor
@@ -149,28 +146,24 @@ namespace AvaloniaEdit.Utils
         /// A single node may be used to store the multiple values that are considered equal.</param>
         public CompressingTreeList(IEqualityComparer<T> equalityComparer)
         {
-            if (equalityComparer == null)
-                throw new ArgumentNullException(nameof(equalityComparer));
-            _comparisonFunc = equalityComparer.Equals;
+		ArgumentNullException.ThrowIfNull(equalityComparer);
+		_comparisonFunc = equalityComparer.Equals;
         }
 
-        /// <summary>
-        /// Creates a new CompressingTreeList instance.
-        /// </summary>
-        /// <param name="comparisonFunc">A function that checks two values for equality. If this
-        /// function returns true, a single node may be used to store the two values.</param>
-        public CompressingTreeList(Func<T, T, bool> comparisonFunc)
-        {
-            _comparisonFunc = comparisonFunc ?? throw new ArgumentNullException(nameof(comparisonFunc));
-        }
-        #endregion
+	/// <summary>
+	/// Creates a new CompressingTreeList instance.
+	/// </summary>
+	/// <param name="comparisonFunc">A function that checks two values for equality. If this
+	/// function returns true, a single node may be used to store the two values.</param>
+	public CompressingTreeList(Func<T, T, bool> comparisonFunc) => _comparisonFunc = comparisonFunc ?? throw new ArgumentNullException(nameof(comparisonFunc));
+	#endregion
 
-        #region InsertRange
-        /// <summary>
-        /// Inserts <paramref name="item"/> <paramref name="count"/> times at position
-        /// <paramref name="index"/>.
-        /// </summary>
-        public void InsertRange(int index, int count, T item)
+	#region InsertRange
+	/// <summary>
+	/// Inserts <paramref name="item"/> <paramref name="count"/> times at position
+	/// <paramref name="index"/>.
+	/// </summary>
+	public void InsertRange(int index, int count, T item)
         {
             if (index < 0 || index > Count)
                 throw new ArgumentOutOfRangeException(nameof(index), index, "Value must be between 0 and " + Count);
@@ -490,54 +483,38 @@ namespace AvaloniaEdit.Utils
             }
         }
 
-        /// <summary>
-        /// Inserts the specified <paramref name="item"/> at <paramref name="index"/>
-        /// </summary>
-        public void Insert(int index, T item)
-        {
-            InsertRange(index, 1, item);
-        }
+	/// <summary>
+	/// Inserts the specified <paramref name="item"/> at <paramref name="index"/>
+	/// </summary>
+	public void Insert(int index, T item) => InsertRange(index, 1, item);
 
-        /// <summary>
-        /// Removes one item at <paramref name="index"/>
-        /// </summary>
-        public void RemoveAt(int index)
-        {
-            RemoveRange(index, 1);
-        }
+	/// <summary>
+	/// Removes one item at <paramref name="index"/>
+	/// </summary>
+	public void RemoveAt(int index) => RemoveRange(index, 1);
 
-        /// <summary>
-        /// Adds the specified <paramref name="item"/> to the end of the list.
-        /// </summary>
-        public void Add(T item)
-        {
-            InsertRange(Count, 1, item);
-        }
+	/// <summary>
+	/// Adds the specified <paramref name="item"/> to the end of the list.
+	/// </summary>
+	public void Add(T item) => InsertRange(Count, 1, item);
 
-        /// <summary>
-        /// Removes all items from this list.
-        /// </summary>
-        public void Clear()
-        {
-            _root = null;
-        }
+	/// <summary>
+	/// Removes all items from this list.
+	/// </summary>
+	public void Clear() => _root = null;
 
-        /// <summary>
-        /// Gets whether this list contains the specified item.
-        /// </summary>
-        public bool Contains(T item)
-        {
-            return IndexOf(item) >= 0;
-        }
+	/// <summary>
+	/// Gets whether this list contains the specified item.
+	/// </summary>
+	public bool Contains(T item) => IndexOf(item) >= 0;
 
-        /// <summary>
-        /// Copies all items in this list to the specified array.
-        /// </summary>
-        public void CopyTo(T[] array, int arrayIndex)
+	/// <summary>
+	/// Copies all items in this list to the specified array.
+	/// </summary>
+	public void CopyTo(T[] array, int arrayIndex)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (array.Length < Count)
+		ArgumentNullException.ThrowIfNull(array);
+		if (array.Length < Count)
                 throw new ArgumentException("The array is too small", nameof(array));
             if (arrayIndex < 0 || arrayIndex + Count > array.Length)
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, "Value must be between 0 and " + (array.Length - Count));
@@ -582,14 +559,11 @@ namespace AvaloniaEdit.Utils
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-        #endregion
+	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+	#endregion
 
-        #region Red/Black Tree
-        internal const bool Red = true;
+	#region Red/Black Tree
+	internal const bool Red = true;
         internal const bool Black = false;
 
         private void InsertAsLeft(Node parentNode, Node newNode)
@@ -882,14 +856,11 @@ namespace AvaloniaEdit.Utils
             return parentNode.Left;
         }
 
-        private static bool GetColor(Node node)
-        {
-            return node != null && node.Color;
-        }
-        #endregion
+	private static bool GetColor(Node node) => node != null && node.Color;
+	#endregion
 
-        #region CheckProperties
-        [Conditional("DATACONSISTENCYTEST")]
+	#region CheckProperties
+	[Conditional("DATACONSISTENCYTEST")]
         internal void CheckProperties()
         {
 #if DEBUG
@@ -934,12 +905,12 @@ namespace AvaloniaEdit.Utils
         }
 
         /*
-		1. A node is either red or black.
-		2. The root is black.
-		3. All leaves are black. (The leaves are the NIL children.)
-		4. Both children of every red node are black. (So every red node must have a black parent.)
-		5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
-		 */
+	1. A node is either red or black.
+	2. The root is black.
+	3. All leaves are black. (The leaves are the NIL children.)
+	4. Both children of every red node are black. (So every red node must have a black parent.)
+	5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
+	 */
         [SuppressMessage("ReSharper", "UnusedParameter.Local")]
         private void CheckNodeProperties(Node node, Node parentNode, bool parentColor, int blackCount, ref int expectedBlackCount)
         {
@@ -979,7 +950,7 @@ namespace AvaloniaEdit.Utils
             AppendTreeToString(_root, b, 0);
             return b.ToString();
 #else
-			return "Not available in release build.";
+		return "Not available in release build.";
 #endif
         }
 
@@ -1006,4 +977,3 @@ namespace AvaloniaEdit.Utils
 #endif
         #endregion
     }
-}

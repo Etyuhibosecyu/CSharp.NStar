@@ -32,8 +32,8 @@ using AvaloniaEdit.Utils;
 
 using LogicalDirection = AvaloniaEdit.Document.LogicalDirection;
 
-namespace AvaloniaEdit.Rendering
-{
+namespace AvaloniaEdit.Rendering;
+
     /// <summary>
     /// Represents a visual line in the document.
     /// A visual line usually corresponds to one DocumentLine, but it can span multiple lines if
@@ -262,26 +262,23 @@ namespace AvaloniaEdit.Rendering
             _phase = LifetimePhase.Live;
         }
 
-        /// <summary>
-        /// Replaces the single element at <paramref name="elementIndex"/> with the specified elements.
-        /// The replacement operation must preserve the document length, but may change the visual length.
-        /// </summary>
-        /// <remarks>
-        /// This method may only be called by line transformers.
-        /// </remarks>
-        public void ReplaceElement(int elementIndex, params VisualLineElement[] newElements)
-        {
-            ReplaceElement(elementIndex, 1, newElements);
-        }
+	/// <summary>
+	/// Replaces the single element at <paramref name="elementIndex"/> with the specified elements.
+	/// The replacement operation must preserve the document length, but may change the visual length.
+	/// </summary>
+	/// <remarks>
+	/// This method may only be called by line transformers.
+	/// </remarks>
+	public void ReplaceElement(int elementIndex, params VisualLineElement[] newElements) => ReplaceElement(elementIndex, 1, newElements);
 
-        /// <summary>
-        /// Replaces <paramref name="count"/> elements starting at <paramref name="elementIndex"/> with the specified elements.
-        /// The replacement operation must preserve the document length, but may change the visual length.
-        /// </summary>
-        /// <remarks>
-        /// This method may only be called by line transformers.
-        /// </remarks>
-        public void ReplaceElement(int elementIndex, int count, params VisualLineElement[] newElements)
+	/// <summary>
+	/// Replaces <paramref name="count"/> elements starting at <paramref name="elementIndex"/> with the specified elements.
+	/// The replacement operation must preserve the document length, but may change the visual length.
+	/// </summary>
+	/// <remarks>
+	/// This method may only be called by line transformers.
+	/// </remarks>
+	public void ReplaceElement(int elementIndex, int count, params VisualLineElement[] newElements)
         {
             if (_phase != LifetimePhase.Transforming)
                 throw new InvalidOperationException("This method may only be called by line transformers.");
@@ -348,18 +345,15 @@ namespace AvaloniaEdit.Rendering
             return documentLength;
         }
 
-        /// <summary>
-        /// Gets the text line containing the specified visual column.
-        /// </summary>
-        public TextLine GetTextLine(int visualColumn)
-        {
-            return GetTextLine(visualColumn, false);
-        }
+	/// <summary>
+	/// Gets the text line containing the specified visual column.
+	/// </summary>
+	public TextLine GetTextLine(int visualColumn) => GetTextLine(visualColumn, false);
 
-        /// <summary>
-        /// Gets the text line containing the specified visual column.
-        /// </summary>
-        public TextLine GetTextLine(int visualColumn, bool isAtEndOfLine)
+	/// <summary>
+	/// Gets the text line containing the specified visual column.
+	/// </summary>
+	public TextLine GetTextLine(int visualColumn, bool isAtEndOfLine)
         {
             if (visualColumn < 0)
                 throw new ArgumentOutOfRangeException(nameof(visualColumn));
@@ -387,10 +381,9 @@ namespace AvaloniaEdit.Rendering
         /// </returns>
         public double GetTextLineVisualYPosition(TextLine textLine, VisualYPosition yPositionMode)
         {
-            if (textLine == null)
-                throw new ArgumentNullException(nameof(textLine));
+		ArgumentNullException.ThrowIfNull(textLine);
 
-            var defaultLineHeight = TextView.DefaultLineHeight;
+		var defaultLineHeight = TextView.DefaultLineHeight;
             var pos = VisualTop;
             foreach (var tl in TextLines)
             {
@@ -483,10 +476,9 @@ namespace AvaloniaEdit.Rendering
         /// </summary>
         public double GetTextLineVisualXPosition(TextLine textLine, int visualColumn)
         {
-            if (textLine == null)
-                throw new ArgumentNullException(nameof(textLine));
+		ArgumentNullException.ThrowIfNull(textLine);
 
-            var xPos = textLine.GetDistanceFromCharacterHit(new CharacterHit(Math.Min(visualColumn,
+		var xPos = textLine.GetDistanceFromCharacterHit(new CharacterHit(Math.Min(visualColumn,
                 VisualLengthWithEndOfLineMarker)));
 
             if (visualColumn > VisualLengthWithEndOfLineMarker)
@@ -497,25 +489,19 @@ namespace AvaloniaEdit.Rendering
             return xPos;
         }
 
-        /// <summary>
-        /// Gets the visual column from a document position (relative to top left of the document).
-        /// If the user clicks between two visual columns, rounds to the nearest column.
-        /// </summary>
-        public int GetVisualColumn(Point point)
-        {
-            return GetVisualColumn(point, TextView.Options.EnableVirtualSpace);
-        }
+	/// <summary>
+	/// Gets the visual column from a document position (relative to top left of the document).
+	/// If the user clicks between two visual columns, rounds to the nearest column.
+	/// </summary>
+	public int GetVisualColumn(Point point) => GetVisualColumn(point, TextView.Options.EnableVirtualSpace);
 
-        /// <summary>
-        /// Gets the visual column from a document position (relative to top left of the document).
-        /// If the user clicks between two visual columns, rounds to the nearest column.
-        /// </summary>
-        public int GetVisualColumn(Point point, bool allowVirtualSpace)
-        {
-            return GetVisualColumn(GetTextLineByVisualYPosition(point.Y), point.X, allowVirtualSpace);
-        }
+	/// <summary>
+	/// Gets the visual column from a document position (relative to top left of the document).
+	/// If the user clicks between two visual columns, rounds to the nearest column.
+	/// </summary>
+	public int GetVisualColumn(Point point, bool allowVirtualSpace) => GetVisualColumn(GetTextLineByVisualYPosition(point.Y), point.X, allowVirtualSpace);
 
-        internal int GetVisualColumn(Point point, bool allowVirtualSpace, out bool isAtEndOfLine)
+	internal int GetVisualColumn(Point point, bool allowVirtualSpace, out bool isAtEndOfLine)
         {
             var textLine = GetTextLineByVisualYPosition(point.Y);
             var vc = GetVisualColumn(textLine, point.X, allowVirtualSpace);
@@ -543,18 +529,15 @@ namespace AvaloniaEdit.Rendering
             return ch.FirstCharacterIndex + ch.TrailingLength;
         }
 
-        /// <summary>
-        /// Validates the visual column and returns the correct one.
-        /// </summary>
-        public int ValidateVisualColumn(TextViewPosition position, bool allowVirtualSpace)
-        {
-            return ValidateVisualColumn(Document.GetOffset(position.Location), position.VisualColumn, allowVirtualSpace);
-        }
+	/// <summary>
+	/// Validates the visual column and returns the correct one.
+	/// </summary>
+	public int ValidateVisualColumn(TextViewPosition position, bool allowVirtualSpace) => ValidateVisualColumn(Document.GetOffset(position.Location), position.VisualColumn, allowVirtualSpace);
 
-        /// <summary>
-        /// Validates the visual column and returns the correct one.
-        /// </summary>
-        public int ValidateVisualColumn(int offset, int visualColumn, bool allowVirtualSpace)
+	/// <summary>
+	/// Validates the visual column and returns the correct one.
+	/// </summary>
+	public int ValidateVisualColumn(int offset, int visualColumn, bool allowVirtualSpace)
         {
             var firstDocumentLineOffset = FirstDocumentLine.Offset;
             if (visualColumn < 0)
@@ -574,25 +557,19 @@ namespace AvaloniaEdit.Rendering
             return visualColumn;
         }
 
-        /// <summary>
-        /// Gets the visual column from a document position (relative to top left of the document).
-        /// If the user clicks between two visual columns, returns the first of those columns.
-        /// </summary>
-        public int GetVisualColumnFloor(Point point)
-        {
-            return GetVisualColumnFloor(point, TextView.Options.EnableVirtualSpace);
-        }
+	/// <summary>
+	/// Gets the visual column from a document position (relative to top left of the document).
+	/// If the user clicks between two visual columns, returns the first of those columns.
+	/// </summary>
+	public int GetVisualColumnFloor(Point point) => GetVisualColumnFloor(point, TextView.Options.EnableVirtualSpace);
 
-        /// <summary>
-        /// Gets the visual column from a document position (relative to top left of the document).
-        /// If the user clicks between two visual columns, returns the first of those columns.
-        /// </summary>
-        public int GetVisualColumnFloor(Point point, bool allowVirtualSpace)
-        {
-            return GetVisualColumnFloor(point, allowVirtualSpace, out _);
-        }
+	/// <summary>
+	/// Gets the visual column from a document position (relative to top left of the document).
+	/// If the user clicks between two visual columns, returns the first of those columns.
+	/// </summary>
+	public int GetVisualColumnFloor(Point point, bool allowVirtualSpace) => GetVisualColumnFloor(point, allowVirtualSpace, out _);
 
-        internal int GetVisualColumnFloor(Point point, bool allowVirtualSpace, out bool isAtEndOfLine)
+	internal int GetVisualColumnFloor(Point point, bool allowVirtualSpace, out bool isAtEndOfLine)
         {
             var textLine = GetTextLineByVisualYPosition(point.Y);
             if (point.X > textLine.WidthIncludingTrailingWhitespace)
@@ -780,17 +757,11 @@ namespace AvaloniaEdit.Rendering
             return -1;
         }
 
-        private static bool HasStopsInVirtualSpace(CaretPositioningMode mode)
-        {
-            return mode == CaretPositioningMode.Normal || mode == CaretPositioningMode.EveryCodepoint;
-        }
+	private static bool HasStopsInVirtualSpace(CaretPositioningMode mode) => mode == CaretPositioningMode.Normal || mode == CaretPositioningMode.EveryCodepoint;
 
-        private static bool HasImplicitStopAtLineStart(CaretPositioningMode mode)
-        {
-            return mode == CaretPositioningMode.Normal || mode == CaretPositioningMode.EveryCodepoint;
-        }
+	private static bool HasImplicitStopAtLineStart(CaretPositioningMode mode) => mode == CaretPositioningMode.Normal || mode == CaretPositioningMode.EveryCodepoint;
 
-        private static bool HasImplicitStopAtLineEnd() => true;
+	private static bool HasImplicitStopAtLineEnd() => true;
 
         private VisualLineDrawingVisual _visual;
 
@@ -816,12 +787,9 @@ namespace AvaloniaEdit.Rendering
         public double LineHeight => VisualLine.Height;
         internal bool IsAdded { get; set; }
 
-        public VisualLineDrawingVisual(VisualLine visualLine)
-        {
-            VisualLine = visualLine;
-        }
+	public VisualLineDrawingVisual(VisualLine visualLine) => VisualLine = visualLine;
 
-        public override void Render(DrawingContext context)
+	public override void Render(DrawingContext context)
         {
             double pos = 0;
             double defaultLineHeight = VisualLine.TextView.DefaultLineHeight;
@@ -837,4 +805,3 @@ namespace AvaloniaEdit.Rendering
             }
         }
     }
-}

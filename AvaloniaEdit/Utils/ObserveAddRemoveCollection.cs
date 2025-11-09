@@ -19,8 +19,8 @@
 using System;
 using System.Collections.ObjectModel;
 
-namespace AvaloniaEdit.Utils
-{
+namespace AvaloniaEdit.Utils;
+
     /// <summary>
     /// A collection where adding and removing items causes a callback.
     /// It is valid for the onAdd callback to throw an exception - this will prevent the new item from
@@ -83,4 +83,3 @@ namespace AvaloniaEdit.Utils
             base.SetItem(index, item);
         }
     }
-}

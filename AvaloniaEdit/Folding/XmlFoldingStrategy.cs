@@ -23,8 +23,8 @@ using System.Text;
 using System.Xml;
 using AvaloniaEdit.Document;
 
-namespace AvaloniaEdit.Folding
-{
+namespace AvaloniaEdit.Folding;
+
     /// <summary>
     /// Holds information about the start of a fold in an xml string.
     /// </summary>
@@ -255,4 +255,3 @@ namespace AvaloniaEdit.Folding
             return encodedValue.ToString();
         }
     }
-}

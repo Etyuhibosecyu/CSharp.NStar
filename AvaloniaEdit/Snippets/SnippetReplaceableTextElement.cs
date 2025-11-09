@@ -23,8 +23,8 @@ using Avalonia.Media.Immutable;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 
-namespace AvaloniaEdit.Snippets
-{
+namespace AvaloniaEdit.Snippets;
+
     /// <summary>
     /// Text element that is supposed to be replaced by the user.
     /// Will register an <see cref="IReplaceableActiveElement"/>.
@@ -78,12 +78,9 @@ namespace AvaloniaEdit.Snippets
             _endOffset = endOffset;
         }
 
-        private void AnchorDeleted(object sender, EventArgs e)
-        {
-            _context.Deactivate(new SnippetEventArgs(DeactivateReason.Deleted));
-        }
+	private void AnchorDeleted(object sender, EventArgs e) => _context.Deactivate(new SnippetEventArgs(DeactivateReason.Deleted));
 
-        public void OnInsertionCompleted()
+	public void OnInsertionCompleted()
         {
             // anchors must be created in OnInsertionCompleted because they should move only
             // due to user insertions, not due to insertions of other snippet parts
@@ -175,7 +172,7 @@ namespace AvaloniaEdit.Snippets
 
             private static IBrush CreateBackgroundBrush()
             {
-				var b = new ImmutableSolidColorBrush(Colors.LimeGreen, 0.4);
+			var b = new ImmutableSolidColorBrush(Colors.LimeGreen, 0.4);
                 return b;
             }
 
@@ -233,4 +230,3 @@ namespace AvaloniaEdit.Snippets
             }
         }
     }
-}

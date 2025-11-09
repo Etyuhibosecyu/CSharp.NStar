@@ -20,8 +20,8 @@ using System;
 using AvaloniaEdit.Rendering;
 using Avalonia.Media;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     internal sealed class SelectionLayer : Layer
     {
         private readonly TextArea _textArea;
@@ -36,12 +36,9 @@ namespace AvaloniaEdit.Editing
             TextViewWeakEventManager.ScrollOffsetChanged.AddHandler(TextView, ReceiveWeakEvent);
         }
 
-        private void ReceiveWeakEvent(object sender, EventArgs e)
-        {
-            InvalidateVisual();
-        }
+	private void ReceiveWeakEvent(object sender, EventArgs e) => InvalidateVisual();
 
-        public override void Render(DrawingContext drawingContext)
+	public override void Render(DrawingContext drawingContext)
         {
             base.Render(drawingContext);
 
@@ -67,4 +64,3 @@ namespace AvaloniaEdit.Editing
             }
         }
     }
-}

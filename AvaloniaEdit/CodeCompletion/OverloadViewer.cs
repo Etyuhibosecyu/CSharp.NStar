@@ -23,8 +23,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data.Converters;
 
-namespace AvaloniaEdit.CodeCompletion
-{
+namespace AvaloniaEdit.CodeCompletion;
+
     /// <summary>
     /// Represents a text between "Up" and "Down" buttons.
     /// </summary>
@@ -121,9 +121,5 @@ namespace AvaloniaEdit.CodeCompletion
             return AvaloniaProperty.UnsetValue;
         }
 
-        object IValueConverter.ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
+	object IValueConverter.ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
 }

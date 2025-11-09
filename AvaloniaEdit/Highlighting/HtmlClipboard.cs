@@ -21,8 +21,8 @@ using System.Globalization;
 using System.Text;
 using AvaloniaEdit.Document;
 
-namespace AvaloniaEdit.Highlighting
-{
+namespace AvaloniaEdit.Highlighting;
+
     /// <summary>
     /// Allows copying HTML text to the clipboard.
     /// </summary>
@@ -79,11 +79,9 @@ namespace AvaloniaEdit.Highlighting
         /// <returns>HTML code for the document part.</returns>
         public static string CreateHtmlFragment(IDocument document, IHighlighter highlighter, ISegment segment, HtmlOptions options)
         {
-            if (document == null)
-                throw new ArgumentNullException(nameof(document));
-            if (options == null)
-                throw new ArgumentNullException(nameof(options));
-            if (highlighter != null && highlighter.Document != document)
+		ArgumentNullException.ThrowIfNull(document);
+		ArgumentNullException.ThrowIfNull(options);
+		if (highlighter != null && highlighter.Document != document)
                 throw new ArgumentException("Highlighter does not belong to the specified document.");
             if (segment == null)
                 segment = new SimpleSegment(0, document.TextLength);
@@ -105,4 +103,3 @@ namespace AvaloniaEdit.Highlighting
             return html.ToString();
         }
     }
-}

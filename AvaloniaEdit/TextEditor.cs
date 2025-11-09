@@ -37,8 +37,8 @@ using Avalonia.Media;
 using Avalonia.Data;
 using AvaloniaEdit.Search;
 
-namespace AvaloniaEdit
-{
+namespace AvaloniaEdit;
+
     /// <summary>
     /// The text editor control.
     /// Contains a scrollable TextArea.
@@ -122,20 +122,14 @@ namespace AvaloniaEdit
         /// </summary>
         public event EventHandler<DocumentChangedEventArgs> DocumentChanged;
 
-        /// <summary>
-        /// Raises the <see cref="DocumentChanged"/> event.
-        /// </summary>
-        protected virtual void OnDocumentChanged(DocumentChangedEventArgs e)
-        {
-            DocumentChanged?.Invoke(this, e);
-        }
+	/// <summary>
+	/// Raises the <see cref="DocumentChanged"/> event.
+	/// </summary>
+	protected virtual void OnDocumentChanged(DocumentChangedEventArgs e) => DocumentChanged?.Invoke(this, e);
 
-        private static void OnDocumentChanged(AvaloniaPropertyChangedEventArgs e)
-        {
-            (e.Sender as TextEditor)?.OnDocumentChanged((TextDocument)e.OldValue, (TextDocument)e.NewValue);
-        }
+	private static void OnDocumentChanged(AvaloniaPropertyChangedEventArgs e) => (e.Sender as TextEditor)?.OnDocumentChanged((TextDocument)e.OldValue, (TextDocument)e.NewValue);
 
-        private void OnDocumentChanged(TextDocument oldValue, TextDocument newValue)
+	private void OnDocumentChanged(TextDocument oldValue, TextDocument newValue)
         {
             if (oldValue != null)
             {
@@ -175,20 +169,14 @@ namespace AvaloniaEdit
         /// </summary>
         public event PropertyChangedEventHandler OptionChanged;
 
-        /// <summary>
-        /// Raises the <see cref="OptionChanged"/> event.
-        /// </summary>
-        protected virtual void OnOptionChanged(PropertyChangedEventArgs e)
-        {
-            OptionChanged?.Invoke(this, e);
-        }
+	/// <summary>
+	/// Raises the <see cref="OptionChanged"/> event.
+	/// </summary>
+	protected virtual void OnOptionChanged(PropertyChangedEventArgs e) => OptionChanged?.Invoke(this, e);
 
-        private static void OnOptionsChanged(AvaloniaPropertyChangedEventArgs e)
-        {
-            (e.Sender as TextEditor)?.OnOptionsChanged((TextEditorOptions)e.OldValue, (TextEditorOptions)e.NewValue);
-        }
+	private static void OnOptionsChanged(AvaloniaPropertyChangedEventArgs e) => (e.Sender as TextEditor)?.OnOptionsChanged((TextEditorOptions)e.OldValue, (TextEditorOptions)e.NewValue);
 
-        private void OnOptionsChanged(TextEditorOptions oldValue, TextEditorOptions newValue)
+	private void OnOptionsChanged(TextEditorOptions oldValue, TextEditorOptions newValue)
         {
             if (oldValue != null)
             {
@@ -202,12 +190,9 @@ namespace AvaloniaEdit
             OnOptionChanged(new PropertyChangedEventArgs(null));
         }
 
-        private void OnPropertyChangedHandler(object sender, PropertyChangedEventArgs e)
-        {
-            OnOptionChanged(e);
-        }
+	private void OnPropertyChangedHandler(object sender, PropertyChangedEventArgs e) => OnOptionChanged(e);
 
-        protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+	protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
             base.OnPropertyChanged(change);
 
@@ -233,19 +218,16 @@ namespace AvaloniaEdit
             }
         }
 
-        private void OnTextChanged(object sender, EventArgs e)
-        {
-            OnTextChanged(e);
-        }
+	private void OnTextChanged(object sender, EventArgs e) => OnTextChanged(e);
 
-        #endregion
+	#endregion
 
-        #region Text property
-        /// <summary>
-        /// Gets or sets the placeholder or descriptive text that is displayed even if the <see cref="Text"/>
-        /// property is not yet set.
-        /// </summary>
-        public string Watermark
+	#region Text property
+	/// <summary>
+	/// Gets or sets the placeholder or descriptive text that is displayed even if the <see cref="Text"/>
+	/// property is not yet set.
+	/// </summary>
+	public string Watermark
         {
             get => textArea.Watermark;
             set => textArea.Watermark = value;
@@ -285,17 +267,14 @@ namespace AvaloniaEdit
         /// </summary>
         public event EventHandler TextChanged;
 
-        /// <summary>
-        /// Raises the <see cref="TextChanged"/> event.
-        /// </summary>
-        protected virtual void OnTextChanged(EventArgs e)
-        {
-            TextChanged?.Invoke(this, e);
-        }
-        #endregion
+	/// <summary>
+	/// Raises the <see cref="TextChanged"/> event.
+	/// </summary>
+	protected virtual void OnTextChanged(EventArgs e) => TextChanged?.Invoke(this, e);
+	#endregion
 
-        #region TextArea / ScrollViewer properties
-        private readonly TextArea textArea;
+	#region TextArea / ScrollViewer properties
+	private readonly TextArea textArea;
         private SearchPanel searchPanel;
         private bool wasSearchPanelOpened;
 
@@ -367,12 +346,9 @@ namespace AvaloniaEdit
 
         private IVisualLineTransformer _colorizer;
 
-        private static void OnSyntaxHighlightingChanged(AvaloniaPropertyChangedEventArgs e)
-        {
-            (e.Sender as TextEditor)?.OnSyntaxHighlightingChanged(e.NewValue as IHighlightingDefinition);
-        }
+	private static void OnSyntaxHighlightingChanged(AvaloniaPropertyChangedEventArgs e) => (e.Sender as TextEditor)?.OnSyntaxHighlightingChanged(e.NewValue as IHighlightingDefinition);
 
-        private void OnSyntaxHighlightingChanged(IHighlightingDefinition newValue)
+	private void OnSyntaxHighlightingChanged(IHighlightingDefinition newValue)
         {
             if (_colorizer != null)
             {
@@ -397,9 +373,8 @@ namespace AvaloniaEdit
         /// <returns></returns>
         protected virtual IVisualLineTransformer CreateColorizer(IHighlightingDefinition highlightingDefinition)
         {
-            if (highlightingDefinition == null)
-                throw new ArgumentNullException(nameof(highlightingDefinition));
-            return new HighlightingColorizer(highlightingDefinition);
+		ArgumentNullException.ThrowIfNull(highlightingDefinition);
+		return new HighlightingColorizer(highlightingDefinition);
         }
         #endregion
 
@@ -540,10 +515,9 @@ namespace AvaloniaEdit
 
         private static void OnShowLineNumbersChanged(AvaloniaPropertyChangedEventArgs e)
         {
-            var editor = e.Sender as TextEditor;
-            if (editor == null) return;
+		if (e.Sender is not TextEditor editor) return;
 
-            var leftMargins = editor.TextArea.LeftMargins;
+		var leftMargins = editor.TextArea.LeftMargins;
             if ((bool)e.NewValue)
             {
                 var lineNumbers = new LineNumberMargin();
@@ -648,18 +622,15 @@ namespace AvaloniaEdit
             document.Insert(document.TextLength, textData);
         }
 
-        /// <summary>
-        /// Begins a group of document changes.
-        /// </summary>
-        public void BeginChange()
-        {
-            GetDocument().BeginUpdate();
-        }
+	/// <summary>
+	/// Begins a group of document changes.
+	/// </summary>
+	public void BeginChange() => GetDocument().BeginUpdate();
 
-        /// <summary>
-        /// Copies the current selection to the clipboard.
-        /// </summary>
-        public void Copy()
+	/// <summary>
+	/// Copies the current selection to the clipboard.
+	/// </summary>
+	public void Copy()
         {
             if (CanCopy)
             {
@@ -678,19 +649,16 @@ namespace AvaloniaEdit
             }
         }
 
-        /// <summary>
-        /// Begins a group of document changes and returns an object that ends the group of document
-        /// changes when it is disposed.
-        /// </summary>
-        public IDisposable DeclareChangeBlock()
-        {
-            return GetDocument().RunUpdate();
-        }
+	/// <summary>
+	/// Begins a group of document changes and returns an object that ends the group of document
+	/// changes when it is disposed.
+	/// </summary>
+	public IDisposable DeclareChangeBlock() => GetDocument().RunUpdate();
 
-        /// <summary>
-        /// Removes the current selection without copying it to the clipboard.
-        /// </summary>
-        public void Delete()
+	/// <summary>
+	/// Removes the current selection without copying it to the clipboard.
+	/// </summary>
+	public void Delete()
         {
             if(CanDelete)
             {
@@ -698,18 +666,15 @@ namespace AvaloniaEdit
             }
         }
 
-        /// <summary>
-        /// Ends the current group of document changes.
-        /// </summary>
-        public void EndChange()
-        {
-            GetDocument().EndUpdate();
-        }
+	/// <summary>
+	/// Ends the current group of document changes.
+	/// </summary>
+	public void EndChange() => GetDocument().EndUpdate();
 
-        /// <summary>
-        /// Scrolls one line down.
-        /// </summary>
-        public void LineDown()
+	/// <summary>
+	/// Scrolls one line down.
+	/// </summary>
+	public void LineDown()
         {
             //if (scrollViewer != null)
             //    scrollViewer.LineDown();
@@ -821,30 +786,20 @@ namespace AvaloniaEdit
             ScrollViewer?.ScrollToHome();
         }
 
-        /// <summary>
-        /// Scrolls to the specified position in the document.
-        /// </summary>
-        public void ScrollToHorizontalOffset(double offset)
-        {
-            ApplyTemplate(); // ensure scrollViewer is created
-            //if (scrollViewer != null)
-            //    scrollViewer.ScrollToHorizontalOffset(offset);
-        }
+	/// <summary>
+	/// Scrolls to the specified position in the document.
+	/// </summary>
+	public void ScrollToHorizontalOffset(double offset) => ApplyTemplate(); // ensure scrollViewer is created//if (scrollViewer != null)//    scrollViewer.ScrollToHorizontalOffset(offset);
 
-        /// <summary>
-        /// Scrolls to the specified position in the document.
-        /// </summary>
-        public void ScrollToVerticalOffset(double offset)
-        {
-            ApplyTemplate(); // ensure scrollViewer is created
-            //if (scrollViewer != null)
-            //    scrollViewer.ScrollToVerticalOffset(offset);
-        }
+	/// <summary>
+	/// Scrolls to the specified position in the document.
+	/// </summary>
+	public void ScrollToVerticalOffset(double offset) => ApplyTemplate(); // ensure scrollViewer is created//if (scrollViewer != null)//    scrollViewer.ScrollToVerticalOffset(offset);
 
-        /// <summary>
-        /// Selects the entire text.
-        /// </summary>
-        public void SelectAll()
+	/// <summary>
+	/// Selects the entire text.
+	/// </summary>
+	public void SelectAll()
         {
             if (CanSelectAll)
             {
@@ -978,9 +933,8 @@ namespace AvaloniaEdit
             }
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-                var textArea = TextArea;
+			ArgumentNullException.ThrowIfNull(value);
+			var textArea = TextArea;
                 if (textArea.Document != null)
                 {
                     var offset = SelectionStart;
@@ -1065,23 +1019,20 @@ namespace AvaloniaEdit
             }
         }
 
-        /// <summary>
-        /// Clears the text.
-        /// </summary>
-        public void Clear()
-        {
-            Text = string.Empty;
-        }
-        #endregion
+	/// <summary>
+	/// Clears the text.
+	/// </summary>
+	public void Clear() => Text = string.Empty;
+	#endregion
 
-        #region Loading from stream
-        /// <summary>
-        /// Loads the text from the stream, auto-detecting the encoding.
-        /// </summary>
-        /// <remarks>
-        /// This method sets <see cref="IsModified"/> to false.
-        /// </remarks>
-        public void Load(Stream stream)
+	#region Loading from stream
+	/// <summary>
+	/// Loads the text from the stream, auto-detecting the encoding.
+	/// </summary>
+	/// <remarks>
+	/// This method sets <see cref="IsModified"/> to false.
+	/// </remarks>
+	public void Load(Stream stream)
         {
             using (var reader = FileReader.OpenStream(stream, Encoding ?? Encoding.UTF8))
             {
@@ -1096,15 +1047,14 @@ namespace AvaloniaEdit
         /// </summary>
         public void Load(string fileName)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
+		ArgumentNullException.ThrowIfNull(fileName);
 
-            // TODO:load
-            //using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-            //{
-            //    Load(fs);
-            //}
-        }
+		// TODO:load
+		//using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+		//{
+		//    Load(fs);
+		//}
+	}
 
         /// <summary>
         /// Encoding dependency property.
@@ -1133,9 +1083,8 @@ namespace AvaloniaEdit
         /// </remarks>
         public void Save(Stream stream)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-            var encoding = Encoding;
+		ArgumentNullException.ThrowIfNull(stream);
+		var encoding = Encoding;
             var document = Document;
             var writer = encoding != null ? new StreamWriter(stream, encoding) : new StreamWriter(stream);
             document?.WriteTextTo(writer);
@@ -1149,14 +1098,13 @@ namespace AvaloniaEdit
         /// </summary>
         public void Save(string fileName)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-            // TODO: save
-            //using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))
-            //{
-            //    Save(fs);
-            //}
-        }
+		ArgumentNullException.ThrowIfNull(fileName);
+		// TODO: save
+		//using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))
+		//{
+		//    Save(fs);
+		//}
+	}
         #endregion
 
         #region PointerHover events
@@ -1254,20 +1202,17 @@ namespace AvaloniaEdit
             get => GetValue(VerticalScrollBarVisibilityProperty);
             set => SetValue(VerticalScrollBarVisibilityProperty, value);
         }
-        #endregion
+	#endregion
 
-        object IServiceProvider.GetService(Type serviceType)
-        {
-            return TextArea.GetService(serviceType);
-        }
+	object IServiceProvider.GetService(Type serviceType) => TextArea.GetService(serviceType);
 
-        /// <summary>
-        /// Gets the text view position from a point inside the editor.
-        /// </summary>
-        /// <param name="point">The position, relative to top left
-        /// corner of TextEditor control</param>
-        /// <returns>The text view position, or null if the point is outside the document.</returns>
-        public TextViewPosition? GetPositionFromPoint(Point point)
+	/// <summary>
+	/// Gets the text view position from a point inside the editor.
+	/// </summary>
+	/// <param name="point">The position, relative to top left
+	/// corner of TextEditor control</param>
+	/// <returns>The text view position, or null if the point is outside the document.</returns>
+	public TextViewPosition? GetPositionFromPoint(Point point)
         {
             if (Document == null)
                 return null;
@@ -1276,20 +1221,17 @@ namespace AvaloniaEdit
             return textView.GetPosition(tpoint);
         }
 
-        /// <summary>
-        /// Scrolls to the specified line.
-        /// This method requires that the TextEditor was already assigned a size (layout engine must have run prior).
-        /// </summary>
-        public void ScrollToLine(int line)
-        {
-            ScrollTo(line, -1);
-        }
+	/// <summary>
+	/// Scrolls to the specified line.
+	/// This method requires that the TextEditor was already assigned a size (layout engine must have run prior).
+	/// </summary>
+	public void ScrollToLine(int line) => ScrollTo(line, -1);
 
-        /// <summary>
-        /// Scrolls to the specified line/column.
-        /// This method requires that the TextEditor was already assigned a size (layout engine must have run prior).
-        /// </summary>
-        public void ScrollTo(int line, int column)
+	/// <summary>
+	/// Scrolls to the specified line/column.
+	/// This method requires that the TextEditor was already assigned a size (layout engine must have run prior).
+	/// </summary>
+	public void ScrollTo(int line, int column)
         {
             const double MinimumScrollFraction = 0.3;
             ScrollTo(line, column, VisualYPosition.LineMiddle,
@@ -1372,4 +1314,3 @@ namespace AvaloniaEdit
             }
         }
     }
-}

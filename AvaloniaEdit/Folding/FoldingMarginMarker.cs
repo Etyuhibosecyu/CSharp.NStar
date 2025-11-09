@@ -23,8 +23,8 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 
-namespace AvaloniaEdit.Folding
-{
+namespace AvaloniaEdit.Folding;
+
     internal sealed class FoldingMarginMarker : Control
     {
         internal VisualLine VisualLine;
@@ -118,4 +118,3 @@ namespace AvaloniaEdit.Folding
             }
         }
     }
-}

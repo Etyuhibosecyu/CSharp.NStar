@@ -25,8 +25,8 @@ using AvaloniaEdit.Utils;
 using Avalonia.Threading;
 using SpanStack = System.Collections.Immutable.ImmutableStack<AvaloniaEdit.Highlighting.HighlightingSpan>;
 
-namespace AvaloniaEdit.Highlighting
-{
+namespace AvaloniaEdit.Highlighting;
+
     /// <summary>
     /// This class can syntax-highlight a document.
     /// It automatically manages invalidating the highlighting when the document changes.
@@ -109,12 +109,9 @@ namespace AvaloniaEdit.Highlighting
                 _firstInvalidLine = lineNumber;
         }
 
-        void ILineTracker.RebuildDocument()
-        {
-            InvalidateSpanStacks();
-        }
+	void ILineTracker.RebuildDocument() => InvalidateSpanStacks();
 
-        void ILineTracker.ChangeComplete(DocumentChangeEventArgs e)
+	void ILineTracker.ChangeComplete(DocumentChangeEventArgs e)
         {
         }
 
@@ -199,13 +196,10 @@ namespace AvaloniaEdit.Highlighting
             return _storedSpanStacks[lineNumber];
         }
 
-        /// <inheritdoc/>
-        public IEnumerable<HighlightingColor> GetColorStack(int lineNumber)
-        {
-            return GetSpanStack(lineNumber).Select(s => s.SpanColor).Where(s => s != null);
-        }
+	/// <inheritdoc/>
+	public IEnumerable<HighlightingColor> GetColorStack(int lineNumber) => GetSpanStack(lineNumber).Select(s => s.SpanColor).Where(s => s != null);
 
-        private void CheckIsHighlighting()
+	private void CheckIsHighlighting()
         {
             if (_isDisposed)
             {
@@ -315,19 +309,16 @@ namespace AvaloniaEdit.Highlighting
         /// <inheritdoc/>
         public event HighlightingStateChangedEventHandler HighlightingStateChanged;
 
-        /// <summary>
-        /// Is called when the highlighting state at the end of the specified line has changed.
-        /// </summary>
-        /// <remarks>This callback must not call HighlightLine or InvalidateHighlighting.
-        /// It may call GetSpanStack, but only for the changed line and lines above.
-        /// This method must not modify the document.</remarks>
-        protected virtual void OnHighlightStateChanged(int fromLineNumber, int toLineNumber)
-        {
-            HighlightingStateChanged?.Invoke(fromLineNumber, toLineNumber);
-        }
+	/// <summary>
+	/// Is called when the highlighting state at the end of the specified line has changed.
+	/// </summary>
+	/// <remarks>This callback must not call HighlightLine or InvalidateHighlighting.
+	/// It may call GetSpanStack, but only for the changed line and lines above.
+	/// This method must not modify the document.</remarks>
+	protected virtual void OnHighlightStateChanged(int fromLineNumber, int toLineNumber) => HighlightingStateChanged?.Invoke(fromLineNumber, toLineNumber);
 
-        /// <inheritdoc/>
-        public HighlightingColor DefaultTextColor => null;
+	/// <inheritdoc/>
+	public HighlightingColor DefaultTextColor => null;
 
         /// <inheritdoc/>
         public void BeginHighlighting()
@@ -345,10 +336,6 @@ namespace AvaloniaEdit.Highlighting
             _isInHighlightingGroup = false;
         }
 
-        /// <inheritdoc/>
-        public HighlightingColor GetNamedColor(string name)
-        {
-            return _definition.GetNamedColor(name);
-        }
-    }
+	/// <inheritdoc/>
+	public HighlightingColor GetNamedColor(string name) => _definition.GetNamedColor(name);
 }

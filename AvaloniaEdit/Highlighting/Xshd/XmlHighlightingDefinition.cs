@@ -24,8 +24,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Highlighting.Xshd
-{
+namespace AvaloniaEdit.Highlighting.Xshd;
+
     internal sealed class XmlHighlightingDefinition : IHighlightingDefinition
     {
         public string Name { get; }
@@ -63,12 +63,9 @@ namespace AvaloniaEdit.Highlighting.Xshd
             internal readonly Dictionary<XshdRuleSet, HighlightingRuleSet> RuleSets
                 = new Dictionary<XshdRuleSet, HighlightingRuleSet>();
 
-            public RegisterNamedElementsVisitor(XmlHighlightingDefinition def)
-            {
-                _def = def;
-            }
+		public RegisterNamedElementsVisitor(XmlHighlightingDefinition def) => _def = def;
 
-            public object VisitRuleSet(XshdRuleSet ruleSet)
+		public object VisitRuleSet(XshdRuleSet ruleSet)
             {
                 var hrs = new HighlightingRuleSet();
                 RuleSets.Add(ruleSet, hrs);
@@ -99,12 +96,9 @@ namespace AvaloniaEdit.Highlighting.Xshd
                 return null;
             }
 
-            public object VisitKeywords(XshdKeywords keywords)
-            {
-                return keywords.ColorReference.AcceptVisitor(this);
-            }
+		public object VisitKeywords(XshdKeywords keywords) => keywords.ColorReference.AcceptVisitor(this);
 
-            public object VisitSpan(XshdSpan span)
+		public object VisitSpan(XshdSpan span)
             {
                 span.BeginColorReference.AcceptVisitor(this);
                 span.SpanColorReference.AcceptVisitor(this);
@@ -112,16 +106,10 @@ namespace AvaloniaEdit.Highlighting.Xshd
                 return span.RuleSetReference.AcceptVisitor(this);
             }
 
-            public object VisitImport(XshdImport import)
-            {
-                return import.RuleSetReference.AcceptVisitor(this);
-            }
+		public object VisitImport(XshdImport import) => import.RuleSetReference.AcceptVisitor(this);
 
-            public object VisitRule(XshdRule rule)
-            {
-                return rule.ColorReference.AcceptVisitor(this);
-            }
-        }
+		public object VisitRule(XshdRule rule) => rule.ColorReference.AcceptVisitor(this);
+	}
         #endregion
 
         #region TranslateElements
@@ -267,12 +255,9 @@ namespace AvaloniaEdit.Highlighting.Xshd
                 };
             }
 
-            private static bool IsSimpleWord(string word)
-            {
-                return char.IsLetterOrDigit(word[0]) && char.IsLetterOrDigit(word, word.Length - 1);
-            }
+		private static bool IsSimpleWord(string word) => char.IsLetterOrDigit(word[0]) && char.IsLetterOrDigit(word, word.Length - 1);
 
-            private Regex CreateRegex(XshdElement position, string regex, XshdRegexType regexType)
+		private Regex CreateRegex(XshdElement position, string regex, XshdRegexType regexType)
             {
                 if (regex == null)
                     throw Error(position, "Regex missing");
@@ -377,15 +362,12 @@ namespace AvaloniaEdit.Highlighting.Xshd
                 return hrs;
             }
 
-            public object VisitRule(XshdRule rule)
-            {
-                return new HighlightingRule
-                {
-                    Color = GetColor(rule, rule.ColorReference),
-                    Regex = CreateRegex(rule, rule.Regex, rule.RegexType)
-                };
-            }
-        }
+		public object VisitRule(XshdRule rule) => new HighlightingRule
+		{
+			Color = GetColor(rule, rule.ColorReference),
+			Regex = CreateRegex(rule, rule.Regex, rule.RegexType)
+		};
+	}
         #endregion
 
         private static Exception Error(XshdElement element, string message)
@@ -409,18 +391,11 @@ namespace AvaloniaEdit.Highlighting.Xshd
             return _ruleSetDict.TryGetValue(name, out var r) ? r : null;
         }
 
-        public HighlightingColor GetNamedColor(string name)
-        {
-            return _colorDict.TryGetValue(name, out var c) ? c : null;
-        }
+	public HighlightingColor GetNamedColor(string name) => _colorDict.TryGetValue(name, out var c) ? c : null;
 
-        public IEnumerable<HighlightingColor> NamedHighlightingColors => _colorDict.Values;
+	public IEnumerable<HighlightingColor> NamedHighlightingColors => _colorDict.Values;
 
-        public override string ToString()
-        {
-            return Name;
-        }
+	public override string ToString() => Name;
 
-        public IDictionary<string, string> Properties => _propDict;
+	public IDictionary<string, string> Properties => _propDict;
     }
-}

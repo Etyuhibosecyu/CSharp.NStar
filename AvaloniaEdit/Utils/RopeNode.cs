@@ -20,8 +20,8 @@ using System;
 using System.Diagnostics;
 using System.Text;
 
-namespace AvaloniaEdit.Utils
-{
+namespace AvaloniaEdit.Utils;
+
     /// <summary>
     /// Class used to represent a node in the tree.
     /// </summary>
@@ -57,12 +57,9 @@ namespace AvaloniaEdit.Utils
 
         public RopeNode() { }
 
-        protected RopeNode(bool isShared)
-        {
-            _isShared = isShared;
-        }
+	protected RopeNode(bool isShared) => _isShared = isShared;
 
-        internal int Balance => Right.Height - Left.Height;
+	internal int Balance => Right.Height - Left.Height;
 
         [Conditional("DATACONSISTENCYTEST")]
         internal void CheckInvariants()
@@ -238,13 +235,13 @@ namespace AvaloniaEdit.Utils
             Debug.Assert(!_isShared);
 
             /* Rotate tree to the left
-			 * 
-			 *       this               this
-			 *       /  \               /  \
-			 *      A   right   ===>  left  C
-			 *           / \          / \
-			 *          B   C        A   B
-			 */
+		 * 
+		 *       this               this
+		 *       /  \               /  \
+		 *      A   right   ===>  left  C
+		 *           / \          / \
+		 *          B   C        A   B
+		 */
             var a = Left;
             var b = Right.Left;
             var c = Right.Right;
@@ -264,13 +261,13 @@ namespace AvaloniaEdit.Utils
             Debug.Assert(!_isShared);
 
             /* Rotate tree to the right
-			 * 
-			 *       this             this
-			 *       /  \             /  \
-			 *     left  C   ===>    A  right
-			 *     / \                   /  \
-			 *    A   B                 B    C
-			 */
+		 * 
+		 *       this             this
+		 *       /  \             /  \
+		 *     left  C   ===>    A  right
+		 *     / \                   /  \
+		 *    A   B                 B    C
+		 */
             var a = Left.Left;
             var b = Left.Right;
             var c = Right;
@@ -623,18 +620,15 @@ namespace AvaloniaEdit.Utils
             return b.ToString();
         }
 #endif
-        #endregion
+	#endregion
 
-        /// <summary>
-        /// Gets the root node of the subtree from a lazily evaluated function node.
-        /// Such nodes are always marked as shared.
-        /// GetContentNode() will return either a Concat or Leaf node, never another FunctionNode.
-        /// </summary>
-        internal virtual RopeNode<T> GetContentNode()
-        {
-            throw new InvalidOperationException("Called GetContentNode() on non-FunctionNode.");
-        }
-    }
+	/// <summary>
+	/// Gets the root node of the subtree from a lazily evaluated function node.
+	/// Such nodes are always marked as shared.
+	/// GetContentNode() will return either a Concat or Leaf node, never another FunctionNode.
+	/// </summary>
+	internal virtual RopeNode<T> GetContentNode() => throw new InvalidOperationException("Called GetContentNode() on non-FunctionNode.");
+}
 
     internal sealed class FunctionNode<T> : RopeNode<T>
     {
@@ -703,10 +697,6 @@ namespace AvaloniaEdit.Utils
             }
         }
 
-        public override string ToString()
-        {
-            return "[FunctionNode length=" + Length + " initializerRan=" + (_initializer == null) + "]";
-        }
+	public override string ToString() => "[FunctionNode length=" + Length + " initializerRan=" + (_initializer == null) + "]";
 #endif
-    }
 }

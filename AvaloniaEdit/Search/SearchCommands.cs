@@ -22,8 +22,8 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using AvaloniaEdit.Editing;
 
-namespace AvaloniaEdit.Search
-{
+namespace AvaloniaEdit.Search;
+
     /// <summary>
     /// Search commands for AvalonEdit.
     /// </summary>
@@ -88,17 +88,11 @@ namespace AvaloniaEdit.Search
 
         private readonly SearchPanel _panel;
 
-        private void ExecuteFind(object sender, ExecutedRoutedEventArgs e)
-        {
-            FindOrReplace(isReplaceMode: false);
-        }
+	private void ExecuteFind(object sender, ExecutedRoutedEventArgs e) => FindOrReplace(isReplaceMode: false);
 
-        private void ExecuteReplace(object sender, ExecutedRoutedEventArgs e)
-        {
-            FindOrReplace(isReplaceMode: true);
-        }
+	private void ExecuteReplace(object sender, ExecutedRoutedEventArgs e) => FindOrReplace(isReplaceMode: true);
 
-        private void FindOrReplace(bool isReplaceMode)
+	private void FindOrReplace(bool isReplaceMode)
         {
             _panel.IsReplaceMode = isReplaceMode;
             _panel.Open();
@@ -176,4 +170,3 @@ namespace AvaloniaEdit.Search
             remove => _panel.SearchOptionsChanged -= value;
         }
     }
-}

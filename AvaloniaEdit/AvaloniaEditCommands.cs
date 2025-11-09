@@ -22,8 +22,8 @@ using Avalonia;
 using Avalonia.Input;
 using Avalonia.Platform;
 
-namespace AvaloniaEdit
-{
+namespace AvaloniaEdit;
+
     /// <summary>
     /// Custom commands for AvalonEdit.
     /// </summary>
@@ -170,4 +170,3 @@ namespace AvaloniaEdit
         public static RoutedCommand MoveToDocumentEnd { get; } = new RoutedCommand(nameof(MoveToDocumentEnd));
         public static RoutedCommand SelectToDocumentEnd { get; } = new RoutedCommand(nameof(SelectToDocumentEnd));
     }
-}

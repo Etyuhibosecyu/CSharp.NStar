@@ -19,8 +19,8 @@
 using System;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// Contains weak event managers for the TextDocument events.
     /// </summary>
@@ -104,4 +104,3 @@ namespace AvaloniaEdit.Document
             protected override void StopListening(TextDocument source) => source.TextChanged -= DeliverEvent;
         }
     }
-}

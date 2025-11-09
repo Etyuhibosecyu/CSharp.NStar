@@ -19,8 +19,8 @@
 using System;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Rendering
-{
+namespace AvaloniaEdit.Rendering;
+
     /// <summary>
     /// Contains weak event managers for the TextView events.
     /// </summary>
@@ -59,4 +59,3 @@ namespace AvaloniaEdit.Rendering
             protected override void StopListening(TextView source) => source.ScrollOffsetChanged -= DeliverEvent;
         }
     }
-}

@@ -19,8 +19,8 @@
 using System.Collections.Generic;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Snippets
-{
+namespace AvaloniaEdit.Snippets;
+
     /// <summary>
     /// A snippet element that has sub-elements.
     /// </summary>
@@ -54,4 +54,3 @@ namespace AvaloniaEdit.Snippets
         //	return span;
         //}
     }
-}

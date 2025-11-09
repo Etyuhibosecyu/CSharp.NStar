@@ -17,11 +17,11 @@ namespace CSharp.NStar;
 
 public static class MemberChecks
 {
-	public static bool CheckContainer(BlockStack container, Func<BlockStack, bool> check, out BlockStack type)
+	public static bool CheckContainer(BlockStack container, Func<BlockStack, bool> check, out BlockStack matchingContainer)
 	{
 		if (check(container))
 		{
-			type = container;
+			matchingContainer = container;
 			return true;
 		}
 		var containerPart = container.ToList().GetSlice();
@@ -31,11 +31,11 @@ public static class MemberChecks
 			containerPart = containerPart.SkipLast(1);
 			if (check(stack = new(containerPart)))
 			{
-				type = stack;
+				matchingContainer = stack;
 				return true;
 			}
 		}
-		type = new();
+		matchingContainer = new();
 		return false;
 	}
 
@@ -83,7 +83,7 @@ public static class MemberChecks
 
 	public static bool UserDefinedPropertyExists(BlockStack container, String name,
 		[MaybeNullWhen(false)] out UserDefinedProperty? property, [MaybeNullWhen(false)] out BlockStack matchingContainer,
-		[MaybeNullWhen(false)] out bool inBase)
+		out bool inBase, out BlockStack actualContainer)
 	{
 		UserDefinedType userDefinedType = default!;
 		if (CheckContainer(container, UserDefinedProperties.ContainsKey, out matchingContainer)
@@ -91,16 +91,19 @@ public static class MemberChecks
 		{
 			property = value;
 			inBase = false;
+			actualContainer = matchingContainer;
 			return true;
 		}
 		else if (CheckContainer(container, x => UserDefinedTypes.TryGetValue(SplitType(x), out userDefinedType),
 			out matchingContainer) && PropertyExists(userDefinedType.BaseType, name, out property))
 		{
 			inBase = true;
+			actualContainer = userDefinedType.BaseType.MainType;
 			return true;
 		}
 		property = null;
 		inBase = false;
+		actualContainer = default!;
 		return false;
 	}
 
@@ -460,7 +463,7 @@ public static class MemberChecks
 				| (parameters[index].ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
 				| (parameters[index].IsOut ? ParameterAttributes.Out : 0)
 				| (Attribute.IsDefined(parameters[index], typeof(ParamArrayAttribute)) ? ParameterAttributes.Params : 0),
-				parameters[index].DefaultValue?.ToString() ?? "null")))));
+				parameters[index].DefaultValue?.ToString() ?? "null"))), []));
 		}
 		return true;
 	}

@@ -20,8 +20,8 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// Represents a line inside a <see cref="TextDocument"/>.
     /// </summary>
@@ -56,46 +56,45 @@ namespace AvaloniaEdit.Document
 #endif
         }
 
-        [Conditional("DEBUG")]
-        private void DebugVerifyAccess()
-        {
+	[Conditional("DEBUG")]
+	private void DebugVerifyAccess() =>
 #if DEBUG
-            _document.DebugVerifyAccess();
+		_document.DebugVerifyAccess();
 #endif
-        }
-        #endregion
 
-        #region Events
-        //		/// <summary>
-        //		/// Is raised when the line is deleted.
-        //		/// </summary>
-        //		public event EventHandler Deleted;
-        //
-        //		/// <summary>
-        //		/// Is raised when the line's text changes.
-        //		/// </summary>
-        //		public event EventHandler TextChanged;
-        //
-        //		/// <summary>
-        //		/// Raises the Deleted or TextChanged event.
-        //		/// </summary>
-        //		internal void RaiseChanged()
-        //		{
-        //			if (IsDeleted) {
-        //				if (Deleted != null)
-        //					Deleted(this, EventArgs.Empty);
-        //			} else {
-        //				if (TextChanged != null)
-        //					TextChanged(this, EventArgs.Empty);
-        //			}
-        //		}
-        #endregion
+	#endregion
 
-        #region Properties stored in tree
-        /// <summary>
-        /// Gets if this line was deleted from the document.
-        /// </summary>
-        public bool IsDeleted
+	#region Events
+	//		/// <summary>
+	//		/// Is raised when the line is deleted.
+	//		/// </summary>
+	//		public event EventHandler Deleted;
+	//
+	//		/// <summary>
+	//		/// Is raised when the line's text changes.
+	//		/// </summary>
+	//		public event EventHandler TextChanged;
+	//
+	//		/// <summary>
+	//		/// Raises the Deleted or TextChanged event.
+	//		/// </summary>
+	//		internal void RaiseChanged()
+	//		{
+	//			if (IsDeleted) {
+	//				if (Deleted != null)
+	//					Deleted(this, EventArgs.Empty);
+	//			} else {
+	//				if (TextChanged != null)
+	//					TextChanged(this, EventArgs.Empty);
+	//			}
+	//		}
+	#endregion
+
+	#region Properties stored in tree
+	/// <summary>
+	/// Gets if this line was deleted from the document.
+	/// </summary>
+	public bool IsDeleted
         {
             get
             {
@@ -276,4 +275,3 @@ namespace AvaloniaEdit.Document
         }
         #endregion
     }
-}

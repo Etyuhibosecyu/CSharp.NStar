@@ -25,8 +25,8 @@ using System.Linq;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Highlighting
-{
+namespace AvaloniaEdit.Highlighting;
+
     /// <summary>
     /// Represents a highlighted document line.
     /// </summary>
@@ -245,9 +245,8 @@ namespace AvaloniaEdit.Highlighting
         ///// </summary>
         internal void WriteTo(RichTextWriter writer, int startOffset, int endOffset)
         {
-        if (writer == null)
-        	throw new ArgumentNullException("writer");
-        int documentLineStartOffset = this.DocumentLine.Offset;
+		ArgumentNullException.ThrowIfNull(writer);
+		int documentLineStartOffset = this.DocumentLine.Offset;
         int documentLineEndOffset = documentLineStartOffset + this.DocumentLine.Length;
         if (startOffset < documentLineStartOffset || startOffset > documentLineEndOffset)
         		throw new ArgumentOutOfRangeException("startOffset", startOffset, "Value must be between " + documentLineStartOffset + " and " + documentLineEndOffset);
@@ -305,17 +304,14 @@ namespace AvaloniaEdit.Highlighting
         	return stringWriter.ToString();
         }
 
-        ///// <inheritdoc/>
-        public override string ToString()
-        {
-        	return "[" + GetType().Name + " " + ToHtml() + "]";
-        }
-        #endregion
+	///// <inheritdoc/>
+	public override string ToString() => "[" + GetType().Name + " " + ToHtml() + "]";
+	#endregion
 
-        /// <summary>
-        /// Creates a <see cref="RichTextModel"/> that stores the highlighting of this line.
-        /// </summary>
-        public RichTextModel ToRichTextModel()
+	/// <summary>
+	/// Creates a <see cref="RichTextModel"/> that stores the highlighting of this line.
+	/// </summary>
+	public RichTextModel ToRichTextModel()
         {
             var builder = new RichTextModel();
             var startOffset = DocumentLine.Offset;
@@ -326,12 +322,8 @@ namespace AvaloniaEdit.Highlighting
             return builder;
         }
 
-        /// <summary>
-        /// Creates a <see cref="RichText"/> that stores the text and highlighting of this line.
-        /// </summary>
-        public RichText ToRichText()
-        {
-            return new RichText(Document.GetText(DocumentLine), ToRichTextModel());
-        }
-    }
+	/// <summary>
+	/// Creates a <see cref="RichText"/> that stores the text and highlighting of this line.
+	/// </summary>
+	public RichText ToRichText() => new RichText(Document.GetText(DocumentLine), ToRichTextModel());
 }

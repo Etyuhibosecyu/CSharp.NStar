@@ -25,8 +25,8 @@ using Avalonia.Media.Immutable;
 
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Rendering
-{
+namespace AvaloniaEdit.Rendering;
+
     /// <summary>
     /// Renders a ruler at a certain column.
     /// </summary>
@@ -75,4 +75,3 @@ namespace AvaloniaEdit.Rendering
             }
         }
     }
-}

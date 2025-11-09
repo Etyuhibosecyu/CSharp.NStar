@@ -24,8 +24,8 @@ using Avalonia.Input;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     /// <summary>
     /// Base class for selections.
     /// </summary>
@@ -36,9 +36,8 @@ namespace AvaloniaEdit.Editing
         /// </summary>
         public static Selection Create(TextArea textArea, int startOffset, int endOffset)
         {
-            if (textArea == null)
-                throw new ArgumentNullException(nameof(textArea));
-            if (startOffset == endOffset)
+		ArgumentNullException.ThrowIfNull(textArea);
+		if (startOffset == endOffset)
                 return textArea.EmptySelection;
             return new SimpleSelection(textArea,
                 new TextViewPosition(textArea.Document.GetLocation(startOffset)),
@@ -47,9 +46,8 @@ namespace AvaloniaEdit.Editing
 
         internal static Selection Create(TextArea textArea, TextViewPosition start, TextViewPosition end)
         {
-            if (textArea == null)
-                throw new ArgumentNullException(nameof(textArea));
-            if (textArea.Document.GetOffset(start.Location) == textArea.Document.GetOffset(end.Location) && start.VisualColumn == end.VisualColumn)
+		ArgumentNullException.ThrowIfNull(textArea);
+		if (textArea.Document.GetOffset(start.Location) == textArea.Document.GetOffset(end.Location) && start.VisualColumn == end.VisualColumn)
                 return textArea.EmptySelection;
             return new SimpleSelection(textArea, start, end);
         }
@@ -59,25 +57,21 @@ namespace AvaloniaEdit.Editing
         /// </summary>
         public static Selection Create(TextArea textArea, ISegment segment)
         {
-            if (segment == null)
-                throw new ArgumentNullException(nameof(segment));
-            return Create(textArea, segment.Offset, segment.EndOffset);
+		ArgumentNullException.ThrowIfNull(segment);
+		return Create(textArea, segment.Offset, segment.EndOffset);
         }
 
         internal TextArea TextArea { get; }
 
-        /// <summary>
-        /// Constructor for Selection.
-        /// </summary>
-        protected Selection(TextArea textArea)
-        {
-            TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
-        }
+	/// <summary>
+	/// Constructor for Selection.
+	/// </summary>
+	protected Selection(TextArea textArea) => TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
-        /// <summary>
-        /// Gets the start position of the selection.
-        /// </summary>
-        public abstract TextViewPosition StartPosition { get; }
+	/// <summary>
+	/// Gets the start position of the selection.
+	/// </summary>
+	public abstract TextViewPosition StartPosition { get; }
 
         /// <summary>
         /// Gets the end position of the selection.
@@ -124,23 +118,17 @@ namespace AvaloniaEdit.Editing
             return newText;
         }
 
-        private bool InsertVirtualSpaces(string newText, TextViewPosition start, TextViewPosition end)
-        {
-            return (!string.IsNullOrEmpty(newText) || !(IsInVirtualSpace(start) && IsInVirtualSpace(end)))
-                && newText != "\r\n"
-                && newText != "\n"
-                && newText != "\r";
-        }
+	private bool InsertVirtualSpaces(string newText, TextViewPosition start, TextViewPosition end) => (!string.IsNullOrEmpty(newText) || !(IsInVirtualSpace(start) && IsInVirtualSpace(end)))
+			&& newText != "\r\n"
+			&& newText != "\n"
+			&& newText != "\r";
 
-        private bool IsInVirtualSpace(TextViewPosition pos)
-        {
-            return pos.VisualColumn > TextArea.TextView.GetOrConstructVisualLine(TextArea.Document.GetLineByNumber(pos.Line)).VisualLength;
-        }
+	private bool IsInVirtualSpace(TextViewPosition pos) => pos.VisualColumn > TextArea.TextView.GetOrConstructVisualLine(TextArea.Document.GetLineByNumber(pos.Line)).VisualLength;
 
-        /// <summary>
-        /// Updates the selection when the document changes.
-        /// </summary>
-        public abstract Selection UpdateOnDocumentChange(DocumentChangeEventArgs e);
+	/// <summary>
+	/// Updates the selection when the document changes.
+	/// </summary>
+	public abstract Selection UpdateOnDocumentChange(DocumentChangeEventArgs e);
 
         /// <summary>
         /// Gets whether the selection is empty.
@@ -298,4 +286,3 @@ namespace AvaloniaEdit.Editing
             return data;
         }
     }
-}

@@ -19,8 +19,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace AvaloniaEdit.Rendering
-{
+namespace AvaloniaEdit.Rendering;
+
     internal struct HeightTreeLineNode
     {
         internal HeightTreeLineNode(double height)
@@ -60,4 +60,3 @@ namespace AvaloniaEdit.Rendering
             }
         }
     }
-}

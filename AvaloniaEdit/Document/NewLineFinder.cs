@@ -19,8 +19,8 @@
 using System;
 using System.Text;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     internal static class NewLineFinder
     {
         private static readonly char[] Newline = { '\r', '\n' };
@@ -79,9 +79,8 @@ namespace AvaloniaEdit.Document
         /// or -1 if no new line was found.</returns>
         public static int FindNextNewLine(ITextSource text, int offset, out string newLineType)
         {
-            if (text == null)
-                throw new ArgumentNullException(nameof(text));
-            if (offset < 0 || offset > text.TextLength)
+		ArgumentNullException.ThrowIfNull(text);
+		if (offset < 0 || offset > text.TextLength)
                 throw new ArgumentOutOfRangeException(nameof(offset), offset, "offset is outside of text source");
             var s = NewLineFinder.NextNewLine(text, offset);
             if (s == SimpleSegment.Invalid)
@@ -104,18 +103,15 @@ namespace AvaloniaEdit.Document
             return s.Offset;
         }
 
-        /// <summary>
-        /// Gets whether the specified string is a newline sequence.
-        /// </summary>
-        public static bool IsNewLine(string newLine)
-        {
-            return newLine == "\r\n" || newLine == "\n" || newLine == "\r";
-        }
+	/// <summary>
+	/// Gets whether the specified string is a newline sequence.
+	/// </summary>
+	public static bool IsNewLine(string newLine) => newLine == "\r\n" || newLine == "\n" || newLine == "\r";
 
-        /// <summary>
-        /// Normalizes all new lines in <paramref name="input"/> to be <paramref name="newLine"/>.
-        /// </summary>
-        public static string NormalizeNewLines(string input, string newLine)
+	/// <summary>
+	/// Normalizes all new lines in <paramref name="input"/> to be <paramref name="newLine"/>.
+	/// </summary>
+	public static string NormalizeNewLines(string input, string newLine)
         {
             if (input == null)
                 return null;
@@ -155,4 +151,3 @@ namespace AvaloniaEdit.Document
             return document.GetText(line.Offset + line.Length, line.DelimiterLength);
         }
     }
-}

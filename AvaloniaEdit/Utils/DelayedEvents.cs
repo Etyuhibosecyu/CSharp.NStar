@@ -19,8 +19,8 @@
 using System;
 using System.Collections.Generic;
 
-namespace AvaloniaEdit.Utils
-{
+namespace AvaloniaEdit.Utils;
+
     /// <summary>
     /// Maintains a list of delayed events to raise.
     /// </summary>
@@ -39,11 +39,8 @@ namespace AvaloniaEdit.Utils
                 _e = e;
             }
 
-            public void Call()
-            {
-                _handler(_sender, _e);
-            }
-        }
+		public void Call() => _handler(_sender, _e);
+	}
 
         private readonly Queue<EventCall> _eventCalls = new Queue<EventCall>();
 
@@ -61,4 +58,3 @@ namespace AvaloniaEdit.Utils
                 _eventCalls.Dequeue().Call();
         }
     }
-}

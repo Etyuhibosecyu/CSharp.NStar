@@ -19,8 +19,8 @@
 using System;
 using AvaloniaEdit.Document;
 
-namespace AvaloniaEdit.Indentation.CSharp
-{
+namespace AvaloniaEdit.Indentation.CSharp;
+
     /// <summary>
     /// Smart indentation for C#.
     /// </summary>
@@ -33,15 +33,12 @@ namespace AvaloniaEdit.Indentation.CSharp
         {
         }
 
-        /// <summary>
-        /// Creates a new CSharpIndentationStrategy and initializes the settings using the text editor options.
-        /// </summary>
-        public CSharpIndentationStrategy(TextEditorOptions options)
-        {
-            IndentationString = options.IndentationString;
-        }
+	/// <summary>
+	/// Creates a new CSharpIndentationStrategy and initializes the settings using the text editor options.
+	/// </summary>
+	public CSharpIndentationStrategy(TextEditorOptions options) => IndentationString = options.IndentationString;
 
-        private string _indentationString = "\t";
+	private string _indentationString = "\t";
 
         /// <summary>
         /// Gets/Sets the indentation string.
@@ -64,8 +61,8 @@ namespace AvaloniaEdit.Indentation.CSharp
         /// <param name="keepEmptyLines">Specifies whether empty lines should be kept</param>
         public void Indent(IDocumentAccessor document, bool keepEmptyLines)
         {
-            if (document == null) throw new ArgumentNullException(nameof(document));
-            var settings = new IndentationSettings
+		ArgumentNullException.ThrowIfNull(document);
+		var settings = new IndentationSettings
             {
                 IndentString = IndentationString,
                 LeaveEmptyLines = keepEmptyLines
@@ -90,10 +87,6 @@ namespace AvaloniaEdit.Indentation.CSharp
             }
         }
 
-        /// <inheritdoc cref="IIndentationStrategy.IndentLines"/>
-        public override void IndentLines(TextDocument document, int beginLine, int endLine)
-        {
-            Indent(new TextDocumentAccessor(document, beginLine, endLine), true);
-        }
-    }
+	/// <inheritdoc cref="IIndentationStrategy.IndentLines"/>
+	public override void IndentLines(TextDocument document, int beginLine, int endLine) => Indent(new TextDocumentAccessor(document, beginLine, endLine), true);
 }

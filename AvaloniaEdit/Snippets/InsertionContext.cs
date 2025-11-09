@@ -22,8 +22,8 @@ using System.Diagnostics.CodeAnalysis;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Editing;
 
-namespace AvaloniaEdit.Snippets
-{
+namespace AvaloniaEdit.Snippets;
+
     /// <summary>
     /// Represents the context of a snippet insertion.
     /// </summary>
@@ -152,11 +152,9 @@ namespace AvaloniaEdit.Snippets
         /// <param name="element">The active element.</param>
         public void RegisterActiveElement(SnippetElement owner, IActiveElement element)
         {
-            if (owner == null)
-                throw new ArgumentNullException(nameof(owner));
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-            if (_currentStatus != Status.Insertion)
+		ArgumentNullException.ThrowIfNull(owner);
+		ArgumentNullException.ThrowIfNull(element);
+		if (_currentStatus != Status.Insertion)
                 throw new InvalidOperationException();
             _elementMap.Add(owner, element);
             _registeredElements.Add(element);
@@ -167,9 +165,8 @@ namespace AvaloniaEdit.Snippets
         /// </summary>
         public IActiveElement GetActiveElement(SnippetElement owner)
         {
-            if (owner == null)
-                throw new ArgumentNullException(nameof(owner));
-            return _elementMap.TryGetValue(owner, out var element) ? element : null;
+		ArgumentNullException.ThrowIfNull(owner);
+		return _elementMap.TryGetValue(owner, out var element) ? element : null;
         }
 
         /// <summary>
@@ -286,4 +283,3 @@ namespace AvaloniaEdit.Snippets
             }
         }
     }
-}

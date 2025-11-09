@@ -5,8 +5,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace AvaloniaEdit.Utils
-{
+namespace AvaloniaEdit.Utils;
+
     /// <summary>
     /// WeakEventManager base class. Inspired by the WPF WeakEventManager class and the code in 
     /// https://social.msdn.microsoft.com/Forums/silverlight/en-US/34d85c3f-52ea-4adc-bb32-8297f5549042/command-binding-memory-leak?forum=silverlightbugs
@@ -37,41 +37,32 @@ namespace AvaloniaEdit.Utils
 
         private static TEventManager Current => CurrentLazy.Value;
 
-        /// <summary>
-        /// Adds a weak reference to the handler and associates it with the source.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="handler">The handler.</param>
-        public static void AddHandler(TEventSource source, TEventHandler handler)
-        {
-            Current.PrivateAddHandler(source, handler);
-        }
+	/// <summary>
+	/// Adds a weak reference to the handler and associates it with the source.
+	/// </summary>
+	/// <param name="source">The source.</param>
+	/// <param name="handler">The handler.</param>
+	public static void AddHandler(TEventSource source, TEventHandler handler) => Current.PrivateAddHandler(source, handler);
 
-        /// <summary>
-        /// Removes the association between the source and the handler.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="handler">The handler.</param>
-        public static void RemoveHandler(TEventSource source, TEventHandler handler)
-        {
-            Current.PrivateRemoveHandler(source, handler);
-        }
+	/// <summary>
+	/// Removes the association between the source and the handler.
+	/// </summary>
+	/// <param name="source">The source.</param>
+	/// <param name="handler">The handler.</param>
+	public static void RemoveHandler(TEventSource source, TEventHandler handler) => Current.PrivateRemoveHandler(source, handler);
 
-        /// <summary>
-        /// Delivers the event to the handlers registered for the source. 
-        /// </summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="args">The <see cref="TEventArgs"/> instance containing the event data.</param>
-        protected static void DeliverEvent(object sender, TEventArgs args)
-        {
-            Current.PrivateDeliverEvent(sender, args);
-        }
+	/// <summary>
+	/// Delivers the event to the handlers registered for the source. 
+	/// </summary>
+	/// <param name="sender">The sender.</param>
+	/// <param name="args">The <see cref="TEventArgs"/> instance containing the event data.</param>
+	protected static void DeliverEvent(object sender, TEventArgs args) => Current.PrivateDeliverEvent(sender, args);
 
-        /// <summary>
-        /// Override this method to attach to an event.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        protected abstract void StartListening(TEventSource source);
+	/// <summary>
+	/// Override this method to attach to an event.
+	/// </summary>
+	/// <param name="source">The source.</param>
+	protected abstract void StartListening(TEventSource source);
 
         /// <summary>
         /// Override this method to detach from an event.
@@ -247,29 +238,23 @@ namespace AvaloniaEdit.Utils
                 _originalHandler = new WeakReference(originalHandler);
             }
 
-            public bool Matches(object o, TEventHandler handler)
-            {
-                return _source != null &&
-                       ReferenceEquals(_source.Target, o) &&
-                       _originalHandler != null &&
-                       (ReferenceEquals(_originalHandler.Target, handler) ||
-                        _originalHandler.Target is TEventHandler &&
-                        handler is TEventHandler &&
-                        handler is Delegate del && _originalHandler.Target is Delegate origDel && Equals(del.Target, origDel.Target));
-            }
-        }
+		public bool Matches(object o, TEventHandler handler) => _source != null &&
+				   ReferenceEquals(_source.Target, o) &&
+				   _originalHandler != null &&
+				   (ReferenceEquals(_originalHandler.Target, handler) ||
+					_originalHandler.Target is TEventHandler &&
+					handler is TEventHandler &&
+					handler is Delegate del && _originalHandler.Target is Delegate origDel && Equals(del.Target, origDel.Target));
+	}
 
         internal class WeakHandlerList
         {
             private int _deliveries;
             private readonly List<WeakHandler> _handlers;
 
-            public WeakHandlerList()
-            {
-                _handlers = new List<WeakHandler>();
-            }
+		public WeakHandlerList() => _handlers = new List<WeakHandler>();
 
-            public void AddWeakHandler(TEventSource source, TEventHandler handler)
+		public void AddWeakHandler(TEventSource source, TEventHandler handler)
             {
                 var handlerSink = new WeakHandler(source, handler);
                 _handlers.Add(handlerSink);
@@ -344,14 +329,7 @@ namespace AvaloniaEdit.Utils
     internal sealed class Disposable : IDisposable
     {
         private volatile Action _dispose;
-        public Disposable(Action dispose)
-        {
-            _dispose = dispose;
-        }
-        public bool IsDisposed => _dispose == null;
-        public void Dispose()
-        {
-            Interlocked.Exchange(ref _dispose, null)?.Invoke();
-        }
-    }
+	public Disposable(Action dispose) => _dispose = dispose;
+	public bool IsDisposed => _dispose == null;
+	public void Dispose() => Interlocked.Exchange(ref _dispose, null)?.Invoke();
 }

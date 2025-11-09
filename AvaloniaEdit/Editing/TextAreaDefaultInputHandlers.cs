@@ -21,8 +21,8 @@ using System.Windows.Input;
 using AvaloniaEdit.Document;
 using Avalonia.Input;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     /// <summary>
     /// Contains the predefined input handlers.
     /// </summary>
@@ -56,24 +56,15 @@ namespace AvaloniaEdit.Editing
             AddBinding(ApplicationCommands.Redo, ExecuteRedo, CanExecuteRedo);
         }
 
-        private void AddBinding(RoutedCommand command, EventHandler<ExecutedRoutedEventArgs> handler, EventHandler<CanExecuteRoutedEventArgs> canExecuteHandler = null)
-        {
-            CommandBindings.Add(new RoutedCommandBinding(command, handler, canExecuteHandler));
-        }
+	private void AddBinding(RoutedCommand command, EventHandler<ExecutedRoutedEventArgs> handler, EventHandler<CanExecuteRoutedEventArgs> canExecuteHandler = null) => CommandBindings.Add(new RoutedCommandBinding(command, handler, canExecuteHandler));
 
-        internal static KeyBinding CreateKeyBinding(ICommand command, KeyModifiers modifiers, Key key)
-        {
-            return CreateKeyBinding(command, new KeyGesture(key, modifiers));
-        }
+	internal static KeyBinding CreateKeyBinding(ICommand command, KeyModifiers modifiers, Key key) => CreateKeyBinding(command, new KeyGesture(key, modifiers));
 
-        internal static KeyBinding CreateKeyBinding(ICommand command, KeyGesture gesture)
-        {
-            return new KeyBinding { Command = command, Gesture = gesture };
-        }
+	internal static KeyBinding CreateKeyBinding(ICommand command, KeyGesture gesture) => new KeyBinding { Command = command, Gesture = gesture };
 
-        #region Undo / Redo
+	#region Undo / Redo
 
-        private UndoStack GetUndoStack()
+	private UndoStack GetUndoStack()
         {
             var document = TextArea.Document;
             return document?.UndoStack;
@@ -128,4 +119,3 @@ namespace AvaloniaEdit.Editing
         }
         #endregion
     }
-}

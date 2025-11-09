@@ -22,8 +22,8 @@ using System.ComponentModel;
 using System.Reflection;
 using AvaloniaEdit.CodeCompletion;
 
-namespace AvaloniaEdit
-{
+namespace AvaloniaEdit;
+
     /// <summary>
     /// A container for the text editor options.
     /// </summary>
@@ -69,18 +69,15 @@ namespace AvaloniaEdit
             OnPropertyChanged(args);
         }
 
-        /// <summary>
-        /// Raises the PropertyChanged event.
-        /// </summary>
-        protected virtual void OnPropertyChanged(PropertyChangedEventArgs e)
-        {
-            PropertyChanged?.Invoke(this, e);
-        }
-        #endregion
+	/// <summary>
+	/// Raises the PropertyChanged event.
+	/// </summary>
+	protected virtual void OnPropertyChanged(PropertyChangedEventArgs e) => PropertyChanged?.Invoke(this, e);
+	#endregion
 
-        #region AccepsTab
+	#region AccepsTab
 
-        bool _acceptsTab = true;
+	bool _acceptsTab = true;
         [DefaultValue(true)]
         public virtual bool AcceptsTab
         {
@@ -745,4 +742,3 @@ namespace AvaloniaEdit
             }
         }
     }
-}

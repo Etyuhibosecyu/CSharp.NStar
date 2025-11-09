@@ -26,8 +26,8 @@ using System.Text;
 using AvaloniaEdit.Utils;
 using Avalonia.Threading;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// Interface to allow TextSegments to access the TextSegmentCollection - we cannot use a direct reference
     /// because TextSegmentCollection is generic.
@@ -88,10 +88,9 @@ namespace AvaloniaEdit.Document
         /// position of the text segments will be updated accordingly.</param>
         public TextSegmentCollection(TextDocument textDocument)
         {
-            if (textDocument == null)
-                throw new ArgumentNullException(nameof(textDocument));
+		ArgumentNullException.ThrowIfNull(textDocument);
 
-            Dispatcher.UIThread.VerifyAccess();
+		Dispatcher.UIThread.VerifyAccess();
             _isConnectedToDocument = true;
             TextDocumentWeakEventManager.Changed.AddHandler(textDocument, OnDocumentChanged);
         }
@@ -112,9 +111,8 @@ namespace AvaloniaEdit.Document
         /// <param name="e">DocumentChangeEventArgs instance describing the change to the document.</param>
         public void UpdateOffsets(DocumentChangeEventArgs e)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
-            if (_isConnectedToDocument)
+		ArgumentNullException.ThrowIfNull(e);
+		if (_isConnectedToDocument)
                 throw new InvalidOperationException("This TextSegmentCollection will automatically update offsets; do not call UpdateOffsets manually!");
             OnDocumentChanged(this, e);
             CheckProperties();
@@ -237,19 +235,15 @@ namespace AvaloniaEdit.Document
         /// </summary>
         public void Add(T item)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-            if (item.OwnerTree != null)
+		ArgumentNullException.ThrowIfNull(item);
+		if (item.OwnerTree != null)
                 throw new ArgumentException("The segment is already added to a SegmentCollection.");
             AddSegment(item);
         }
 
-        void ISegmentTree.Add(TextSegment s)
-        {
-            AddSegment(s);
-        }
+	void ISegmentTree.Add(TextSegment s) => AddSegment(s);
 
-        private void AddSegment(TextSegment node)
+	private void AddSegment(TextSegment node)
         {
             var insertionOffset = node.StartOffset;
             node.DistanceToMaxEnd = node.SegmentLength;
@@ -396,31 +390,27 @@ namespace AvaloniaEdit.Document
                 }
             }
         }
-        #endregion
+	#endregion
 
-        #region FindOverlappingSegments
-        /// <summary>
-        /// Finds all segments that contain the given offset.
-        /// (StartOffset &lt;= offset &lt;= EndOffset)
-        /// Segments are returned in the order given by GetNextSegment/GetPreviousSegment.
-        /// </summary>
-        /// <returns>Returns a new collection containing the results of the query.
-        /// This means it is safe to modify the TextSegmentCollection while iterating through the result collection.</returns>
-        public ReadOnlyCollection<T> FindSegmentsContaining(int offset)
-        {
-            return FindOverlappingSegments(offset, 0);
-        }
+	#region FindOverlappingSegments
+	/// <summary>
+	/// Finds all segments that contain the given offset.
+	/// (StartOffset &lt;= offset &lt;= EndOffset)
+	/// Segments are returned in the order given by GetNextSegment/GetPreviousSegment.
+	/// </summary>
+	/// <returns>Returns a new collection containing the results of the query.
+	/// This means it is safe to modify the TextSegmentCollection while iterating through the result collection.</returns>
+	public ReadOnlyCollection<T> FindSegmentsContaining(int offset) => FindOverlappingSegments(offset, 0);
 
-        /// <summary>
-        /// Finds all segments that overlap with the given segment (including touching segments).
-        /// </summary>
-        /// <returns>Returns a new collection containing the results of the query.
-        /// This means it is safe to modify the TextSegmentCollection while iterating through the result collection.</returns>
-        public ReadOnlyCollection<T> FindOverlappingSegments(ISegment segment)
+	/// <summary>
+	/// Finds all segments that overlap with the given segment (including touching segments).
+	/// </summary>
+	/// <returns>Returns a new collection containing the results of the query.
+	/// This means it is safe to modify the TextSegmentCollection while iterating through the result collection.</returns>
+	public ReadOnlyCollection<T> FindOverlappingSegments(ISegment segment)
         {
-            if (segment == null)
-                throw new ArgumentNullException(nameof(segment));
-            return FindOverlappingSegments(segment.Offset, segment.Length);
+		ArgumentNullException.ThrowIfNull(segment);
+		return FindOverlappingSegments(segment.Offset, segment.Length);
         }
 
         /// <summary>
@@ -523,18 +513,15 @@ namespace AvaloniaEdit.Document
             }
         }
 
-        void ISegmentTree.UpdateAugmentedData(TextSegment node)
-        {
-            UpdateAugmentedData(node);
-        }
-        #endregion
+	void ISegmentTree.UpdateAugmentedData(TextSegment node) => UpdateAugmentedData(node);
+	#endregion
 
-        #region Remove
-        /// <summary>
-        /// Removes the specified segment from the tree. This will cause the segment to not update
-        /// anymore when the document changes.
-        /// </summary>
-        public bool Remove(T item)
+	#region Remove
+	/// <summary>
+	/// Removes the specified segment from the tree. This will cause the segment to not update
+	/// anymore when the document changes.
+	/// </summary>
+	public bool Remove(T item)
         {
             if (!Contains(item))
                 return false;
@@ -542,12 +529,9 @@ namespace AvaloniaEdit.Document
             return true;
         }
 
-        void ISegmentTree.Remove(TextSegment s)
-        {
-            RemoveSegment(s);
-        }
+	void ISegmentTree.Remove(TextSegment s) => RemoveSegment(s);
 
-        private void RemoveSegment(TextSegment s)
+	private void RemoveSegment(TextSegment s)
         {
             var oldOffset = s.StartOffset;
             var successor = s.Successor;
@@ -635,12 +619,12 @@ namespace AvaloniaEdit.Document
         }
 
         /*
-		1. A node is either red or black.
-		2. The root is black.
-		3. All leaves are black. (The leaves are the NIL children.)
-		4. Both children of every red node are black. (So every red node must have a black parent.)
-		5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
-		 */
+	1. A node is either red or black.
+	2. The root is black.
+	3. All leaves are black. (The leaves are the NIL children.)
+	4. Both children of every red node are black. (So every red node must have a black parent.)
+	5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
+	 */
         [SuppressMessage("ReSharper", "UnusedParameter.Local")]
         private static void CheckNodeProperties(TextSegment node, TextSegment parentNode, bool parentColor, int blackCount, ref int expectedBlackCount)
         {
@@ -696,7 +680,7 @@ namespace AvaloniaEdit.Document
                 AppendTreeToString(_root, b, 0);
             return b.ToString();
 #else
-			return "Not available in release build.";
+		return "Not available in release build.";
 #endif
         }
         #endregion
@@ -980,12 +964,9 @@ namespace AvaloniaEdit.Document
             UpdateAugmentedData(q);
         }
 
-        private static TextSegment Sibling(TextSegment node)
-        {
-            return node == node.Parent.Left ? node.Parent.Right : node.Parent.Left;
-        }
+	private static TextSegment Sibling(TextSegment node) => node == node.Parent.Left ? node.Parent.Right : node.Parent.Left;
 
-        private static TextSegment Sibling(TextSegment node, TextSegment parentNode)
+	private static TextSegment Sibling(TextSegment node, TextSegment parentNode)
         {
             Debug.Assert(node == null || node.Parent == parentNode);
             if (node == parentNode.Left)
@@ -994,36 +975,29 @@ namespace AvaloniaEdit.Document
                 return parentNode.Left;
         }
 
-        private static bool GetColor(TextSegment node)
-        {
-            return node != null && node.Color;
-        }
-        #endregion
+	private static bool GetColor(TextSegment node) => node != null && node.Color;
+	#endregion
 
-        #region ICollection<T> implementation
-        /// <summary>
-        /// Gets the number of segments in the tree.
-        /// </summary>
-        public int Count { get; private set; }
+	#region ICollection<T> implementation
+	/// <summary>
+	/// Gets the number of segments in the tree.
+	/// </summary>
+	public int Count { get; private set; }
 
         bool ICollection<T>.IsReadOnly => false;
 
-        /// <summary>
-        /// Gets whether this tree contains the specified item.
-        /// </summary>
-        public bool Contains(T item)
-        {
-            return item != null && item.OwnerTree == this;
-        }
+	/// <summary>
+	/// Gets whether this tree contains the specified item.
+	/// </summary>
+	public bool Contains(T item) => item != null && item.OwnerTree == this;
 
-        /// <summary>
-        /// Copies all segments in this SegmentTree to the specified array.
-        /// </summary>
-        public void CopyTo(T[] array, int arrayIndex)
+	/// <summary>
+	/// Copies all segments in this SegmentTree to the specified array.
+	/// </summary>
+	public void CopyTo(T[] array, int arrayIndex)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (array.Length < Count)
+		ArgumentNullException.ThrowIfNull(array);
+		if (array.Length < Count)
                 throw new ArgumentException("The array is too small", nameof(array));
             if (arrayIndex < 0 || arrayIndex + Count > array.Length)
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, "Value must be between 0 and " + (array.Length - Count));
@@ -1050,10 +1024,6 @@ namespace AvaloniaEdit.Document
             }
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-        #endregion
-    }
+	System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+	#endregion
 }

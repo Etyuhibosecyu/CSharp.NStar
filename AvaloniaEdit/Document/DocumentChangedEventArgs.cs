@@ -1,7 +1,7 @@
 ﻿using System;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     public class DocumentChangedEventArgs : EventArgs
     {
         /// <summary>
@@ -22,4 +22,3 @@ namespace AvaloniaEdit.Document
             NewDocument = newDocument;
         }
     }
-}

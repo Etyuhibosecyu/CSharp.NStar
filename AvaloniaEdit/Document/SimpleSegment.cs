@@ -21,8 +21,8 @@ using System.Diagnostics;
 using System.Globalization;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// Represents a simple segment (Offset,Length pair) that is not automatically updated
     /// on document changes.
@@ -71,17 +71,11 @@ namespace AvaloniaEdit.Document
             }
         }
 
-        public override bool Equals(object obj)
-        {
-            return (obj is SimpleSegment) && Equals((SimpleSegment)obj);
-        }
+	public override bool Equals(object obj) => (obj is SimpleSegment) && Equals((SimpleSegment)obj);
 
-        public bool Equals(SimpleSegment other)
-        {
-            return Offset == other.Offset && Length == other.Length;
-        }
+	public bool Equals(SimpleSegment other) => Offset == other.Offset && Length == other.Length;
 
-        public static bool operator ==(SimpleSegment left, SimpleSegment right)
+	public static bool operator ==(SimpleSegment left, SimpleSegment right)
         {
             return left.Equals(right);
         }
@@ -91,12 +85,9 @@ namespace AvaloniaEdit.Document
             return !left.Equals(right);
         }
 
-        /// <inheritdoc/>
-        public override string ToString()
-        {
-            return $"[Offset={Offset}, Length={Length}]";
-        }
-    }
+	/// <inheritdoc/>
+	public override string ToString() => $"[Offset={Offset}, Length={Length}]";
+}
 
     /// <summary>
     /// A segment using <see cref="TextAnchor"/>s as start and end positions.
@@ -129,11 +120,9 @@ namespace AvaloniaEdit.Document
         /// </summary>
         public AnchorSegment(TextAnchor start, TextAnchor end)
         {
-            if (start == null)
-                throw new ArgumentNullException(nameof(start));
-            if (end == null)
-                throw new ArgumentNullException(nameof(end));
-            if (!start.SurviveDeletion)
+		ArgumentNullException.ThrowIfNull(start);
+		ArgumentNullException.ThrowIfNull(end);
+		if (!start.SurviveDeletion)
                 throw new ArgumentException("Anchors for AnchorSegment must use SurviveDeletion", nameof(start));
             if (!end.SurviveDeletion)
                 throw new ArgumentException("Anchors for AnchorSegment must use SurviveDeletion", nameof(end));
@@ -162,10 +151,6 @@ namespace AvaloniaEdit.Document
             _end.MovementType = AnchorMovementType.BeforeInsertion;
         }
 
-        /// <inheritdoc/>
-        public override string ToString()
-        {
-            return "[Offset=" + Offset.ToString(CultureInfo.InvariantCulture) + ", EndOffset=" + EndOffset.ToString(CultureInfo.InvariantCulture) + "]";
-        }
-    }
+	/// <inheritdoc/>
+	public override string ToString() => "[Offset=" + Offset.ToString(CultureInfo.InvariantCulture) + ", EndOffset=" + EndOffset.ToString(CultureInfo.InvariantCulture) + "]";
 }

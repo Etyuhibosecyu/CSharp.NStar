@@ -20,73 +20,59 @@ using AvaloniaEdit.Rendering;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 
-namespace AvaloniaEdit.Highlighting
+namespace AvaloniaEdit.Highlighting;
+
+/// <summary>
+/// A brush used for syntax highlighting. Can retrieve a real brush on-demand.
+/// </summary>
+public abstract class HighlightingBrush
 {
 	/// <summary>
-	/// A brush used for syntax highlighting. Can retrieve a real brush on-demand.
+	/// Gets the real brush.
 	/// </summary>
-	public abstract class HighlightingBrush
-	{
-		/// <summary>
-		/// Gets the real brush.
-		/// </summary>
-		/// <param name="context">The construction context. context can be null!</param>
-		public abstract IBrush GetBrush(ITextRunConstructionContext context);
-		
-		/// <summary>
-		/// Gets the color of the brush.
-		/// </summary>
-		/// <param name="context">The construction context. context can be null!</param>
-		public virtual Color? GetColor(ITextRunConstructionContext context)
-		{
-		    if (GetBrush(context) is ISolidColorBrush scb)
-                return scb.Color;
-		    return null;
-		}
-	}
+	/// <param name="context">The construction context. context can be null!</param>
+	public abstract IBrush GetBrush(ITextRunConstructionContext context);
 	
 	/// <summary>
-	/// Highlighting brush implementation that takes a frozen brush.
+	/// Gets the color of the brush.
 	/// </summary>
-	public sealed class SimpleHighlightingBrush : HighlightingBrush
+	/// <param name="context">The construction context. context can be null!</param>
+	public virtual Color? GetColor(ITextRunConstructionContext context)
 	{
-	    private readonly ISolidColorBrush _brush;
-		
-		internal SimpleHighlightingBrush(ISolidColorBrush brush)
-		{
-			_brush = brush;
-		}
-		
-		/// <summary>
-		/// Creates a new HighlightingBrush with the specified color.
-		/// </summary>
-		public SimpleHighlightingBrush(Color color) : this(new ImmutableSolidColorBrush(color)) {}
-		
-		/// <inheritdoc/>
-		public override IBrush GetBrush(ITextRunConstructionContext context)
-		{
-			return _brush;
-		}
-
-		/// <inheritdoc/>
-		public override string ToString()
-		{
-			return _brush.ToString();
-		}
-		
-		/// <inheritdoc/>
-		public override bool Equals(object obj)
-		{
-			SimpleHighlightingBrush other = obj as SimpleHighlightingBrush;
-			if (other == null)
-				return false;
-			return _brush.Color.Equals(other._brush.Color);
-		}
-		
-		/// <inheritdoc/>
-		public override int GetHashCode()
-		{
-			return _brush.Color.GetHashCode();
-		}
+	    if (GetBrush(context) is ISolidColorBrush scb)
+                return scb.Color;
+	    return null;
 	}
+}
+
+/// <summary>
+/// Highlighting brush implementation that takes a frozen brush.
+/// </summary>
+public sealed class SimpleHighlightingBrush : HighlightingBrush
+{
+    private readonly ISolidColorBrush _brush;
+
+	internal SimpleHighlightingBrush(ISolidColorBrush brush) => _brush = brush;
+
+	/// <summary>
+	/// Creates a new HighlightingBrush with the specified color.
+	/// </summary>
+	public SimpleHighlightingBrush(Color color) : this(new ImmutableSolidColorBrush(color)) {}
+
+	/// <inheritdoc/>
+	public override IBrush GetBrush(ITextRunConstructionContext context) => _brush;
+
+	/// <inheritdoc/>
+	public override string ToString() => _brush.ToString();
+
+	/// <inheritdoc/>
+	public override bool Equals(object obj)
+	{
+		if (obj is not SimpleHighlightingBrush other)
+			return false;
+		return _brush.Color.Equals(other._brush.Color);
+	}
+
+	/// <inheritdoc/>
+	public override int GetHashCode() => _brush.Color.GetHashCode();
 }

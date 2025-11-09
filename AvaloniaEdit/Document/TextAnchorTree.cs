@@ -22,8 +22,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// A tree of TextAnchorNodes.
     /// </summary>
@@ -63,20 +63,14 @@ namespace AvaloniaEdit.Document
         private readonly List<TextAnchorNode> _nodesToDelete = new List<TextAnchorNode>();
         private TextAnchorNode _root;
 
-        public TextAnchorTree(TextDocument document)
-        {
-            _document = document;
-        }
+	public TextAnchorTree(TextDocument document) => _document = document;
 
-        [Conditional("DEBUG")]
-        private static void Log(string text)
-        {
-            Debug.WriteLine("TextAnchorTree: " + text);
-        }
+	[Conditional("DEBUG")]
+	private static void Log(string text) => Debug.WriteLine("TextAnchorTree: " + text);
 
-        #region Insert Text
+	#region Insert Text
 
-        private void InsertText(int offset, int length, bool defaultAnchorMovementIsBeforeInsertion)
+	private void InsertText(int offset, int length, bool defaultAnchorMovementIsBeforeInsertion)
         {
             if (length == 0 || _root == null || offset > _root.TotalLength)
                 return;
@@ -735,14 +729,11 @@ namespace AvaloniaEdit.Document
             return parentNode.Left;
         }
 
-        private static bool GetColor(TextAnchorNode node)
-        {
-            return node != null && node.Color;
-        }
-        #endregion
+	private static bool GetColor(TextAnchorNode node) => node != null && node.Color;
+	#endregion
 
-        #region CheckProperties
-        [Conditional("DATACONSISTENCYTEST")]
+	#region CheckProperties
+	[Conditional("DATACONSISTENCYTEST")]
         internal void CheckProperties()
         {
 #if DEBUG
@@ -776,12 +767,12 @@ namespace AvaloniaEdit.Document
         }
 
         /*
-		1. A node is either red or black.
-		2. The root is black.
-		3. All leaves are black. (The leaves are the NIL children.)
-		4. Both children of every red node are black. (So every red node must have a black parent.)
-		5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
-		 */
+	1. A node is either red or black.
+	2. The root is black.
+	3. All leaves are black. (The leaves are the NIL children.)
+	4. Both children of every red node are black. (So every red node must have a black parent.)
+	5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
+	 */
         [SuppressMessage("ReSharper", "UnusedParameter.Local")]
         private void CheckNodeProperties(TextAnchorNode node, TextAnchorNode parentNode, bool parentColor, int blackCount, ref int expectedBlackCount)
         {
@@ -844,4 +835,3 @@ namespace AvaloniaEdit.Document
 #endif
         #endregion
     }
-}

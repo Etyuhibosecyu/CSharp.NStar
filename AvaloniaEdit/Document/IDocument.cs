@@ -18,8 +18,8 @@
 
 using System;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// A document representing a source code file for refactoring.
     /// Line and column counting starts at 1.
@@ -309,12 +309,8 @@ namespace AvaloniaEdit.Document
             return offset;
         }
 
-        /// <summary>
-        /// Creates TextChangeEventArgs for the reverse change.
-        /// </summary>
-        public virtual TextChangeEventArgs Invert()
-        {
-            return new TextChangeEventArgs(Offset, InsertedText, RemovedText);
-        }
-    }
+	/// <summary>
+	/// Creates TextChangeEventArgs for the reverse change.
+	/// </summary>
+	public virtual TextChangeEventArgs Invert() => new TextChangeEventArgs(Offset, InsertedText, RemovedText);
 }

@@ -22,8 +22,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// Undo stack implementation.
     /// </summary>
@@ -165,22 +165,19 @@ namespace AvaloniaEdit.Document
         /// want to join the undo groups.</remarks>
         public object LastGroupDescriptor { get; private set; }
 
-        /// <summary>
-        /// Starts grouping changes.
-        /// Maintains a counter so that nested calls are possible.
-        /// </summary>
-        public void StartUndoGroup()
-        {
-            StartUndoGroup(null);
-        }
+	/// <summary>
+	/// Starts grouping changes.
+	/// Maintains a counter so that nested calls are possible.
+	/// </summary>
+	public void StartUndoGroup() => StartUndoGroup(null);
 
-        /// <summary>
-        /// Starts grouping changes.
-        /// Maintains a counter so that nested calls are possible.
-        /// </summary>
-        /// <param name="groupDescriptor">An object that is stored with the undo group.
-        /// If this is not a top-level undo group, the parameter is ignored.</param>
-        public void StartUndoGroup(object groupDescriptor)
+	/// <summary>
+	/// Starts grouping changes.
+	/// Maintains a counter so that nested calls are possible.
+	/// </summary>
+	/// <param name="groupDescriptor">An object that is stored with the undo group.
+	/// If this is not a top-level undo group, the parameter is ignored.</param>
+	public void StartUndoGroup(object groupDescriptor)
         {
             if (_undoGroupDepth == 0)
             {
@@ -366,23 +363,20 @@ namespace AvaloniaEdit.Document
                 op.Redo();
         }
 
-        /// <summary>
-        /// Call this method to push an UndoableOperation on the undostack.
-        /// The redostack will be cleared if you use this method.
-        /// </summary>
-        public void Push(IUndoableOperation operation)
-        {
-            Push(operation, false);
-        }
+	/// <summary>
+	/// Call this method to push an UndoableOperation on the undostack.
+	/// The redostack will be cleared if you use this method.
+	/// </summary>
+	public void Push(IUndoableOperation operation) => Push(operation, false);
 
-        /// <summary>
-        /// Call this method to push an UndoableOperation on the undostack.
-        /// However, the operation will be only stored if the undo group contains a
-        /// non-optional operation.
-        /// Use this method to store the caret position/selection on the undo stack to
-        /// prevent having only actions that affect only the caret and not the document.
-        /// </summary>
-        public void PushOptional(IUndoableOperation operation)
+	/// <summary>
+	/// Call this method to push an UndoableOperation on the undostack.
+	/// However, the operation will be only stored if the undo group contains a
+	/// non-optional operation.
+	/// Use this method to store the caret position/selection on the undo stack to
+	/// prevent having only actions that affect only the caret and not the document.
+	/// </summary>
+	public void PushOptional(IUndoableOperation operation)
         {
             if (_undoGroupDepth == 0)
                 throw new InvalidOperationException("Cannot use PushOptional outside of undo group");
@@ -391,12 +385,9 @@ namespace AvaloniaEdit.Document
 
         private void Push(IUndoableOperation operation, bool isOptional)
         {
-            if (operation == null)
-            {
-                throw new ArgumentNullException(nameof(operation));
-            }
+		ArgumentNullException.ThrowIfNull(operation);
 
-            if (State == StateListen && _sizeLimit > 0)
+		if (State == StateListen && _sizeLimit > 0)
             {
                 var wasEmpty = _undostack.Count == 0;
 
@@ -469,4 +460,3 @@ namespace AvaloniaEdit.Document
             PropertyChanged?.Invoke(this, args);
         }
     }
-}

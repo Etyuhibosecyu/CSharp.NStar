@@ -18,8 +18,8 @@
 
 using System;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// Describes a change of the document text.
     /// This class is thread-safe.
@@ -46,15 +46,12 @@ namespace AvaloniaEdit.Document
             }
         }
 
-        internal OffsetChangeMapEntry CreateSingleChangeMapEntry()
-        {
-            return new OffsetChangeMapEntry(Offset, RemovalLength, InsertionLength);
-        }
+	internal OffsetChangeMapEntry CreateSingleChangeMapEntry() => new OffsetChangeMapEntry(Offset, RemovalLength, InsertionLength);
 
-        /// <summary>
-        /// Gets the OffsetChangeMap, or null if the default offset map (=single replacement) is being used.
-        /// </summary>
-        internal OffsetChangeMap OffsetChangeMapOrNull { get; private set; }
+	/// <summary>
+	/// Gets the OffsetChangeMap, or null if the default offset map (=single replacement) is being used.
+	/// </summary>
+	internal OffsetChangeMap OffsetChangeMapOrNull { get; private set; }
 
         /// <summary>
         /// Gets the new offset where the specified offset moves after this document change.
@@ -74,25 +71,19 @@ namespace AvaloniaEdit.Document
         {
         }
 
-        /// <summary>
-        /// Creates a new DocumentChangeEventArgs object.
-        /// </summary>
-        public DocumentChangeEventArgs(int offset, string removedText, string insertedText, OffsetChangeMap offsetChangeMap)
-            : base(offset, removedText, insertedText)
-        {
-            SetOffsetChangeMap(offsetChangeMap);
-        }
+	/// <summary>
+	/// Creates a new DocumentChangeEventArgs object.
+	/// </summary>
+	public DocumentChangeEventArgs(int offset, string removedText, string insertedText, OffsetChangeMap offsetChangeMap)
+		: base(offset, removedText, insertedText) => SetOffsetChangeMap(offsetChangeMap);
 
-        /// <summary>
-        /// Creates a new DocumentChangeEventArgs object.
-        /// </summary>
-        public DocumentChangeEventArgs(int offset, ITextSource removedText, ITextSource insertedText, OffsetChangeMap offsetChangeMap)
-            : base(offset, removedText, insertedText)
-        {
-            SetOffsetChangeMap(offsetChangeMap);
-        }
+	/// <summary>
+	/// Creates a new DocumentChangeEventArgs object.
+	/// </summary>
+	public DocumentChangeEventArgs(int offset, ITextSource removedText, ITextSource insertedText, OffsetChangeMap offsetChangeMap)
+		: base(offset, removedText, insertedText) => SetOffsetChangeMap(offsetChangeMap);
 
-        private void SetOffsetChangeMap(OffsetChangeMap offsetChangeMap)
+	private void SetOffsetChangeMap(OffsetChangeMap offsetChangeMap)
         {
             if (offsetChangeMap != null)
             {
@@ -116,4 +107,3 @@ namespace AvaloniaEdit.Document
             return new DocumentChangeEventArgs(Offset, InsertedText, RemovedText, map);
         }
     }
-}

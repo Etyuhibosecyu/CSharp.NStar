@@ -24,22 +24,19 @@ using System.Diagnostics;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
 
-namespace AvaloniaEdit.Rendering
-{
+namespace AvaloniaEdit.Rendering;
+
     /// <summary>
     /// VisualLineElement that represents a piece of text and is a clickable link.
     /// </summary>
     public class VisualLineLinkText : VisualLineText
     {
-        static VisualLineLinkText()
-        {
-            OpenUriEvent.AddClassHandler<Window>(ExecuteOpenUriEventHandler);
-        }
+	static VisualLineLinkText() => OpenUriEvent.AddClassHandler<Window>(ExecuteOpenUriEventHandler);
 
-        /// <summary>
-        /// Routed event that should navigate to uri when the link is clicked.
-        /// </summary>
-        public static RoutedEvent<OpenUriRoutedEventArgs> OpenUriEvent { get; } = RoutedEvent.Register<VisualLineText,OpenUriRoutedEventArgs>(nameof(OpenUriEvent), RoutingStrategies.Bubble);
+	/// <summary>
+	/// Routed event that should navigate to uri when the link is clicked.
+	/// </summary>
+	public static RoutedEvent<OpenUriRoutedEventArgs> OpenUriEvent { get; } = RoutedEvent.Register<VisualLineText,OpenUriRoutedEventArgs>(nameof(OpenUriEvent), RoutingStrategies.Bubble);
 
         /// <summary>
         /// Gets/Sets the URL that is navigated to when the link is clicked.
@@ -57,25 +54,22 @@ namespace AvaloniaEdit.Rendering
         /// </summary>
         public bool RequireControlModifierForClick { get; set; }
 
-        /// <summary>
-        /// Creates a visual line text element with the specified length.
-        /// It uses the <see cref="ITextRunConstructionContext.VisualLine"/> and its
-        /// <see cref="VisualLineElement.RelativeTextOffset"/> to find the actual text string.
-        /// </summary>
-        public VisualLineLinkText(VisualLine parentVisualLine, int length) : base(parentVisualLine, length)
-        {
-            RequireControlModifierForClick = true;
-        }
+	/// <summary>
+	/// Creates a visual line text element with the specified length.
+	/// It uses the <see cref="ITextRunConstructionContext.VisualLine"/> and its
+	/// <see cref="VisualLineElement.RelativeTextOffset"/> to find the actual text string.
+	/// </summary>
+	public VisualLineLinkText(VisualLine parentVisualLine, int length) : base(parentVisualLine, length) => RequireControlModifierForClick = true;
 
-		/// <inheritdoc/>
-		public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)
-		{
-			this.TextRunProperties.SetForegroundBrush(context.TextView.LinkTextForegroundBrush);
-			this.TextRunProperties.SetBackgroundBrush(context.TextView.LinkTextBackgroundBrush);
-			if (context.TextView.LinkTextUnderline)
-				this.TextRunProperties.SetTextDecorations(TextDecorations.Underline);
-			return base.CreateTextRun(startVisualColumn, context);
-		}
+	/// <inheritdoc/>
+	public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)
+	{
+		this.TextRunProperties.SetForegroundBrush(context.TextView.LinkTextForegroundBrush);
+		this.TextRunProperties.SetBackgroundBrush(context.TextView.LinkTextBackgroundBrush);
+		if (context.TextView.LinkTextUnderline)
+			this.TextRunProperties.SetTextDecorations(TextDecorations.Underline);
+		return base.CreateTextRun(startVisualColumn, context);
+	}
 
         /// <summary>
         /// Gets whether the link is currently clickable.
@@ -120,18 +114,15 @@ namespace AvaloniaEdit.Rendering
             }
         }
 
-        /// <inheritdoc/>
-        protected override VisualLineText CreateInstance(int length)
-        {
-            return new VisualLineLinkText(ParentVisualLine, length)
-            {
-                NavigateUri = NavigateUri,
-                TargetName = TargetName,
-                RequireControlModifierForClick = RequireControlModifierForClick
-            };
-        }
+	/// <inheritdoc/>
+	protected override VisualLineText CreateInstance(int length) => new VisualLineLinkText(ParentVisualLine, length)
+	{
+		NavigateUri = NavigateUri,
+		TargetName = TargetName,
+		RequireControlModifierForClick = RequireControlModifierForClick
+	};
 
-        private static void ExecuteOpenUriEventHandler(Window window, OpenUriRoutedEventArgs arg)
+	private static void ExecuteOpenUriEventHandler(Window window, OpenUriRoutedEventArgs arg)
         {
             var url = arg.Uri.ToString();
             try
@@ -154,9 +145,5 @@ namespace AvaloniaEdit.Rendering
     {
         public Uri Uri { get; }
 
-        public OpenUriRoutedEventArgs(Uri uri)
-        {
-            Uri = uri ?? throw new ArgumentNullException(nameof(uri));
-        }
-    }
+	public OpenUriRoutedEventArgs(Uri uri) => Uri = uri ?? throw new ArgumentNullException(nameof(uri));
 }

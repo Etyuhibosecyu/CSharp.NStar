@@ -18,8 +18,8 @@
 
 using AvaloniaEdit.Document;
 
-namespace AvaloniaEdit.Snippets
-{
+namespace AvaloniaEdit.Snippets;
+
     /// <summary>
     /// Creates a named anchor that can be accessed by other SnippetElements.
     /// </summary>
@@ -30,16 +30,13 @@ namespace AvaloniaEdit.Snippets
         /// </summary>
         public string Name { get; }
 
-        /// <summary>
-        /// Creates a SnippetAnchorElement with the supplied name.
-        /// </summary>
-        public SnippetAnchorElement(string name)
-        {
-            Name = name;
-        }
+	/// <summary>
+	/// Creates a SnippetAnchorElement with the supplied name.
+	/// </summary>
+	public SnippetAnchorElement(string name) => Name = name;
 
-        /// <inheritdoc />
-        public override void Insert(InsertionContext context)
+	/// <inheritdoc />
+	public override void Insert(InsertionContext context)
         {
             var start = context.Document.CreateAnchor(context.InsertionPosition);
             start.MovementType = AnchorMovementType.BeforeInsertion;
@@ -107,4 +104,3 @@ namespace AvaloniaEdit.Snippets
         {
         }
     }
-}

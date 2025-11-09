@@ -16,32 +16,28 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-namespace AvaloniaEdit.Highlighting.Xshd
+namespace AvaloniaEdit.Highlighting.Xshd;
+
+/// <summary>
+/// &lt;Rule&gt; element.
+/// </summary>
+public class XshdRule : XshdElement
 {
 	/// <summary>
-	/// &lt;Rule&gt; element.
+	/// Gets/sets the rule regex.
 	/// </summary>
-	public class XshdRule : XshdElement
-	{
-		/// <summary>
-		/// Gets/sets the rule regex.
-		/// </summary>
-		public string Regex { get; set; }
-		
-		/// <summary>
-		/// Gets/sets the rule regex type.
-		/// </summary>
-		public XshdRegexType RegexType { get; set; }
-		
-		/// <summary>
-		/// Gets/sets the color reference.
-		/// </summary>
-		public XshdReference<XshdColor> ColorReference { get; set; }
-		
-		/// <inheritdoc/>
-		public override object AcceptVisitor(IXshdVisitor visitor)
-		{
-			return visitor.VisitRule(this);
-		}
-	}
+	public string Regex { get; set; }
+	
+	/// <summary>
+	/// Gets/sets the rule regex type.
+	/// </summary>
+	public XshdRegexType RegexType { get; set; }
+	
+	/// <summary>
+	/// Gets/sets the color reference.
+	/// </summary>
+	public XshdReference<XshdColor> ColorReference { get; set; }
+
+	/// <inheritdoc/>
+	public override object AcceptVisitor(IXshdVisitor visitor) => visitor.VisitRule(this);
 }

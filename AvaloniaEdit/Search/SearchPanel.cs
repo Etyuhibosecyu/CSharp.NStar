@@ -30,8 +30,8 @@ using AvaloniaEdit.Editing;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Search
-{
+namespace AvaloniaEdit.Search;
+
     /// <summary>
     /// Provides search functionality for AvalonEdit. It is displayed in the top-right corner of the TextArea.
     /// </summary>
@@ -183,8 +183,8 @@ namespace AvaloniaEdit.Search
         /// <remarks>This is a convenience wrapper.</remarks>
         public static SearchPanel Install(TextEditor editor)
         {
-            if (editor == null) throw new ArgumentNullException(nameof(editor));
-            if (editor.TextArea == null) throw new ArgumentNullException(nameof(editor.TextArea));
+		ArgumentNullException.ThrowIfNull(editor);
+		if (editor.TextArea == null) throw new ArgumentNullException(nameof(editor.TextArea));
 
             TextArea textArea = editor.TextArea;
 
@@ -197,18 +197,15 @@ namespace AvaloniaEdit.Search
             return panel;
         }
 
-        /// <summary>
-        /// Adds the commands used by SearchPanel to the given CommandBindingCollection.
-        /// </summary>
-        public void RegisterCommands(ICollection<RoutedCommandBinding> commandBindings)
-        {
-            _handler.RegisterGlobalCommands(commandBindings);
-        }
+	/// <summary>
+	/// Adds the commands used by SearchPanel to the given CommandBindingCollection.
+	/// </summary>
+	public void RegisterCommands(ICollection<RoutedCommandBinding> commandBindings) => _handler.RegisterGlobalCommands(commandBindings);
 
-        /// <summary>
-        /// Removes the SearchPanel from the TextArea.
-        /// </summary>
-        public void Uninstall()
+	/// <summary>
+	/// Removes the SearchPanel from the TextArea.
+	/// </summary>
+	public void Uninstall()
         {
             Close();
             _textArea.DocumentChanged -= TextArea_DocumentChanged;
@@ -263,12 +260,9 @@ namespace AvaloniaEdit.Search
             }
         }
 
-        private void TextArea_Document_TextChanged(object sender, EventArgs e)
-        {
-            DoSearch(false);
-        }
+	private void TextArea_Document_TextChanged(object sender, EventArgs e) => DoSearch(false);
 
-        protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+	protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             base.OnApplyTemplate(e);
             _border = e.NameScope.Find<Border>("PART_Border");
@@ -638,15 +632,12 @@ namespace AvaloniaEdit.Search
         /// </summary>
         public event EventHandler<SearchOptionsChangedEventArgs> SearchOptionsChanged;
 
-        /// <summary>
-        /// Raises the <see cref="SearchOptionsChanged" /> event.
-        /// </summary>
-        protected virtual void OnSearchOptionsChanged(SearchOptionsChangedEventArgs e)
-        {
-            SearchOptionsChanged?.Invoke(this, e);
-        }
+	/// <summary>
+	/// Raises the <see cref="SearchOptionsChanged" /> event.
+	/// </summary>
+	protected virtual void OnSearchOptionsChanged(SearchOptionsChangedEventArgs e) => SearchOptionsChanged?.Invoke(this, e);
 
-        public IList<RoutedCommandBinding> CommandBindings { get; } = new List<RoutedCommandBinding>();
+	public IList<RoutedCommandBinding> CommandBindings { get; } = new List<RoutedCommandBinding>();
     }
 
     /// <summary>
@@ -685,4 +676,3 @@ namespace AvaloniaEdit.Search
             WholeWords = wholeWords;
         }
     }
-}

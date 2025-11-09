@@ -26,8 +26,8 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-namespace AvaloniaEdit.Utils
-{
+namespace AvaloniaEdit.Utils;
+
     /// <summary>
     /// A kind of List&lt;T&gt;, but more efficient for random insertions/removal.
     /// Also has cheap Clone() and SubRope() implementations.
@@ -65,9 +65,8 @@ namespace AvaloniaEdit.Utils
         /// <exception cref="ArgumentNullException">input is null.</exception>
         public Rope(IEnumerable<T> input)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
-            if (input is Rope<T> inputRope)
+		ArgumentNullException.ThrowIfNull(input);
+		if (input is Rope<T> inputRope)
             {
                 // clone ropes instead of copying them
                 inputRope.Root.Publish();
@@ -134,9 +133,8 @@ namespace AvaloniaEdit.Utils
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public Rope(int length, Func<Rope<T>> initializer)
         {
-            if (initializer == null)
-                throw new ArgumentNullException(nameof(initializer));
-            if (length < 0)
+		ArgumentNullException.ThrowIfNull(initializer);
+		if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), length, "Length must not be negative");
             Root = length == 0 ? RopeNode<T>.EmptyRopeNode : new FunctionNode<T>(length, initializer);
             Root.CheckInvariants();
@@ -165,16 +163,13 @@ namespace AvaloniaEdit.Utils
             return new Rope<T>(Root);
         }
 
-        object ICloneable.Clone()
-        {
-            return Clone();
-        }
+	object ICloneable.Clone() => Clone();
 
-        /// <summary>
-        /// Resets the rope to an empty list.
-        /// Runs in O(1).
-        /// </summary>
-        public void Clear()
+	/// <summary>
+	/// Resets the rope to an empty list.
+	/// Runs in O(1).
+	/// </summary>
+	public void Clear()
         {
             Root = RopeNode<T>.EmptyRopeNode;
             OnChanged();
@@ -210,9 +205,8 @@ namespace AvaloniaEdit.Utils
             {
                 throw new ArgumentOutOfRangeException(nameof(index), index, "0 <= index <= " + Length.ToString(CultureInfo.InvariantCulture));
             }
-            if (newElements == null)
-                throw new ArgumentNullException(nameof(newElements));
-            newElements.Root.Publish();
+		ArgumentNullException.ThrowIfNull(newElements);
+		newElements.Root.Publish();
             Root = Root.Insert(index, newElements.Root);
             OnChanged();
         }
@@ -225,9 +219,8 @@ namespace AvaloniaEdit.Utils
         /// <exception cref="ArgumentOutOfRangeException">index or length is outside the valid range.</exception>
         public void InsertRange(int index, IEnumerable<T> newElements)
         {
-            if (newElements == null)
-                throw new ArgumentNullException(nameof(newElements));
-            if (newElements is Rope<T> newElementsRope)
+		ArgumentNullException.ThrowIfNull(newElements);
+		if (newElements is Rope<T> newElementsRope)
             {
                 InsertRange(index, newElementsRope);
             }
@@ -258,42 +251,33 @@ namespace AvaloniaEdit.Utils
             }
         }
 
-        /// <summary>
-        /// Appends multiple elements to the end of this rope.
-        /// Runs in O(lg N + M), where N is the length of this rope and M is the number of new elements.
-        /// </summary>
-        /// <exception cref="ArgumentNullException">newElements is null.</exception>
-        public void AddRange(IEnumerable<T> newElements)
-        {
-            InsertRange(Length, newElements);
-        }
+	/// <summary>
+	/// Appends multiple elements to the end of this rope.
+	/// Runs in O(lg N + M), where N is the length of this rope and M is the number of new elements.
+	/// </summary>
+	/// <exception cref="ArgumentNullException">newElements is null.</exception>
+	public void AddRange(IEnumerable<T> newElements) => InsertRange(Length, newElements);
 
-        /// <summary>
-        /// Appends another rope to the end of this rope.
-        /// Runs in O(lg N + lg M), plus a per-node cost as if <c>newElements.Clone()</c> was called.
-        /// </summary>
-        /// <exception cref="ArgumentNullException">newElements is null.</exception>
-        public void AddRange(Rope<T> newElements)
-        {
-            InsertRange(Length, newElements);
-        }
+	/// <summary>
+	/// Appends another rope to the end of this rope.
+	/// Runs in O(lg N + lg M), plus a per-node cost as if <c>newElements.Clone()</c> was called.
+	/// </summary>
+	/// <exception cref="ArgumentNullException">newElements is null.</exception>
+	public void AddRange(Rope<T> newElements) => InsertRange(Length, newElements);
 
-        /// <summary>
-        /// Appends new elements to the end of this rope.
-        /// Runs in O(lg N + M), where N is the length of this rope and M is the number of new elements.
-        /// </summary>
-        /// <exception cref="ArgumentNullException">array is null.</exception>
-        public void AddRange(T[] array, int arrayIndex, int count)
-        {
-            InsertRange(Length, array, arrayIndex, count);
-        }
+	/// <summary>
+	/// Appends new elements to the end of this rope.
+	/// Runs in O(lg N + M), where N is the length of this rope and M is the number of new elements.
+	/// </summary>
+	/// <exception cref="ArgumentNullException">array is null.</exception>
+	public void AddRange(T[] array, int arrayIndex, int count) => InsertRange(Length, array, arrayIndex, count);
 
-        /// <summary>
-        /// Removes a range of elements from the rope.
-        /// Runs in O(lg N).
-        /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">offset or length is outside the valid range.</exception>
-        public void RemoveRange(int index, int count)
+	/// <summary>
+	/// Removes a range of elements from the rope.
+	/// Runs in O(lg N).
+	/// </summary>
+	/// <exception cref="ArgumentOutOfRangeException">offset or length is outside the valid range.</exception>
+	public void RemoveRange(int index, int count)
         {
             VerifyRange(index, count);
             if (count > 0)
@@ -337,68 +321,68 @@ namespace AvaloniaEdit.Utils
         }
 
         /*
-		#region Equality
-		/// <summary>
-		/// Gets whether the two ropes have the same content.
-		/// Runs in O(N + M).
-		/// </summary>
-		/// <remarks>
-		/// This method counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		public bool Equals(Rope other)
-		{
-			if (other == null)
-				return false;
-			// quick detection for ropes that are clones of each other:
-			if (other.root == this.root)
+	#region Equality
+	/// <summary>
+	/// Gets whether the two ropes have the same content.
+	/// Runs in O(N + M).
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public bool Equals(Rope other)
+	{
+		if (other == null)
+			return false;
+		// quick detection for ropes that are clones of each other:
+		if (other.root == this.root)
+			return true;
+		if (other.Length != this.Length)
+			return false;
+		using (RopeTextReader a = new RopeTextReader(this, false)) {
+			using (RopeTextReader b = new RopeTextReader(other, false)) {
+				int charA, charB;
+				do {
+					charA = a.Read();
+					charB = b.Read();
+					if (charA != charB)
+						return false;
+				} while (charA != -1);
 				return true;
-			if (other.Length != this.Length)
-				return false;
-			using (RopeTextReader a = new RopeTextReader(this, false)) {
-				using (RopeTextReader b = new RopeTextReader(other, false)) {
-					int charA, charB;
-					do {
-						charA = a.Read();
-						charB = b.Read();
-						if (charA != charB)
-							return false;
-					} while (charA != -1);
-					return true;
+			}
+		}
+	}
+	
+	/// <summary>
+	/// Gets whether two ropes have the same content.
+	/// Runs in O(N + M).
+	/// </summary>
+	public override bool Equals(object obj)
+	{
+		return Equals(obj as Rope);
+	}
+	
+	/// <summary>
+	/// Calculates the hash code of the rope's content.
+	/// Runs in O(N).
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public override int GetHashCode()
+	{
+		int hashcode = 0;
+		using (RopeTextReader reader = new RopeTextReader(this, false)) {
+			unchecked {
+				int val;
+				while ((val = reader.Read()) != -1) {
+					hashcode = hashcode * 31 + val;
 				}
 			}
 		}
-		
-		/// <summary>
-		/// Gets whether two ropes have the same content.
-		/// Runs in O(N + M).
-		/// </summary>
-		public override bool Equals(object obj)
-		{
-			return Equals(obj as Rope);
-		}
-		
-		/// <summary>
-		/// Calculates the hash code of the rope's content.
-		/// Runs in O(N).
-		/// </summary>
-		/// <remarks>
-		/// This method counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		public override int GetHashCode()
-		{
-			int hashcode = 0;
-			using (RopeTextReader reader = new RopeTextReader(this, false)) {
-				unchecked {
-					int val;
-					while ((val = reader.Read()) != -1) {
-						hashcode = hashcode * 31 + val;
-					}
-				}
-			}
-			return hashcode;
-		}
-		#endregion
-		 */
+		return hashcode;
+	}
+	#endregion
+	 */
 
         /// <summary>
         /// Concatenates two ropes. The input ropes are not modified.
@@ -410,11 +394,9 @@ namespace AvaloniaEdit.Utils
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
         public static Rope<T> Concat(Rope<T> left, Rope<T> right)
         {
-            if (left == null)
-                throw new ArgumentNullException(nameof(left));
-            if (right == null)
-                throw new ArgumentNullException(nameof(right));
-            left.Root.Publish();
+		ArgumentNullException.ThrowIfNull(left);
+		ArgumentNullException.ThrowIfNull(right);
+		left.Root.Publish();
             right.Root.Publish();
             return new Rope<T>(RopeNode<T>.Concat(left.Root, right.Root));
         }
@@ -428,9 +410,8 @@ namespace AvaloniaEdit.Utils
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
         public static Rope<T> Concat(params Rope<T>[] ropes)
         {
-            if (ropes == null)
-                throw new ArgumentNullException(nameof(ropes));
-            var result = new Rope<T>();
+		ArgumentNullException.ThrowIfNull(ropes);
+		var result = new Rope<T>();
             foreach (var r in ropes)
                 result.AddRange(r);
             return result;
@@ -448,11 +429,8 @@ namespace AvaloniaEdit.Utils
                 NodeStartIndex = nodeStartOffset;
             }
 
-            internal bool IsInside(int offset)
-            {
-                return offset >= NodeStartIndex && offset < NodeStartIndex + Node.Length;
-            }
-        }
+		internal bool IsInside(int offset) => offset >= NodeStartIndex && offset < NodeStartIndex + Node.Length;
+	}
 
         // cached pointer to 'last used node', used to speed up accesses by index that are close together
         private volatile ImmutableStack<RopeCacheEntry> _lastUsedNodeStack;
@@ -495,42 +473,42 @@ namespace AvaloniaEdit.Utils
                 Root = Root.SetElement(index, value);
                 OnChanged();
                 /* Here's a try at implementing the setter using the cached node stack (UNTESTED code!).
-				 * However I don't use the code because it's complicated and doesn't integrate correctly with change notifications.
-				 * Instead, I'll use the much easier to understand recursive solution.
-				 * Oh, and it also doesn't work correctly with function nodes.
-				ImmutableStack<RopeCacheEntry> nodeStack = FindNodeUsingCache(offset);
-				RopeCacheEntry entry = nodeStack.Peek();
-				if (!entry.node.isShared) {
-					entry.node.contents[offset - entry.nodeStartOffset] = value;
-					// missing: clear the caches except for the node stack cache (e.g. ToString() cache?)
-				} else {
-					RopeNode oldNode = entry.node;
-					RopeNode newNode = oldNode.Clone();
-					newNode.contents[offset - entry.nodeStartOffset] = value;
-					for (nodeStack = nodeStack.Pop(); !nodeStack.IsEmpty; nodeStack = nodeStack.Pop()) {
-						RopeNode parentNode = nodeStack.Peek().node;
-						RopeNode newParentNode = parentNode.CloneIfShared();
-						if (newParentNode.left == oldNode) {
-							newParentNode.left = newNode;
-						} else {
-							Debug.Assert(newParentNode.right == oldNode);
-							newParentNode.right = newNode;
-						}
-						if (parentNode == newParentNode) {
-							// we were able to change the existing node (it was not shared);
-							// there's no reason to go further upwards
-							ClearCacheOnModification();
-							return;
-						} else {
-							oldNode = parentNode;
-							newNode = newParentNode;
-						}
+			 * However I don't use the code because it's complicated and doesn't integrate correctly with change notifications.
+			 * Instead, I'll use the much easier to understand recursive solution.
+			 * Oh, and it also doesn't work correctly with function nodes.
+			ImmutableStack<RopeCacheEntry> nodeStack = FindNodeUsingCache(offset);
+			RopeCacheEntry entry = nodeStack.Peek();
+			if (!entry.node.isShared) {
+				entry.node.contents[offset - entry.nodeStartOffset] = value;
+				// missing: clear the caches except for the node stack cache (e.g. ToString() cache?)
+			} else {
+				RopeNode oldNode = entry.node;
+				RopeNode newNode = oldNode.Clone();
+				newNode.contents[offset - entry.nodeStartOffset] = value;
+				for (nodeStack = nodeStack.Pop(); !nodeStack.IsEmpty; nodeStack = nodeStack.Pop()) {
+					RopeNode parentNode = nodeStack.Peek().node;
+					RopeNode newParentNode = parentNode.CloneIfShared();
+					if (newParentNode.left == oldNode) {
+						newParentNode.left = newNode;
+					} else {
+						Debug.Assert(newParentNode.right == oldNode);
+						newParentNode.right = newNode;
 					}
-					// we reached the root of the rope.
-					Debug.Assert(root == oldNode);
-					root = newNode;
-					ClearCacheOnModification();
-				}*/
+					if (parentNode == newParentNode) {
+						// we were able to change the existing node (it was not shared);
+						// there's no reason to go further upwards
+						ClearCacheOnModification();
+						return;
+					} else {
+						oldNode = parentNode;
+						newNode = newParentNode;
+					}
+				}
+				// we reached the root of the rope.
+				Debug.Assert(root == oldNode);
+				root = newNode;
+				ClearCacheOnModification();
+			}*/
             }
         }
 
@@ -643,42 +621,38 @@ namespace AvaloniaEdit.Utils
             return b.ToString();
         }
 
-        internal string GetTreeAsString()
-        {
+	internal string GetTreeAsString() =>
 #if DEBUG
-            return Root.GetTreeAsString();
+		Root.GetTreeAsString();
 #else
-			return "Not available in release build.";
+		return "Not available in release build.";
 #endif
-        }
-        #endregion
 
-        bool ICollection<T>.IsReadOnly => false;
+	#endregion
 
-        /// <summary>
-        /// Finds the first occurance of item.
-        /// Runs in O(N).
-        /// </summary>
-        /// <returns>The index of the first occurance of item, or -1 if it cannot be found.</returns>
-        /// <remarks>
-        /// This method counts as a read access and may be called concurrently to other read accesses.
-        /// </remarks>
-        public int IndexOf(T item)
-        {
-            return IndexOf(item, 0, Length);
-        }
+	bool ICollection<T>.IsReadOnly => false;
 
-        /// <summary>
-        /// Gets the index of the first occurrence the specified item.
-        /// </summary>
-        /// <param name="item">Item to search for.</param>
-        /// <param name="startIndex">Start index of the search.</param>
-        /// <param name="count">Length of the area to search.</param>
-        /// <returns>The first index where the item was found; or -1 if no occurrence was found.</returns>
-        /// <remarks>
-        /// This method counts as a read access and may be called concurrently to other read accesses.
-        /// </remarks>
-        public int IndexOf(T item, int startIndex, int count)
+	/// <summary>
+	/// Finds the first occurance of item.
+	/// Runs in O(N).
+	/// </summary>
+	/// <returns>The index of the first occurance of item, or -1 if it cannot be found.</returns>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public int IndexOf(T item) => IndexOf(item, 0, Length);
+
+	/// <summary>
+	/// Gets the index of the first occurrence the specified item.
+	/// </summary>
+	/// <param name="item">Item to search for.</param>
+	/// <param name="startIndex">Start index of the search.</param>
+	/// <param name="count">Length of the area to search.</param>
+	/// <returns>The first index where the item was found; or -1 if no occurrence was found.</returns>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public int IndexOf(T item, int startIndex, int count)
         {
             VerifyRange(startIndex, count);
 
@@ -697,24 +671,21 @@ namespace AvaloniaEdit.Utils
             return -1;
         }
 
-        /// <summary>
-        /// Gets the index of the last occurrence of the specified item in this rope.
-        /// </summary>
-        public int LastIndexOf(T item)
-        {
-            return LastIndexOf(item, 0, Length);
-        }
+	/// <summary>
+	/// Gets the index of the last occurrence of the specified item in this rope.
+	/// </summary>
+	public int LastIndexOf(T item) => LastIndexOf(item, 0, Length);
 
-        /// <summary>
-        /// Gets the index of the last occurrence of the specified item in this rope.
-        /// </summary>
-        /// <param name="item">The search item</param>
-        /// <param name="startIndex">Start index of the area to search.</param>
-        /// <param name="count">Length of the area to search.</param>
-        /// <returns>The last index where the item was found; or -1 if no occurrence was found.</returns>
-        /// <remarks>The search proceeds backwards from (startIndex+count) to startIndex.
-        /// This is different than the meaning of the parameters on Array.LastIndexOf!</remarks>
-        public int LastIndexOf(T item, int startIndex, int count)
+	/// <summary>
+	/// Gets the index of the last occurrence of the specified item in this rope.
+	/// </summary>
+	/// <param name="item">The search item</param>
+	/// <param name="startIndex">Start index of the area to search.</param>
+	/// <param name="count">Length of the area to search.</param>
+	/// <returns>The last index where the item was found; or -1 if no occurrence was found.</returns>
+	/// <remarks>The search proceeds backwards from (startIndex+count) to startIndex.
+	/// This is different than the meaning of the parameters on Array.LastIndexOf!</remarks>
+	public int LastIndexOf(T item, int startIndex, int count)
         {
             VerifyRange(startIndex, count);
 
@@ -727,77 +698,59 @@ namespace AvaloniaEdit.Utils
             return -1;
         }
 
-        /// <summary>
-        /// Inserts the item at the specified index in the rope.
-        /// Runs in O(lg N).
-        /// </summary>
-        public void Insert(int index, T item)
-        {
-            InsertRange(index, new[] { item }, 0, 1);
-        }
+	/// <summary>
+	/// Inserts the item at the specified index in the rope.
+	/// Runs in O(lg N).
+	/// </summary>
+	public void Insert(int index, T item) => InsertRange(index, new[] { item }, 0, 1);
 
-        /// <summary>
-        /// Removes a single item from the rope.
-        /// Runs in O(lg N).
-        /// </summary>
-        public void RemoveAt(int index)
-        {
-            RemoveRange(index, 1);
-        }
+	/// <summary>
+	/// Removes a single item from the rope.
+	/// Runs in O(lg N).
+	/// </summary>
+	public void RemoveAt(int index) => RemoveRange(index, 1);
 
-        /// <summary>
-        /// Appends the item at the end of the rope.
-        /// Runs in O(lg N).
-        /// </summary>
-        public void Add(T item)
-        {
-            InsertRange(Length, new[] { item }, 0, 1);
-        }
+	/// <summary>
+	/// Appends the item at the end of the rope.
+	/// Runs in O(lg N).
+	/// </summary>
+	public void Add(T item) => InsertRange(Length, new[] { item }, 0, 1);
 
-        /// <summary>
-        /// Searches the item in the rope.
-        /// Runs in O(N).
-        /// </summary>
-        /// <remarks>
-        /// This method counts as a read access and may be called concurrently to other read accesses.
-        /// </remarks>
-        public bool Contains(T item)
-        {
-            return IndexOf(item) >= 0;
-        }
+	/// <summary>
+	/// Searches the item in the rope.
+	/// Runs in O(N).
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public bool Contains(T item) => IndexOf(item) >= 0;
 
-        /// <summary>
-        /// Copies the whole content of the rope into the specified array.
-        /// Runs in O(N).
-        /// </summary>
-        /// <remarks>
-        /// This method counts as a read access and may be called concurrently to other read accesses.
-        /// </remarks>
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            CopyTo(array.AsSpan(), arrayIndex);
-        }
+	/// <summary>
+	/// Copies the whole content of the rope into the specified array.
+	/// Runs in O(N).
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public void CopyTo(T[] array, int arrayIndex) => CopyTo(array.AsSpan(), arrayIndex);
 
-        /// <summary>
-        /// Copies the whole content of the rope into the specified array.
-        /// Runs in O(N).
-        /// </summary>
-        /// <remarks>
-        /// This method counts as a read access and may be called concurrently to other read accesses.
-        /// </remarks>
-        public void CopyTo(Span<T> array, int arrayIndex)
-        {
-            CopyTo(0, array, arrayIndex, Length);
-        }
+	/// <summary>
+	/// Copies the whole content of the rope into the specified array.
+	/// Runs in O(N).
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public void CopyTo(Span<T> array, int arrayIndex) => CopyTo(0, array, arrayIndex, Length);
 
-        /// <summary>
-        /// Copies the a part of the rope into the specified array.
-        /// Runs in O(lg N + M).
-        /// </summary>
-        /// <remarks>
-        /// This method counts as a read access and may be called concurrently to other read accesses.
-        /// </remarks>
-        public void CopyTo(int index, Span<T> array, int arrayIndex, int count)
+	/// <summary>
+	/// Copies the a part of the rope into the specified array.
+	/// Runs in O(lg N + M).
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public void CopyTo(int index, Span<T> array, int arrayIndex, int count)
         {
             VerifyRange(index, count);
             VerifyArrayWithRange(array, arrayIndex, count);
@@ -890,9 +843,5 @@ namespace AvaloniaEdit.Utils
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-    }
+	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

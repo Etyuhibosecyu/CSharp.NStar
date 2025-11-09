@@ -23,8 +23,8 @@ using System.Linq;
 using Avalonia.Media;
 using AvaloniaEdit.Document;
 
-namespace AvaloniaEdit.Highlighting
-{
+namespace AvaloniaEdit.Highlighting;
+
     /// <summary>
     /// Stores rich-text formatting.
     /// </summary>
@@ -97,9 +97,8 @@ namespace AvaloniaEdit.Highlighting
         /// <param name="e">TextChangeEventArgs instance describing the change to the document.</param>
         public void UpdateOffsets(TextChangeEventArgs e)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
-            UpdateOffsets(e.GetNewOffset);
+		ArgumentNullException.ThrowIfNull(e);
+		UpdateOffsets(e.GetNewOffset);
         }
 
         /// <summary>
@@ -108,21 +107,17 @@ namespace AvaloniaEdit.Highlighting
         /// <param name="change">OffsetChangeMap instance describing the change to the document.</param>
         public void UpdateOffsets(OffsetChangeMap change)
         {
-            if (change == null)
-                throw new ArgumentNullException(nameof(change));
-            UpdateOffsets(change.GetNewOffset);
+		ArgumentNullException.ThrowIfNull(change);
+		UpdateOffsets(change.GetNewOffset);
         }
 
-        /// <summary>
-        /// Updates the start and end offsets of all segments stored in this collection.
-        /// </summary>
-        /// <param name="change">OffsetChangeMapEntry instance describing the change to the document.</param>
-        public void UpdateOffsets(OffsetChangeMapEntry change)
-        {
-            UpdateOffsets(change.GetNewOffset);
-        }
+	/// <summary>
+	/// Updates the start and end offsets of all segments stored in this collection.
+	/// </summary>
+	/// <param name="change">OffsetChangeMapEntry instance describing the change to the document.</param>
+	public void UpdateOffsets(OffsetChangeMapEntry change) => UpdateOffsets(change.GetNewOffset);
 
-        private void UpdateOffsets(Func<int, AnchorMovementType, int> updateOffset)
+	private void UpdateOffsets(Func<int, AnchorMovementType, int> updateOffset)
         {
             var readPos = 1;
             var writePos = 1;
@@ -171,19 +166,16 @@ namespace AvaloniaEdit.Highlighting
             }
         }
 
-        /// <summary>
-        /// Gets a copy of the HighlightingColor for the specified offset.
-        /// </summary>
-        public HighlightingColor GetHighlightingAt(int offset)
-        {
-            return _stateChanges[GetIndexForOffsetUseExistingSegment(offset)].Clone();
-        }
+	/// <summary>
+	/// Gets a copy of the HighlightingColor for the specified offset.
+	/// </summary>
+	public HighlightingColor GetHighlightingAt(int offset) => _stateChanges[GetIndexForOffsetUseExistingSegment(offset)].Clone();
 
-        /// <summary>
-        /// Applies the HighlightingColor to the specified range of text.
-        /// If the color specifies <c>null</c> for some properties, existing highlighting is preserved.
-        /// </summary>
-        public void ApplyHighlighting(int offset, int length, HighlightingColor color)
+	/// <summary>
+	/// Applies the HighlightingColor to the specified range of text.
+	/// If the color specifies <c>null</c> for some properties, existing highlighting is preserved.
+	/// </summary>
+	public void ApplyHighlighting(int offset, int length, HighlightingColor color)
         {
             if (color == null || color.IsEmptyForMerge)
             {
@@ -308,4 +300,3 @@ namespace AvaloniaEdit.Highlighting
         //	return runs;
         //}
     }
-}

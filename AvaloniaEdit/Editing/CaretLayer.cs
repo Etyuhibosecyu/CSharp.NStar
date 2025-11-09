@@ -24,8 +24,8 @@ using Avalonia.Threading;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     internal sealed class CaretLayer : Layer
     {
         private readonly TextArea _textArea;
@@ -80,12 +80,9 @@ namespace AvaloniaEdit.Editing
             }
         }
 
-        private void StopBlinkAnimation()
-        {
-            _caretBlinkTimer.Stop();
-        }
+	private void StopBlinkAnimation() => _caretBlinkTimer.Stop();
 
-        internal IBrush CaretBrush;
+	internal IBrush CaretBrush;
 
         public override void Render(DrawingContext drawingContext)
         {
@@ -114,4 +111,3 @@ namespace AvaloniaEdit.Editing
             }
         }
     }
-}

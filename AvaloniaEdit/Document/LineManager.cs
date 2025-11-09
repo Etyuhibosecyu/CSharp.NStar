@@ -20,8 +20,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// Creates/Deletes lines when text is inserted/removed.
     /// </summary>
@@ -38,12 +38,9 @@ namespace AvaloniaEdit.Document
         /// </summary>
         private ILineTracker[] _lineTrackers;
 
-        internal void UpdateListOfLineTrackers()
-        {
-            _lineTrackers = _document.LineTrackers.ToArray();
-        }
+	internal void UpdateListOfLineTrackers() => _lineTrackers = _document.LineTrackers.ToArray();
 
-        public LineManager(DocumentLineTree documentLineTree, TextDocument document)
+	public LineManager(DocumentLineTree documentLineTree, TextDocument document)
         {
             _document = document;
             _documentLineTree = documentLineTree;
@@ -55,47 +52,47 @@ namespace AvaloniaEdit.Document
 
         #region Change events
         /*
-		HashSet<DocumentLine> deletedLines = new HashSet<DocumentLine>();
-		readonly HashSet<DocumentLine> changedLines = new HashSet<DocumentLine>();
-		HashSet<DocumentLine> deletedOrChangedLines = new HashSet<DocumentLine>();
-		
-		/// <summary>
-		/// Gets the list of lines deleted since the last RetrieveChangedLines() call.
-		/// The returned list is unsorted.
-		/// </summary>
-		public ICollection<DocumentLine> RetrieveDeletedLines()
-		{
-			var r = deletedLines;
-			deletedLines = new HashSet<DocumentLine>();
-			return r;
-		}
-		
-		/// <summary>
-		/// Gets the list of lines changed since the last RetrieveChangedLines() call.
-		/// The returned list is sorted by line number and does not contain deleted lines.
-		/// </summary>
-		public List<DocumentLine> RetrieveChangedLines()
-		{
-			var list = (from line in changedLines
-			            where !line.IsDeleted
-			            let number = line.LineNumber
-			            orderby number
-			            select line).ToList();
-			changedLines.Clear();
-			return list;
-		}
-		
-		/// <summary>
-		/// Gets the list of lines changed since the last RetrieveDeletedOrChangedLines() call.
-		/// The returned list is not sorted.
-		/// </summary>
-		public ICollection<DocumentLine> RetrieveDeletedOrChangedLines()
-		{
-			var r = deletedOrChangedLines;
-			deletedOrChangedLines = new HashSet<DocumentLine>();
-			return r;
-		}
-		 */
+	HashSet<DocumentLine> deletedLines = new HashSet<DocumentLine>();
+	readonly HashSet<DocumentLine> changedLines = new HashSet<DocumentLine>();
+	HashSet<DocumentLine> deletedOrChangedLines = new HashSet<DocumentLine>();
+	
+	/// <summary>
+	/// Gets the list of lines deleted since the last RetrieveChangedLines() call.
+	/// The returned list is unsorted.
+	/// </summary>
+	public ICollection<DocumentLine> RetrieveDeletedLines()
+	{
+		var r = deletedLines;
+		deletedLines = new HashSet<DocumentLine>();
+		return r;
+	}
+	
+	/// <summary>
+	/// Gets the list of lines changed since the last RetrieveChangedLines() call.
+	/// The returned list is sorted by line number and does not contain deleted lines.
+	/// </summary>
+	public List<DocumentLine> RetrieveChangedLines()
+	{
+		var list = (from line in changedLines
+		            where !line.IsDeleted
+		            let number = line.LineNumber
+		            orderby number
+		            select line).ToList();
+		changedLines.Clear();
+		return list;
+	}
+	
+	/// <summary>
+	/// Gets the list of lines changed since the last RetrieveDeletedOrChangedLines() call.
+	/// The returned list is not sorted.
+	/// </summary>
+	public ICollection<DocumentLine> RetrieveDeletedOrChangedLines()
+	{
+		var r = deletedOrChangedLines;
+		deletedOrChangedLines = new HashSet<DocumentLine>();
+		return r;
+	}
+	 */
         #endregion
 
         #region Rebuild
@@ -337,4 +334,3 @@ namespace AvaloniaEdit.Document
         }
         #endregion
     }
-}

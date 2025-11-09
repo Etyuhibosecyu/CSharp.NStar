@@ -25,8 +25,8 @@ using AvaloniaEdit.Utils;
 using Avalonia.Media;
 using Avalonia.Threading;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     /// <summary>
     /// Helper class with caret-related methods.
     /// </summary>
@@ -45,11 +45,11 @@ namespace AvaloniaEdit.Editing
             _textView = textArea.TextView;
             _position = new TextViewPosition(1, 1, 0);
 
-			_caretAdorner = new CaretLayer(textArea);
-			_textView.InsertLayer(_caretAdorner, KnownLayer.Caret, LayerInsertionPosition.Replace);
-			_textView.VisualLinesChanged += TextView_VisualLinesChanged;
-			_textView.ScrollOffsetChanged += TextView_ScrollOffsetChanged;
-		}
+		_caretAdorner = new CaretLayer(textArea);
+		_textView.InsertLayer(_caretAdorner, KnownLayer.Caret, LayerInsertionPosition.Replace);
+		_textView.VisualLinesChanged += TextView_VisualLinesChanged;
+		_textView.ScrollOffsetChanged += TextView_ScrollOffsetChanged;
+	}
 
         internal void UpdateIfVisible()
         {
@@ -71,12 +71,9 @@ namespace AvaloniaEdit.Editing
             InvalidateVisualColumn();
         }
 
-        private void TextView_ScrollOffsetChanged(object sender, EventArgs e)
-        {
-            _caretAdorner?.InvalidateVisual();
-        }
+	private void TextView_ScrollOffsetChanged(object sender, EventArgs e) => _caretAdorner?.InvalidateVisual();
 
-        private TextViewPosition _position;
+	private TextViewPosition _position;
 
         /// <summary>
         /// Gets/Sets the position of the caret.
@@ -307,22 +304,18 @@ namespace AvaloniaEdit.Editing
             }
         }
 
-        private void InvalidateVisualColumn()
-        {
-            _visualColumnValid = false;
-        }
+	private void InvalidateVisualColumn() => _visualColumnValid = false;
 
-        /// <summary>
-        /// Validates the visual column of the caret using the specified visual line.
-        /// The visual line must contain the caret offset.
-        /// </summary>
-        private void RevalidateVisualColumn(VisualLine visualLine)
+	/// <summary>
+	/// Validates the visual column of the caret using the specified visual line.
+	/// The visual line must contain the caret offset.
+	/// </summary>
+	private void RevalidateVisualColumn(VisualLine visualLine)
         {
-            if (visualLine == null)
-                throw new ArgumentNullException(nameof(visualLine));
+		ArgumentNullException.ThrowIfNull(visualLine);
 
-            // mark column as validated
-            _visualColumnValid = true;
+		// mark column as validated
+		_visualColumnValid = true;
 
             var caretOffset = _textView.Document.GetOffset(_position.Location);
             var firstDocumentLineOffset = visualLine.FirstDocumentLine.Offset;
@@ -402,39 +395,39 @@ namespace AvaloniaEdit.Editing
                             lineBottom - lineTop);
         }
 
-		Rect CalcCaretOverstrikeRectangle(VisualLine visualLine)
-		{
-			if (!_visualColumnValid) {
-				RevalidateVisualColumn(visualLine);
-			}
-
-			int currentPos = _position.VisualColumn;
-			// The text being overwritten in overstrike mode is everything up to the next normal caret stop
-			int nextPos = visualLine.GetNextCaretPosition(currentPos, LogicalDirection.Forward, CaretPositioningMode.Normal, true);
-			var textLine = visualLine.GetTextLine(currentPos);
-
-			Rect r;
-			if (currentPos < visualLine.VisualLength) {
-				// If the caret is within the text, use GetTextBounds() for the text being overwritten.
-				// This is necessary to ensure the rectangle is calculated correctly in bidirectional text.
-				var textBounds = textLine.GetTextBounds(currentPos, nextPos - currentPos)[0];
-				r = textBounds.Rectangle;
-				var y = r.Y + visualLine.GetTextLineVisualYPosition(textLine, VisualYPosition.TextTop);
-				r = r.WithY(y);
-			} else {
-				// If the caret is at the end of the line (or in virtual space),
-				// use the visual X position of currentPos and nextPos (one or more of which will be in virtual space)
-				double xPos = visualLine.GetTextLineVisualXPosition(textLine, currentPos);
-				double xPos2 = visualLine.GetTextLineVisualXPosition(textLine, nextPos);
-				double lineTop = visualLine.GetTextLineVisualYPosition(textLine, VisualYPosition.TextTop);
-				double lineBottom = visualLine.GetTextLineVisualYPosition(textLine, VisualYPosition.TextBottom);
-				r = new Rect(xPos, lineTop, xPos2 - xPos, lineBottom - lineTop);
-			}
-			// If the caret is too small (e.g. in front of zero-width character), ensure it's still visible
-			if (r.Width < CaretWidth)
-				r = r.WithWidth(CaretWidth);
-			return r;
+	Rect CalcCaretOverstrikeRectangle(VisualLine visualLine)
+	{
+		if (!_visualColumnValid) {
+			RevalidateVisualColumn(visualLine);
 		}
+
+		int currentPos = _position.VisualColumn;
+		// The text being overwritten in overstrike mode is everything up to the next normal caret stop
+		int nextPos = visualLine.GetNextCaretPosition(currentPos, LogicalDirection.Forward, CaretPositioningMode.Normal, true);
+		var textLine = visualLine.GetTextLine(currentPos);
+
+		Rect r;
+		if (currentPos < visualLine.VisualLength) {
+			// If the caret is within the text, use GetTextBounds() for the text being overwritten.
+			// This is necessary to ensure the rectangle is calculated correctly in bidirectional text.
+			var textBounds = textLine.GetTextBounds(currentPos, nextPos - currentPos)[0];
+			r = textBounds.Rectangle;
+			var y = r.Y + visualLine.GetTextLineVisualYPosition(textLine, VisualYPosition.TextTop);
+			r = r.WithY(y);
+		} else {
+			// If the caret is at the end of the line (or in virtual space),
+			// use the visual X position of currentPos and nextPos (one or more of which will be in virtual space)
+			double xPos = visualLine.GetTextLineVisualXPosition(textLine, currentPos);
+			double xPos2 = visualLine.GetTextLineVisualXPosition(textLine, nextPos);
+			double lineTop = visualLine.GetTextLineVisualYPosition(textLine, VisualYPosition.TextTop);
+			double lineBottom = visualLine.GetTextLineVisualYPosition(textLine, VisualYPosition.TextBottom);
+			r = new Rect(xPos, lineTop, xPos2 - xPos, lineBottom - lineTop);
+		}
+		// If the caret is too small (e.g. in front of zero-width character), ensure it's still visible
+		if (r.Width < CaretWidth)
+			r = r.WithWidth(CaretWidth);
+		return r;
+	}
 
         /// <summary>
         /// Returns the caret rectangle. The coordinate system is in device-independent pixels from the top of the document.
@@ -454,15 +447,12 @@ namespace AvaloniaEdit.Editing
         /// </summary>
         internal const double MinimumDistanceToViewBorder = 0;
 
-        /// <summary>
-        /// Scrolls the text view so that the caret is visible.
-        /// </summary>
-        public void BringCaretToView()
-        {
-            BringCaretToView(0);
-        }
+	/// <summary>
+	/// Scrolls the text view so that the caret is visible.
+	/// </summary>
+	public void BringCaretToView() => BringCaretToView(0);
 
-        public void BringCaretToView(double border)
+	public void BringCaretToView(double border)
         {
             var caretRectangle = CalculateCaretRectangle();
             if (caretRectangle != default)
@@ -554,4 +544,3 @@ namespace AvaloniaEdit.Editing
             set => _caretAdorner.CaretBrush = value;
         }
     }
-}

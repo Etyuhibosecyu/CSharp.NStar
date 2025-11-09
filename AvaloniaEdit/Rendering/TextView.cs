@@ -40,8 +40,8 @@ using Avalonia.VisualTree;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Rendering
-{
+namespace AvaloniaEdit.Rendering;
+
     /// <summary>
     /// A virtualizing panel producing+showing <see cref="VisualLine"/>s for a <see cref="TextDocument"/>.
     /// 
@@ -133,12 +133,9 @@ namespace AvaloniaEdit.Rendering
         /// </summary>
         public event EventHandler<DocumentChangedEventArgs> DocumentChanged;
 
-        private static void OnDocumentChanged(AvaloniaPropertyChangedEventArgs e)
-        {
-            (e.Sender as TextView)?.OnDocumentChanged((TextDocument)e.OldValue, (TextDocument)e.NewValue);
-        }
+	private static void OnDocumentChanged(AvaloniaPropertyChangedEventArgs e) => (e.Sender as TextView)?.OnDocumentChanged((TextDocument)e.OldValue, (TextDocument)e.NewValue);
 
-        private void OnDocumentChanged(TextDocument oldValue, TextDocument newValue)
+	private void OnDocumentChanged(TextDocument oldValue, TextDocument newValue)
         {
             if (oldValue != null)
             {
@@ -171,23 +168,17 @@ namespace AvaloniaEdit.Rendering
             }
         }
 
-        private void OnChanging(object sender, DocumentChangeEventArgs e)
-        {
-            Redraw(e.Offset, e.RemovalLength);
-        }
+	private void OnChanging(object sender, DocumentChangeEventArgs e) => Redraw(e.Offset, e.RemovalLength);
 
-        private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            OnOptionChanged(e);
-        }
+	private void OnPropertyChanged(object sender, PropertyChangedEventArgs e) => OnOptionChanged(e);
 
-        #endregion
+	#endregion
 
-        #region Options property
-        /// <summary>
-        /// Options property.
-        /// </summary>
-        public static readonly StyledProperty<TextEditorOptions> OptionsProperty =
+	#region Options property
+	/// <summary>
+	/// Options property.
+	/// </summary>
+	public static readonly StyledProperty<TextEditorOptions> OptionsProperty =
             AvaloniaProperty.Register<TextView, TextEditorOptions>("Options");
 
         /// <summary>
@@ -223,13 +214,10 @@ namespace AvaloniaEdit.Rendering
             Redraw();
         }
 
-        private static void OnOptionsChanged(AvaloniaPropertyChangedEventArgs e)
-        {
-            (e.Sender as TextView)?.OnOptionsChanged((TextEditorOptions)e.OldValue, (TextEditorOptions)e.NewValue);
-        }
+	private static void OnOptionsChanged(AvaloniaPropertyChangedEventArgs e) => (e.Sender as TextView)?.OnOptionsChanged((TextEditorOptions)e.OldValue, (TextEditorOptions)e.NewValue);
 
 
-        private void OnOptionsChanged(TextEditorOptions oldValue, TextEditorOptions newValue)
+	private void OnOptionsChanged(TextEditorOptions oldValue, TextEditorOptions newValue)
         {
             if (oldValue != null)
             {
@@ -334,12 +322,9 @@ namespace AvaloniaEdit.Rendering
         {
             private readonly TextView _textView;
 
-            public LayerCollection(TextView textView)
-            {
-                _textView = textView;
-            }
+		public LayerCollection(TextView textView) => _textView = textView;
 
-            protected override void ClearItems()
+		protected override void ClearItems()
             {
                 foreach (var control in Items)
                 {
@@ -372,22 +357,18 @@ namespace AvaloniaEdit.Rendering
             }
         }
 
-        private void LayersChanged()
-        {
-            TextLayer.Index = Layers.IndexOf(TextLayer);
-        }
+	private void LayersChanged() => TextLayer.Index = Layers.IndexOf(TextLayer);
 
-        /// <summary>
-        /// Inserts a new layer at a position specified relative to an existing layer.
-        /// </summary>
-        /// <param name="layer">The new layer to insert.</param>
-        /// <param name="referencedLayer">The existing layer</param>
-        /// <param name="position">Specifies whether the layer is inserted above,below, or replaces the referenced layer</param>
-        public void InsertLayer(Control layer, KnownLayer referencedLayer, LayerInsertionPosition position)
+	/// <summary>
+	/// Inserts a new layer at a position specified relative to an existing layer.
+	/// </summary>
+	/// <param name="layer">The new layer to insert.</param>
+	/// <param name="referencedLayer">The existing layer</param>
+	/// <param name="position">Specifies whether the layer is inserted above,below, or replaces the referenced layer</param>
+	public void InsertLayer(Control layer, KnownLayer referencedLayer, LayerInsertionPosition position)
         {
-            if (layer == null)
-                throw new ArgumentNullException(nameof(layer));
-            if (!Enum.IsDefined(typeof(KnownLayer), referencedLayer))
+		ArgumentNullException.ThrowIfNull(layer);
+		if (!Enum.IsDefined(typeof(KnownLayer), referencedLayer))
                 throw new ArgumentOutOfRangeException(nameof(referencedLayer), (int)referencedLayer, nameof(KnownLayer));
             if (!Enum.IsDefined(typeof(LayerInsertionPosition), position))
                 throw new ArgumentOutOfRangeException(nameof(position), (int)position, nameof(LayerInsertionPosition));
@@ -670,23 +651,20 @@ namespace AvaloniaEdit.Rendering
             }
         }
 
-        /// <summary>
-        /// Causes a known layer to redraw.
-        /// This method does not invalidate visual lines;
-        /// use the <see cref="Redraw()"/> method to do that.
-        /// </summary>
-        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "knownLayer",
-                                                         Justification = "This method is meant to invalidate only a specific layer - I just haven't figured out how to do that, yet.")]
-        public void InvalidateLayer(KnownLayer knownLayer)
-        {
-            InvalidateMeasure();
-        }
+	/// <summary>
+	/// Causes a known layer to redraw.
+	/// This method does not invalidate visual lines;
+	/// use the <see cref="Redraw()"/> method to do that.
+	/// </summary>
+	[SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "knownLayer",
+													 Justification = "This method is meant to invalidate only a specific layer - I just haven't figured out how to do that, yet.")]
+	public void InvalidateLayer(KnownLayer knownLayer) => InvalidateMeasure();
 
-        /// <summary>
-        /// Causes the text editor to redraw all lines overlapping with the specified segment.
-        /// Does nothing if segment is null.
-        /// </summary>
-        public void Redraw(ISegment segment)
+	/// <summary>
+	/// Causes the text editor to redraw all lines overlapping with the specified segment.
+	/// Does nothing if segment is null.
+	/// </summary>
+	public void Redraw(ISegment segment)
         {
             if (segment != null)
             {
@@ -750,9 +728,8 @@ namespace AvaloniaEdit.Rendering
         /// </summary>
         public VisualLine GetOrConstructVisualLine(DocumentLine documentLine)
         {
-            if (documentLine == null)
-                throw new ArgumentNullException("documentLine");
-            if (!this.Document.Lines.Contains(documentLine))
+		ArgumentNullException.ThrowIfNull(documentLine);
+		if (!this.Document.Lines.Contains(documentLine))
                 throw new InvalidOperationException("Line belongs to wrong document");
             VerifyAccess();
 
@@ -1031,17 +1008,14 @@ namespace AvaloniaEdit.Rendering
             return p;
         }
 
-        private VisualLineTextParagraphProperties CreateParagraphProperties(TextRunProperties defaultTextRunProperties)
-        {
-            return new VisualLineTextParagraphProperties
-            {
-                defaultTextRunProperties = defaultTextRunProperties,
-                textWrapping = _canHorizontallyScroll ? TextWrapping.NoWrap : TextWrapping.Wrap,
-                tabSize = Options.IndentationSize * WideSpaceWidth
-            };
-        }
+	private VisualLineTextParagraphProperties CreateParagraphProperties(TextRunProperties defaultTextRunProperties) => new VisualLineTextParagraphProperties
+	{
+		defaultTextRunProperties = defaultTextRunProperties,
+		textWrapping = _canHorizontallyScroll ? TextWrapping.NoWrap : TextWrapping.Wrap,
+		tabSize = Options.IndentationSize * WideSpaceWidth
+	};
 
-        private VisualLine BuildVisualLine(DocumentLine documentLine,
+	private VisualLine BuildVisualLine(DocumentLine documentLine,
                                    TextRunProperties globalTextRunProperties,
                                    VisualLineTextParagraphProperties paragraphProperties,
                                    IReadOnlyList<VisualLineElementGenerator> elementGeneratorsArray,
@@ -1325,12 +1299,11 @@ namespace AvaloniaEdit.Rendering
             var pos = new Point(-_scrollOffset.X, -_clippedPixelsOnTop);
             foreach (var visual in visuals)
             {
-                var t = visual.RenderTransform as TranslateTransform;
-                if (t == null || t.X != pos.X || t.Y != pos.Y)
-                {
-                    visual.RenderTransform = new TranslateTransform(pos.X, pos.Y);
-                }
-                pos = new Point(pos.X, pos.Y + visual.LineHeight);
+			if (visual.RenderTransform is not TranslateTransform t || t.X != pos.X || t.Y != pos.Y)
+			{
+				visual.RenderTransform = new TranslateTransform(pos.X, pos.Y);
+			}
+			pos = new Point(pos.X, pos.Y + visual.LineHeight);
             }
         }
         #endregion
@@ -1351,12 +1324,9 @@ namespace AvaloniaEdit.Rendering
         /// </summary>
         private Size _scrollViewport;
 
-        private void ClearScrollData()
-        {
-            SetScrollData(new Size(), new Size(), new Vector());
-        }
+	private void ClearScrollData() => SetScrollData(new Size(), new Size(), new Vector());
 
-        private bool SetScrollData(Size viewport, Size extent, Vector offset)
+	private bool SetScrollData(Size viewport, Size extent, Vector offset)
         {
             if (!(viewport.IsClose(_scrollViewport)
                   && extent.IsClose(_scrollExtent)
@@ -1372,12 +1342,9 @@ namespace AvaloniaEdit.Rendering
             return false;
         }
 
-        private void OnScrollChange()
-        {
-            ((ILogicalScrollable)this).RaiseScrollInvalidated(EventArgs.Empty);
-        }
+	private void OnScrollChange() => ((ILogicalScrollable)this).RaiseScrollInvalidated(EventArgs.Empty);
 
-        private bool _canVerticallyScroll = true;
+	private bool _canVerticallyScroll = true;
 
         private bool _canHorizontallyScroll = true;
 
@@ -1992,27 +1959,21 @@ namespace AvaloniaEdit.Rendering
             return true;
         }
 
-        Control ILogicalScrollable.GetControlInDirection(NavigationDirection direction, Control from)
-        {
-            return null;
-        }
+	Control ILogicalScrollable.GetControlInDirection(NavigationDirection direction, Control from) => null;
 
-        event EventHandler ILogicalScrollable.ScrollInvalidated
+	event EventHandler ILogicalScrollable.ScrollInvalidated
         {
             add => _scrollInvalidated += value;
             remove => _scrollInvalidated -= value;
         }
 
-        void ILogicalScrollable.RaiseScrollInvalidated(EventArgs e)
-        {
-            _scrollInvalidated?.Invoke(this, e);
-        }
+	void ILogicalScrollable.RaiseScrollInvalidated(EventArgs e) => _scrollInvalidated?.Invoke(this, e);
 
-        /// <summary>
-        /// Gets/Sets the pen used to draw the column ruler.
-        /// <seealso cref="TextEditorOptions.ShowColumnRulers"/>
-        /// </summary>
-        public IPen ColumnRulerPen
+	/// <summary>
+	/// Gets/Sets the pen used to draw the column ruler.
+	/// <seealso cref="TextEditorOptions.ShowColumnRulers"/>
+	/// </summary>
+	public IPen ColumnRulerPen
         {
             get => GetValue(ColumnRulerPenProperty);
             set => SetValue(ColumnRulerPenProperty, value);
@@ -2123,9 +2084,5 @@ namespace AvaloniaEdit.Rendering
 
         Size IScrollable.Viewport => _scrollViewport;
 
-        public void SetDefaultHighlightLineColors()
-        {
-            _currentLineHighlightRenderer?.SetDefaultColors();
-        }
-    }
+	public void SetDefaultHighlightLineColors() => _currentLineHighlightRenderer?.SetDefaultColors();
 }

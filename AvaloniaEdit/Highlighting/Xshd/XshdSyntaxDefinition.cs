@@ -19,8 +19,8 @@
 using System.Collections.Generic;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Highlighting.Xshd
-{
+namespace AvaloniaEdit.Highlighting.Xshd;
+
     /// <summary>
     /// A &lt;SyntaxDefinition&gt; element.
     /// </summary>
@@ -61,4 +61,3 @@ namespace AvaloniaEdit.Highlighting.Xshd
             }
         }
     }
-}

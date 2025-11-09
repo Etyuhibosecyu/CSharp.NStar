@@ -21,19 +21,16 @@ using System.Linq;
 using AvaloniaEdit.Editing;
 using Avalonia.Input;
 
-namespace AvaloniaEdit.Snippets
-{
+namespace AvaloniaEdit.Snippets;
+
     internal sealed class SnippetInputHandler : TextAreaStackedInputHandler
     {
         private readonly InsertionContext _context;
 
-        public SnippetInputHandler(InsertionContext context)
-            : base(context.TextArea)
-        {
-            _context = context;
-        }
+	public SnippetInputHandler(InsertionContext context)
+		: base(context.TextArea) => _context = context;
 
-        public override void Attach()
+	public override void Attach()
         {
             base.Attach();
 
@@ -100,4 +97,3 @@ namespace AvaloniaEdit.Snippets
             return elements.FirstOrDefault();
         }
     }
-}

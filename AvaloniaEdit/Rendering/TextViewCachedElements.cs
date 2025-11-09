@@ -19,8 +19,8 @@
 using System.Collections.Generic;
 using Avalonia.Media.TextFormatting;
 
-namespace AvaloniaEdit.Rendering
-{
+namespace AvaloniaEdit.Rendering;
+
     internal sealed class TextViewCachedElements
     {
         private Dictionary<string, TextLine> _nonPrintableCharacterTexts;
@@ -39,4 +39,3 @@ namespace AvaloniaEdit.Rendering
             return textLine;
         }
     }
-}

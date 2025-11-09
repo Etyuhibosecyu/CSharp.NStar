@@ -23,8 +23,8 @@ using System.Xml;
 using Avalonia.Media;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Highlighting.Xshd
-{
+namespace AvaloniaEdit.Highlighting.Xshd;
+
     /// <summary>
     /// Loads .xshd files, version 2.0.
     /// Version 2.0 files are recognized by the namespace.
@@ -217,12 +217,9 @@ namespace AvaloniaEdit.Highlighting.Xshd
             return span;
         }
 
-        private static Exception Error(XmlReader reader, string message)
-        {
-            return Error(reader as IXmlLineInfo, message);
-        }
+	private static Exception Error(XmlReader reader, string message) => Error(reader as IXmlLineInfo, message);
 
-        private static Exception Error(IXmlLineInfo lineInfo, string message)
+	private static Exception Error(IXmlLineInfo lineInfo, string message)
         {
             if (lineInfo != null)
                 return new HighlightingDefinitionInvalidException(HighlightingLoader.FormatExceptionMessage(message, lineInfo.LineNumber, lineInfo.LinePosition));
@@ -346,12 +343,9 @@ namespace AvaloniaEdit.Highlighting.Xshd
             return new FontFamily(fontFamily);
         }
 
-        private static int? ParseFontSize(string size)
-        {
-            return int.TryParse(size, out int result) ? result : (int?)null;
-        }
+	private static int? ParseFontSize(string size) => int.TryParse(size, out int result) ? result : (int?)null;
 
-        private static FontWeight? ParseFontWeight(string fontWeight)
+	private static FontWeight? ParseFontWeight(string fontWeight)
         {
             if (string.IsNullOrEmpty(fontWeight))
                 return null;
@@ -366,4 +360,3 @@ namespace AvaloniaEdit.Highlighting.Xshd
         }
         #endregion
     }
-}

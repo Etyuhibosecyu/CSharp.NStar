@@ -19,8 +19,8 @@
 using System.Collections.Generic;
 using Avalonia;
 
-namespace AvaloniaEdit.Rendering
-{
+namespace AvaloniaEdit.Rendering;
+
     /// <summary>
     /// The control that contains the text.
     /// 
@@ -79,4 +79,3 @@ namespace AvaloniaEdit.Rendering
             TextView.ArrangeTextLayer(_visuals);
         }
     }
-}

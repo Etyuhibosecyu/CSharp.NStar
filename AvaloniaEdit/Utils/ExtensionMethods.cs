@@ -28,8 +28,8 @@ using Avalonia.Media;
 using Avalonia.Reactive;
 using Avalonia.VisualTree;
 
-namespace AvaloniaEdit.Utils
-{
+namespace AvaloniaEdit.Utils;
+
     public static class ExtensionMethods
     {
         #region Epsilon / IsClose / CoerceValue
@@ -54,60 +54,45 @@ namespace AvaloniaEdit.Utils
             return Math.Abs(d1 - d2) < Epsilon;
         }
 
-        /// <summary>
-        /// Returns true if the doubles are close (difference smaller than 0.01).
-        /// </summary>
-        public static bool IsClose(this Size d1, Size d2)
-        {
-            return IsClose(d1.Width, d2.Width) && IsClose(d1.Height, d2.Height);
-        }
+	/// <summary>
+	/// Returns true if the doubles are close (difference smaller than 0.01).
+	/// </summary>
+	public static bool IsClose(this Size d1, Size d2) => IsClose(d1.Width, d2.Width) && IsClose(d1.Height, d2.Height);
 
-        /// <summary>
-        /// Returns true if the doubles are close (difference smaller than 0.01).
-        /// </summary>
-        public static bool IsClose(this Vector d1, Vector d2)
-        {
-            return IsClose(d1.X, d2.X) && IsClose(d1.Y, d2.Y);
-        }
+	/// <summary>
+	/// Returns true if the doubles are close (difference smaller than 0.01).
+	/// </summary>
+	public static bool IsClose(this Vector d1, Vector d2) => IsClose(d1.X, d2.X) && IsClose(d1.Y, d2.Y);
 
-        /// <summary>
-        /// Forces the value to stay between mininum and maximum.
-        /// </summary>
-        /// <returns>minimum, if value is less than minimum.
-        /// Maximum, if value is greater than maximum.
-        /// Otherwise, value.</returns>
-        public static double CoerceValue(this double value, double minimum, double maximum)
-        {
-            return Math.Max(Math.Min(value, maximum), minimum);
-        }
+	/// <summary>
+	/// Forces the value to stay between mininum and maximum.
+	/// </summary>
+	/// <returns>minimum, if value is less than minimum.
+	/// Maximum, if value is greater than maximum.
+	/// Otherwise, value.</returns>
+	public static double CoerceValue(this double value, double minimum, double maximum) => Math.Max(Math.Min(value, maximum), minimum);
 
-        /// <summary>
-        /// Forces the value to stay between mininum and maximum.
-        /// </summary>
-        /// <returns>minimum, if value is less than minimum.
-        /// Maximum, if value is greater than maximum.
-        /// Otherwise, value.</returns>
-        public static int CoerceValue(this int value, int minimum, int maximum)
-        {
-            return Math.Max(Math.Min(value, maximum), minimum);
-        }
-        #endregion
-        
-        #region CreateTypeface
-        /// <summary>
-        /// Creates typeface from the framework element.
-        /// </summary>
-        public static Typeface CreateTypeface(this Control fe)
-        {
-            return new Typeface(fe.GetValue(TextElement.FontFamilyProperty),
-                fe.GetValue(TextElement.FontStyleProperty),
-                fe.GetValue(TextElement.FontWeightProperty),
-                fe.GetValue(TextElement.FontStretchProperty));
-        }
-        #endregion
+	/// <summary>
+	/// Forces the value to stay between mininum and maximum.
+	/// </summary>
+	/// <returns>minimum, if value is less than minimum.
+	/// Maximum, if value is greater than maximum.
+	/// Otherwise, value.</returns>
+	public static int CoerceValue(this int value, int minimum, int maximum) => Math.Max(Math.Min(value, maximum), minimum);
+	#endregion
 
-        #region AddRange / Sequence
-        public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> elements)
+	#region CreateTypeface
+	/// <summary>
+	/// Creates typeface from the framework element.
+	/// </summary>
+	public static Typeface CreateTypeface(this Control fe) => new Typeface(fe.GetValue(TextElement.FontFamilyProperty),
+			fe.GetValue(TextElement.FontStyleProperty),
+			fe.GetValue(TextElement.FontWeightProperty),
+			fe.GetValue(TextElement.FontStretchProperty));
+	#endregion
+
+	#region AddRange / Sequence
+	public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> elements)
         {
             foreach (T e in elements)
                 collection.Add(e);
@@ -152,70 +137,58 @@ namespace AvaloniaEdit.Utils
             else
                 return XmlConvert.ToBoolean(attributeValue);
         }
-        #endregion
+	#endregion
 
-        #region DPI independence
-        //public static Rect TransformToDevice(this Rect rect, Visual visual)
-        //{
-        //	Matrix matrix = PresentationSource.FromVisual(visual).CompositionTarget.TransformToDevice;
-        //	return Rect.Transform(rect, matrix);
-        //}
+	#region DPI independence
+	//public static Rect TransformToDevice(this Rect rect, Visual visual)
+	//{
+	//	Matrix matrix = PresentationSource.FromVisual(visual).CompositionTarget.TransformToDevice;
+	//	return Rect.Transform(rect, matrix);
+	//}
 
-        //public static Rect TransformFromDevice(this Rect rect, Visual visual)
-        //{
-        //	Matrix matrix = PresentationSource.FromVisual(visual).CompositionTarget.TransformFromDevice;
-        //	return Rect.Transform(rect, matrix);
-        //}
+	//public static Rect TransformFromDevice(this Rect rect, Visual visual)
+	//{
+	//	Matrix matrix = PresentationSource.FromVisual(visual).CompositionTarget.TransformFromDevice;
+	//	return Rect.Transform(rect, matrix);
+	//}
 
-        //public static Size TransformToDevice(this Size size, Visual visual)
-        //{
-        //	Matrix matrix = PresentationSource.FromVisual(visual).CompositionTarget.TransformToDevice;
-        //	return new Size(size.Width * matrix.M11, size.Height * matrix.M22);
-        //}
+	//public static Size TransformToDevice(this Size size, Visual visual)
+	//{
+	//	Matrix matrix = PresentationSource.FromVisual(visual).CompositionTarget.TransformToDevice;
+	//	return new Size(size.Width * matrix.M11, size.Height * matrix.M22);
+	//}
 
-        //public static Size TransformFromDevice(this Size size, Visual visual)
-        //{
-        //	Matrix matrix = PresentationSource.FromVisual(visual).CompositionTarget.TransformFromDevice;
-        //	return new Size(size.Width * matrix.M11, size.Height * matrix.M22);
-        //}
+	//public static Size TransformFromDevice(this Size size, Visual visual)
+	//{
+	//	Matrix matrix = PresentationSource.FromVisual(visual).CompositionTarget.TransformFromDevice;
+	//	return new Size(size.Width * matrix.M11, size.Height * matrix.M22);
+	//}
 
-        //public static Point TransformToDevice(this Point point, Visual visual)
-        //{
-        //	Matrix matrix = PresentationSource.FromVisual(visual).CompositionTarget.TransformToDevice;
-        //	return new Point(point.X * matrix.M11, point.Y * matrix.M22);
-        //}
+	//public static Point TransformToDevice(this Point point, Visual visual)
+	//{
+	//	Matrix matrix = PresentationSource.FromVisual(visual).CompositionTarget.TransformToDevice;
+	//	return new Point(point.X * matrix.M11, point.Y * matrix.M22);
+	//}
 
-        //public static Point TransformFromDevice(this Point point, Visual visual)
-        //{
-        //	Matrix matrix = PresentationSource.FromVisual(visual).CompositionTarget.TransformFromDevice;
-        //	return new Point(point.X * matrix.M11, point.Y * matrix.M22);
-        //}
-        #endregion
+	//public static Point TransformFromDevice(this Point point, Visual visual)
+	//{
+	//	Matrix matrix = PresentationSource.FromVisual(visual).CompositionTarget.TransformFromDevice;
+	//	return new Point(point.X * matrix.M11, point.Y * matrix.M22);
+	//}
+	#endregion
 
-        #region System.Drawing <-> Avalonia conversions
-        public static System.Drawing.Point ToSystemDrawing(this Point p)
-        {
-            return new System.Drawing.Point((int)p.X, (int)p.Y);
-        }
+	#region System.Drawing <-> Avalonia conversions
+	public static System.Drawing.Point ToSystemDrawing(this Point p) => new System.Drawing.Point((int)p.X, (int)p.Y);
 
-        public static Point ToAvalonia(this System.Drawing.Point p)
-        {
-            return new Point(p.X, p.Y);
-        }
+	public static Point ToAvalonia(this System.Drawing.Point p) => new Point(p.X, p.Y);
 
-        public static Size ToAvalonia(this System.Drawing.Size s)
-        {
-            return new Size(s.Width, s.Height);
-        }
+	public static Size ToAvalonia(this System.Drawing.Size s) => new Size(s.Width, s.Height);
 
-        public static Rect ToAvalonia(this System.Drawing.Rectangle rect)
-        {
-            return new Rect(rect.Location.ToAvalonia(), rect.Size.ToAvalonia());
-        }
-        #endregion
+	public static Rect ToAvalonia(this System.Drawing.Rectangle rect) => new Rect(rect.Location.ToAvalonia(), rect.Size.ToAvalonia());
+	#endregion
 
-        #region Snap to device pixels
-        public static Point SnapToDevicePixels(this Point p, Visual targetVisual)
+	#region Snap to device pixels
+	public static Point SnapToDevicePixels(this Point p, Visual targetVisual)
         {
             var root = targetVisual.GetVisualRoot();
 
@@ -298,14 +271,7 @@ namespace AvaloniaEdit.Utils
             }
         }
 
-        public static T PeekOrDefault<T>(this ImmutableStack<T> stack)
-        {
-            return stack.IsEmpty ? default(T) : stack.Peek();
-        }
+	public static T PeekOrDefault<T>(this ImmutableStack<T> stack) => stack.IsEmpty ? default(T) : stack.Peek();
 
-        public static IDisposable Subscribe<T>(this IObservable<T> observable, Action<T> action)
-        {
-            return observable.Subscribe(new AnonymousObserver<T>(action));
-        }
-    }
+	public static IDisposable Subscribe<T>(this IObservable<T> observable, Action<T> action) => observable.Subscribe(new AnonymousObserver<T>(action));
 }

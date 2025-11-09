@@ -21,8 +21,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.CodeCompletion
-{
+namespace AvaloniaEdit.CodeCompletion;
+
     /// <summary>
     /// The list box used inside the CompletionList.
     /// </summary>
@@ -78,18 +78,15 @@ namespace AvaloniaEdit.CodeCompletion
             }
         }
 
-        /// <summary>
-        /// Removes the selection.
-        /// </summary>
-        public void ClearSelection()
-        {
-            SelectedIndex = -1;
-        }
+	/// <summary>
+	/// Removes the selection.
+	/// </summary>
+	public void ClearSelection() => SelectedIndex = -1;
 
-        /// <summary>
-        /// Selects the item with the specified index and scrolls it into view.
-        /// </summary>
-        public void SelectIndex(int index)
+	/// <summary>
+	/// Selects the item with the specified index and scrolls it into view.
+	/// </summary>
+	public void SelectIndex(int index)
         {
             if (index >= ItemCount)
                 index = ItemCount - 1;
@@ -99,12 +96,8 @@ namespace AvaloniaEdit.CodeCompletion
             ScrollIntoView(SelectedItem);
         }
 
-        /// <summary>
-        /// Centers the view on the item with the specified index.
-        /// </summary>
-        public void CenterViewOn(int index)
-        {
-            FirstVisibleItem = index - VisibleItemCount / 2;
-        }
-    }
+	/// <summary>
+	/// Centers the view on the item with the specified index.
+	/// </summary>
+	public void CenterViewOn(int index) => FirstVisibleItem = index - VisibleItemCount / 2;
 }

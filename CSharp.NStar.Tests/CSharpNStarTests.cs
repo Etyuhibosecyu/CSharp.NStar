@@ -1173,8 +1173,8 @@ return (G(12), new ListHashSet[string](1, ""A"", 10), new MyClass(77777));
 ", "null", @"Error 402B in line 8 at position 8: incompatibility between the type of the returning value ""byte"" and the function return type ""string"" - use an addition of zero-length string for this
 Error 4014 in line 14 at position 9: cannot convert from the type ""byte"" to the type ""string"" - use an addition of zero-length string for this
 Error 4026 in line 15 at position 10: incompatibility between the type of the parameter of the call ""byte"" and the type of the parameter of the function ""string"" - use an addition of zero-length string for this
-Error 4036 in line 15 at position 47: incompatibility between the type of the parameter of the call ""byte"" and the type of the parameter of the constructor ""System.Collections.IEqualityComparer[string]""
-Error 4036 in line 15 at position 64: incompatibility between the type of the parameter of the call ""int"" and the type of the parameter of the constructor ""string"" - use an addition of zero-length string for this
+Error 4061 in line 15 at position 47: incompatibility between the type of the parameter of the call ""byte"" and the type of the parameter of the constructor ""System.Collections.IEqualityComparer[string]""
+Error 4061 in line 15 at position 64: incompatibility between the type of the parameter of the call ""int"" and the type of the parameter of the constructor ""string"" - use an addition of zero-length string for this
 ")]
 	[DataRow("""
 using System.Collections;
@@ -1820,8 +1820,9 @@ MyClass2 a3 = new MyClass2(8, 2.71828);
 MyClass2 a4 = new MyClass2(true);
 return (a1, a2, a3, a4);
 ", """(new MyClass2(), null, null, new MyClass2())""", @"Error 2015 in line 8 at position 17: expected: non-sealed class or interface
-Error 4035 in line 17 at position 27: the constructor of the type ""MyClass2"" must have from 0 to 1 parameters
-Error 4035 in line 18 at position 27: the constructor of the type ""MyClass2"" must have from 0 to 1 parameters
+Error 4001 in line 13 at position 3: the identifier ""a"" is not defined in this location
+Error 4060 in line 17 at position 27: the constructor of the type ""MyClass2"" must have from 0 to 1 parameters
+Error 4060 in line 18 at position 27: the constructor of the type ""MyClass2"" must have from 0 to 1 parameters
 ")]
 	[DataRow(@"Class MyClass
 {
@@ -1891,7 +1892,7 @@ MyClass2 a3 = new MyClass2(8, 2.71828);
 MyClass2 a4 = new MyClass2(true);
 return (a1, a2, a3, a4);
 ", @"(new MyClass2(5, 3.14159, ""A""), null, new MyClass2(8, 2.71828, ""A""), new MyClass2(12, 3.14159, ""A""))",
-	@"Error 4035 in line 18 at position 27: the constructor of the type ""MyClass2"" must have from 0 to 2 parameters
+	@"Error 4060 in line 18 at position 27: the constructor of the type ""MyClass2"" must have from 0 to 2 parameters
 ")]
 	[DataRow(@"Class Person
 {
@@ -5308,6 +5309,125 @@ return company;
 Batch[(1, 2, 3), ""Pending""] batch = new();
 return batch;
 ", @"new Batch((1, 2, 3), ""Pending"")", "Ошибок нет")]
+	[DataRow(@"Class Person
+{
+	required int Age { get, init };
+	required string Name { get, init };
+
+	Constructor(string name)
+	{
+		Name = name;
+	}
+}
+var p = new Person[30](""Alice"");
+return p;
+", @"new Person(30, ""Alice"")", "Ошибок нет")]
+	[DataRow(@"Class Person
+{
+	required int Age { get, init };
+	required string Name { get, init };
+
+	Constructor(string name)
+	{
+		Name = name;
+	}
+}
+var p = new Person(""Bob"");
+return p;
+", "null", @"Error 403C in line 11 at position 18: you must set the required properties - it is done with the square brackets
+")]
+	[DataRow(@"Class Secret
+{
+	bool IsActive { get, init };
+	string Code { get, private init };
+
+	Constructor(string code)
+	{
+		Code = code;
+		IsActive = true;
+	}
+}
+var s1 = new Secret(""123"");
+var s2 = new Secret[true, ""789""](""456"");
+var s3 = new Secret[false](""abc"");
+return (s1, s2, s3);
+", @"(new Secret(true, ""123""), null, new Secret(false, ""abc""))", @"Error 403F in line 13 at position 26: redundant property initializer - this class does not have so many open settable properties
+")]
+	[DataRow(@"Class Person
+{
+	Constructor(string name)
+	{
+		Name = name;
+	}
+
+	required int Age { get, init };
+	required string Name { get, init };
+}
+var p = new Person[30](""Alice"");
+return p;
+", @"new Person(30, ""Alice"")", "Ошибок нет")]
+	[DataRow(@"Class Product
+{
+	required real Price { get, init };
+	required string Id { get, init };
+	string Category { get, set };
+
+	Constructor()
+	{
+	}
+
+	Constructor(string id)
+	{
+		Id = id;
+	}
+}
+
+// Использование:
+var p1 = new Product[10.5](""P123"");
+var p2 = new Product(""P456"");
+var p3 = new Product[20, ""P789"", ""Books""]();
+return (p1, p2, p3);
+", @"(new Product(10.5, ""P123"", null), null, new Product(20, ""P789"", ""Books""))", @"Error 403C in line 19 at position 20: you must set the required properties - it is done with the square brackets
+")]
+	[DataRow(@"Class Parent
+{
+    protected string Secret { get, private init };
+}
+
+Class Child : Parent
+{
+    Constructor()
+    {
+        Secret = ""child-secret"";
+    }
+}
+", "null", @"Error 4039 in line 10 at position 8: the property ""Parent.Secret"" cannot be set from here
+")]
+	[DataRow(@"Class MyClass
+{
+    protected string Secret { get, private init };
+
+	null Function Set(string value)
+	{
+		Secret = value;
+	}
+}
+", "null", @"Error 403A in line 7 at position 2: the property ""MyClass.Secret"" is declared with ""init"" modifier so it can be set only in the initializer or constructor
+")]
+	[DataRow(@"Class Parent
+{
+    protected string Secret { get, init };
+}
+
+Class Child : Parent
+{
+	null Function Set(string value)
+    {
+        Secret = ""child-secret"";
+    }
+}
+", "null", @"Error 403A in line 10 at position 8: the property ""Parent.Secret"" is declared with ""init"" modifier so it can be set only in the initializer or constructor
+")]
 //	[DataRow(@"return Sqrt(I);
 //", "0.7071067811865476+0.7071067811865475I", "Ошибок нет")]
 //	[DataRow(@"return Sqrt(-I);

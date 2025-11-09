@@ -26,8 +26,8 @@ using Avalonia.Media.Immutable;
 using Avalonia.Media.TextFormatting;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Folding
-{
+namespace AvaloniaEdit.Folding;
+
     /// <summary>
     /// A <see cref="VisualLineElementGenerator"/> that produces line elements for folded <see cref="FoldingSection"/>s.
     /// </summary>
@@ -151,17 +151,17 @@ namespace AvaloniaEdit.Folding
                     }
                 } while (foundOverlappingFolding);
 
-				string title = foldingSection.Title;
-				if (string.IsNullOrEmpty(title))
-					title = "...";
-				var properties = new VisualLineElementTextRunProperties(CurrentContext.GlobalTextRunProperties);
-				properties.SetForegroundBrush(TextBrush);
-				var text = TextFormatter.Current.FormatLine(new SimpleTextSource(title, properties), 0, double.MaxValue, new GenericTextParagraphProperties(properties));
-				return new FoldingLineElement(foldingSection, text, foldedUntil - offset, TextBrush);
-			} else {
-				return null;
-			}
+			string title = foldingSection.Title;
+			if (string.IsNullOrEmpty(title))
+				title = "...";
+			var properties = new VisualLineElementTextRunProperties(CurrentContext.GlobalTextRunProperties);
+			properties.SetForegroundBrush(TextBrush);
+			var text = TextFormatter.Current.FormatLine(new SimpleTextSource(title, properties), 0, double.MaxValue, new GenericTextParagraphProperties(properties));
+			return new FoldingLineElement(foldingSection, text, foldedUntil - offset, TextBrush);
+		} else {
+			return null;
 		}
+	}
 
         private sealed class FoldingLineElement : FormattedTextElement
         {
@@ -174,13 +174,10 @@ namespace AvaloniaEdit.Folding
                 _textBrush = textBrush;
             }
 
-			public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)
-			{
-				return new FoldingLineTextRun(this, this.TextRunProperties, _textBrush);
-			}
+		public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context) => new FoldingLineTextRun(this, this.TextRunProperties, _textBrush);
 
-            //DOUBLETAP
-            protected internal override void OnPointerPressed(PointerPressedEventArgs e)
+		//DOUBLETAP
+		protected internal override void OnPointerPressed(PointerPressedEventArgs e)
             {
                 _fs.IsFolded = false;
                 e.Handled = true;
@@ -191,13 +188,10 @@ namespace AvaloniaEdit.Folding
         {
             private readonly IBrush _textBrush;
 
-            public FoldingLineTextRun(FormattedTextElement element, TextRunProperties properties, IBrush textBrush)
-                : base(element, properties)
-            {
-                _textBrush = textBrush;
-            }
+		public FoldingLineTextRun(FormattedTextElement element, TextRunProperties properties, IBrush textBrush)
+			: base(element, properties) => _textBrush = textBrush;
 
-            public override void Draw(DrawingContext drawingContext, Point origin)
+		public override void Draw(DrawingContext drawingContext, Point origin)
             {
                 var (width, height) = Size;
                 var r = new Rect(origin.X, origin.Y, width, height);
@@ -216,4 +210,3 @@ namespace AvaloniaEdit.Folding
         /// </summary>
         public static IBrush TextBrush { get; set; } = DefaultTextBrush;
     }
-}

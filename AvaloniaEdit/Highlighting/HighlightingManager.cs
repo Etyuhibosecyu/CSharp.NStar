@@ -24,8 +24,8 @@ using System.Xml;
 using AvaloniaEdit.Highlighting.Xshd;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Highlighting
-{
+namespace AvaloniaEdit.Highlighting;
+
     /// <summary>
     /// Manages a list of syntax highlighting definitions.
     /// </summary>
@@ -94,24 +94,15 @@ namespace AvaloniaEdit.Highlighting
 
             public HighlightingRuleSet MainRuleSet => GetDefinition().MainRuleSet;
 
-            public HighlightingRuleSet GetNamedRuleSet(string name)
-            {
-                return GetDefinition().GetNamedRuleSet(name);
-            }
+		public HighlightingRuleSet GetNamedRuleSet(string name) => GetDefinition().GetNamedRuleSet(name);
 
-            public HighlightingColor GetNamedColor(string name)
-            {
-                return GetDefinition().GetNamedColor(name);
-            }
+		public HighlightingColor GetNamedColor(string name) => GetDefinition().GetNamedColor(name);
 
-            public IEnumerable<HighlightingColor> NamedHighlightingColors => GetDefinition().NamedHighlightingColors;
+		public IEnumerable<HighlightingColor> NamedHighlightingColors => GetDefinition().NamedHighlightingColors;
 
-            public override string ToString()
-            {
-                return Name;
-            }
+		public override string ToString() => Name;
 
-            public IDictionary<string, string> Properties => GetDefinition().Properties;
+		public IDictionary<string, string> Properties => GetDefinition().Properties;
         }
 
         private readonly object _lockObj = new object();
@@ -165,10 +156,9 @@ namespace AvaloniaEdit.Highlighting
         /// <param name="highlighting">The highlighting definition.</param>
         public void RegisterHighlighting(string name, string[] extensions, IHighlightingDefinition highlighting)
         {
-            if (highlighting == null)
-                throw new ArgumentNullException(nameof(highlighting));
+		ArgumentNullException.ThrowIfNull(highlighting);
 
-            lock (_lockObj)
+		lock (_lockObj)
             {
                 _allHighlightings.Add(highlighting);
                 if (name != null)
@@ -193,9 +183,8 @@ namespace AvaloniaEdit.Highlighting
         /// <param name="lazyLoadedHighlighting">A function that loads the highlighting definition.</param>
         public void RegisterHighlighting(string name, string[] extensions, Func<IHighlightingDefinition> lazyLoadedHighlighting)
         {
-            if (lazyLoadedHighlighting == null)
-                throw new ArgumentNullException(nameof(lazyLoadedHighlighting));
-            RegisterHighlighting(name, extensions, new DelayLoadedHighlightingDefinition(name, lazyLoadedHighlighting));
+		ArgumentNullException.ThrowIfNull(lazyLoadedHighlighting);
+		RegisterHighlighting(name, extensions, new DelayLoadedHighlightingDefinition(name, lazyLoadedHighlighting));
         }
 
         /// <summary>
@@ -209,13 +198,10 @@ namespace AvaloniaEdit.Highlighting
             // ReSharper disable once MemberHidesStaticFromOuterClass
             public new static DefaultHighlightingManager Instance { get; } = new DefaultHighlightingManager();
 
-            public DefaultHighlightingManager()
-            {
-                Resources.RegisterBuiltInHighlightings(this);
-            }
+		public DefaultHighlightingManager() => Resources.RegisterBuiltInHighlightings(this);
 
-            // Registering a built-in highlighting
-            internal void RegisterHighlighting(string name, string[] extensions, string resourceName)
+		// Registering a built-in highlighting
+		internal void RegisterHighlighting(string name, string[] extensions, string resourceName)
             {
                 try
                 {
@@ -248,4 +234,3 @@ namespace AvaloniaEdit.Highlighting
             }
         }
     }
-}

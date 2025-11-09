@@ -18,8 +18,8 @@
 
 using System;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// Allows registering a line tracker on a TextDocument using a weak reference from the document to the line tracker.
     /// </summary>
@@ -41,11 +41,9 @@ namespace AvaloniaEdit.Document
         /// </summary>
         public static WeakLineTracker Register(TextDocument textDocument, ILineTracker targetTracker)
         {
-            if (textDocument == null)
-                throw new ArgumentNullException(nameof(textDocument));
-            if (targetTracker == null)
-                throw new ArgumentNullException(nameof(targetTracker));
-            var wlt = new WeakLineTracker(textDocument, targetTracker);
+		ArgumentNullException.ThrowIfNull(textDocument);
+		ArgumentNullException.ThrowIfNull(targetTracker);
+		var wlt = new WeakLineTracker(textDocument, targetTracker);
             textDocument.LineTrackers.Add(wlt);
             return wlt;
         }
@@ -102,4 +100,3 @@ namespace AvaloniaEdit.Document
                 Deregister();
         }
     }
-}

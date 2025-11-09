@@ -23,8 +23,8 @@ using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Highlighting
-{
+namespace AvaloniaEdit.Highlighting;
+
     /// <summary>
     /// A colorizes that interprets a highlighting rule set and colors the document accordingly.
     /// </summary>
@@ -35,22 +35,19 @@ namespace AvaloniaEdit.Highlighting
         private IHighlighter _highlighter;
         private readonly bool _isFixedHighlighter;
 
-        /// <summary>
-        /// Creates a new HighlightingColorizer instance.
-        /// </summary>
-        /// <param name="definition">The highlighting definition.</param>
-        public HighlightingColorizer(IHighlightingDefinition definition)
-        {
-            _definition = definition ?? throw new ArgumentNullException(nameof(definition));
-        }
+	/// <summary>
+	/// Creates a new HighlightingColorizer instance.
+	/// </summary>
+	/// <param name="definition">The highlighting definition.</param>
+	public HighlightingColorizer(IHighlightingDefinition definition) => _definition = definition ?? throw new ArgumentNullException(nameof(definition));
 
-        /// <summary>
-        /// Creates a new HighlightingColorizer instance that uses a fixed highlighter instance.
-        /// The colorizer can only be used with text views that show the document for which
-        /// the highlighter was created.
-        /// </summary>
-        /// <param name="highlighter">The highlighter to be used.</param>
-        public HighlightingColorizer(IHighlighter highlighter)
+	/// <summary>
+	/// Creates a new HighlightingColorizer instance that uses a fixed highlighter instance.
+	/// The colorizer can only be used with text views that show the document for which
+	/// the highlighter was created.
+	/// </summary>
+	/// <param name="highlighter">The highlighter to be used.</param>
+	public HighlightingColorizer(IHighlighter highlighter)
         {
             _highlighter = highlighter ?? throw new ArgumentNullException(nameof(highlighter));
             _isFixedHighlighter = true;
@@ -247,42 +244,39 @@ namespace AvaloniaEdit.Highlighting
                 && color.Underline == null;
         }
 
-        /// <summary>
-        /// Applies a highlighting color to a visual line element.
-        /// </summary>
-        protected virtual void ApplyColorToElement(VisualLineElement element, HighlightingColor color)
-        {
-            ApplyColorToElement(element, color, CurrentContext);
-        }
+	/// <summary>
+	/// Applies a highlighting color to a visual line element.
+	/// </summary>
+	protected virtual void ApplyColorToElement(VisualLineElement element, HighlightingColor color) => ApplyColorToElement(element, color, CurrentContext);
 
-		internal static void ApplyColorToElement(VisualLineElement element, HighlightingColor color, ITextRunConstructionContext context)
-		{
-			if (color.Foreground != null) {
-				var b = color.Foreground.GetBrush(context);
-				if (b != null)
-					element.TextRunProperties.SetForegroundBrush(b);
-			}
-			if (color.Background != null) {
-				var b = color.Background.GetBrush(context);
-				if (b != null)
-					element.BackgroundBrush = b;
-			}
-			if (color.FontStyle != null || color.FontWeight != null || color.FontFamily != null) {
-				var tf = element.TextRunProperties.Typeface;
-				element.TextRunProperties.SetTypeface(new Typeface(
-					color.FontFamily ?? tf.FontFamily,
-					color.FontStyle ?? tf.Style,
-					color.FontWeight ?? tf.Weight,
-					tf.Stretch
-				));
-			}
-			if (color.Underline ?? false)
-				element.TextRunProperties.SetTextDecorations(TextDecorations.Underline);
-			if (color.Strikethrough ?? false)
-				element.TextRunProperties.SetTextDecorations(TextDecorations.Strikethrough);
-			if (color.FontSize.HasValue)
-				element.TextRunProperties.SetFontRenderingEmSize(color.FontSize.Value);
+	internal static void ApplyColorToElement(VisualLineElement element, HighlightingColor color, ITextRunConstructionContext context)
+	{
+		if (color.Foreground != null) {
+			var b = color.Foreground.GetBrush(context);
+			if (b != null)
+				element.TextRunProperties.SetForegroundBrush(b);
 		}
+		if (color.Background != null) {
+			var b = color.Background.GetBrush(context);
+			if (b != null)
+				element.BackgroundBrush = b;
+		}
+		if (color.FontStyle != null || color.FontWeight != null || color.FontFamily != null) {
+			var tf = element.TextRunProperties.Typeface;
+			element.TextRunProperties.SetTypeface(new Typeface(
+				color.FontFamily ?? tf.FontFamily,
+				color.FontStyle ?? tf.Style,
+				color.FontWeight ?? tf.Weight,
+				tf.Stretch
+			));
+		}
+		if (color.Underline ?? false)
+			element.TextRunProperties.SetTextDecorations(TextDecorations.Underline);
+		if (color.Strikethrough ?? false)
+			element.TextRunProperties.SetTextDecorations(TextDecorations.Strikethrough);
+		if (color.FontSize.HasValue)
+			element.TextRunProperties.SetFontRenderingEmSize(color.FontSize.Value);
+	}
 
         /// <summary>
         /// This method is responsible for telling the TextView to redraw lines when the highlighting state has changed.
@@ -368,16 +362,15 @@ namespace AvaloniaEdit.Highlighting
             }
 
             /*
-			 * Meta-comment: "why does this have to be so complicated?"
-			 * 
-			 * The problem is that I want to re-highlight only on-demand and incrementally;
-			 * and at the same time only repaint changed lines.
-			 * So the highlighter and the VisualLine construction both have to run in a single pass.
-			 * The highlighter must take care that it never touches already constructed visual lines;
-			 * if it detects that something must be redrawn because the highlighting state changed,
-			 * it must do so early enough in the construction process.
-			 * But doing it too early means it doesn't have the information necessary to re-highlight and redraw only the desired parts.
-			 */
+		 * Meta-comment: "why does this have to be so complicated?"
+		 * 
+		 * The problem is that I want to re-highlight only on-demand and incrementally;
+		 * and at the same time only repaint changed lines.
+		 * So the highlighter and the VisualLine construction both have to run in a single pass.
+		 * The highlighter must take care that it never touches already constructed visual lines;
+		 * if it detects that something must be redrawn because the highlighting state changed,
+		 * it must do so early enough in the construction process.
+		 * But doing it too early means it doesn't have the information necessary to re-highlight and redraw only the desired parts.
+		 */
         }
     }
-}

@@ -19,8 +19,8 @@
 using System;
 using AvaloniaEdit.Document;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     /// <summary>
     /// Represents a selected segment.
     /// </summary>
@@ -83,10 +83,6 @@ namespace AvaloniaEdit.Editing
         /// <inheritdoc/>
         public int Length => EndOffset - StartOffset;
 
-        /// <inheritdoc/>
-        public override string ToString()
-        {
-            return $"[SelectionSegment StartOffset={StartOffset}, EndOffset={EndOffset}, StartVC={StartVisualColumn}, EndVC={EndVisualColumn}]";
-        }
-    }
+	/// <inheritdoc/>
+	public override string ToString() => $"[SelectionSegment StartOffset={StartOffset}, EndOffset={EndOffset}, StartVC={StartVisualColumn}, EndVC={EndVisualColumn}]";
 }

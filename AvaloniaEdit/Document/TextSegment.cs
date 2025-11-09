@@ -19,8 +19,8 @@
 using System;
 using System.Diagnostics;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     /// <summary>
     /// A segment that can be put into a <see cref="TextSegmentCollection{T}"/>.
     /// </summary>
@@ -262,17 +262,9 @@ namespace AvaloniaEdit.Document
         }
 
 #if DEBUG
-        internal string ToDebugString()
-        {
-            return
-                $"[nodeLength={NodeLength} totalNodeLength={TotalNodeLength} distanceToMaxEnd={DistanceToMaxEnd} MaxEndOffset={StartOffset + DistanceToMaxEnd}]";
-        }
+	internal string ToDebugString() => $"[nodeLength={NodeLength} totalNodeLength={TotalNodeLength} distanceToMaxEnd={DistanceToMaxEnd} MaxEndOffset={StartOffset + DistanceToMaxEnd}]";
 #endif
 
-        /// <inheritdoc/>
-        public override string ToString()
-        {
-            return $"[{GetType().Name} Offset={StartOffset} Length={Length} EndOffset={EndOffset}]";
-        }
-    }
+	/// <inheritdoc/>
+	public override string ToString() => $"[{GetType().Name} Offset={StartOffset} Length={Length} EndOffset={EndOffset}]";
 }

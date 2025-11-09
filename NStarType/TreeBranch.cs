@@ -110,6 +110,18 @@ public sealed class TreeBranch
 		EndPos = Length == 0 ? Pos + 1 : Elements[^1].EndPos;
 	}
 
+	public bool IsAncestorOf(TreeBranch descendant)
+	{
+		var branch = descendant;
+		while (branch != null)
+		{
+			if (branch == this)
+				return true;
+			branch = branch.Parent;
+		}
+		return false;
+	}
+
 	public void Remove(int index, int count)
 	{
 		Elements.Remove(index, count);

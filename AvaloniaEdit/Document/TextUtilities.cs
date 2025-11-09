@@ -20,8 +20,8 @@ using System;
 using System.Globalization;
 using System.Reflection;
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     public enum LogicalDirection
     {
         Backward,
@@ -109,9 +109,8 @@ namespace AvaloniaEdit.Document
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Whitespace")]
         public static ISegment GetWhitespaceAfter(ITextSource textSource, int offset)
         {
-            if (textSource == null)
-                throw new ArgumentNullException(nameof(textSource));
-            int pos;
+		ArgumentNullException.ThrowIfNull(textSource);
+		int pos;
             for (pos = offset; pos < textSource.TextLength; pos++)
             {
                 char c = textSource.GetCharAt(pos);
@@ -130,9 +129,8 @@ namespace AvaloniaEdit.Document
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Whitespace")]
         public static ISegment GetWhitespaceBefore(ITextSource textSource, int offset)
         {
-            if (textSource == null)
-                throw new ArgumentNullException(nameof(textSource));
-            int pos;
+		ArgumentNullException.ThrowIfNull(textSource);
+		int pos;
             for (pos = offset - 1; pos >= 0; pos--)
             {
                 char c = textSource.GetCharAt(pos);
@@ -151,9 +149,8 @@ namespace AvaloniaEdit.Document
                                                          Justification = "Parameter cannot be ITextSource because it must belong to the DocumentLine")]
         public static ISegment GetLeadingWhitespace(TextDocument document, DocumentLine documentLine)
         {
-            if (documentLine == null)
-                throw new ArgumentNullException(nameof(documentLine));
-            return GetWhitespaceAfter(document, documentLine.Offset);
+		ArgumentNullException.ThrowIfNull(documentLine);
+		return GetWhitespaceAfter(document, documentLine.Offset);
         }
 
         /// <summary>
@@ -164,9 +161,8 @@ namespace AvaloniaEdit.Document
                                                          Justification = "Parameter cannot be ITextSource because it must belong to the DocumentLine")]
         public static ISegment GetTrailingWhitespace(TextDocument document, DocumentLine documentLine)
         {
-            if (documentLine == null)
-                throw new ArgumentNullException(nameof(documentLine));
-            ISegment segment = GetWhitespaceBefore(document, documentLine.EndOffset);
+		ArgumentNullException.ThrowIfNull(documentLine);
+		ISegment segment = GetWhitespaceBefore(document, documentLine.EndOffset);
             // If the whole line consists of whitespace, we consider all of it as leading whitespace,
             // so return an empty segment as trailing whitespace.
             if (segment.Offset == documentLine.Offset)
@@ -189,9 +185,8 @@ namespace AvaloniaEdit.Document
         /// an empty segment is returned.</returns>
         public static ISegment GetSingleIndentationSegment(ITextSource textSource, int offset, int indentationSize)
         {
-            if (textSource == null)
-                throw new ArgumentNullException(nameof(textSource));
-            int pos = offset;
+		ArgumentNullException.ThrowIfNull(textSource);
+		int pos = offset;
             while (pos < textSource.TextLength)
             {
                 char c = textSource.GetCharAt(pos);
@@ -293,9 +288,8 @@ namespace AvaloniaEdit.Document
         /// </remarks>
         public static int GetNextCaretPosition(ITextSource textSource, int offset, LogicalDirection direction, CaretPositioningMode mode)
         {
-            if (textSource == null)
-                throw new ArgumentNullException(nameof(textSource));
-            switch (mode)
+		ArgumentNullException.ThrowIfNull(textSource);
+		switch (mode)
             {
                 case CaretPositioningMode.Normal:
                 case CaretPositioningMode.EveryCodepoint:
@@ -381,12 +375,9 @@ namespace AvaloniaEdit.Document
             }
         }
 
-        private static bool IsNormal(CaretPositioningMode mode)
-        {
-            return mode == CaretPositioningMode.Normal || mode == CaretPositioningMode.EveryCodepoint;
-        }
+	private static bool IsNormal(CaretPositioningMode mode) => mode == CaretPositioningMode.Normal || mode == CaretPositioningMode.EveryCodepoint;
 
-        private static bool StopBetweenCharacters(CaretPositioningMode mode, CharacterClass charBefore, CharacterClass charAfter)
+	private static bool StopBetweenCharacters(CaretPositioningMode mode, CharacterClass charBefore, CharacterClass charAfter)
         {
             if (mode == CaretPositioningMode.EveryCodepoint)
                 return true;
@@ -450,4 +441,3 @@ namespace AvaloniaEdit.Document
         /// </summary>
         CombiningMark
     }
-}

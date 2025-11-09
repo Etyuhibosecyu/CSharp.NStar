@@ -19,8 +19,8 @@
 using System;
 using AvaloniaEdit.Document;
 
-namespace AvaloniaEdit.Snippets
-{
+namespace AvaloniaEdit.Snippets;
+
     /// <summary>
     /// An element that binds to a <see cref="SnippetReplaceableTextElement"/> and displays the same text.
     /// </summary>
@@ -31,16 +31,13 @@ namespace AvaloniaEdit.Snippets
         /// </summary>
         public SnippetReplaceableTextElement TargetElement { get; set; }
 
-        /// <summary>
-        /// Converts the text before copying it.
-        /// </summary>
-        public virtual string ConvertText(string input)
-        {
-            return input;
-        }
+	/// <summary>
+	/// Converts the text before copying it.
+	/// </summary>
+	public virtual string ConvertText(string input) => input;
 
-        /// <inheritdoc/>
-        public override void Insert(InsertionContext context)
+	/// <inheritdoc/>
+	public override void Insert(InsertionContext context)
         {
             if (TargetElement != null)
             {
@@ -121,13 +118,9 @@ namespace AvaloniaEdit.Snippets
             }
         }
 
-        public void Deactivate(SnippetEventArgs e)
-        {
-            TargetElement.TextChanged -= targetElement_TextChanged;
-        }
+	public void Deactivate(SnippetEventArgs e) => TargetElement.TextChanged -= targetElement_TextChanged;
 
-        public bool IsEditable => false;
+	public bool IsEditable => false;
 
         public ISegment Segment => _segment;
     }
-}

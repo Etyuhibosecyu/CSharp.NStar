@@ -21,8 +21,8 @@ using System.Collections.Generic;
 using AvaloniaEdit.Utils;
 using Avalonia.Input;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     /// <summary>
     /// A set of input bindings and event handlers for the text area.
     /// </summary>
@@ -69,16 +69,13 @@ namespace AvaloniaEdit.Editing
         /// <inheritdoc/>
         public TextArea TextArea { get; }
 
-        /// <summary>
-        /// Creates a new TextAreaInputHandler.
-        /// </summary>
-        protected TextAreaStackedInputHandler(TextArea textArea)
-        {
-            TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
-        }
+	/// <summary>
+	/// Creates a new TextAreaInputHandler.
+	/// </summary>
+	protected TextAreaStackedInputHandler(TextArea textArea) => TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
-        /// <inheritdoc/>
-        public virtual void Attach()
+	/// <inheritdoc/>
+	public virtual void Attach()
         {
         }
 
@@ -189,9 +186,8 @@ namespace AvaloniaEdit.Editing
 
         private void NestedInputHandler_Added(ITextAreaInputHandler handler)
         {
-            if (handler == null)
-                throw new ArgumentNullException(nameof(handler));
-            if (handler.TextArea != TextArea)
+		ArgumentNullException.ThrowIfNull(handler);
+		if (handler.TextArea != TextArea)
                 throw new ArgumentException("The nested handler must be working for the same text area!");
             if (IsAttached)
                 handler.Attach();
@@ -262,4 +258,3 @@ namespace AvaloniaEdit.Editing
         }
         #endregion
     }
-}

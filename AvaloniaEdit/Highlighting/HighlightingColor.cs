@@ -23,8 +23,8 @@ using System.Text;
 using Avalonia.Media;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Highlighting
-{
+namespace AvaloniaEdit.Highlighting;
+
     /// <summary>
     /// A highlighting color is a set of font properties and foreground and background color.
     /// </summary>
@@ -249,24 +249,18 @@ namespace AvaloniaEdit.Highlighting
             return b.ToString();
         }
 
-        /// <inheritdoc/>
-        public override string ToString()
-        {
-            return "[" + GetType().Name + " " + (string.IsNullOrEmpty(Name) ? ToCss() : Name) + "]";
-        }
+	/// <inheritdoc/>
+	public override string ToString() => "[" + GetType().Name + " " + (string.IsNullOrEmpty(Name) ? ToCss() : Name) + "]";
 
-        /// <summary>
-        /// Prevent further changes to this highlighting color.
-        /// </summary>
-        public virtual void Freeze()
-        {
-            IsFrozen = true;
-        }
+	/// <summary>
+	/// Prevent further changes to this highlighting color.
+	/// </summary>
+	public virtual void Freeze() => IsFrozen = true;
 
-        /// <summary>
-        /// Gets whether this HighlightingColor instance is frozen.
-        /// </summary>
-        public bool IsFrozen { get; private set; }
+	/// <summary>
+	/// Gets whether this HighlightingColor instance is frozen.
+	/// </summary>
+	public bool IsFrozen { get; private set; }
 
         /// <summary>
         /// Clones this highlighting color.
@@ -279,19 +273,13 @@ namespace AvaloniaEdit.Highlighting
             return c;
         }
 
-        object ICloneable.Clone()
-        {
-            return Clone();
-        }
+	object ICloneable.Clone() => Clone();
 
-        /// <inheritdoc/>
-        public sealed override bool Equals(object obj)
-        {
-            return Equals(obj as HighlightingColor);
-        }
+	/// <inheritdoc/>
+	public sealed override bool Equals(object obj) => Equals(obj as HighlightingColor);
 
-        /// <inheritdoc/>
-        public virtual bool Equals(HighlightingColor other)
+	/// <inheritdoc/>
+	public virtual bool Equals(HighlightingColor other)
         {
             if (other == null)
                 return false;
@@ -353,4 +341,3 @@ namespace AvaloniaEdit.Highlighting
                                          && _strikethrough == null && _foreground == null && _background == null
                                          && _fontFamily == null && _fontSize == null;
     }
-}

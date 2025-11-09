@@ -16,8 +16,8 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-namespace AvaloniaEdit.Document
-{
+namespace AvaloniaEdit.Document;
+
     // A tree node in the document line tree.
     // For the purpose of the invariants, "children", "descendents", "siblings" etc. include the DocumentLine object,
     // it is treated as a third child node between left and right.
@@ -92,4 +92,3 @@ namespace AvaloniaEdit.Document
         /// </summary>
         internal int NodeTotalLength { get; set; }
     }
-}

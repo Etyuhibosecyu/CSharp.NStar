@@ -21,8 +21,8 @@ using Avalonia;
 using Avalonia.Controls;
 using AvaloniaEdit.Editing;
 
-namespace AvaloniaEdit.CodeCompletion
-{
+namespace AvaloniaEdit.CodeCompletion;
+
     /// <summary>
     /// A popup-like window that is attached to a text segment.
     /// </summary>
@@ -66,13 +66,10 @@ namespace AvaloniaEdit.CodeCompletion
         /// <inheritdoc/>
         protected override bool CloseOnFocusLost => CloseAutomatically;
 
-        private void AttachEvents()
-        {
-            TextArea.Caret.PositionChanged += CaretPositionChanged;
-        }
+	private void AttachEvents() => TextArea.Caret.PositionChanged += CaretPositionChanged;
 
-        /// <inheritdoc/>
-        protected override void DetachEvents()
+	/// <inheritdoc/>
+	protected override void DetachEvents()
         {
             TextArea.Caret.PositionChanged -= CaretPositionChanged;
             base.DetachEvents();
@@ -90,4 +87,3 @@ namespace AvaloniaEdit.CodeCompletion
             }
         }
     }
-}

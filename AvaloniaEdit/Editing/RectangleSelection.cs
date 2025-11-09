@@ -25,8 +25,8 @@ using Avalonia;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     /// <summary>
     /// Rectangular selection ("box selection").
     /// </summary>
@@ -213,14 +213,11 @@ namespace AvaloniaEdit.Editing
             return b.ToString();
         }
 
-        /// <inheritdoc/>
-        public override Selection StartSelectionOrSetEndpoint(TextViewPosition startPosition, TextViewPosition endPosition)
-        {
-            return SetEndpoint(endPosition);
-        }
+	/// <inheritdoc/>
+	public override Selection StartSelectionOrSetEndpoint(TextViewPosition startPosition, TextViewPosition endPosition) => SetEndpoint(endPosition);
 
-        /// <inheritdoc/>
-        public override int Length
+	/// <inheritdoc/>
+	public override int Length
         {
             get
             {
@@ -243,31 +240,21 @@ namespace AvaloniaEdit.Editing
         /// <inheritdoc/>
         public override TextViewPosition EndPosition { get; }
 
-        /// <inheritdoc/>
-        public override bool Equals(object obj)
-        {
-            var r = obj as RectangleSelection;
-            // ReSharper disable CompareOfFloatsByEqualityOperator
-            return r != null && r.TextArea == TextArea
-                && r._topLeftOffset == _topLeftOffset && r._bottomRightOffset == _bottomRightOffset
-                && r._startLine == _startLine && r._endLine == _endLine
-                && r._startXPos == _startXPos && r._endXPos == _endXPos;
-            // ReSharper restore CompareOfFloatsByEqualityOperator
-        }
+	/// <inheritdoc/>
+	public override bool Equals(object obj) =>
+	// ReSharper disable CompareOfFloatsByEqualityOperator
+	obj is RectangleSelection r && r.TextArea == TextArea
+		&& r._topLeftOffset == _topLeftOffset && r._bottomRightOffset == _bottomRightOffset
+		&& r._startLine == _startLine && r._endLine == _endLine
+		&& r._startXPos == _startXPos && r._endXPos == _endXPos;// ReSharper restore CompareOfFloatsByEqualityOperator
 
-        /// <inheritdoc/>
-        public override int GetHashCode()
-        {
-            return _topLeftOffset ^ _bottomRightOffset;
-        }
+	/// <inheritdoc/>
+	public override int GetHashCode() => _topLeftOffset ^ _bottomRightOffset;
 
-        /// <inheritdoc/>
-        public override Selection SetEndpoint(TextViewPosition endPosition)
-        {
-            return new RectangleSelection(TextArea, _startLine, _startXPos, endPosition);
-        }
+	/// <inheritdoc/>
+	public override Selection SetEndpoint(TextViewPosition endPosition) => new RectangleSelection(TextArea, _startLine, _startXPos, endPosition);
 
-        private int GetVisualColumnFromXPos(int line, double xPos)
+	private int GetVisualColumnFromXPos(int line, double xPos)
         {
             var vl = TextArea.TextView.GetOrConstructVisualLine(TextArea.Document.GetLineByNumber(line));
             return vl.GetVisualColumn(new Point(xPos, 0), true);
@@ -287,9 +274,8 @@ namespace AvaloniaEdit.Editing
         /// <inheritdoc/>
         public override void ReplaceSelectionWithText(string newText)
         {
-            if (newText == null)
-                throw new ArgumentNullException(nameof(newText));
-            using (TextArea.Document.RunUpdate())
+		ArgumentNullException.ThrowIfNull(newText);
+		using (TextArea.Document.RunUpdate())
             {
                 int insertionLength;
                 var firstInsertionLength = 0;
@@ -360,11 +346,9 @@ namespace AvaloniaEdit.Editing
         /// </summary>
         public static bool PerformRectangularPaste(TextArea textArea, TextViewPosition startPosition, string text, bool selectInsertedText)
         {
-            if (textArea == null)
-                throw new ArgumentNullException(nameof(textArea));
-            if (text == null)
-                throw new ArgumentNullException(nameof(text));
-            var newLineCount = text.AsEnumerable().Count(c => c == '\n'); // TODO might not work in all cases, but single \r line endings are really rare today.
+		ArgumentNullException.ThrowIfNull(textArea);
+		ArgumentNullException.ThrowIfNull(text);
+		var newLineCount = text.AsEnumerable().Count(c => c == '\n'); // TODO might not work in all cases, but single \r line endings are really rare today.
             var endLocation = new TextLocation(startPosition.Line + newLineCount, startPosition.Column);
             if (endLocation.Line <= textArea.Document.LineCount)
             {
@@ -402,12 +386,9 @@ namespace AvaloniaEdit.Editing
             return data;
         }
 
-        /// <inheritdoc/>
-        public override string ToString()
-        {
-            // It's possible that ToString() gets called on old (invalid) selections, e.g. for "change from... to..." debug message
-            // make sure we don't crash even when the desired locations don't exist anymore.
-            return $"[RectangleSelection {_startLine} {_topLeftOffset} {_startXPos} to {_endLine} {_bottomRightOffset} {_endXPos}]";
-        }
-    }
+	/// <inheritdoc/>
+	public override string ToString() =>
+		// It's possible that ToString() gets called on old (invalid) selections, e.g. for "change from... to..." debug message
+		// make sure we don't crash even when the desired locations don't exist anymore.
+		$"[RectangleSelection {_startLine} {_topLeftOffset} {_startXPos} to {_endLine} {_bottomRightOffset} {_endXPos}]";
 }

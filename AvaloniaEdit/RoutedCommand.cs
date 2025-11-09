@@ -5,8 +5,8 @@ using System.Windows.Input;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 
-namespace AvaloniaEdit
-{
+namespace AvaloniaEdit;
+
     public class RoutedCommand : ICommand
     {
         private static IInputElement _inputElement;
@@ -48,12 +48,9 @@ namespace AvaloniaEdit
             }
         }
 
-        private static void GotFocusEventHandler(Interactive control, GotFocusEventArgs args)
-        {
-            _inputElement = args.Source as IInputElement;
-        }
+	private static void GotFocusEventHandler(Interactive control, GotFocusEventArgs args) => _inputElement = args.Source as IInputElement;
 
-        public static RoutedEvent<CanExecuteRoutedEventArgs> CanExecuteEvent { get; } = RoutedEvent.Register<CanExecuteRoutedEventArgs>(nameof(CanExecuteEvent), RoutingStrategies.Bubble, typeof(RoutedCommand));
+	public static RoutedEvent<CanExecuteRoutedEventArgs> CanExecuteEvent { get; } = RoutedEvent.Register<CanExecuteRoutedEventArgs>(nameof(CanExecuteEvent), RoutingStrategies.Bubble, typeof(RoutedCommand));
 
         public bool CanExecute(object parameter, IInputElement target)
         {
@@ -65,12 +62,9 @@ namespace AvaloniaEdit
             return args.CanExecute;
         }
 
-        bool ICommand.CanExecute(object parameter)
-        {
-            return CanExecute(parameter, _inputElement);
-        }
+	bool ICommand.CanExecute(object parameter) => CanExecute(parameter, _inputElement);
 
-        public static RoutedEvent<ExecutedRoutedEventArgs> ExecutedEvent { get; } = RoutedEvent.Register<ExecutedRoutedEventArgs>(nameof(ExecutedEvent), RoutingStrategies.Bubble, typeof(RoutedCommand));
+	public static RoutedEvent<ExecutedRoutedEventArgs> ExecutedEvent { get; } = RoutedEvent.Register<ExecutedRoutedEventArgs>(nameof(ExecutedEvent), RoutingStrategies.Bubble, typeof(RoutedCommand));
 
         public void Execute(object parameter, IInputElement target)
         {
@@ -80,13 +74,10 @@ namespace AvaloniaEdit
             target.RaiseEvent(args);
         }
 
-        void ICommand.Execute(object parameter)
-        {
-            Execute(parameter, _inputElement);
-        }
+	void ICommand.Execute(object parameter) => Execute(parameter, _inputElement);
 
-        // TODO
-        event EventHandler ICommand.CanExecuteChanged
+	// TODO
+	event EventHandler ICommand.CanExecuteChanged
         {
             add { }
             remove { }
@@ -191,4 +182,3 @@ namespace AvaloniaEdit
             RoutedEvent = RoutedCommand.ExecutedEvent;
         }
     }
-}

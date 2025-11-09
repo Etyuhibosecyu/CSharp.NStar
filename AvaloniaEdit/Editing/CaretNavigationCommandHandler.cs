@@ -28,8 +28,8 @@ using Avalonia.Input.Platform;
 using Avalonia.Media.TextFormatting;
 using LogicalDirection = AvaloniaEdit.Document.LogicalDirection;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     internal enum CaretMovementType
     {
         None,
@@ -64,24 +64,18 @@ namespace AvaloniaEdit.Editing
         static readonly List<RoutedCommandBinding> CommandBindings = new List<RoutedCommandBinding>();
         static readonly List<KeyBinding> KeyBindings = new List<KeyBinding>();
 
-        private static void AddBinding(
-            RoutedCommand command,
-            EventHandler<ExecutedRoutedEventArgs> handler,
-            EventHandler<CanExecuteRoutedEventArgs> canExecuteHandler = null)
-        {
-            CommandBindings.Add(new RoutedCommandBinding(command, handler, canExecuteHandler));
-        }
+	private static void AddBinding(
+		RoutedCommand command,
+		EventHandler<ExecutedRoutedEventArgs> handler,
+		EventHandler<CanExecuteRoutedEventArgs> canExecuteHandler = null) => CommandBindings.Add(new RoutedCommandBinding(command, handler, canExecuteHandler));
 
-        private static void AddBinding(
-            RoutedCommand command,
-            KeyModifiers modifiers, Key key,
-            EventHandler<ExecutedRoutedEventArgs> handler,
-            EventHandler<CanExecuteRoutedEventArgs> canExecuteHandler = null)
-        {
-            AddBinding(command, new KeyGesture(key, modifiers), handler, canExecuteHandler);
-        }
+	private static void AddBinding(
+		RoutedCommand command,
+		KeyModifiers modifiers, Key key,
+		EventHandler<ExecutedRoutedEventArgs> handler,
+		EventHandler<CanExecuteRoutedEventArgs> canExecuteHandler = null) => AddBinding(command, new KeyGesture(key, modifiers), handler, canExecuteHandler);
 
-        private static void AddBinding(
+	private static void AddBinding(
             RoutedCommand command,
             KeyGesture gesture,
             EventHandler<ExecutedRoutedEventArgs> handler,
@@ -167,70 +161,58 @@ namespace AvaloniaEdit.Editing
             }
         }
 
-        private static TextArea GetTextArea(object target)
-        {
-            return target as TextArea;
-        }
+	private static TextArea GetTextArea(object target) => target as TextArea;
 
-        private static EventHandler<ExecutedRoutedEventArgs> OnMoveCaret(CaretMovementType direction)
-        {
-            return (target, args) =>
-            {
-                var textArea = GetTextArea(target);
-                if (textArea?.Document != null)
-                {
-                    args.Handled = true;
-                    textArea.ClearSelection();
-                    MoveCaret(textArea, direction);
-                    textArea.Caret.BringCaretToView();
-                }
-            };
-        }
+	private static EventHandler<ExecutedRoutedEventArgs> OnMoveCaret(CaretMovementType direction) => (target, args) =>
+																											  {
+																												  var textArea = GetTextArea(target);
+																												  if (textArea?.Document != null)
+																												  {
+																													  args.Handled = true;
+																													  textArea.ClearSelection();
+																													  MoveCaret(textArea, direction);
+																													  textArea.Caret.BringCaretToView();
+																												  }
+																											  };
 
-        private static EventHandler<ExecutedRoutedEventArgs> OnMoveCaretExtendSelection(CaretMovementType direction)
-        {
-            return (target, args) =>
-            {
-                var textArea = GetTextArea(target);
-                if (textArea?.Document != null)
-                {
-                    args.Handled = true;
-                    var oldPosition = textArea.Caret.Position;
-                    MoveCaret(textArea, direction);
-                    textArea.Selection = textArea.Selection.StartSelectionOrSetEndpoint(oldPosition, textArea.Caret.Position);
-                    textArea.Caret.BringCaretToView();
-                }
-            };
-        }
+	private static EventHandler<ExecutedRoutedEventArgs> OnMoveCaretExtendSelection(CaretMovementType direction) => (target, args) =>
+																															 {
+																																 var textArea = GetTextArea(target);
+																																 if (textArea?.Document != null)
+																																 {
+																																	 args.Handled = true;
+																																	 var oldPosition = textArea.Caret.Position;
+																																	 MoveCaret(textArea, direction);
+																																	 textArea.Selection = textArea.Selection.StartSelectionOrSetEndpoint(oldPosition, textArea.Caret.Position);
+																																	 textArea.Caret.BringCaretToView();
+																																 }
+																															 };
 
-        private static EventHandler<ExecutedRoutedEventArgs> OnMoveCaretBoxSelection(CaretMovementType direction)
-        {
-            return (target, args) =>
-            {
-                var textArea = GetTextArea(target);
-                if (textArea?.Document != null)
-                {
-                    args.Handled = true;
-                    // First, convert the selection into a rectangle selection
-                    // (this is required so that virtual space gets enabled for the caret movement)
-                    if (textArea.Options.EnableRectangularSelection && !(textArea.Selection is RectangleSelection))
-                    {
-                        textArea.Selection = textArea.Selection.IsEmpty
-                            ? new RectangleSelection(textArea, textArea.Caret.Position, textArea.Caret.Position)
-                            : new RectangleSelection(textArea, textArea.Selection.StartPosition,
-                                textArea.Caret.Position);
-                    }
-                    // Now move the caret and extend the selection
-                    var oldPosition = textArea.Caret.Position;
-                    MoveCaret(textArea, direction);
-                    textArea.Selection = textArea.Selection.StartSelectionOrSetEndpoint(oldPosition, textArea.Caret.Position);
-                    textArea.Caret.BringCaretToView();
-                }
-            };
-        }
+	private static EventHandler<ExecutedRoutedEventArgs> OnMoveCaretBoxSelection(CaretMovementType direction) => (target, args) =>
+																														  {
+																															  var textArea = GetTextArea(target);
+																															  if (textArea?.Document != null)
+																															  {
+																																  args.Handled = true;
+																																  // First, convert the selection into a rectangle selection
+																																  // (this is required so that virtual space gets enabled for the caret movement)
+																																  if (textArea.Options.EnableRectangularSelection && !(textArea.Selection is RectangleSelection))
+																																  {
+																																	  textArea.Selection = textArea.Selection.IsEmpty
+																																		  ? new RectangleSelection(textArea, textArea.Caret.Position, textArea.Caret.Position)
+																																		  : new RectangleSelection(textArea, textArea.Selection.StartPosition,
+																																			  textArea.Caret.Position);
+																																  }
+																																  // Now move the caret and extend the selection
+																																  var oldPosition = textArea.Caret.Position;
+																																  MoveCaret(textArea, direction);
+																																  textArea.Selection = textArea.Selection.StartSelectionOrSetEndpoint(oldPosition, textArea.Caret.Position);
+																																  textArea.Caret.BringCaretToView();
+																															  }
+																														  };
 
-        #region Caret movement
-        internal static void MoveCaret(TextArea textArea, CaretMovementType direction)
+	#region Caret movement
+	internal static void MoveCaret(TextArea textArea, CaretMovementType direction)
         {
             var desiredXPos = textArea.Caret.DesiredXPos;
             textArea.Caret.Position = GetNewCaretPosition(textArea.TextView, textArea.Caret.Position, direction, textArea.Selection.EnableVirtualSpace, ref desiredXPos);
@@ -466,4 +448,3 @@ namespace AvaloniaEdit.Editing
         }
         #endregion
     }
-}

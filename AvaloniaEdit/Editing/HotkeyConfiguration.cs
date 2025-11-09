@@ -14,9 +14,6 @@ public static class HotkeyConfiguration
         get { return Application.Current.PlatformSettings.HotkeyConfiguration; }
     }
 
-    static HotkeyConfiguration()
-    {
-        BoxSelectionModifiers = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
-                KeyModifiers.Control : KeyModifiers.Alt;
-    }
+	static HotkeyConfiguration() => BoxSelectionModifiers = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ?
+				KeyModifiers.Control : KeyModifiers.Alt;
 }

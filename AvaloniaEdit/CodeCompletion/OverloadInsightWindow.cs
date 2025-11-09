@@ -20,8 +20,8 @@ using Avalonia;
 using AvaloniaEdit.Editing;
 using Avalonia.Input;
 
-namespace AvaloniaEdit.CodeCompletion
-{
+namespace AvaloniaEdit.CodeCompletion;
+
     /// <summary>
     /// Insight window that shows an OverloadViewer.
     /// </summary>
@@ -72,4 +72,3 @@ namespace AvaloniaEdit.CodeCompletion
             }
         }
     }
-}

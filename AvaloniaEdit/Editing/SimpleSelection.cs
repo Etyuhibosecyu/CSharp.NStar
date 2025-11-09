@@ -21,8 +21,8 @@ using System.Collections.Generic;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     /// <summary>
     /// A simple selection.
     /// </summary>
@@ -54,9 +54,8 @@ namespace AvaloniaEdit.Editing
         /// <inheritdoc/>
         public override void ReplaceSelectionWithText(string newText)
         {
-            if (newText == null)
-                throw new ArgumentNullException(nameof(newText));
-            using (TextArea.Document.RunUpdate())
+		ArgumentNullException.ThrowIfNull(newText);
+		using (TextArea.Document.RunUpdate())
             {
                 var segmentsToDelete = TextArea.GetDeletableSegments(SurroundingSegment);
                 for (var i = segmentsToDelete.Length - 1; i >= 0; i--)
@@ -99,9 +98,8 @@ namespace AvaloniaEdit.Editing
         /// <inheritdoc/>
         public override Selection UpdateOnDocumentChange(DocumentChangeEventArgs e)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
-            int newStartOffset, newEndOffset;
+		ArgumentNullException.ThrowIfNull(e);
+		int newStartOffset, newEndOffset;
             if (_startOffset <= _endOffset)
             {
                 newStartOffset = e.GetNewOffset(_startOffset);
@@ -125,13 +123,10 @@ namespace AvaloniaEdit.Editing
         /// <inheritdoc/>
         public override int Length => Math.Abs(_endOffset - _startOffset);
 
-        /// <inheritdoc/>
-        public override Selection SetEndpoint(TextViewPosition endPosition)
-        {
-            return Create(TextArea, _start, endPosition);
-        }
+	/// <inheritdoc/>
+	public override Selection SetEndpoint(TextViewPosition endPosition) => Create(TextArea, _start, endPosition);
 
-        public override Selection StartSelectionOrSetEndpoint(TextViewPosition startPosition, TextViewPosition endPosition)
+	public override Selection StartSelectionOrSetEndpoint(TextViewPosition startPosition, TextViewPosition endPosition)
         {
             var document = TextArea.Document;
             if (document == null)
@@ -151,19 +146,14 @@ namespace AvaloniaEdit.Editing
         /// <inheritdoc/>
         public override bool Equals(object obj)
         {
-            var other = obj as SimpleSelection;
-            if (other == null) return false;
-            // ReSharper disable ImpureMethodCallOnReadonlyValueField
-            return _start.Equals(other._start) && _end.Equals(other._end)
+		if (obj is not SimpleSelection other) return false;
+		// ReSharper disable ImpureMethodCallOnReadonlyValueField
+		return _start.Equals(other._start) && _end.Equals(other._end)
                 && _startOffset == other._startOffset && _endOffset == other._endOffset
                 && TextArea == other.TextArea;
             // ReSharper restore ImpureMethodCallOnReadonlyValueField
         }
 
-        /// <inheritdoc/>
-        public override string ToString()
-        {
-            return "[SimpleSelection Start=" + _start + " End=" + _end + "]";
-        }
-    }
+	/// <inheritdoc/>
+	public override string ToString() => "[SimpleSelection Start=" + _start + " End=" + _end + "]";
 }

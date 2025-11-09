@@ -26,8 +26,8 @@ using Avalonia.Threading;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Utils;
 
-namespace AvaloniaEdit.Editing
-{
+namespace AvaloniaEdit.Editing;
+
     /// <summary>
     /// Handles selection of text using the mouse.
     /// </summary>
@@ -74,13 +74,10 @@ namespace AvaloniaEdit.Editing
         private Point _possibleDragStartMousePos;
         private Point _lastMousePosition;
 
-        #region Constructor + Attach + Detach
-        public SelectionMouseHandler(TextArea textArea)
-        {
-            TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
-        }
+	#region Constructor + Attach + Detach
+	public SelectionMouseHandler(TextArea textArea) => TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
-        public TextArea TextArea { get; }
+	public TextArea TextArea { get; }
 
         public void Attach()
         {
@@ -278,50 +275,48 @@ namespace AvaloniaEdit.Editing
             }
         }
 
-        void OnDragException(Exception ex)
-        {
-            // swallows exceptions during drag'n'drop or reports them incorrectly, so
-            // we re-throw them later to allow the application's unhandled exception handler
-            // to catch them
-            Dispatcher.UIThread.Post(
-                new Action(delegate
-                {
-                    throw new DragDropException("Exception during drag'n'drop", ex);
-                }),
-                DispatcherPriority.Send);
-        }
+	void OnDragException(Exception ex) =>
+		// swallows exceptions during drag'n'drop or reports them incorrectly, so
+		// we re-throw them later to allow the application's unhandled exception handler
+		// to catch them
+		Dispatcher.UIThread.Post(
+			new Action(delegate
+			{
+				throw new DragDropException("Exception during drag'n'drop", ex);
+			}),
+			DispatcherPriority.Send);
 
-        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        //void textArea_GiveFeedback(object sender, GiveFeedbackEventArgs e)
-        //{
-        //	try {
-        //		e.UseDefaultCursors = true;
-        //		e.Handled = true;
-        //	} catch (Exception ex) {
-        //		OnDragException(ex);
-        //	}
-        //}
+	//[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+	//void textArea_GiveFeedback(object sender, GiveFeedbackEventArgs e)
+	//{
+	//	try {
+	//		e.UseDefaultCursors = true;
+	//		e.Handled = true;
+	//	} catch (Exception ex) {
+	//		OnDragException(ex);
+	//	}
+	//}
 
-        //[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        //void textArea_QueryContinueDrag(object sender, QueryContinueDragEventArgs e)
-        //{
-        //	try {
-        //		if (e.EscapePressed) {
-        //			e.Action = DragAction.Cancel;
-        //		} else if ((e.KeyStates & DragDropKeyStates.LeftMouseButton) != DragDropKeyStates.LeftMouseButton) {
-        //			e.Action = DragAction.Drop;
-        //		} else {
-        //			e.Action = DragAction.Continue;
-        //		}
-        //		e.Handled = true;
-        //	} catch (Exception ex) {
-        //		OnDragException(ex);
-        //	}
-        //}
-        #endregion
+	//[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+	//void textArea_QueryContinueDrag(object sender, QueryContinueDragEventArgs e)
+	//{
+	//	try {
+	//		if (e.EscapePressed) {
+	//			e.Action = DragAction.Cancel;
+	//		} else if ((e.KeyStates & DragDropKeyStates.LeftMouseButton) != DragDropKeyStates.LeftMouseButton) {
+	//			e.Action = DragAction.Drop;
+	//		} else {
+	//			e.Action = DragAction.Continue;
+	//		}
+	//		e.Handled = true;
+	//	} catch (Exception ex) {
+	//		OnDragException(ex);
+	//	}
+	//}
+	#endregion
 
-        #region Start Drag
-        object currentDragDescriptor;
+	#region Start Drag
+	object currentDragDescriptor;
 
         async void StartDrag(PointerEventArgs e)
         {
@@ -794,4 +789,3 @@ namespace AvaloniaEdit.Editing
         }
         #endregion
     }
-}

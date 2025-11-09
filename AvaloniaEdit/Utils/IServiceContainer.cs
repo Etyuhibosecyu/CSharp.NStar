@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace AvaloniaEdit.Utils
-{
+namespace AvaloniaEdit.Utils;
+
     public interface IServiceContainer : IServiceProvider
     {
         void AddService(Type serviceType, object serviceInstance);
@@ -12,23 +12,20 @@ namespace AvaloniaEdit.Utils
 
     public static class ServiceExtensions
     {
-        public static T GetService<T>(this IServiceProvider provider) where T : class
-        {
-            return provider.GetService(typeof(T)) as T;
-        }
+	public static T GetService<T>(this IServiceProvider provider) where T : class => provider.GetService(typeof(T)) as T;
 
-        public static void AddService<T>(this IServiceContainer container, T serviceInstance)
+	public static void AddService<T>(this IServiceContainer container, T serviceInstance)
         {
-            if (container == null) throw new ArgumentNullException(nameof(container));
+		ArgumentNullException.ThrowIfNull(container);
 
-            container.AddService(typeof(T), serviceInstance);
+		container.AddService(typeof(T), serviceInstance);
         }
 
         public static void RemoveService<T>(this IServiceContainer container)
         {
-            if (container == null) throw new ArgumentNullException(nameof(container));
+		ArgumentNullException.ThrowIfNull(container);
 
-            container.RemoveService(typeof(T));
+		container.RemoveService(typeof(T));
         }
     }
 
@@ -48,14 +45,7 @@ namespace AvaloniaEdit.Utils
             return service;
         }
 
-        public void AddService(Type serviceType, object serviceInstance)
-        {
-            _services[serviceType] = serviceInstance;
-        }
+	public void AddService(Type serviceType, object serviceInstance) => _services[serviceType] = serviceInstance;
 
-        public void RemoveService(Type serviceType)
-        {
-            _services.Remove(serviceType);
-        }
-    }
+	public void RemoveService(Type serviceType) => _services.Remove(serviceType);
 }
