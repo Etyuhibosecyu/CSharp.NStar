@@ -57,10 +57,12 @@ namespace AvaloniaEdit.Document;
         }
 
 	[Conditional("DEBUG")]
-	private void DebugVerifyAccess() =>
+	private void DebugVerifyAccess()
+	{
 #if DEBUG
 		_document.DebugVerifyAccess();
 #endif
+	}
 
 	#endregion
 

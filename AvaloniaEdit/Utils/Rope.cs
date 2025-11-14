@@ -625,7 +625,7 @@ namespace AvaloniaEdit.Utils;
 #if DEBUG
 		Root.GetTreeAsString();
 #else
-		return "Not available in release build.";
+		"Not available in release build.";
 #endif
 
 	#endregion

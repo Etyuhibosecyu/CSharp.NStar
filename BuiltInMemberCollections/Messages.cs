@@ -210,6 +210,7 @@ public static class Messages
 			0x4063 => "a loop detected while analyzing if all the required properties are initialized"
 				+ " in the constructor the type \"" + parameters[0] + "\"; consider reordering the class members,"
 				+ " especially placing the properties before the constructors",
+			0x4070 => "the property \"" + parameters[0] + "\" is get-only and cannot be set",
 			0x8000 => "the properties and the methods are static in the static class implicitly;" +
 				" the word \"static\" is not necessary",
 			0x8001 => "the semicolon in the end of the line with condition or cycle may easily be unnoticed" +

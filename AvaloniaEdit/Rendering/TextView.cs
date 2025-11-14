@@ -713,7 +713,7 @@ namespace AvaloniaEdit.Rendering;
             // TODO: EnsureVisualLines() ?
             foreach (var visualLine in _allVisualLines)
             {
-                Debug.Assert(visualLine.IsDisposed == false);
+                Debug.Assert(!visualLine.IsDisposed);
                 var start = visualLine.FirstDocumentLine.LineNumber;
                 var end = visualLine.LastDocumentLine.LineNumber;
                 if (documentLineNumber >= start && documentLineNumber <= end)
@@ -972,7 +972,7 @@ namespace AvaloniaEdit.Rendering;
 
             foreach (var line in _allVisualLines)
             {
-                Debug.Assert(line.IsDisposed == false);
+                Debug.Assert(!line.IsDisposed);
                 if (!_newVisualLines.Contains(line))
                     DisposeVisualLine(line);
             }

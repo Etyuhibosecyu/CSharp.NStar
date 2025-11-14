@@ -7,9 +7,18 @@
 		<Nullable>enable</Nullable>
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\CSharp.NStar\CSharp.NStar.csproj" />
 	</ItemGroup>
+
+	<Target Name="MyPostPublish" AfterTargets="Publish">
+		<Exec Command="copy &quot;$(SolutionDir)\CSharp.NStar\packages\dotnet.7z&quot; &quot;$(PublishDir)\dotnet.7z&quot; /Y" />
+	</Target>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="copy &quot;$(SolutionDir)\CSharp.NStar\packages\dotnet.7z&quot; &quot;$(TargetDir)\dotnet.7z&quot; /Y" />
+	</Target>
 </Project>

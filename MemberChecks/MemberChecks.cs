@@ -9,6 +9,7 @@ global using static CSharp.NStar.NStarType;
 global using static CSharp.NStar.TypeChecks;
 global using static CSharp.NStar.TypeConverters;
 global using static NStar.Core.Extents;
+global using static System.Math;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 using System.Runtime.CompilerServices;
@@ -161,13 +162,31 @@ public static class MemberChecks
 			return true;
 		}
 		else if (CheckContainer(container, x => UserDefinedTypes.TryGetValue(SplitType(x), out userDefinedType),
-			out matchingContainer) && ConstantExists(userDefinedType.BaseType, name, out constant))
+			out matchingContainer))
 		{
-			inBase = true;
-			return true;
+			if (ConstantExists(userDefinedType.BaseType, name, out constant))
+			{
+				inBase = true;
+				return true;
+			}
 		}
 		constant = null;
 		inBase = false;
+		return false;
+	}
+
+	public static bool UserDefinedPolymorphTypeExists(BlockStack container, String name,
+		[MaybeNullWhen(false)] out BlockStack matchingContainer)
+	{
+		UserDefinedType userDefinedType = default!;
+		if (CheckContainer(container, x => UserDefinedTypes.TryGetValue(SplitType(x), out userDefinedType),
+			out matchingContainer))
+		{
+			var foundIndex = userDefinedType.Restrictions
+				.FindIndex(x => x.RestrictionType.Equals(RecursiveType) && x.Name == name);
+			if (foundIndex >= 0)
+				return true;
+		}
 		return false;
 	}
 
@@ -365,7 +384,8 @@ public static class MemberChecks
 
 	public static bool UserDefinedFunctionExists(BlockStack container, String name)
 	{
-		if (CheckContainer(container, UserDefinedFunctions.ContainsKey, out var matchingContainer) && UserDefinedFunctions[matchingContainer].TryGetValue(name, out var method_overloads))
+		if (CheckContainer(container, UserDefinedFunctions.ContainsKey, out var matchingContainer)
+			&& UserDefinedFunctions[matchingContainer].TryGetValue(name, out var method_overloads))
 			return true;
 		else if (UserDefinedTypes.TryGetValue(SplitType(container), out var userDefinedType))
 		{
@@ -412,7 +432,8 @@ public static class MemberChecks
 		[MaybeNullWhen(false)] out UserDefinedMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer)
 	{
-		if (CheckContainer(container, UserDefinedFunctions.ContainsKey, out matchingContainer) && UserDefinedFunctions[matchingContainer].TryGetValue(name, out var overloads))
+		if (CheckContainer(container, UserDefinedFunctions.ContainsKey, out matchingContainer)
+			&& UserDefinedFunctions[matchingContainer].TryGetValue(name, out var overloads))
 		{
 			functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
 			return true;
@@ -421,7 +442,32 @@ public static class MemberChecks
 		return false;
 	}
 
-	public static bool ConstructorsExist(NStarType container, List<NStarType> callParameterTypes, [MaybeNullWhen(false)] out ConstructorOverloads constructors)
+	//public static List<(NStarType ExtraType, NStarType TypeToInsert)> GetReplacementPatterns(NStarType[] genericArguments,
+	//	NStarType[] parameterTypes)
+	//{
+	//	var length = Min(genericArguments.Length, parameterTypes.Length);
+	//	List<(Type ExtraType, Type TypeToInsert)> result = [];
+	//	for (var i = 0; i < length; i++)
+	//	{
+	//		var genericArgument = genericArguments[i];
+	//		var parameterType = parameterTypes[i];
+	//		if (TypeIsFullySpecified(parameterType, []))
+	//			continue;
+	//		var parameterGenericArguments = parameterType.GetGenericTypeDefinition().GetGenericArguments();
+	//		var index = parameterGenericArguments.FindIndex(x => x.Name == genericArgument.Name);
+	//		if (index != -1)
+	//		{
+	//			result.Add((genericArgument, parameterType.GenericTypeArguments[index]));
+	//			continue;
+	//		}
+	//		result.AddRange(GetReplacementPatterns(genericArgument.GetGenericArguments(),
+	//			parameterType.GetGenericArguments()));
+	//	}
+	//	return result;
+	//}
+
+	public static bool ConstructorsExist(NStarType container, List<NStarType> callParameterTypes,
+		[MaybeNullWhen(false)] out ConstructorOverloads constructors)
 	{
 		var containerType = SplitType(container.MainType);
 		if (!TypeExists(containerType, out var netType))
@@ -468,15 +514,18 @@ public static class MemberChecks
 		return true;
 	}
 
-	public static bool UserDefinedConstructorsExist(NStarType container, List<NStarType> parameterTypes, [MaybeNullWhen(false)] out ConstructorOverloads constructors)
+	public static bool UserDefinedConstructorsExist(NStarType container, List<NStarType> parameterTypes,
+		[MaybeNullWhen(false)] out ConstructorOverloads constructors)
 	{
 		if (UserDefinedConstructors.TryGetValue(container.MainType, out var temp_constructors)
 			&& !(UserDefinedTypes.TryGetValue(SplitType(container.MainType), out var userDefinedType)
 			&& (userDefinedType.Attributes & (TypeAttributes.Struct | TypeAttributes.Static))
 			is not (0 or TypeAttributes.Sealed or TypeAttributes.Struct)))
 		{
-			constructors = [.. temp_constructors, .. ConstructorsExist(userDefinedType.BaseType, parameterTypes, out var baseConstructors)
-				? baseConstructors : [], .. UserDefinedConstructorsExist(userDefinedType.BaseType, parameterTypes, out baseConstructors)
+			constructors = [.. temp_constructors,
+				.. ConstructorsExist(userDefinedType.BaseType, parameterTypes, out var baseConstructors)
+				? baseConstructors : [],
+				.. UserDefinedConstructorsExist(userDefinedType.BaseType, parameterTypes, out baseConstructors)
 				? baseConstructors : []];
 			if (constructors.Length != 0)
 				return true;
@@ -487,9 +536,12 @@ public static class MemberChecks
 
 	public static bool TypeIsFullySpecified(NStarType type, BlockStack container)
 	{
+		BlockStack partialContainer;
+		String name;
 		if (type.MainType.Length == 0 || type.MainType.Peek().BlockType == BlockType.Extra
-			&& !ConstantExists(new(new(type.MainType.SkipLast(1)), NoBranches), type.MainType.Peek().Name, out _)
-			&& !(type.MainType.Length == 1
+			&& !(UserDefinedPolymorphTypeExists(partialContainer = new(type.MainType.SkipLast(1)),
+			name = type.MainType.Peek().Name, out _) || ConstantExists(new(partialContainer, NoBranches), name, out _)
+			|| type.MainType.Length == 1
 			&& UserDefinedConstantExists(container, type.MainType.Peek().Name, out _, out _, out _)))
 			return false;
 		foreach (var x in type.ExtraTypes)

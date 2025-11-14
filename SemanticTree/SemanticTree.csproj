@@ -6,6 +6,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="System.CodeDom" Version="9.0.10" />
 		<ProjectReference Include="..\MainParsing\MainParsing.csproj" />
 	</ItemGroup>
 </Project>

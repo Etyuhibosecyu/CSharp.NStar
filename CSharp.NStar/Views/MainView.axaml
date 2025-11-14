@@ -79,7 +79,7 @@
 						VerticalAlignment="Stretch"
 						Click="ButtonSaveExe_Click">
 						<TextBlock
-							Text="Сохранить EXE (в разраб.)"
+							Text="Сохранить EXE"
 							TextAlignment="Center"
 							FontFamily="Arial Narrow"
 							FontSize="32"

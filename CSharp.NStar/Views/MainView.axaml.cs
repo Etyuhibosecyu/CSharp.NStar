@@ -12,6 +12,7 @@ using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
 using AvaloniaEdit.Utils;
 using MsBox.Avalonia;
+using NStar.EasyEvalLib;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Reflection;
@@ -26,9 +27,10 @@ public partial class MainView : UserControl
 	private readonly String enteredText = [];
 	private readonly Random random = new();
 
-	private static readonly ImmutableArray<string> minorVersions = ["2o"];
+	private static readonly ImmutableArray<string> minorVersions = ["2o", "2o1", "2o2", "3"];
 	private static readonly ImmutableArray<string> langs = ["C#"];
-	private static readonly string AlphanumericCharactersWithoutDot = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	private static readonly string AlphanumericCharactersWithoutDot
+		= "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	private static readonly G.SortedSet<String> AutoCompletionList = [.. new List<String>("abstract", "break", "case", "Class",
 		"const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent",
 		"extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst",
@@ -82,6 +84,7 @@ public partial class MainView : UserControl
 			ButtonExecute.IsEnabled = true;
 			ButtonOpenCode.IsEnabled = true;
 			ButtonSaveCode.IsEnabled = true;
+			ButtonSaveExe.IsEnabled = true;
 		});
 	}).Wait();
 
@@ -252,7 +255,11 @@ public partial class MainView : UserControl
 			await TopLevel.GetTopLevel(this)?.StorageProvider.OpenFilePickerAsync(new()
 			{
 				Title = "Select the C#.NStar code file",
-				FileTypeFilter = [new("C#.NStar code files") { Patterns = ["*.n-star-pre-pre-i"], AppleUniformTypeIdentifiers = ["UTType.Item"], MimeTypes = ["multipart/mixed"] }],
+				FileTypeFilter = [new("C#.NStar code files")
+				{
+					Patterns = ["*.n-star-pre-pre-i"], AppleUniformTypeIdentifiers = ["UTType.Item"],
+					MimeTypes = ["multipart/mixed"]
+				}],
 			})!);
 		if (fileResult?.Count == 0)
 			return;
@@ -361,7 +368,8 @@ public partial class MainView : UserControl
 			return;
 		try
 		{
-			File.WriteAllText(filename, ".NStar Pre-Pre-I-" + minorVersions[^1] + "\nC#\n<Project>\n\n</Project>\n" + TextBoxInput.Text);
+			File.WriteAllText(filename, ".NStar Pre-Pre-I-" + minorVersions[^1] + "\nC#\n<Project>\n\n</Project>\n"
+				+ TextBoxInput.Text);
 		}
 		catch
 		{
@@ -392,27 +400,82 @@ public partial class MainView : UserControl
 		if (string.IsNullOrEmpty(outputPath))
 			return;
 		var outputDir = Path.GetDirectoryName(outputPath);
-		var assembly = Assembly.GetExecutingAssembly();
-		// Получаем все зависимости
-		var dependencies = GetAllDependencies(assembly);
-		// Копируем все зависимости
-		foreach (var dep in dependencies)
-		{
-			var targetPath = Path.Combine(outputDir!, dep.GetName().Name + ".dll");
-			File.Copy(dep.Location, targetPath, true);
-		}
-		// Копируем основную сборку
-		File.Copy(assembly.Location, outputPath, true);
+		var code = CompileProgram(TextBoxInput.Text);
+		var tempDir = Environment.GetEnvironmentVariable("temp") ?? throw new IOException();
+		tempDir += @"\Program";
+		if (!Directory.Exists(tempDir))
+			Directory.CreateDirectory(tempDir);
+		File.WriteAllBytes(tempDir + @"\7za.exe", NStar.Resources._7za);
+		File.WriteAllBytes(tempDir + @"\bat.bat", NStar.Resources.bat);
+		File.WriteAllBytes(tempDir + @"\bat2.bat", NStar.Resources.bat2);
+		File.Copy(AppDomain.CurrentDomain.BaseDirectory + @"\dotnet.7z", tempDir + @"\dotnet.7z", true);
+		if (!Directory.Exists(tempDir += @"\Program"))
+			Directory.CreateDirectory(tempDir);
+		Process.Start(tempDir + @"\..\bat.bat").WaitForExit();
+		File.WriteAllText(tempDir + @"\Program.cs", code.ToString());
+		File.WriteAllText(tempDir + @"\Program.csproj", @"<Project Sdk=""Microsoft.NET.Sdk"">
 
-		// Создаем runtimeconfig.json
-		CreateRuntimeConfig(outputPath);
-		File.WriteAllBytes(outputPath, CompileProgram(TextBoxInput.Text));
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net9.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<PublishSingleFile>true</PublishSingleFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+" + string.Join("", Directory.GetFiles(Directory.GetDirectories(tempDir
+			+ @"\..\shared\Microsoft.NETCore.App")[^1], "*.dll").ToHashSet()
+			.AddRange(Directory.GetFiles(Path.GetDirectoryName(Path.GetFullPath("SemanticTree.dll"))!, "*.dll")).ToArray(x =>
+		{
+			var filename = File.Exists(x) ? x
+			: Directory.GetDirectories(tempDir + @"\shared\Microsoft.NETCore.App")[^1] + @"\" + x;
+			x = Path.GetFileName(x);
+			File.Copy(filename, tempDir + @"\" + x, true);
+			if (x is "CSharp.NStar.dll" or "CSharp.NStar.Desktop.dll" or "System.Private.CoreLib.dll"
+				|| x.ToLower() == x)
+				return "";
+			return $@"		<Reference Include=""{x}"">
+		  <HintPath>./{x}</HintPath>
+		</Reference>
+";
+		})) + @"	  <None Update=""libHarfBuzzSharp.dll"">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update=""libonigwrap.dll"">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update=""libSkiaSharp.dll"">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+</Project>
+");
+		Process.Start(tempDir + @"\..\bat2.bat").WaitForExit();
+		if (!Directory.Exists(tempDir + @"\publish"))
+		{
+			await Dispatcher.UIThread.InvokeAsync(async () =>
+				await MessageBoxManager.GetMessageBoxStandard("",
+				"Произошла ошибка при попытке сохранить EXE. Возможно, у вас установлена конфликтующая версия .NET."
+				+ " Если после ее удаления проблема остается, обратитесь к разработчикам приложения.",
+				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
+			return;
+		}
+		try
+		{
+			Directory.GetFiles(tempDir + @"\publish", "*.pdb").ForEach(File.Delete);
+			Directory.GetFiles(tempDir + @"\publish").ForEach(x =>
+				File.Copy(x, Path.Combine(outputDir!, Path.GetFileName(x)), true));
+			Directory.Delete(Path.GetDirectoryName(tempDir)!, true);
+		}
+		catch
+		{
+		}
 	}
 
-	private List<Assembly> GetAllDependencies(Assembly assembly)
+	private static ListHashSet<Assembly> GetAllDependencies(Assembly assembly)
 	{
-		var dependencies = new List<Assembly>();
-		var seen = new ListHashSet<string>();
+		var dependencies = new ListHashSet<Assembly>();
+		var seen = GetExtraAssemblies().ToHashSet();
 
 		void AddDependencies(Assembly asm)
 		{
@@ -439,24 +502,24 @@ public partial class MainView : UserControl
 		return dependencies;
 	}
 
-	private void CreateRuntimeConfig(string outputPath)
+	private static void CreateRuntimeConfig(string outputPath)
 	{
 		var config = $@"{{
-    ""runtimeOptions"": {{
+	""runtimeOptions"": {{
 		""tfm"": ""net{Environment.Version.Major}.{Environment.Version.Minor}"",
-        ""frameworks"": [
-            {{
-                ""name"": ""Microsoft.NETCore.App"",
-                ""version"": ""{Environment.Version.Major}.{Environment.Version.Minor}.{Environment.Version.Build}""
-            }}
-        ],
-        ""configProperties"": {{
-            ""System.Runtime.Loader.AssemblyLoadContext.DebuggingEnabled"": true
-        }}
-    }}
+		""frameworks"": [
+			{{
+				""name"": ""Microsoft.NETCore.App"",
+				""version"": ""{Environment.Version.Major}.{Environment.Version.Minor}.{Environment.Version.Build}""
+			}}
+		],
+		""configProperties"": {{
+			""System.Runtime.Loader.AssemblyLoadContext.DebuggingEnabled"": true
+		}}
+	}}
 }}";
 
-		var configPath = Path.GetFileNameWithoutExtension(outputPath) + ".runtimeconfig.json";
+		var configPath = outputPath.Replace(".exe", "").Replace(".dll", "") + ".runtimeconfig.json";
 		File.WriteAllText(configPath, config);
 	}
 

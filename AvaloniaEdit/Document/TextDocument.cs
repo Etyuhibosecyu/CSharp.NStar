@@ -1046,7 +1046,7 @@ namespace AvaloniaEdit.Document;
 #if DEBUG
 		_lineTree.GetTreeAsString();
 #else
-		return "Not available in release build.";
+		"Not available in release build.";
 #endif
 
 
@@ -1059,7 +1059,7 @@ namespace AvaloniaEdit.Document;
 #if DEBUG
 		_anchorTree.GetTreeAsString();
 #else
-		return "Not available in release build.";
+		"Not available in release build.";
 #endif
 
 	#endregion

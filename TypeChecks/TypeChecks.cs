@@ -10,6 +10,9 @@ public static class TypeChecks
 {
 	public static bool ExtraTypeExists(BlockStack container, String typeName)
 	{
+		if (container.Length != 0 && UserDefinedTypes.TryGetValue(SplitType(container), out var userDefinedType)
+			&& userDefinedType.Restrictions.Exists(x => x.Name == typeName))
+			return true;
 		if (UserDefinedConstants.TryGetValue(container, out var containerConstants)
 			&& containerConstants.TryGetValue(typeName, out var constantType))
 			return TypeIsPrimitive(constantType.NStarType.MainType) && constantType.NStarType.MainType.Peek().Name == "typename"

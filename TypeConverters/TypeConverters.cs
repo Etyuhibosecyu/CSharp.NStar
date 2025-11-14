@@ -24,7 +24,13 @@ namespace CSharp.NStar;
 public static class TypeConverters
 {
 	private static readonly Random random = new();
-	private static readonly List<String> CollectionTypesList = [nameof(Buffer), nameof(Dictionary<bool, bool>), nameof(FastDelHashSet<bool>), "HashTable", nameof(ICollection), nameof(G.IEnumerable<bool>), nameof(IList), nameof(IReadOnlyCollection<bool>), nameof(IReadOnlyList<bool>), nameof(LimitedQueue<bool>), nameof(G.LinkedList<bool>), nameof(G.LinkedListNode<bool>), nameof(ListHashSet<bool>), nameof(Mirror<bool, bool>), nameof(NList<bool>), nameof(Queue<bool>), nameof(ParallelHashSet<bool>), nameof(ReadOnlySpan<bool>), nameof(Slice<bool>), nameof(SortedDictionary<bool, bool>), nameof(SortedSet<bool>), nameof(Span<bool>), nameof(Stack<bool>), nameof(TreeHashSet<bool>), nameof(TreeSet<bool>)];
+	private static readonly List<String> CollectionTypesList = [nameof(Buffer), nameof(Dictionary<bool, bool>),
+		nameof(FastDelHashSet<bool>), "HashTable", nameof(ICollection), nameof(G.IEnumerable<bool>), nameof(IList),
+		nameof(IReadOnlyCollection<bool>), nameof(IReadOnlyList<bool>), nameof(LimitedQueue<bool>), nameof(G.LinkedList<bool>),
+		nameof(G.LinkedListNode<bool>), nameof(ListHashSet<bool>), nameof(Mirror<bool, bool>), nameof(NList<bool>),
+		nameof(Queue<bool>), nameof(ParallelHashSet<bool>), nameof(ReadOnlySpan<bool>), nameof(Slice<bool>),
+		nameof(SortedDictionary<bool, bool>), nameof(SortedSet<bool>), nameof(Span<bool>), nameof(Stack<bool>),
+		nameof(TreeHashSet<bool>), nameof(TreeSet<bool>)];
 	private static readonly Dictionary<Type, bool> memoizedTypes = [];
 
 	public static bool IsUnmanaged(this Type netType)
@@ -274,9 +280,6 @@ public static class TypeConverters
 		new(partialBlockStack.Convert(x => new TreeBranch("type", 0, []) { Extra
 			= new NStarType(new BlockStack([new Block(BlockType.Primitive, x, 1)]), NoBranches) }));
 
-	public static (BlockStack Container, String Type) SplitType(BlockStack blockStack) =>
-		(new(blockStack.ToList().SkipLast(1)), blockStack.TryPeek(out var block) ? block.Name : []);
-
 	public static bool TypesAreCompatible(NStarType sourceType, NStarType destinationType,
 		out bool warning, String? srcExpr, out String? destExpr, out String? extraMessage)
 	{
@@ -354,7 +357,8 @@ public static class TypeConverters
 				if (sourceType.ExtraTypes.Length > 16)
 				{
 					destExpr = "default!";
-					extraMessage = "list can be constructed from tuple of up to 16 elements, if you need more, use the other ways like Chain() or Fill()";
+					extraMessage = "list can be constructed from tuple of up to 16 elements,"
+						+ " if you need more, use the other ways like Chain() or Fill()";
 					return false;
 				}
 				else if (!sourceType.ExtraTypes.All(x => x.Value.Name == "type" && x.Value.Extra is NStarType ValueType
@@ -380,6 +384,8 @@ public static class TypeConverters
 			else if (SourceDepth <= DestinationDepth
 				&& TypesAreCompatible(SourceLeafType, DestinationLeafType, out warning, null, out _, out _) && !warning)
 			{
+				var toInsert = ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(')
+					.Repeat(DestinationDepth - SourceDepth);
 				if (srcExpr == null)
 					destExpr = null;
 				else if (!SourceLeafType.Equals(DestinationLeafType) && TypeIsPrimitive(SourceLeafType.MainType)
@@ -387,14 +393,14 @@ public static class TypeConverters
 					&& DestinationLeafType.MainType.Peek().Name != "string")
 				{
 					srcExpr.Replace(AdaptTerminalType(srcExpr, SourceLeafType, DestinationLeafType));
-					srcExpr.Insert(0, ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth));
+					srcExpr.Insert(0, toInsert);
 					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth));
 					destExpr = srcExpr;
 					return true;
 				}
 				else
 				{
-					srcExpr.Insert(0, ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth));
+					srcExpr.Insert(0, toInsert);
 					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth));
 					destExpr = srcExpr;
 				}
@@ -403,11 +409,13 @@ public static class TypeConverters
 			else if (SourceDepth <= DestinationDepth + 1
 				&& SourceLeafType.Equals(StringType) && DestinationLeafType.Equals(CharType))
 			{
+				var toInsert = ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(')
+					.Repeat(DestinationDepth - SourceDepth - 1);
 				if (srcExpr == null)
 					destExpr = null;
 				else
 				{
-					srcExpr.Insert(0, ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(').Repeat(DestinationDepth - SourceDepth - 1));
+					srcExpr.Insert(0, toInsert);
 					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth - 1));
 					destExpr = srcExpr;
 				}
@@ -526,13 +534,19 @@ public static class TypeConverters
 			{
 				var new_types3_list = GetCompatibleTypes(new_types_list[i], types_list);
 				foundIndex = new_types3_list.FindIndex(x => x.Type.Equals(destinationType));
-				if (foundIndex != -1)
+				if (foundIndex == -1)
 				{
-					warning = new_types3_list[foundIndex].Warning;
-					destExpr = srcExpr == null ? null : !warning ? srcExpr : AdaptTerminalType(srcExpr, sourceType, destinationType);
-					return true;
+					new_types2_list.AddRange(new_types3_list);
+					continue;
 				}
-				new_types2_list.AddRange(new_types3_list);
+				warning = new_types3_list[foundIndex].Warning;
+				if (srcExpr == null)
+					destExpr = null;
+				else if (!warning)
+					destExpr = srcExpr;
+				else
+					destExpr = AdaptTerminalType(srcExpr, sourceType, destinationType);
+				return true;
 			}
 			new_types_list = [.. new_types2_list];
 			types_list.AddRange(new_types2_list);
@@ -644,7 +658,8 @@ public static class TypeConverters
 			{
 				if (NStarType.ExtraTypes[0].Name == "type"
 					|| !int.TryParse(NStarType.ExtraTypes[0].Name.ToString(), out var levelsCount) || levelsCount < 1
-					|| NStarType.ExtraTypes[^1].Name != "type" || NStarType.ExtraTypes[^1].Extra is not NStarType InnerNStarType)
+					|| NStarType.ExtraTypes[^1].Name != "type"
+					|| NStarType.ExtraTypes[^1].Extra is not NStarType InnerNStarType)
 					throw new InvalidOperationException();
 				var netType = TypeMapping(InnerNStarType);
 				Type outputType;
@@ -747,9 +762,12 @@ public static class TypeConverters
 				3 => typeof(Action<,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2]),
 				4 => typeof(Action<,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3]),
 				5 => typeof(Action<,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4]),
-				6 => typeof(Action<,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5]),
-				7 => typeof(Action<,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6]),
-				8 => typeof(Action<,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], netTypes[7]),
+				6 => typeof(Action<,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4],
+					netTypes[5]),
+				7 => typeof(Action<,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4],
+					netTypes[5], netTypes[6]),
+				8 => typeof(Action<,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4],
+					netTypes[5], netTypes[6], netTypes[7]),
 				_ => throw new InvalidOperationException(),
 			};
 		return netTypes.Length switch
@@ -759,10 +777,14 @@ public static class TypeConverters
 			2 => typeof(Func<,,>).MakeGenericType(netTypes[0], netTypes[1], returnType),
 			3 => typeof(Func<,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], returnType),
 			4 => typeof(Func<,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], returnType),
-			5 => typeof(Func<,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], returnType),
-			6 => typeof(Func<,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], returnType),
-			7 => typeof(Func<,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], returnType),
-			8 => typeof(Func<,,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], netTypes[7], returnType),
+			5 => typeof(Func<,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4],
+				returnType),
+			6 => typeof(Func<,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4],
+				netTypes[5], returnType),
+			7 => typeof(Func<,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4],
+				netTypes[5], netTypes[6], returnType),
+			8 => typeof(Func<,,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4],
+				netTypes[5], netTypes[6], netTypes[7], returnType),
 			_ => throw new InvalidOperationException(),
 		};
 	}
@@ -775,9 +797,12 @@ public static class TypeConverters
 		3 => typeof(ValueTuple<,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2]),
 		4 => typeof(ValueTuple<,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3]),
 		5 => typeof(ValueTuple<,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4]),
-		6 => typeof(ValueTuple<,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5]),
-		7 => typeof(ValueTuple<,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6]),
-		_ => typeof(ValueTuple<,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4], netTypes[5], netTypes[6], ConstructTupleType(netTypes[7..])),
+		6 => typeof(ValueTuple<,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4],
+			netTypes[5]),
+		7 => typeof(ValueTuple<,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4],
+			netTypes[5], netTypes[6]),
+		_ => typeof(ValueTuple<,,,,,,,>).MakeGenericType(netTypes[0], netTypes[1], netTypes[2], netTypes[3], netTypes[4],
+			netTypes[5], netTypes[6], ConstructTupleType(netTypes[7..])),
 	};
 
 	public static NStarType TypeMappingBack(Type netType, Type[] genericArguments, BranchCollection extraTypes)
@@ -826,41 +851,44 @@ public static class TypeConverters
 		var oldNetType = netType;
 		if (netType.IsGenericType)
 			netType = netType.GetGenericTypeDefinition();
-		l1:
-		if (CreateVar(PrimitiveTypes.Find(x => x.Value == netType).Key, out var typename) != null)
-			return typename == "list" ? GetListType(TypeMappingBack(typeGenericArguments[0], genericArguments,
-				new(extraTypes.Values.TakeLast(genericArguments.Length))))
-				: GetPrimitiveType(typename);
-		else if (ExtraTypes.TryGetKey(netType, out var type2))
-			return new(GetBlockStack(type2.Namespace + "." + type2.Type),
-				new([.. typeGenericArguments.Convert((x, index) =>
-				new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })]));
-		else if (CreateVar(Interfaces.Find(x => x.Value.DotNetType == netType), out var type3).Key != default)
-			return new(GetBlockStack(type3.Key.Namespace + "." + type3.Key.Interface),
-				new([.. typeGenericArguments.Convert((x, index) =>
-				new TreeBranch("type", 0,[]) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })]));
-		else if (netType == typeof(string))
-			return StringType;
-		else if (netType == typeof(BitList))
-			return GetListType(BoolType);
-		else if (netType == typeof(NList<>))
-			return GetListType(TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes));
-		else if (netType == typeof(NListHashSet<>))
-			return new(ListHashSetBlockStack, new([new("type", 0, []) { Extra
-				= TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes) }]));
-		else if (innerTypes.Length != 0)
+		while (true)
 		{
-			netType = netType.MakeGenericType([.. innerTypes]);
-			if (netType.Name.Contains("Tuple") || netType.Name.Contains("KeyValuePair"))
+			if (CreateVar(PrimitiveTypes.Find(x => x.Value == netType).Key, out var typename) != null)
+				return typename == "list" ? GetListType(TypeMappingBack(typeGenericArguments[0], genericArguments,
+					new(extraTypes.Values.TakeLast(genericArguments.Length))))
+					: GetPrimitiveType(typename);
+			else if (ExtraTypes.TryGetKey(netType, out var type2))
+				return new(GetBlockStack(type2.Namespace + "." + type2.Type),
+					new([.. typeGenericArguments.Convert((x, index) =>
+					new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })]));
+			else if (CreateVar(Interfaces.Find(x => x.Value.DotNetType == netType), out var type3).Key != default)
+				return new(GetBlockStack(type3.Key.Namespace + "." + type3.Key.Interface),
+					new([.. typeGenericArguments.Convert((x, index) =>
+					new TreeBranch("type", 0,[]) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })]));
+			else if (netType == typeof(string))
+				return StringType;
+			else if (netType == typeof(BitList))
+				return GetListType(BoolType);
+			else if (netType == typeof(NList<>))
+				return GetListType(TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes));
+			else if (netType == typeof(NListHashSet<>))
+				return new(ListHashSetBlockStack, new([new("type", 0, []) { Extra
+				= TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes) }]));
+			else if (innerTypes.Length != 0)
 			{
+				netType = netType.MakeGenericType([.. innerTypes]);
+				if (!netType.Name.Contains("Tuple") && !netType.Name.Contains("KeyValuePair"))
+				{
+					innerTypes.Clear();
+					continue;
+				}
 				return new(TupleBlockStack, new(netType.GenericTypeArguments.ToList(x =>
-				new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })));
+					new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })));
 			}
-			innerTypes.Clear();
-			goto l1;
+			else if (!typeof(ITuple).IsAssignableFrom(oldNetType))
+				throw new InvalidOperationException();
+			break;
 		}
-		else if (!typeof(ITuple).IsAssignableFrom(oldNetType))
-			throw new InvalidOperationException();
 		BranchCollection result = [];
 		var tupleTypes = new Queue<Type>();
 		tupleTypes.Enqueue(oldNetType);

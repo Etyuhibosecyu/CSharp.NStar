@@ -274,13 +274,13 @@ public static partial class Quotes
 		{
 			var c = input[i++];
 			if (c == '\"')
-				goto l0;
+			{
+				if (i < input.Length && input[i] != '\"')
+					return true;
+			}
 			else if (i >= input.Length)
 				return false;
 			continue;
-		l0:
-			if (i < input.Length && input[i] != '\"')
-				return true;
 		}
 		return false;
 	}

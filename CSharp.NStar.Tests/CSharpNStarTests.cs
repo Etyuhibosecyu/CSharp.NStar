@@ -5391,21 +5391,21 @@ return (p1, p2, p3);
 ")]
 	[DataRow(@"Class Parent
 {
-    protected string Secret { get, private init };
+	protected string Secret { get, private init };
 }
 
 Class Child : Parent
 {
-    Constructor()
-    {
-        Secret = ""child-secret"";
-    }
+	Constructor()
+	{
+		Secret = ""child-secret"";
+	}
 }
-", "null", @"Error 4039 in line 10 at position 8: the property ""Parent.Secret"" cannot be set from here
+", "null", @"Error 4039 in line 10 at position 2: the property ""Parent.Secret"" cannot be set from here
 ")]
 	[DataRow(@"Class MyClass
 {
-    protected string Secret { get, private init };
+	protected string Secret { get, private init };
 
 	null Function Set(string value)
 	{
@@ -5416,18 +5416,72 @@ Class Child : Parent
 ")]
 	[DataRow(@"Class Parent
 {
-    protected string Secret { get, init };
+	protected string Secret { get, init };
 }
 
 Class Child : Parent
 {
 	null Function Set(string value)
-    {
-        Secret = ""child-secret"";
-    }
+	{
+		Secret = ""child-secret"";
+	}
 }
-", "null", @"Error 403A in line 10 at position 8: the property ""Parent.Secret"" is declared with ""init"" modifier so it can be set only in the initializer or constructor
+", "null", @"Error 403A in line 10 at position 2: the property ""Parent.Secret"" is declared with ""init"" modifier so it can be set only in the initializer or constructor
 ")]
+	[DataRow(@"Class Parent
+{
+	string Secret { get } = ""parent-secret"";
+}
+
+Class Child : Parent
+{
+	null Function Set(string value)
+	{
+		Secret = ""child-secret"";
+	}
+}
+return new Parent().Secret;
+", @"""parent-secret""", @"Error 4070 in line 10 at position 2: the property ""Parent.Secret"" is get-only and cannot be set
+")]
+	[DataRow(@"Class MyClass
+{
+	string Secret { get } = ""my-secret"";
+
+	Constructor()
+	{
+	}
+
+	Constructor(string secret)
+	{
+		Secret = secret;
+	}
+}
+return (new MyClass().Secret, new MyClass(""override-secret"").Secret);
+", @"(""my-secret"", ""my-secret"")", @"Error 4070 in line 11 at position 2: the property ""MyClass.Secret"" is get-only and cannot be set
+")]
+//	[DataRow(@"Class Box
+//{
+//	required typename T { get, init };
+//	private T _content;
+	
+//	null Function Put(T item)
+//	{
+//		_content = item;
+//	}
+
+//	T Function Get()
+//	{
+//		return _content;
+//	}
+//}
+
+//Box[string] stringBox = new();
+//stringBox.Put(""Привет"");
+//Box[int] intBox = new();
+//intBox.Put(42);
+//return (stringBox.Get(), intBox.Get());
+//", "null", @"Error 403A in line 10 at position 8: the property ""Parent.Secret"" is declared with ""init"" modifier so it can be set only in the initializer or constructor
+//")]
 //	[DataRow(@"return Sqrt(I);
 //", "0.7071067811865476+0.7071067811865475I", "Ошибок нет")]
 //	[DataRow(@"return Sqrt(-I);

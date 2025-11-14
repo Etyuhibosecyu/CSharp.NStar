@@ -432,9 +432,9 @@ namespace AvaloniaEdit.Editing;
             _lastMousePosition = mousePosition;
 
             var pointer = e.GetCurrentPoint(TextArea);
-            if (pointer.Properties.IsLeftButtonPressed == false)
+            if (!pointer.Properties.IsLeftButtonPressed)
             {
-                if (TextArea.RightClickMovesCaret == true && e.Handled == false)
+                if (TextArea.RightClickMovesCaret && !e.Handled)
                 {
                     SetCaretOffsetToMousePosition(mousePosition);
                 }

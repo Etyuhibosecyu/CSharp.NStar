@@ -35,7 +35,8 @@ public class LexemStream
 
 	private protected static readonly ListHashSet<String> StopLexemsList = ["\r\n", ";", "{", "}"];
 
-	private protected LexemStream(List<Lexem> lexems, String input, List<String>? errors, bool wreckOccurred, BlockStack? rootContainer = null)
+	private protected LexemStream(List<Lexem> lexems, String input, List<String>? errors,
+		bool wreckOccurred, BlockStack? rootContainer = null)
 	{
 		this.lexems = lexems;
 		this.input = input;
@@ -46,7 +47,8 @@ public class LexemStream
 		prevPos = 0;
 	}
 
-	private protected LexemStream(LexemStream lexemStream) : this(lexemStream.lexems, lexemStream.input, lexemStream.errors, lexemStream.wreckOccurred, lexemStream.rootContainer)
+	private protected LexemStream(LexemStream lexemStream) : this(lexemStream.lexems, lexemStream.input,
+		lexemStream.errors, lexemStream.wreckOccurred, lexemStream.rootContainer)
 	{
 		pos = lexemStream.pos;
 		blocksToJump = lexemStream.blocksToJump;
@@ -101,7 +103,8 @@ public class LexemStream
 			Constructor();
 		else if (IsCurrentLexemOther("{"))
 		{
-			nestedBlocksChain.Push(new(BlockType.Unnamed, "#" + ((nestedBlocksChain.Length == 0) ? globalUnnamedIndex++ : nestedBlocksChain.Peek().UnnamedIndex++).ToString(), 1));
+			nestedBlocksChain.Push(new(BlockType.Unnamed, "#" + ((nestedBlocksChain.Length == 0)
+				? globalUnnamedIndex++ : nestedBlocksChain.Peek().UnnamedIndex++).ToString(), 1));
 			figureBk++;
 			pos++;
 		}
@@ -134,7 +137,8 @@ public class LexemStream
 		pos++;
 		String name;
 		var names = new List<String>();
-		while (pos < lexems.Length - 1 && lexems[pos].Type == LexemType.Identifier && lexems[pos + 1].Type == LexemType.Operator && lexems[pos + 1].String == ".")
+		while (pos < lexems.Length - 1 && lexems[pos].Type == LexemType.Identifier
+			&& lexems[pos + 1].Type == LexemType.Operator && lexems[pos + 1].String == ".")
 		{
 			names.Add(lexems[pos].String);
 			pos += 2;
@@ -199,7 +203,8 @@ public class LexemStream
 		BlockStack container = new(nestedBlocksChain.ToList());
 		var blockStart = pos - 1;
 		var names = new List<String>();
-		while (pos < lexems.Length - 1 && lexems[pos].Type == LexemType.Identifier && lexems[pos + 1].Type == LexemType.Operator && lexems[pos + 1].String == ".")
+		while (pos < lexems.Length - 1 && lexems[pos].Type == LexemType.Identifier
+			&& lexems[pos + 1].Type == LexemType.Operator && lexems[pos + 1].String == ".")
 		{
 			names.Add(lexems[pos].String);
 			pos += 2;
@@ -264,7 +269,8 @@ public class LexemStream
 				GenerateMessage(0x0009, pos);
 			pos++;
 			var pos3 = pos;
-			while (pos < lexems.Length && (lexems[pos].Type == LexemType.Identifier || IsCurrentLexemOperator(".") || IsLexemOther(lexems[pos], ["(", ")", "[", "]", ","])))
+			while (pos < lexems.Length && (lexems[pos].Type == LexemType.Identifier || IsCurrentLexemOperator(".")
+				|| IsLexemOther(lexems[pos], ["(", ")", "[", "]", ","])))
 				pos++;
 			registeredTypes.Add((container, name, pos3, pos));
 		}
@@ -287,28 +293,29 @@ public class LexemStream
 		{
 			attributes |= FunctionAttributes.Const;
 			prevPos++;
-			goto l0;
-		}
-		if (IsClass())
-		{
-			var mask = (IsPos2LexemKeyword("static") ? 2 : 0) + (IsStatic() ? 1 : 0);
-			if (mask == 3)
-				GenerateMessage(0x8000, prevPos);
-			if (mask >= 1)
-				attributes |= FunctionAttributes.Static;
-			if (mask >= 2)
-				prevPos++;
 		}
 		else
-			CheckKeywordAndGenerateError(0x000A, "static", "static functions are allowed only inside classes");
-		if (IsPos2LexemKeyword("new"))
-			attributes |= (FunctionAttributes)AddAttribute("new", FunctionAttributes.New);
-		else if (IsPos2LexemKeyword("sealed"))
-			attributes |= (FunctionAttributes)AddAttribute("sealed", FunctionAttributes.Sealed);
-		else if (IsPos2LexemKeyword("abstract"))
-			attributes |= (FunctionAttributes)AddAttribute("abstract", FunctionAttributes.Abstract);
-		attributes |= (FunctionAttributes)AddAttribute("multiconst", FunctionAttributes.Multiconst);
-	l0:
+		{
+			if (IsClass())
+			{
+				var mask = (IsPos2LexemKeyword("static") ? 2 : 0) + (IsStatic() ? 1 : 0);
+				if (mask == 3)
+					GenerateMessage(0x8000, prevPos);
+				if (mask >= 1)
+					attributes |= FunctionAttributes.Static;
+				if (mask >= 2)
+					prevPos++;
+			}
+			else
+				CheckKeywordAndGenerateError(0x000A, "static", "static functions are allowed only inside classes");
+			if (IsPos2LexemKeyword("new"))
+				attributes |= (FunctionAttributes)AddAttribute("new", FunctionAttributes.New);
+			else if (IsPos2LexemKeyword("sealed"))
+				attributes |= (FunctionAttributes)AddAttribute("sealed", FunctionAttributes.Sealed);
+			else if (IsPos2LexemKeyword("abstract"))
+				attributes |= (FunctionAttributes)AddAttribute("abstract", FunctionAttributes.Abstract);
+			attributes |= (FunctionAttributes)AddAttribute("multiconst", FunctionAttributes.Multiconst);
+		}
 		var blockStart = prevPos;
 		if (IsPos2LexemKeyword("null"))
 		{
@@ -505,13 +512,16 @@ public class LexemStream
 			wreckOccurred = true;
 	}
 
-	private void GenerateUnexpectedEndError() => Messages.GenerateMessage(ref errors, 0x0000, lexems[pos - 1].LineN, lexems[pos - 1].Pos + lexems[pos - 1].String.Length);
+	private void GenerateUnexpectedEndError() => Messages.GenerateMessage(ref errors, 0x0000,
+		lexems[pos - 1].LineN, lexems[pos - 1].Pos + lexems[pos - 1].String.Length);
 
-	public (List<Lexem> Lexems, String String, TreeBranch TopBranch, List<String>? ErrorsList, bool WreckOccurred) EmptySyntaxTree() => (lexems, input, TreeBranch.DoNotAdd(), errors, true);
+	public (List<Lexem> Lexems, String String, TreeBranch TopBranch, List<String>? ErrorsList,
+		bool WreckOccurred) EmptySyntaxTree() => (lexems, input, TreeBranch.DoNotAdd(), errors, true);
 
 	private bool IsClass() => nestedBlocksChain.Length != 0 && nestedBlocksChain.Peek().BlockType == BlockType.Class;
 
-	private bool IsStatic() => (UserDefinedTypes[SplitType(nestedBlocksChain)].Attributes & TypeAttributes.Static) == TypeAttributes.Static;
+	private bool IsStatic() =>
+		(UserDefinedTypes[SplitType(nestedBlocksChain)].Attributes & TypeAttributes.Static) == TypeAttributes.Static;
 
 	private void GetBlockStart()
 	{
@@ -583,7 +593,8 @@ public class LexemStream
 		if (blockType != BlockType.Function && !IsCurrentLexemOther("{"))
 		{
 			GenerateMessage(0x0011, pos);
-			while (pos < lexems.Length && !(lexems[pos].Type == LexemType.Other && (lexems[pos].String == "{" || lexems[pos].String == "\r\n")))
+			while (pos < lexems.Length && !(lexems[pos].Type == LexemType.Other
+				&& (lexems[pos].String == "{" || lexems[pos].String == "\r\n")))
 				pos++;
 		}
 		if (IsEnd()) return;
@@ -604,7 +615,8 @@ public class LexemStream
 
 	private static bool IsReservedNamespaceOrType(String s, out String errorPrefix)
 	{
-		if (IsNotImplementedNamespace(s) || IsReservedNamespace(s) || IsNotImplementedType("", s) || IsReservedType("", s) || IsNotImplementedMember(new(), s) || IsReservedMember(new(), s))
+		if (IsNotImplementedNamespace(s) || IsReservedNamespace(s) || IsNotImplementedType("", s) || IsReservedType("", s)
+			|| IsNotImplementedMember(new(), s) || IsReservedMember(new(), s))
 		{
 			errorPrefix = "identifier \"" + s;
 			return true;
@@ -618,17 +630,22 @@ public class LexemStream
 		return false;
 	}
 
-	public static bool IsLexemKeyword(Lexem lexem, String @string) => lexem.Type == LexemType.Keyword && lexem.String == @string;
+	public static bool IsLexemKeyword(Lexem lexem, String @string) =>
+		lexem.Type == LexemType.Keyword && lexem.String == @string;
 
-	public static bool IsLexemOperator(Lexem lexem, String @string) => lexem.Type == LexemType.Operator && lexem.String == @string;
+	public static bool IsLexemOperator(Lexem lexem, String @string) =>
+		lexem.Type == LexemType.Operator && lexem.String == @string;
 
 	public static bool IsLexemOther(Lexem lexem, String @string) => lexem.Type == LexemType.Other && lexem.String == @string;
 
-	public static bool IsLexemKeyword(Lexem lexem, ListHashSet<String> strings) => lexem.Type == LexemType.Keyword && strings.Contains(lexem.String);
+	public static bool IsLexemKeyword(Lexem lexem, ListHashSet<String> strings) =>
+		lexem.Type == LexemType.Keyword && strings.Contains(lexem.String);
 
-	public static bool IsLexemOperator(Lexem lexem, ListHashSet<String> strings) => lexem.Type == LexemType.Operator && strings.Contains(lexem.String);
+	public static bool IsLexemOperator(Lexem lexem, ListHashSet<String> strings) =>
+		lexem.Type == LexemType.Operator && strings.Contains(lexem.String);
 
-	public static bool IsLexemOther(Lexem lexem, ListHashSet<String> strings) => lexem.Type == LexemType.Other && strings.Contains(lexem.String);
+	public static bool IsLexemOther(Lexem lexem, ListHashSet<String> strings) =>
+		lexem.Type == LexemType.Other && strings.Contains(lexem.String);
 
 	public bool IsLexemKeywordNoEnd(String @string) => pos < lexems.Length && IsLexemKeyword(lexems[pos], @string);
 
