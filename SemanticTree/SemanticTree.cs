@@ -38,12 +38,18 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 	private readonly ListHashSet<String> nestedPrepassClasses = [];
 
 	private static readonly string AlphanumericCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.";
-	private static readonly List<String> ExprTypesList = [nameof(Expr), nameof(List), nameof(Lambda), nameof(SwitchExpr),
+	private static readonly List<String> ExprTypes = [nameof(Expr), nameof(List), nameof(Lambda), nameof(SwitchExpr),
 		nameof(Indexes), nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr), nameof(XorList), "StringConcatenation",
 		nameof(Assignment), "DeclarationAssignment", "UnaryAssignment", nameof(Declaration), nameof(Hypername), nameof(Index),
 		nameof(Range)];
-	private static readonly List<String> CycleTypesList = ["loop", "while", "while!", "repeat", "for", "loop_while",
-		"for_while", "repeat_while"];
+	private static readonly List<String> BranchesToSearchDeeper = [nameof(Parameters), "if", "if!", "else if", "else if!",
+		"repeat", "while", "while!", "for", "return", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call),
+		nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr), "StringConcatenation", nameof(Assignment),
+		"DeclarationAssignment", "UnaryAssignment"];
+	private static readonly List<String> BranchesToSearchDeeperNoReturn = [nameof(Parameters), "if", "if!", "else if",
+		"else if!", "repeat", "while", "while!", "for", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call),
+		nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr), "StringConcatenation", nameof(Assignment),
+		"DeclarationAssignment", "UnaryAssignment"];
 	private static String? executeStringPrefixCompiled;
 
 	public SemanticTree((List<Lexem> Lexems, String String, TreeBranch TopBranch, List<String>? ErrorsList,
@@ -107,7 +113,7 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 		nameof(Members) => Members,
 		nameof(Constant) => Constant,
 		"if" or "else if" or "if!" or "else if!" => Condition,
-		"loop" => Loop,
+		"loop" or "loop-while" or "loop-while!" => Loop,
 		"while" => While,
 		"repeat" => Repeat,
 		"for" => For,
@@ -119,7 +125,7 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 		nameof(SwitchExpr) => SwitchExpr,
 		"typeof" => Typeof,
 		"return" => Return,
-		_ when ExprTypesList.Contains(branchName) => Expr,
+		_ when ExprTypes.Contains(branchName) => Expr,
 		_ => Default,
 	};
 
@@ -160,12 +166,13 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 					break;
 				}
 			}
-			if (x.Name.ToString() is "if" or "else if" or "if!" or "else if!" or "else" or "while" or "while!" or "repeat"
-				or "for")
+			if (x.Name.ToString() is "if" or "else if" or "if!" or "else if!" or "else"
+				or "loop-while" or "loop-while!" or "while" or "while!" or "repeat" or "for")
 				nestedConditions++;
 			if (x.Name.ToString() is nameof(Main) or "return" && x.Extra is NStarType)
 			{
-				if (i != 0 && branch[i - 1].Name.ToString() is "if" or "if!" or "while" or "while!" or "repeat" or "for")
+				if (i != 0 && branch[i - 1].Name.ToString() is "if" or "if!"
+					or "loop-while" or "loop-while!" or "while" or "while!" or "repeat" or "for")
 					conditionReturns = true;
 				else if (i != 0 && branch[i - 1].Name == "else" && nestedConditions <= 1 && conditionReturns
 					|| i == 0 || branch[i - 1].Name.ToString() is not ("else if" or "else if!") && nestedConditions <= 0)
@@ -179,9 +186,9 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 				if (i < 2)
 					nestedConditions--;
 				else if (branch[i - 2].Name.ToString() is "if" or "else if" or "if!" or "else if!" or "else"
-					or "while" or "while!" or "repeat" or "for") { }
+					or "loop-while" or "loop-while!" or "while" or "while!" or "repeat" or "for") { }
 				else if (branch.Length > i + 1 && branch[i + 1].Name.ToString() is "if" or "else if" or "if!" or "else if!"
-					or "else" or "while" or "while!" or "repeat" or "for")
+					or "else" or "loop-while" or "loop-while!" or "while" or "while!" or "repeat" or "for")
 					nestedConditions -= 2;
 				else
 					nestedConditions = 0;
@@ -195,17 +202,30 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 					result.Add('{');
 				if (s.ToString() is "_" or "default" or "default!" or "_ = default" or "_ = default!")
 					s = [];
-				if (s.StartsWith('(') && ExprTypesList.Contains(x.Name) && x.Name.ToString()
+				if (s.StartsWith('(') && ExprTypes.Contains(x.Name) && x.Name.ToString()
 					is not (nameof(Assignment) or "DeclarationAssignment"))
 					s.Insert(0, "_ = ");
 				result.AddRange(s);
 				if (s.Length != 0 && s[^1] is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_')
 					result.Add(' ');
-				if (s.Length == 0 || ExprTypesList.Contains(x.Name) && !s.EndsWith(';')
+				if (s.Length == 0 || ExprTypes.Contains(x.Name) && !s.EndsWith(';')
 					|| x.Name.ToString() is "continue" or "break")
 					result.Add(';');
 				if (branch.Name == "Main" && x.Name == "Main" && x.Length != 1 && s.Length != 0 && s[..^1].Contains(';'))
 					result.Add('}');
+			}
+			if (i != 0 && branch[i - 1].Name.ToString() is "loop-while" or "loop-while!")
+			{
+				result.AddRange(branch[i - 1].Name == "loop-while" ? "while (" : "while (!(");
+				s = ParseAction(branch[i - 1][0].Name)(branch[i - 1][0], out innerErrors);
+				if (s.Length != 0)
+				{
+					result.AddRange(s);
+					AddRange(ref errors, innerErrors);
+				}
+				if (branch[i - 1].Name.EndsWith('!'))
+					result.Add(')');
+				result.AddRange(");");
 			}
 			if (innerErrors != null)
 				AddRange(ref errors, innerErrors);
@@ -548,7 +568,7 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 	private ExtendedMethodParameter GetParameterData(TreeBranch branch)
 	{
 		if (!(branch.Length == 3 && branch[0].Name == "type" && branch[0].Extra is NStarType ParameterNStarType
-			&& (branch[2].Name == "no optional" || ExprTypesList.Contains(branch[2].Name))
+			&& (branch[2].Name == "no optional" || ExprTypes.Contains(branch[2].Name))
 			&& branch.Extra is ParameterAttributes Attributes))
 			throw new InvalidOperationException();
 		return new(ParameterNStarType, branch[1].Name, Attributes, ParseAction(branch[2].Name)(branch[2], out _));
@@ -808,7 +828,10 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 	private String Loop(TreeBranch branch, out List<String>? errors)
 	{
 		errors = null;
-		return "while (true)";
+		if (branch.Length == 0)
+			return "while (true)";
+		else
+			return "do";
 	}
 
 	private String While(TreeBranch branch, out List<String>? errors)
@@ -2793,7 +2816,7 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 				AddRange(ref errors, innerErrors);
 				continue;
 			}
-			else if (ExprTypesList.Contains(branch[i].Name))
+			else if (ExprTypes.Contains(branch[i].Name))
 			{
 				subbranchValues.SetOrAdd(i, ParseAction(branch[i].Name)(branch[i], out var innerErrors));
 				AddRange(ref errors, innerErrors);
@@ -4677,12 +4700,10 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 					var otherPos = branches[i][j].FirstPos;
 					return Error(ref errors, otherPos);
 				}
-				else if (new List<String> { "Parameters", "if", "if!", "else if", "else if!", "repeat", "while", "while!",
-					"for", "return", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary), nameof(PMExpr),
-					nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment" }
-				.Contains(branches[i][j].Name) && (branches[i][j].Name != "for" || j == indexes[i] - 2)
-				&& VariableExistsInsideExpr(branches[i][j], s, out var otherPos, out _)
-				&& !(i == indexes.Length - 1 && j >= indexes[^1]))
+				else if (BranchesToSearchDeeper.Contains(branches[i][j].Name)
+					&& (branches[i][j].Name != "for" || j == indexes[i] - 2)
+					&& VariableExistsInsideExpr(branches[i][j], s, out var otherPos, out _)
+					&& !(i == indexes.Length - 1 && j >= indexes[^1]))
 					return Error(ref errors, otherPos);
 			}
 			if (branches[i].Name == "Function")
@@ -4697,7 +4718,7 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 		}
 	}
 
-	private bool IsVariableDeclared(TreeBranch branch, String s, out List<String>? errors, out object? extra)
+	private bool IsVariableDeclared(TreeBranch branch, String name, out List<String>? errors, out object? extra)
 	{
 		errors = default!;
 		NList<int> indexes = [];
@@ -4717,30 +4738,29 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 				&& UserDefinedNonDerivedFunctionExists(branches[i].Container, branches[i][0].Name, out var functions, out _)
 				&& (functions[^1].Attributes & FunctionAttributes.Multiconst) != 0)
 			{
-				GenerateMessage(ref errors, 0x4010, preservedBranch.FirstPos, s);
+				GenerateMessage(ref errors, 0x4010, preservedBranch.FirstPos, name);
 				extra = null;
 				return false;
 			}
 			for (var j = 0; j < indexes[i] - 1; j++)
 			{
 				if ((branches[i][j].Name == nameof(Declaration) || branches[i][j].Name == "Parameter")
-					&& branches[i][j][1].Name == s)
+					&& branches[i][j][1].Name == name)
 				{
 					extra = branches[i][j][0].Extra;
 					return true;
 				}
 				else if (branches[i].Name == nameof(Lambda) && branches[i].Length == 2
-					&& (IsValidLambdaParameter(branches[i][0], s, out var innerExtra) || branches[i][0].Name == nameof(List)
-					&& branches[i][0].Elements.Any(x => IsValidLambdaParameter(x, s, out innerExtra))))
+					&& (IsValidLambdaParameter(branches[i][0], name, out var innerExtra) || branches[i][0].Name == nameof(List)
+					&& branches[i][0].Elements.Any(x => IsValidLambdaParameter(x, name, out innerExtra))))
 				{
 					extra = innerExtra;
 					return true;
 				}
-				else if (new List<String> { "Parameters", "if", "if!", "else if", "else if!", "repeat", "while", "while!",
-					"for", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary), nameof(PMExpr),
-					nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment" }
-				.Contains(branches[i][j].Name) && (branches[i][j].Name != "for" || j == indexes[i] - 2)
-				&& VariableExistsInsideExpr(branches[i][j], s, out _, out innerExtra))
+				else if (BranchesToSearchDeeperNoReturn.Contains(branches[i][j].Name)
+					&& (branches[i][j].Name != "for" || j == indexes[i] - 2
+					|| branches[i].Elements[(j + 1)..(indexes[i] - 1)].All(x => x.Name.ToString() is "if" or "if!"))
+				&& VariableExistsInsideExpr(branches[i][j], name, out _, out innerExtra))
 				{
 					extra = innerExtra;
 					return true;
@@ -4749,21 +4769,19 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 			for (var j = indexes[i]; j < branches[i].Length; j++)
 			{
 				if ((branches[i][j].Name == nameof(Declaration) || branches[i][j].Name == "Parameter")
-					&& branches[i][j][1].Name == s)
+					&& branches[i][j][1].Name == name)
 				{
 					var otherPos = branches[i][j].FirstPos;
 					return Error(ref errors, out extra, otherPos);
 				}
-				else if (new List<String> { "Parameters", "if", "if!", "else if", "else if!", "repeat", "while", "while!",
-					"for", "return", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary), nameof(PMExpr),
-					nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment" }
-				.Contains(branches[i][j].Name) && (branches[i][j].Name != "for" || j == indexes[i] - 2)
-				&& VariableExistsInsideExpr(branches[i][j], s, out var otherPos, out _))
+				else if (BranchesToSearchDeeper.Contains(branches[i][j].Name)
+					&& (branches[i][j].Name != "for" || j == indexes[i] - 2)
+					&& VariableExistsInsideExpr(branches[i][j], name, out var otherPos, out _))
 					return Error(ref errors, out extra, otherPos);
 			}
 		}
 		if (errors == null || errors.Length == 0)
-			GenerateMessage(ref errors, 0x4001, preservedBranch.FirstPos, s);
+			GenerateMessage(ref errors, 0x4001, preservedBranch.FirstPos, name);
 		extra = null;
 		return false;
 		static bool IsValidLambdaParameter(TreeBranch branch, String branchName, out object? extra)
@@ -4784,20 +4802,20 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 
 		bool Error(ref List<String>? errors, out object? extra, int otherPos)
 		{
-			GenerateMessage(ref errors, 0x4012, preservedBranch.FirstPos, s,
+			GenerateMessage(ref errors, 0x4012, preservedBranch.FirstPos, name,
 				lexems[otherPos].LineN.ToString(), lexems[otherPos].Pos.ToString());
 			extra = null;
 			return false;
 		}
 	}
 
-	private static bool VariableExistsInsideExpr(TreeBranch branch, String s, out int pos, out object? extra)
+	private static bool VariableExistsInsideExpr(TreeBranch branch, String name, out int pos, out object? extra)
 	{
 		try
 		{
 			for (var i = 0; i < branch.Length; i++)
 			{
-				if ((branch[i].Name == nameof(Declaration) || branch[i].Name == "Parameter") && branch[i][1].Name == s)
+				if ((branch[i].Name == nameof(Declaration) || branch[i].Name == "Parameter") && branch[i][1].Name == name)
 				{
 					pos = branch[i].FirstPos;
 					extra = branch[i][0].Extra;
@@ -4805,7 +4823,8 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 				}
 				else if (new List<String> { nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary),
 					nameof(PMExpr), nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment",
-					"UnaryAssignment" }.Contains(branch[i].Name) && VariableExistsInsideExpr(branch[i], s, out pos, out extra))
+					"UnaryAssignment" }.Contains(branch[i].Name)
+					&& VariableExistsInsideExpr(branch[i], name, out pos, out extra))
 					return true;
 			}
 		}
@@ -4886,13 +4905,13 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 		return false;
 	}
 
-	private bool IsConstantDeclared(TreeBranch branch, String s, out List<String>? errors, out UserDefinedConstant? constant)
+	private bool IsConstantDeclared(TreeBranch branch, String name, out List<String>? errors, out UserDefinedConstant? constant)
 	{
 		errors = default!;
-		if (!UserDefinedConstantExists(branch.Container, s, out constant, out _, out var inBase))
+		if (!UserDefinedConstantExists(branch.Container, name, out constant, out _, out var inBase))
 		{
 			if (errors == null || errors.Length == 0)
-				GenerateMessage(ref errors, 0x4001, branch.FirstPos, s);
+				GenerateMessage(ref errors, 0x4001, branch.FirstPos, name);
 			return false;
 		}
 		else if (inBase)
@@ -4914,39 +4933,37 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 			{
 				if ((functions[^1].Attributes & FunctionAttributes.Multiconst) != 0)
 				{
-					GenerateMessage(ref errors, 0x4031, preservedBranch.FirstPos, s);
+					GenerateMessage(ref errors, 0x4031, preservedBranch.FirstPos, name);
 					return false;
 				}
 				else if ((functions[^1].Attributes & FunctionAttributes.Static) != 0
 					&& (constant?.Attributes & ConstantAttributes.Static) == 0)
 				{
-					GenerateMessage(ref errors, 0x4032, preservedBranch.FirstPos, s);
+					GenerateMessage(ref errors, 0x4032, preservedBranch.FirstPos, name);
 					return false;
 				}
 			}
 			for (var j = 0; j < branches[i].Length; j++)
 			{
 				if ((branches[i][j].Name == nameof(Declaration) || branches[i][j].Name == "Parameter")
-					&& branches[i][j][1].Name == s)
+					&& branches[i][j][1].Name == name)
 					return true;
 				else if (branches[i].Name == nameof(Lambda) && branches[i].Length == 2
-					&& (IsValidLambdaParameter(branches[i][0], s) || branches[i][0].Name == nameof(List)
-					&& branches[i][0].Elements.Any(x => IsValidLambdaParameter(x, s))))
+					&& (IsValidLambdaParameter(branches[i][0], name) || branches[i][0].Name == nameof(List)
+					&& branches[i][0].Elements.Any(x => IsValidLambdaParameter(x, name))))
 					return true;
-				else if (new List<String> { "Parameters", "if", "if!", "else if", "else if!", "repeat", "while", "while!",
-					"for", nameof(Expr), nameof(List), nameof(Indexes), nameof(Call), nameof(Ternary), nameof(PMExpr),
-					nameof(MulDivExpr), "StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment" }
-					.Contains(branches[i][j].Name) && ConstantExistsInsideExpr(branches[i][j], s, out _, out _))
+				else if (BranchesToSearchDeeperNoReturn.Contains(branches[i][j].Name)
+					&& ConstantExistsInsideExpr(branches[i][j], name, out _, out _))
 					return true;
-				if (branches[i][j].Name == nameof(Constant) && branches[i][j].Length == 3 && branches[i][j][1].Name == s)
+				if (branches[i][j].Name == nameof(Constant) && branches[i][j].Length == 3 && branches[i][j][1].Name == name)
 					return true;
 				else if (new List<String> { "ClassMain", "Members" }.Contains(branches[i][j].Name)
-					&& ConstantExistsInsideExpr(branches[i][j], s, out _, out _))
+					&& ConstantExistsInsideExpr(branches[i][j], name, out _, out _))
 					return true;
 			}
 		}
 		if (errors == null || errors.Length == 0)
-			GenerateMessage(ref errors, 0x4001, preservedBranch.FirstPos, s);
+			GenerateMessage(ref errors, 0x4001, preservedBranch.FirstPos, name);
 		return false;
 		static bool IsValidLambdaParameter(TreeBranch branch, String branchName)
 		{

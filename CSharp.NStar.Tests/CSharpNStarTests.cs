@@ -5459,6 +5459,88 @@ return new Parent().Secret;
 return (new MyClass().Secret, new MyClass(""override-secret"").Secret);
 ", @"(""my-secret"", ""my-secret"")", @"Error 4070 in line 11 at position 2: the property ""MyClass.Secret"" is get-only and cannot be set
 ")]
+	[DataRow(@"() int list = new();
+for (int i in Chain(0, 10)) while (i * i < 10)
+{
+	list.Add(i);
+}
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+repeat (10) while (i * i < 10)
+{
+	list.Add(i++);
+}
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+loop
+{
+	list.Add(i++);
+} while (i * i < 10);
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+for (int i in Chain(0, 10)) while! (i * i >= 10)
+{
+	list.Add(i);
+}
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+repeat (10) while! (i * i >= 10)
+{
+	list.Add(i++);
+}
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+loop
+{
+	list.Add(i++);
+} while! (i * i >= 10);
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+repeat (10) while (i * i < 10)
+{
+	list.Add(i);
+	i++;
+}
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+loop
+{
+	list.Add(i);
+	i++;
+} while (i * i < 10);
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+repeat (10) while! (i * i >= 10)
+{
+	list.Add(i);
+	i++;
+}
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+loop
+{
+	list.Add(i);
+	i++;
+} while! (i * i >= 10);
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
 //	[DataRow(@"Class Box
 //{
 //	required typename T { get, init };
