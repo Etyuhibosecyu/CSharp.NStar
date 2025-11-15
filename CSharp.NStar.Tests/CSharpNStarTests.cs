@@ -5295,11 +5295,9 @@ Class Address
 	required string City { get, init };
 	required string Street { get, init };
 }
-
-// Код, вызывающий ошибку:
 Company[""Acme"", new Address[""New York""]()] company = new();
 return company;
-", @"new Company(""Acme"", null)", @"Error 403D in line 14 at position 38: the required property ""Street"" must be set during the construction
+", @"new Company(""Acme"", null)", @"Error 403D in line 12 at position 38: the required property ""Street"" must be set during the construction
 ")]
 	[DataRow(@"Class Batch
 {
@@ -5381,13 +5379,32 @@ return p;
 		Id = id;
 	}
 }
-
-// Использование:
 var p1 = new Product[10.5](""P123"");
 var p2 = new Product(""P456"");
 var p3 = new Product[20, ""P789"", ""Books""]();
 return (p1, p2, p3);
-", @"(new Product(10.5, ""P123"", null), null, new Product(20, ""P789"", ""Books""))", @"Error 403C in line 19 at position 20: you must set the required properties - it is done with the square brackets
+", @"(new Product(10.5, ""P123"", null), null, new Product(20, ""P789"", ""Books""))", @"Error 403C in line 17 at position 20: you must set the required properties - it is done with the square brackets
+")]
+	[DataRow(@"Class Product
+{
+	required real Price { get, init };
+	required string Id { get, init };
+	string Category { get, set };
+
+	Constructor()
+	{
+	}
+
+	Constructor(string id)
+	{
+		Id = id;
+	}
+}
+Product[10.5] p1 = new(""P123"");
+Product p2 = new(""P456"");
+Product[20, ""P789"", ""Books""] p3 = new();
+return (p1, p2, p3);
+", @"(new Product(10.5, ""P123"", null), null, new Product(20, ""P789"", ""Books""))", @"Error 403C in line 17 at position 16: you must set the required properties - it is done with the square brackets
 ")]
 	[DataRow(@"Class Parent
 {
@@ -5541,29 +5558,28 @@ loop
 } while! (i * i >= 10);
 return list;
 ", "(0, 1, 2, 3)", "Ошибок нет")]
-//	[DataRow(@"Class Box
-//{
-//	required typename T { get, init };
-//	private T _content;
+	[DataRow(@"Class Box
+{
+	required typename T { get, init };
+	private T _content;
 	
-//	null Function Put(T item)
-//	{
-//		_content = item;
-//	}
+	null Function Put(T item)
+	{
+		_content = item;
+	}
 
-//	T Function Get()
-//	{
-//		return _content;
-//	}
-//}
+	T Function Get()
+	{
+		return _content;
+	}
+}
 
-//Box[string] stringBox = new();
-//stringBox.Put(""Привет"");
-//Box[int] intBox = new();
-//intBox.Put(42);
-//return (stringBox.Get(), intBox.Get());
-//", "null", @"Error 403A in line 10 at position 8: the property ""Parent.Secret"" is declared with ""init"" modifier so it can be set only in the initializer or constructor
-//")]
+Box[string] stringBox = new();
+stringBox.Put(""Привет"");
+Box[int] intBox = new();
+intBox.Put(42);
+return (stringBox.Get(), intBox.Get());
+", @"(""Привет"", 42)", "Ошибок нет")]
 //	[DataRow(@"return Sqrt(I);
 //", "0.7071067811865476+0.7071067811865475I", "Ошибок нет")]
 //	[DataRow(@"return Sqrt(-I);

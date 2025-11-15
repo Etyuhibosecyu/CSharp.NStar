@@ -152,7 +152,8 @@ public sealed class TreeBranch
 
 	public override bool Equals(object? obj) => obj is not null
 		&& obj is TreeBranch m
-		&& Name == m.Name && RedStarLinq.Equals(Elements, m.Elements, (x, y) => new TreeBranchComparer().Equals(x, y));
+		&& Name == m.Name && RedStarLinq.Equals(Elements, m.Elements, (x, y) => x.Equals(y)
+		&& (x.Extra?.Equals(y.Extra) ?? y.Extra is null));
 
 	public override int GetHashCode() => Name.GetHashCode() ^ Elements.GetHashCode() ^ (Extra?.GetHashCode() ?? 77777777);
 
@@ -183,7 +184,7 @@ public sealed class TreeBranch
 	}
 
 	public static bool operator ==(TreeBranch? x, TreeBranch? y) => x is null && y is null || x is not null && y is not null
-		&& x.Name == y.Name && RedStarLinq.Equals(x.Elements, y.Elements, (x, y) => new TreeBranchComparer().Equals(x, y))
+		&& x.Name == y.Name && RedStarLinq.Equals(x.Elements, y.Elements, (x, y) => x.Equals(y))
 		&& (x.Extra?.Equals(y.Extra) ?? y.Extra is null);
 
 	public static bool operator !=(TreeBranch? x, TreeBranch? y) => !(x == y);

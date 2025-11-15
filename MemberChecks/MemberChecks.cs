@@ -9,7 +9,6 @@ global using static CSharp.NStar.NStarType;
 global using static CSharp.NStar.TypeChecks;
 global using static CSharp.NStar.TypeConverters;
 global using static NStar.Core.Extents;
-global using static System.Math;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 using System.Runtime.CompilerServices;
@@ -365,9 +364,9 @@ public static class MemberChecks
 					&& x.RestrictionType.MainType.Peek().BlockType == BlockType.Extra && parameterTypes.Length > j))
 					continue;
 				functions[i] = new(functions[i].RealName, [], ReplaceExtraType(functions[i].ReturnNStarType,
-					x.RestrictionType.MainType.Peek().Name, parameterTypes[j]), functions[i].Attributes,
+					(x.RestrictionType.MainType.Peek().Name, parameterTypes[j])), functions[i].Attributes,
 					[.. functions[i].Parameters.Convert(y => new ExtendedMethodParameter(ReplaceExtraType(y.Type,
-					x.RestrictionType.MainType.Peek().Name, parameterTypes[j]), y.Name, y.Attributes, y.DefaultValue))]);
+					(x.RestrictionType.MainType.Peek().Name, parameterTypes[j])), y.Name, y.Attributes, y.DefaultValue))]);
 			}
 		}
 		user = true;
@@ -397,74 +396,109 @@ public static class MemberChecks
 		return false;
 	}
 
-	public static bool UserDefinedFunctionExists(BlockStack container, String name, List<NStarType> parameterTypes,
+	public static bool UserDefinedFunctionExists(NStarType container, String name, List<NStarType> parameterTypes,
 		[MaybeNullWhen(false)] out UserDefinedMethodOverloads functions) =>
 		UserDefinedFunctionExists(container, name, parameterTypes, out functions, out _, out _);
 
-	public static bool UserDefinedFunctionExists(BlockStack container, String name, List<NStarType> parameterTypes,
+	public static bool UserDefinedFunctionExists(NStarType container, String name, List<NStarType> callParameterTypes,
 		[MaybeNullWhen(false)] out UserDefinedMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer, out bool derived)
 	{
-		if (CheckContainer(container, UserDefinedFunctions.ContainsKey, out matchingContainer)
-			&& UserDefinedFunctions[matchingContainer].TryGetValue(name, out var overloads))
+		var mainType = container.MainType ?? [];
+		if (!(CheckContainer(mainType, UserDefinedFunctions.ContainsKey, out matchingContainer)
+			&& UserDefinedFunctions[matchingContainer].TryGetValue(name, out functions)))
 		{
-			functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
-			derived = false;
-			return true;
-		}
-		else if (UserDefinedTypes.TryGetValue(SplitType(container), out var userDefinedType))
-		{
-			if (MethodExists(userDefinedType.BaseType, name, parameterTypes, out functions))
+			if (UserDefinedTypes.TryGetValue(SplitType(mainType), out var userDefinedType))
 			{
-				derived = true;
-				return true;
+				if (MethodExists(userDefinedType.BaseType, name, callParameterTypes, out functions))
+				{
+					derived = true;
+					return true;
+				}
+				else if (UserDefinedFunctionExists(userDefinedType.BaseType, name, callParameterTypes,
+					out functions, out matchingContainer, out derived))
+					return true;
 			}
-			else if (UserDefinedFunctionExists(userDefinedType.BaseType.MainType, name, parameterTypes,
-				out functions, out matchingContainer, out derived))
-				return true;
+			functions = null;
+			derived = false;
+			return false;
 		}
-		functions = null;
+		functions = [.. functions.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
 		derived = false;
-		return false;
+		(BlockStack Container, String Type) matchingType = default!;
+		if (!CheckContainer(mainType, x => UserDefinedTypes.ContainsKey(matchingType = SplitType(x)), out _))
+			return true;
+		var restrictions = UserDefinedTypes[matchingType].Restrictions;
+		if (restrictions.Length == 0)
+			return true;
+		for (var i = 0; i < functions.Length; i++)
+		{
+			var function = functions[i];
+			var ReturnNStarType = function.ReturnNStarType;
+			ExtendedMethodParameters parameters = [.. function.Parameters.Convert(x =>
+				new ExtendedMethodParameter(x.Type, x.Name, x.Attributes, x.DefaultValue))];
+			var functionParameterTypes = parameters.ToList(x => x.Type);
+			var patterns = GetNStarReplacementPatterns(restrictions.ToList(x => x.Name),
+				callParameterTypes, functionParameterTypes)
+				.AddRange(GetNStarReplacementPatterns(restrictions.ToList(x => x.Name),
+				functionParameterTypes, callParameterTypes));
+			for (var j = 0; j < patterns.Length; j++)
+			{
+				ReturnNStarType = ReplaceExtraType(ReturnNStarType, patterns[j]);
+				for (var k = 0; k < functionParameterTypes.Length; k++)
+					functionParameterTypes[k] = ReplaceExtraType(functionParameterTypes[k], patterns[j]);
+				parameters[j] = new(functionParameterTypes[j], parameters[j].Name, parameters[j].Attributes,
+					parameters[j].DefaultValue);
+			}
+			functions[i] = new(function.RealName, function.Restrictions, ReturnNStarType, function.Attributes, parameters);
+		}
+		return true;
 	}
 
 	public static bool UserDefinedNonDerivedFunctionExists(BlockStack container, String name,
 		[MaybeNullWhen(false)] out UserDefinedMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer)
 	{
-		if (CheckContainer(container, UserDefinedFunctions.ContainsKey, out matchingContainer)
-			&& UserDefinedFunctions[matchingContainer].TryGetValue(name, out var overloads))
+		if (!(CheckContainer(container, UserDefinedFunctions.ContainsKey, out matchingContainer)
+			&& UserDefinedFunctions[matchingContainer].TryGetValue(name, out var overloads)))
 		{
-			functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
-			return true;
+			functions = null;
+			return false;
 		}
-		functions = null;
-		return false;
+		functions = [.. overloads.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
+		return true;
 	}
 
-	//public static List<(NStarType ExtraType, NStarType TypeToInsert)> GetReplacementPatterns(NStarType[] genericArguments,
-	//	NStarType[] parameterTypes)
-	//{
-	//	var length = Min(genericArguments.Length, parameterTypes.Length);
-	//	List<(Type ExtraType, Type TypeToInsert)> result = [];
-	//	for (var i = 0; i < length; i++)
-	//	{
-	//		var genericArgument = genericArguments[i];
-	//		var parameterType = parameterTypes[i];
-	//		if (TypeIsFullySpecified(parameterType, []))
-	//			continue;
-	//		var parameterGenericArguments = parameterType.GetGenericTypeDefinition().GetGenericArguments();
-	//		var index = parameterGenericArguments.FindIndex(x => x.Name == genericArgument.Name);
-	//		if (index != -1)
-	//		{
-	//			result.Add((genericArgument, parameterType.GenericTypeArguments[index]));
-	//			continue;
-	//		}
-	//		result.AddRange(GetReplacementPatterns(genericArgument.GetGenericArguments(),
-	//			parameterType.GetGenericArguments()));
-	//	}
-	//	return result;
-	//}
+	public static List<(String ExtraType, NStarType TypeToInsert)>
+		GetNStarReplacementPatterns(List<String> genericArguments, List<NStarType> callParameterTypes,
+		List<NStarType> functionParameterTypes)
+	{
+		var length = callParameterTypes.Length;
+		List<(String ExtraType, NStarType TypeToInsert)> result = [];
+		for (var i = 0; i < genericArguments.Length; i++)
+		{
+			var genericArgument = genericArguments[i];
+			for (var j = 0; j < length; j++)
+			{
+				var callParameterType = callParameterTypes[j];
+				var functionParameterType = functionParameterTypes[j];
+				if (TypeIsFullySpecified(callParameterType, []))
+					continue;
+				if (callParameterType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Extra
+					&& block.Name == genericArgument)
+				{
+					result.Add((genericArgument, functionParameterType));
+					continue;
+				}
+				result.AddRange(GetNStarReplacementPatterns(genericArguments,
+					callParameterType.ExtraTypes.ToList(x => x.Value.Name == "type" && x.Value.Extra is NStarType NStarType
+					? NStarType : NullType),
+					functionParameterType.ExtraTypes.ToList(x => x.Value.Name == "type" && x.Value.Extra is NStarType NStarType
+					? NStarType : NullType)));
+			}
+		}
+		return result;
+	}
 
 	public static bool ConstructorsExist(NStarType container, List<NStarType> callParameterTypes,
 		[MaybeNullWhen(false)] out ConstructorOverloads constructors)

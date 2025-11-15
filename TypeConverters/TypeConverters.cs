@@ -912,17 +912,20 @@ public static class TypeConverters
 		|| destination == typeof(uint) && new[] { typeof(byte), typeof(ushort), typeof(uint) }.Contains(source)
 		|| destination == typeof(ushort) && new[] { typeof(byte), typeof(ushort) }.Contains(source);
 
-	public static NStarType ReplaceExtraType(NStarType originalType, String extraType, NStarType typeToInsert)
+	public static NStarType ReplaceExtraType(NStarType originalType, (String ExtraType, NStarType TypeToInsert) pattern)
 	{
 		if (originalType.MainType.Length == 1 && originalType.MainType.Peek().BlockType == BlockType.Extra
-			&& originalType.MainType.Peek().Name == extraType && originalType.ExtraTypes.Length == 0)
-			return typeToInsert;
+			&& originalType.MainType.Peek().Name == pattern.ExtraType && originalType.ExtraTypes.Length == 0)
+			return pattern.TypeToInsert;
 		else
 		{
 			return new(originalType.MainType, [.. originalType.ExtraTypes.Convert(x =>
 				new G.KeyValuePair<String, TreeBranch>(x.Key, x.Value.Name != "type"
-				|| x.Value.Extra is not NStarType InnerNStarType ? new TreeBranch(x.Value.Name, 0, [])
-				: new TreeBranch("type", 0, []) { Extra = ReplaceExtraType(InnerNStarType, extraType, typeToInsert) }))]);
+				|| x.Value.Extra is not NStarType InnerNStarType ? new TreeBranch(x.Value.Name, x.Value.Pos, x.Value.Container)
+				: new TreeBranch("type", x.Value.Pos, x.Value.Container)
+				{
+					Extra = ReplaceExtraType(InnerNStarType, pattern)
+				}))]);
 		}
 	}
 
