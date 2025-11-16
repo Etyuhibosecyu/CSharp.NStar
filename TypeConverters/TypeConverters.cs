@@ -12,6 +12,7 @@ global using static System.Math;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 using Mpir.NET;
+using NStar.EasyEvalLib;
 using NStar.ExtraHS;
 using NStar.ParallelHS;
 using NStar.SortedSets;
@@ -24,14 +25,15 @@ namespace CSharp.NStar;
 public static class TypeConverters
 {
 	private static readonly Random random = new();
-	private static readonly List<String> CollectionTypesList = [nameof(Buffer), nameof(Dictionary<bool, bool>),
-		nameof(FastDelHashSet<bool>), "HashTable", nameof(ICollection), nameof(G.IEnumerable<bool>), nameof(IList),
-		nameof(IReadOnlyCollection<bool>), nameof(IReadOnlyList<bool>), nameof(LimitedQueue<bool>), nameof(G.LinkedList<bool>),
-		nameof(G.LinkedListNode<bool>), nameof(ListHashSet<bool>), nameof(Mirror<bool, bool>), nameof(NList<bool>),
-		nameof(Queue<bool>), nameof(ParallelHashSet<bool>), nameof(ReadOnlySpan<bool>), nameof(Slice<bool>),
-		nameof(SortedDictionary<bool, bool>), nameof(SortedSet<bool>), nameof(Span<bool>), nameof(Stack<bool>),
-		nameof(TreeHashSet<bool>), nameof(TreeSet<bool>)];
+	private static readonly List<String> CollectionTypesList = [nameof(Buffer), nameof(Dictionary<,>),
+		nameof(FastDelHashSet<>), "HashTable", nameof(ICollection), nameof(G.IEnumerable<>), nameof(IList),
+		nameof(IReadOnlyCollection<>), nameof(IReadOnlyList<>), nameof(LimitedQueue<>), nameof(G.LinkedList<>),
+		nameof(G.LinkedListNode<>), nameof(ListHashSet<>), nameof(Mirror<,>), nameof(NList<>),
+		nameof(Queue<>), nameof(ParallelHashSet<>), nameof(ReadOnlySpan<>), nameof(Slice<>),
+		nameof(SortedDictionary<,>), nameof(SortedSet<>), nameof(Span<>), nameof(Stack<>),
+		nameof(TreeHashSet<>), nameof(TreeSet<>)];
 	private static readonly Dictionary<Type, bool> memoizedTypes = [];
+	private static readonly Dictionary<String, Type> memoizedExtraTypes = [];
 
 	public static bool IsUnmanaged(this Type netType)
 	{
@@ -463,7 +465,7 @@ public static class TypeConverters
 			}
 		}
 		if (destinationType.MainType.ToShortString() is "System."
-			+ nameof(ReadOnlySpan<bool>) or "System." + nameof(Span<bool>))
+			+ nameof(ReadOnlySpan<>) or "System." + nameof(Span<>))
 		{
 			var (SourceDepth, SourceLeafType) = GetTypeDepthAndLeafType(sourceType);
 			var (DestinationDepth, DestinationLeafType) = GetTypeDepthAndLeafType(destinationType);
@@ -489,21 +491,30 @@ public static class TypeConverters
 			&& userDefinedType.BaseType != NullType && TypesAreCompatible(userDefinedType.BaseType, destinationType,
 			out warning, srcExpr, out destExpr, out extraMessage))
 			return true;
-		if (ExtraTypes.TryGetValue((new BlockStack(sourceType.MainType.SkipLast(1)).ToShortString(),
-			sourceType.MainType.TryPeek(out var sourceBlock) ? sourceBlock.Name : ""), out var sourceNetType)
+		if (sourceType.MainType.TryPeek(out var sourceBlock)
+			&& (PrimitiveTypes.TryGetValue(sourceBlock.Name, out var sourceNetType)
+			|| ExtraTypes.TryGetValue((new BlockStack(sourceType.MainType.SkipLast(1)).ToShortString(),
+			 sourceBlock.Name), out sourceNetType))
 			&& sourceNetType.GetGenericArguments().Length == 0
-			&& ExtraTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToShortString(),
-			sourceType.MainType.TryPeek(out var destinationBlock) ? sourceBlock.Name : ""), out var destinationNetType)
-			&& destinationNetType.GetGenericArguments().Length == 0
+			&& destinationType.MainType.TryPeek(out var destinationBlock)
+			&& (PrimitiveTypes.TryGetValue(destinationBlock.Name, out var destinationNetType)
+			|| ExtraTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToShortString(),
+			 destinationBlock.Name), out destinationNetType))
+			&& (destinationNetType.GetGenericArguments().Length == 0
 			&& destinationNetType.IsAssignableFrom(sourceNetType)
+			|| destinationNetType.GetGenericArguments().Length == 1
+			&& destinationNetType.GetGenericArguments()[0].Name == "TSelf"
+			&& destinationNetType.MakeGenericType(sourceNetType).IsAssignableFrom(sourceNetType))
 			|| ExplicitlyConnectedNamespaces.FindIndex(x =>
 			ExtraTypes.TryGetValue((x,
 			sourceType.MainType.TryPeek(out var sourceBlock) ? sourceBlock.Name : ""), out var sourceNetType)
 			&& sourceNetType.GetGenericArguments().Length == 0
 			&& ExtraTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToShortString(),
 			sourceType.MainType.TryPeek(out var destinationBlock) ? sourceBlock.Name : ""), out var destinationNetType)
-			&& destinationNetType.GetGenericArguments().Length == 0
-			&& destinationNetType.IsAssignableFrom(sourceNetType)) >= 0)
+			&& (destinationNetType.GetGenericArguments().Length == 0
+			&& destinationNetType.IsAssignableFrom(sourceNetType)
+			|| destinationNetType.GetGenericArguments()[0].Name == "TSelf"
+			&& destinationNetType.MakeGenericType(sourceNetType).IsAssignableFrom(sourceNetType))) >= 0)
 		{
 			destExpr = srcExpr;
 			return true;
@@ -574,7 +585,9 @@ public static class TypeConverters
 			"long char" => "(char, char)",
 			"long int" => "long",
 			"unsigned long int" => "ulong",
+			"long long" => nameof(MpzT),
 			"real" => "double",
+			"complex" => "Complex",
 			"string" => nameof(String),
 			"typename" => "Type",
 			"universal" => "object",
@@ -690,12 +703,25 @@ public static class TypeConverters
 		}
 		if (!TypeEqualsToPrimitive(NStarType, "tuple", false))
 		{
-			if (!TypeExists(SplitType(NStarType.MainType), out var netType))
-				throw new InvalidOperationException();
-			else if (netType.ContainsGenericParameters)
-				return netType.MakeGenericType(NStarType.ExtraTypes.ToArray(x => TypeMapping(x.Value)));
+			if (TypeExists(SplitType(NStarType.MainType), out var netType))
+			{
+				if (netType.ContainsGenericParameters)
+					return netType.MakeGenericType(NStarType.ExtraTypes.ToArray(x => TypeMapping(x.Value)));
+				else
+					return netType;
+			}
+			else if (NStarType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Extra)
+			{
+				if (memoizedExtraTypes.TryGetValue(block.Name, out var memoized))
+					return memoized;
+				var assembly = EasyEval.CompileAndGetAssembly("class C<" + block.Name + ">{}class P{static void Main(){}}",
+					[], out var errors);
+				if (assembly == null || errors != "Compilation done without any error.\r\n")
+					throw new InvalidOperationException();
+				return memoizedExtraTypes[block.Name] = assembly.DefinedTypes.First().GetGenericArguments().First();
+			}
 			else
-				return netType;
+				throw new InvalidOperationException();
 		}
 		if (NStarType.ExtraTypes.Length == 0)
 			return typeof(void);
@@ -831,7 +857,7 @@ public static class TypeConverters
 				.. typeGenericArguments.Convert((x, index) =>
 				new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })]));
 		}
-		if (netType.Name.Contains(nameof(Func<bool>)))
+		if (netType.Name.Contains(nameof(Func<>)))
 		{
 			return new(FuncBlockStack, new([typeGenericArguments[^1].Wrap(x =>
 			new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) }),

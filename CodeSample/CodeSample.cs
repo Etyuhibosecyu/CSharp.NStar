@@ -1,6 +1,7 @@
 ﻿global using NStar.Core;
 global using static CSharp.NStar.BuiltInMemberCollections;
 global using String = NStar.Core.String;
+using Mpir.NET;
 using System.Diagnostics;
 
 namespace CSharp.NStar;
@@ -11,6 +12,7 @@ public enum LexemType
 	UnsignedInt,
 	LongInt,
 	UnsignedLongInt,
+	LongLong,
 	Real,
 	Complex,
 	Identifier,
@@ -116,6 +118,12 @@ public class CodeSample(String newString)
 				pos--;
 				return input.GetRange(start..pos, true);
 			}
+			if (lexemType == LexemType.LongLong)
+			{
+				GenerateMessage(0x0001, start);
+				lexemType = LexemType.Keyword;
+				return "null";
+			}
 			lexemType = LexemType.Real;
 			numberParts.Add(input[(pos - 1)..pos]);
 			numberParts.Add(GetNumber2(out _));
@@ -135,21 +143,56 @@ public class CodeSample(String newString)
 		}
 		if (numberParts[0].Length != 0)
 		{
-			if (ValidateChar('r'))
+			if (ValidateChar('L'))
 			{
+				numberParts.Add("L");
+				if (ValidateChar('L'))
+				{
+					lexemType = LexemType.LongLong;
+					numberParts[^1].Add('L');
+				}
+				else
+					lexemType = LexemType.LongInt;
+			}
+			else if (ValidateChar('r'))
+			{
+				if (lexemType == LexemType.LongLong)
+				{
+					GenerateMessage(0x0001, start);
+					lexemType = LexemType.Keyword;
+					return "null";
+				}
 				lexemType = LexemType.Real;
 				numberParts.Add("r");
 			}
 			else if (ValidateChar('c'))
 			{
+				if (lexemType == LexemType.LongLong)
+				{
+					GenerateMessage(0x0001, start);
+					lexemType = LexemType.Keyword;
+					return "null";
+				}
 				lexemType = LexemType.Complex;
 				numberParts.Add("c");
 			}
 			else if (ValidateChar('I'))
 			{
+				if (lexemType == LexemType.LongLong)
+				{
+					GenerateMessage(0x0001, start);
+					lexemType = LexemType.Keyword;
+					return "null";
+				}
 				lexemType = LexemType.Complex;
 				numberParts.Add("I");
 			}
+		}
+		if (numberParts.Length > 1 && numberParts[^1] != "LL" && lexemType == LexemType.LongLong)
+		{
+			GenerateMessage(0x0001, start);
+			lexemType = LexemType.Keyword;
+			return "null";
 		}
 		return String.Join([], [.. numberParts]);
 		String? CheckOverflow(String s, ref LexemType lexemType)
@@ -184,6 +227,8 @@ public class CodeSample(String newString)
 			lexemType = LexemType.LongInt;
 		else if (ulong.TryParse(s.ToString(), out _))
 			lexemType = LexemType.UnsignedLongInt;
+		else if (MpzT.TryParse(s.ToString(), out _))
+			lexemType = LexemType.LongLong;
 		else
 		{
 			lexemType = LexemType.Keyword;

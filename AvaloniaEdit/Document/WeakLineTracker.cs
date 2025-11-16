@@ -53,12 +53,9 @@ namespace AvaloniaEdit.Document;
         /// </summary>
         public void Deregister()
         {
-            if (_textDocument != null)
-            {
-                _textDocument.LineTrackers.Remove(this);
-                _textDocument = null;
-            }
-        }
+		_textDocument?.LineTrackers.Remove(this);
+		_textDocument = null;
+	}
 
         void ILineTracker.BeforeRemoveLine(DocumentLine line)
         {

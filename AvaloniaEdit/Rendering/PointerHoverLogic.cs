@@ -77,12 +77,9 @@ namespace AvaloniaEdit.Rendering;
 
 	private void StopHovering()
         {
-            if (_timer != null)
-            {
-                _timer.Stop();
-                _timer = null;
-            }
-            if (_hovering)
+		_timer?.Stop();
+		_timer = null;
+		if (_hovering)
             {
                 _hovering = false;
                 OnPointerHoverStopped(_hoverLastEventArgs);

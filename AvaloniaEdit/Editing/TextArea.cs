@@ -1094,10 +1094,7 @@ namespace AvaloniaEdit.Editing;
             get => _logicalScrollable?.Offset ?? default(Vector);
             set
             {
-                if (_logicalScrollable != null)
-                {
-                    _logicalScrollable.Offset = value;
-                }
+                _logicalScrollable?.Offset = value;
             }
         }
 
@@ -1108,10 +1105,7 @@ namespace AvaloniaEdit.Editing;
             get => _logicalScrollable?.CanHorizontallyScroll ?? default(bool);
             set
             {
-                if (_logicalScrollable != null)
-                {
-                    _logicalScrollable.CanHorizontallyScroll = value;
-                }
+                _logicalScrollable?.CanHorizontallyScroll = value;
             }
         }
 
@@ -1120,10 +1114,7 @@ namespace AvaloniaEdit.Editing;
             get => _logicalScrollable?.CanVerticallyScroll ?? default(bool);
             set
             {
-                if (_logicalScrollable != null)
-                {
-                    _logicalScrollable.CanVerticallyScroll = value;
-                }
+                _logicalScrollable?.CanVerticallyScroll = value;
             }
         }
 

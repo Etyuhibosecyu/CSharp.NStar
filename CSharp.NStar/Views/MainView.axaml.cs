@@ -417,7 +417,7 @@ public partial class MainView : UserControl
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<PublishSingleFile>true</PublishSingleFile>
 	</PropertyGroup>

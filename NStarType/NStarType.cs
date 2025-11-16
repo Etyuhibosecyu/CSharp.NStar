@@ -29,25 +29,17 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 	public static readonly BlockStack EventHandlerBlockStack = new([new(BlockType.Namespace, "System", 1),
 		new(BlockType.Delegate, "EventHandler", 1)]);
 	public static readonly BlockStack FuncBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Delegate, nameof(Func<bool>), 1)]);
+		new(BlockType.Delegate, nameof(Func<>), 1)]);
 	public static readonly BlockStack RecursiveBlockStack = GetPrimitiveBlockStack("typename");
 	public static readonly BlockStack IEnumerableBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Collections", 1), new(BlockType.Interface, nameof(G.IEnumerable<bool>), 1)]);
+		new(BlockType.Namespace, "Collections", 1), new(BlockType.Interface, nameof(G.IEnumerable<>), 1)]);
 	public static readonly BlockStack BaseIndexableBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(BaseIndexable<bool>), 1)]);
+		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(BaseIndexable<>), 1)]);
+	public static readonly BlockStack DictionaryBlockStack = new([new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(Dictionary<,>), 1)]);
 	public static readonly BlockStack ListHashSetBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(ListHashSet<bool>), 1)]);
+		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(ListHashSet<>), 1)]);
 	public static readonly NStarType BitListType = GetListType(BoolType);
-	public static readonly NStarType ByteListType = GetListType(ByteType);
-	public static readonly NStarType ShortIntListType = GetListType(ShortIntType);
-	public static readonly NStarType UnsignedShortIntListType = GetListType(UnsignedShortIntType);
-	public static readonly NStarType CharListType = GetListType(CharType);
-	public static readonly NStarType IntListType = GetListType(IntType);
-	public static readonly NStarType UnsignedIntListType = GetListType(UnsignedIntType);
-	public static readonly NStarType LongIntListType = GetListType(LongIntType);
-	public static readonly NStarType UnsignedLongIntListType = GetListType(UnsignedLongIntType);
-	public static readonly NStarType RealListType = GetListType(RealType);
-	public static readonly NStarType StringListType = GetListType(StringType);
 
 	public static NStarType GetListType(NStarType InnerType)
 	{

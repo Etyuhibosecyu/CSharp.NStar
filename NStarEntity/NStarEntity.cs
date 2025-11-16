@@ -8,6 +8,7 @@ global using static CSharp.NStar.TypeConverters;
 global using static NStar.Core.Extents;
 global using static System.Math;
 global using String = NStar.Core.String;
+using Mpir.NET;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -25,12 +26,10 @@ public struct NStarEntity
 	public NStarType InnerType { get; set; }
 	public NStarType? OuterType { get; set; }
 	public bool Fixed { get; set; }
-	public static NStarEntity Infinity => (double)1 / 0;
-	public static NStarEntity MinusInfinity => (double)-1 / 0;
-	public static NStarEntity Uncertainty => (double)0 / 0;
+	public static NStarEntity Infinity => 1d / 0;
+	public static NStarEntity MinusInfinity => -1d / 0;
+	public static NStarEntity Uncertainty => 0d / 0;
 
-	private static readonly List<String> ConvertibleTypesList = ["bool", "byte", "short int", "unsigned short int", "char",
-		"int", "unsigned int", "long int", "unsigned long int", "real", "string"];
 	private static readonly CultureInfo InvariantCulture = CultureInfo.InvariantCulture;
 
 	public NStarEntity()
@@ -191,14 +190,22 @@ public struct NStarEntity
 		else if (s[^1] == 'L')
 		{
 			s2 = s[..^1];
+			var @double = false;
+			if (s2.EndsWith('L'))
+			{
+				@double = true;
+				s2 = s2[..^1];
+			}
 			if (int.TryParse(s2, out var i))
 				return (NStarEntity)i;
 			else if (uint.TryParse(s2, out var ui))
 				return (NStarEntity)ui;
 			else if (long.TryParse(s2, out var l))
 				return new(l, LongIntType);
+			else if (@double && ulong.TryParse(s2, out var ul))
+				return new(ul, UnsignedLongIntType);
 			else
-				return new(ulong.Parse(s2), UnsignedLongIntType);
+				return new(MpzT.Parse(s2), LongLongType);
 		}
 		else if (s[^1] == 'r')
 		{
@@ -287,14 +294,16 @@ public struct NStarEntity
 		else if (s[^1] == 'L')
 		{
 			s2 = s[..^1];
-			if (int.TryParse(s2, out var i))
-				result = (NStarEntity)i;
-			else if (uint.TryParse(s2, out var ui))
-				result = (NStarEntity)ui;
-			else if (long.TryParse(s2, out var l))
+			var @double = false;
+			if (s2.EndsWith('L'))
+			{
+				@double = true;
+				s2 = s2[..^1];
+			}
+			if (!@double && long.TryParse(s2, out var l))
 				result = new(l, LongIntType);
-			else if (ulong.TryParse(s2, out var ul))
-				result = new(ul, LongIntType);
+			else if (MpzT.TryParse(s2, out var ll))
+				result = new(ll, LongLongType);
 			else
 				return false;
 		}
@@ -371,14 +380,14 @@ public struct NStarEntity
 
 	public static NStarEntity Eq(NStarEntity x, NStarEntity y)
 	{
-		var result_type = GetResultType(x.InnerType, y.InnerType, x.ToString(true), y.ToString(true));
-		return x.ToType(result_type, x.Fixed) == y.ToType(result_type, y.Fixed);
+		var resultType = GetResultType(x.InnerType, y.InnerType, x.ToString(true), y.ToString(true));
+		return x.ToType(resultType, x.Fixed) == y.ToType(resultType, y.Fixed);
 	}
 
 	public static NStarEntity Neq(NStarEntity x, NStarEntity y)
 	{
-		var result_type = GetResultType(x.InnerType, y.InnerType, x.ToString(true), y.ToString(true));
-		return x.ToType(result_type, x.Fixed) != y.ToType(result_type, y.Fixed);
+		var resultType = GetResultType(x.InnerType, y.InnerType, x.ToString(true), y.ToString(true));
+		return x.ToType(resultType, x.Fixed) != y.ToType(resultType, y.Fixed);
 	}
 
 	public static NStarEntity Goe(NStarEntity x, NStarEntity y) => (NStarEntity)(x.ToReal() >= y.ToReal());
@@ -427,8 +436,8 @@ public struct NStarEntity
 			return GetElement2(index, StringIsNullList, StringList);
 		else if (TypeEqualsToPrimitive(InnerType, "string"))
 		{
-			var string_ = ToString();
-			return index <= 0 || index > string_.Length ? new() : (NStarEntity)string_[index - 1];
+			var @string = ToString();
+			return index <= 0 || index > @string.Length ? new() : (NStarEntity)@string[index - 1];
 		}
 		else
 		{
@@ -444,8 +453,8 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return false;
-		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
-		return basic_type switch
+		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basicType switch
 		{
 			"null" => false,
 			"bool" => Bool,
@@ -469,8 +478,9 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
-		return basic_type switch
+		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+#pragma warning disable IDE0078 // Используйте сопоставление шаблонов
+		return basicType switch
 		{
 			"null" => 0,
 			"bool" => (byte)(!Bool ? 0 : 1),
@@ -483,6 +493,7 @@ public struct NStarEntity
 			"long int" => (byte)(Object is not long li ? 0 : li is < (-255) or > 255 ? 0 : Abs(li)),
 			"DateTime" => (byte)(Object is not DateTime dt ? 0 : dt.Ticks > 255 ? 0 : dt.Ticks),
 			"unsigned long int" => (byte)(Object is not ulong uli ? 0 : uli > 255 ? 0 : uli),
+			"long long" => (byte)(Object is not MpzT ll ? 0 : ll < -255 || ll > 255 ? 0 : ll.Abs()),
 			"real" => (byte)(Number is < (-255) or > 255 ? 0 : Floor(Abs(Number))),
 			"string" => 0,
 			"list" => (byte)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToByte()),
@@ -494,8 +505,8 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
-		return basic_type switch
+		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basicType switch
 		{
 			"null" => 0,
 			"bool" => (short)(!Bool ? 0 : 1),
@@ -508,6 +519,7 @@ public struct NStarEntity
 			"long int" => (short)(Object is not long li ? 0 : li is < (-32768) or > 32767 ? 0 : li),
 			"DateTime" => (short)(Object is not DateTime dt ? 0 : dt.Ticks > 32767 ? 0 : dt.Ticks),
 			"unsigned long int" => (short)(Object is not ulong uli ? 0 : uli > 32767 ? 0 : uli),
+			"long long" => (short)(Object is not MpzT ll ? 0 : ll < -32768 || ll > 32767 ? 0 : ll),
 			"real" => (short)(Number is < (-32768) or > 32767 ? 0 : Floor(Number)),
 			"string" => 0,
 			"list" => (short)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToShortInt()),
@@ -519,8 +531,8 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
-		return basic_type switch
+		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basicType switch
 		{
 			"null" => 0,
 			"bool" => (ushort)(!Bool ? 0 : 1),
@@ -533,6 +545,7 @@ public struct NStarEntity
 			"long int" => (ushort)(Object is not long li ? 0 : li is < (-65535) or > 65535 ? 0 : Abs(li)),
 			"DateTime" => (ushort)(Object is not DateTime dt ? 0 : dt.Ticks > 65535 ? 0 : dt.Ticks),
 			"unsigned long int" => (ushort)(Object is not ulong uli ? 0 : uli > 65535 ? 0 : uli),
+			"long long" => (ushort)(Object is not MpzT ll ? 0 : ll < -65535 || ll > 65535 ? 0 : ll.Abs()),
 			"real" => (ushort)(Number is < (-65535) or > 65535 ? 0 : Floor(Abs(Number))),
 			"string" => 0,
 			"list" => (ushort)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedShortInt()),
@@ -544,8 +557,8 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return '\0';
-		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
-		return basic_type switch
+		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basicType switch
 		{
 			"null" => '\0',
 			"bool" => (char)(!Bool ? 0 : 1),
@@ -558,6 +571,7 @@ public struct NStarEntity
 			"long int" => (char)(Object is not long li ? 0 : li is < (-65535) or > 65535 ? 0 : Abs(li)),
 			"DateTime" => (char)(Object is not DateTime dt ? 0 : dt.Ticks > 65535 ? 0 : dt.Ticks),
 			"unsigned long int" => (char)(Object is not ulong uli ? 0 : uli > 65535 ? 0 : uli),
+			"long long" => (char)(Object is not MpzT ll ? 0 : ll < -65535 || ll > 65535 ? 0 : ll.Abs()),
 			"real" => (char)(Number is < (-65535) or > 65535 ? 0 : Floor(Abs(Number))),
 			"string" => (char)0,
 			"list" => (char)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToChar()),
@@ -569,8 +583,8 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
-		return basic_type switch
+		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basicType switch
 		{
 			"null" => 0,
 			"bool" => !Bool ? 0 : 1,
@@ -583,6 +597,7 @@ public struct NStarEntity
 			"long int" => (int)(Object is not long li ? 0 : li is < (-2147483648) or > 2147483647 ? 0 : li),
 			"DateTime" => (int)(Object is not DateTime dt ? 0 : dt.Ticks > 2147483647 ? 0 : dt.Ticks),
 			"unsigned long int" => (int)(Object is not ulong uli ? 0 : uli > 2147483647 ? 0 : uli),
+			"long long" => (int)(Object is not MpzT ll ? 0 : ll < -2147483648 || ll > 2147483647 ? 0 : ll),
 			"real" => (int)(Number is < (-2147483648) or > 2147483647 ? 0 : Floor(Number)),
 			"string" => 0,
 			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToInt(),
@@ -594,8 +609,8 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
-		return basic_type switch
+		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basicType switch
 		{
 			"null" => 0,
 			"bool" => (uint)(!Bool ? 0 : 1),
@@ -608,6 +623,7 @@ public struct NStarEntity
 			"long int" => (uint)(Object is not long li ? 0 : li is < (-4294967295) or > 4294967295 ? 0 : Abs(li)),
 			"DateTime" => (uint)(Object is not DateTime dt ? 0 : dt.Ticks > 4294967295 ? 0 : dt.Ticks),
 			"unsigned long int" => (uint)(Object is not ulong uli ? 0 : uli > 4294967295 ? 0 : uli),
+			"long long" => (uint)(Object is not MpzT ll ? 0 : ll < -4294967295 || ll > 4294967295 ? 0 : ll.Abs()),
 			"real" => (uint)(Number is < (-4294967295) or > 4294967295 ? 0 : Floor(Abs(Number))),
 			"string" => 0,
 			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedInt(),
@@ -619,8 +635,8 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
-		return basic_type switch
+		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basicType switch
 		{
 			"null" => 0,
 			"bool" => (!Bool) ? 0 : 1,
@@ -633,6 +649,7 @@ public struct NStarEntity
 			"long int" => (Object is not long li) ? 0 : li,
 			"DateTime" => (Object is not DateTime dt) ? 0 : dt.Ticks,
 			"unsigned long int" => (long)((Object is not ulong uli) ? 0 : uli),
+			"long long" => (long)(Object is not MpzT ll ? 0 : ll < -9223372036854775808 || ll > 9223372036854775807 ? 0 : ll),
 			"real" => (long)((Number is < (-(double)9223372036854775808) or > 9223372036854775807) ? 0 : Floor(Number)),
 			"string" => 0,
 			"list" => (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToLongInt(),
@@ -647,8 +664,8 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
-		return basic_type switch
+		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basicType switch
 		{
 			"null" => 0,
 			"bool" => (ulong)(!Bool ? 0 : 1),
@@ -661,9 +678,37 @@ public struct NStarEntity
 			"long int" => (ulong)(Object is not long li ? 0 : Abs(li)),
 			"DateTime" => (ulong)(Object is not DateTime dt ? 0 : dt.Ticks),
 			"unsigned long int" => Object is not ulong uli ? 0 : uli,
+			"long long" => (ulong)(Object is not MpzT ll ? 0 : ll < -(MpzT)18446744073709551615 || ll > 18446744073709551615 ? 0 : ll.Abs()),
 			"real" => (ulong)(Number is < (-(double)18446744073709551615) or > 18446744073709551615 ? 0 : Floor(Abs(Number))),
 			"string" => 0,
 			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedLongInt(),
+			_ => 0
+		};
+#pragma warning restore IDE0078 // Используйте сопоставление шаблонов
+	}
+
+	public readonly MpzT ToLongLong()
+	{
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return 0;
+		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basicType switch
+		{
+			"null" => 0,
+			"bool" => (!Bool) ? 0 : 1,
+			"byte" => (MpzT)Number,
+			"short int" => (MpzT)Number,
+			"unsigned short int" => (MpzT)Number,
+			"char" => (MpzT)Number,
+			"int" => (MpzT)Number,
+			"unsigned int" => (MpzT)Number,
+			"long int" => (MpzT)((Object is not long li) ? 0 : li),
+			"DateTime" => (Object is not DateTime dt) ? 0 : dt.Ticks,
+			"unsigned long int" => (MpzT)((Object is not ulong uli) ? 0 : uli),
+			"long long" => Object is not MpzT ll ? 0 : ll,
+			"real" => (MpzT)((Number is < (-(double)9223372036854775808) or > 9223372036854775807) ? 0 : Floor(Number)),
+			"string" => 0,
+			"list" => (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToLongLong(),
 			_ => 0
 		};
 	}
@@ -672,8 +717,8 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basic_type = InnerType.MainType?.Peek().Name.ToString() ?? "null";
-		return basic_type switch
+		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basicType switch
 		{
 			"null" => 0,
 			"bool" => !Bool ? 0 : 1,
@@ -686,9 +731,37 @@ public struct NStarEntity
 			"long int" => Object is not long li ? 0 : li,
 			"DateTime" => Object is not DateTime dt ? 0 : dt.Ticks,
 			"unsigned long int" => Object is not ulong uli ? 0 : uli,
+			"long long" => (double)(Object is not MpzT ll ? 0 : ll),
 			"real" => Number,
 			"string" => 0,
 			"list" => (double)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToReal()),
+			_ => 0
+		};
+	}
+
+	public readonly Complex ToComplex()
+	{
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return 0;
+		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		return basicType switch
+		{
+			"null" => 0,
+			"bool" => !Bool ? 0 : 1,
+			"byte" => Number,
+			"short int" => Number,
+			"unsigned short int" => Number,
+			"char" => Number,
+			"int" => Number,
+			"unsigned int" => Number,
+			"long int" => Object is not long li ? 0 : li,
+			"DateTime" => Object is not DateTime dt ? 0 : dt.Ticks,
+			"unsigned long int" => Object is not ulong uli ? 0 : uli,
+			"long long" => (Complex)(double)(Object is not MpzT ll ? 0 : ll),
+			"real" => Number,
+			"complex" => Object is not Complex c ? 0 : c,
+			"string" => 0,
+			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToComplex(),
 			_ => 0
 		};
 	}
@@ -736,13 +809,22 @@ public struct NStarEntity
 				return Object == null ? "" : Object is DateTime dt ? dt.ToString() : new DateTime(0).ToString();
 			else if (basicType == "unsigned long int")
 				return Object == null ? "" : Object is ulong uli ? uli.ToString() : "0";
+			else if (basicType == "long long" && Object is MpzT ll)
+			{
+#pragma warning disable IDE0078 // Используйте сопоставление шаблонов
+				if (!addCasting || ll >= long.MinValue && ll < ulong.MaxValue)
+#pragma warning restore IDE0078 // Используйте сопоставление шаблонов
+					return ll.ToString();
+				return "new " + nameof(MpzT) + "(\"" + ll.ToString() + "\")";
+			}
 			else if (basicType == "real")
 			{
 				return Number switch
 				{
-					(double)1 / 0 => addCasting ? "((double)1 / 0)" : "Infty",
-					(double)-1 / 0 => addCasting ? "((double)-1 / 0)" : "-Infty",
-					(double)0 / 0 => addCasting ? "((double)0 / 0)" : "Uncty",
+					1d / 0 => addCasting ? "(1d / 0)" : "Infty",
+					-1d / 0 => addCasting ? "(-1d / 0)" : "-Infty",
+					0d / 0 => addCasting ? "(0d / 0)" : "Uncty",
+					-0d => "0",
 					_ => Number.ToString(InvariantCulture)
 				};
 			}
@@ -750,15 +832,17 @@ public struct NStarEntity
 			{
 				return (addCasting ? "new Complex(" : "") + c.Real switch
 				{
-					(double)1 / 0 => addCasting ? "((double)1 / 0)" : "Infty",
-					(double)-1 / 0 => addCasting ? "((double)-1 / 0)" : "-Infty",
-					(double)0 / 0 => addCasting ? "((double)0 / 0)" : "Uncty",
+					1d / 0 => addCasting ? "(1d / 0)" : "Infty",
+					-1d / 0 => addCasting ? "(-1d / 0)" : "-Infty",
+					0d / 0 => addCasting ? "(0d / 0)" : "Uncty",
+					-0d => "0",
 					_ => c.Real.ToString(InvariantCulture)
-				} + (addCasting ? ", " : "+") + c.Imaginary switch
+				} + (addCasting ? ", " : c.Imaginary is 0d / 0 or >= 0 ? "+" : "") + c.Imaginary switch
 				{
-					(double)1 / 0 => addCasting ? "((double)1 / 0)" : "Infty",
-					(double)-1 / 0 => addCasting ? "((double)-1 / 0)" : "-Infty",
-					(double)0 / 0 => addCasting ? "((double)0 / 0)" : "Uncty",
+					1d / 0 => addCasting ? "(1d / 0)" : "Infty",
+					-1d / 0 => addCasting ? "(-1d / 0)" : "-Infty",
+					0d / 0 => addCasting ? "(0d / 0)" : "Uncty",
+					-0d => "0",
 					_ => c.Imaginary.ToString(InvariantCulture)
 				} + (addCasting ? ")" : "I");
 			}
@@ -779,7 +863,7 @@ public struct NStarEntity
 					return ListToString();
 				return takeIntoQuotes ? "Unknown Object" : "";
 			}
-			return Object switch
+				return Object switch
 			{
 				(IList<bool> BoolIsNullList, IList<bool> BoolList) => ListToString(BoolIsNullList, BoolList),
 				(IList<bool> ByteIsNullList, IList<byte> ByteList) => ListToString(ByteIsNullList, ByteList),
@@ -802,16 +886,16 @@ public struct NStarEntity
 		return takeIntoQuotes ? "Unknown Object" : "";
 	}
 
-	private readonly string ListToString(string type_name = "")
+	private readonly string ListToString(string typeName = "")
 	{
 		var convertedToList = ToList();
 		if (convertedToList.Length == 0)
-			return (type_name == "" ? "ListWithSingle" : "new " + type_name) + "(null)";
+			return (typeName == "" ? "ListWithSingle" : "new " + typeName) + "(null)";
 		else if (convertedToList.Length == 1)
-			return (type_name == "" ? "ListWithSingle" : "new " + type_name) + "(" + convertedToList[0].ToString(true) + ")";
+			return (typeName == "" ? "ListWithSingle" : "new " + typeName) + "(" + convertedToList[0].ToString(true) + ")";
 		String output = new(convertedToList.Length * 4 + 2) { '(' };
-		if (type_name != "")
-			output.Insert(0, "new " + type_name);
+		if (typeName != "")
+			output.Insert(0, "new " + typeName);
 		output.AddRange(convertedToList[0].ToString(true));
 		for (var i = 1; i <= convertedToList.Length - 1; i++)
 		{
@@ -890,9 +974,9 @@ public struct NStarEntity
 				a = ToPrimitiveType(type, fix);
 			else if (type.Equals(InnerType))
 				a = this;
-			else if (type.MainType.Length != 0 && UserDefinedTypes.TryGetValue(SplitType(type.MainType), out var type_descr)
-				&& type_descr.Decomposition != null && type_descr.Decomposition.Length != 0)
-				a = ToTupleType(type_descr.Decomposition);
+			else if (type.MainType.Length != 0 && UserDefinedTypes.TryGetValue(SplitType(type.MainType), out var typeDescr)
+				&& typeDescr.Decomposition != null && typeDescr.Decomposition.Length != 0)
+				a = ToTupleType(typeDescr.Decomposition);
 			else
 				a = new();
 			if (!TypeEqualsToPrimitive(type, "universal"))
@@ -909,44 +993,48 @@ public struct NStarEntity
 
 	private NStarEntity ToPrimitiveType(NStarType type, bool fix)
 	{
-		var basic_type = type.MainType.Peek().Name;
-		if (basic_type == "null")
+		var basicType = type.MainType.Peek().Name;
+		if (basicType == "null")
 			return new();
-		else if (basic_type == "universal")
+		else if (basicType == "universal")
 			return this;
-		else if (basic_type == "bool")
+		else if (basicType == "bool")
 			return ToBool();
-		else if (basic_type == "byte")
+		else if (basicType == "byte")
 			return ToByte();
-		else if (basic_type == "short int")
+		else if (basicType == "short int")
 			return ToShortInt();
-		else if (basic_type == "unsigned short int")
+		else if (basicType == "unsigned short int")
 			return ToUnsignedShortInt();
-		else if (basic_type == "char")
+		else if (basicType == "char")
 			return ToChar();
-		else if (basic_type == "int")
+		else if (basicType == "int")
 			return ToInt();
-		else if (basic_type == "unsigned int")
+		else if (basicType == "unsigned int")
 			return ToUnsignedInt();
-		else if (basic_type == "long int")
+		else if (basicType == "long int")
 			return new(ToLongInt(), LongIntType);
-		else if (basic_type == "DateTime")
+		else if (basicType == "DateTime")
 			return new(ToDateTime(), GetPrimitiveType("DateTime"));
-		else if (basic_type == "unsigned long int")
+		else if (basicType == "unsigned long int")
 			return new(ToUnsignedLongInt(), UnsignedLongIntType);
-		else if (basic_type == "real")
+		else if (basicType == "long long")
+			return new(ToLongLong(), LongLongType);
+		else if (basicType == "real")
 			return ToReal();
-		else if (basic_type == "typename")
+		else if (basicType == "complex")
+			return ToComplex();
+		else if (basicType == "typename")
 			return TypeIsPrimitive(InnerType.MainType) && InnerType.MainType.Peek().Name == "typename" ? this : new();
-		else if (basic_type == "string")
+		else if (basicType == "string")
 			return ToString();
-		else if (basic_type == "list")
+		else if (basicType == "list")
 		{
 			(var LeftDepth, var LeftLeafType) = GetTypeDepthAndLeafType(type);
 			(var RightDepth, var RightLeafType) = GetTypeDepthAndLeafType(InnerType);
 			return ToFullListType(type, LeftDepth, LeftLeafType, RightDepth, RightLeafType, fix);
 		}
-		else return basic_type == "tuple" ? ToTupleType(type.ExtraTypes) : new();
+		else return basicType == "tuple" ? ToTupleType(type.ExtraTypes) : new();
 	}
 
 	private NStarEntity ToFullListType(NStarType type, int LeftDepth, NStarType LeftLeafType,
@@ -956,28 +1044,28 @@ public struct NStarEntity
 			return ToType(LeftLeafType, fix);
 		else if (LeftDepth > RightDepth)
 		{
-			var types_list = new NStarType[LeftDepth - RightDepth + 1];
-			types_list[0] = type;
+			var typesList = new NStarType[LeftDepth - RightDepth + 1];
+			typesList[0] = type;
 			for (var i = 0; i < LeftDepth - RightDepth; i++)
-				types_list[i + 1] = GetSubtype(types_list[i]);
+				typesList[i + 1] = GetSubtype(typesList[i]);
 			NStarEntity element;
 			if (RightDepth == 0)
-				element = ToType(types_list[LeftDepth - RightDepth], true);
+				element = ToType(typesList[LeftDepth - RightDepth], true);
 			else
-				element = ToFullListType(types_list[LeftDepth - RightDepth], RightDepth,
+				element = ToFullListType(typesList[LeftDepth - RightDepth], RightDepth,
 					LeftLeafType, RightDepth, RightLeafType, true);
 			for (var i = LeftDepth - RightDepth - 1; i >= 0; i--)
-				element = ValidateFixing(new List<NStarEntity> { element }, types_list[i], i > 0 || fix);
+				element = ValidateFixing(new List<NStarEntity> { element }, typesList[i], i > 0 || fix);
 			return element;
 		}
 		else if (LeftDepth == RightDepth || TypeEqualsToPrimitive(LeftLeafType, "string"))
 		{
-			var old_list = ToList();
-			List<NStarEntity> new_list = new(old_list.Length);
-			for (var i = 0; i < old_list.Length; i++)
-				new_list.Add(old_list[i].ToFullListType(GetSubtype(type), LeftDepth - 1, LeftLeafType,
+			var oldList = ToList();
+			List<NStarEntity> newList = new(oldList.Length);
+			for (var i = 0; i < oldList.Length; i++)
+				newList.Add(oldList[i].ToFullListType(GetSubtype(type), LeftDepth - 1, LeftLeafType,
 					RightDepth - 1, RightLeafType, true));
-			return ValidateFixing(new_list, type, fix);
+			return ValidateFixing(newList, type, fix);
 		}
 		else
 		{
@@ -988,13 +1076,13 @@ public struct NStarEntity
 		}
 	}
 
-	private readonly NStarEntity ToTupleType(BranchCollection type_parts)
+	private readonly NStarEntity ToTupleType(BranchCollection typeParts)
 	{
 		var count = 0;
 		NList<int> numbers = [];
-		for (var i = 0; i < type_parts.Length; i++)
+		for (var i = 0; i < typeParts.Length; i++)
 		{
-			if (i >= 1 && type_parts[i].Name != "type" && int.TryParse(type_parts[i].Name.ToString(), out var number))
+			if (i >= 1 && typeParts[i].Name != "type" && int.TryParse(typeParts[i].Name.ToString(), out var number))
 			{
 				count += number - 1;
 				numbers.Add(number - 1);
@@ -1003,40 +1091,43 @@ public struct NStarEntity
 				count++;
 		}
 		numbers.Add(1);
-		var old_list = ToList();
-		List<NStarEntity> new_list = [.. new NStarEntity[count]];
+		var oldList = ToList();
+		List<NStarEntity> newList = [.. new NStarEntity[count]];
 		int tpos = 0, tpos2, npos = 0;
-		for (var i = 0; i < count && i < old_list.Length; i++)
+		for (var i = 0; i < count && i < oldList.Length; i++)
 		{
-			if (tpos >= 1 && type_parts[tpos].Name != "type" && int.TryParse(type_parts[tpos].Name.ToString(), out _))
+			if (tpos >= 1 && typeParts[tpos].Name != "type" && int.TryParse(typeParts[tpos].Name.ToString(), out _))
 			{
 				tpos2 = tpos - 1;
 				numbers[npos]--;
 			}
 			else
 				tpos2 = tpos;
-			if (type_parts[tpos2].Name != "type" || type_parts[tpos2].Extra is not NStarType InnerNStarType)
+			if (typeParts[tpos2].Name != "type" || typeParts[tpos2].Extra is not NStarType InnerNStarType)
 				continue;
-			new_list[i] = old_list[i].ToType(InnerNStarType, true);
+			newList[i] = oldList[i].ToType(InnerNStarType, true);
 			if (tpos2 == tpos || numbers[npos] == 0)
 				tpos++;
 			if (numbers[npos] == 0)
 				npos++;
 		}
-		for (var i = old_list.Length; i < count; i++)
-			new_list[i] = new();
-		return new_list;
+		for (var i = oldList.Length; i < count; i++)
+			newList[i] = new();
+		return newList;
 	}
 
 	public static String GetQuotientType(String leftType, NStarEntity right, String rightType)
 	{
 		if (ValidateRealType(leftType, rightType) is String s)
 			return s;
-		if (leftType == "unsigned long int")
+		string t;
+		if (leftType == "long long")
+			return "long long";
+		else if (leftType == "unsigned long int")
 		{
-			if (right.ToUnsignedLongInt() >= (ulong)1 << 56)
+			if (right.ToUnsignedLongInt() >= 1uL << 56)
 				return "byte";
-			else if (right.ToUnsignedLongInt() >= (ulong)1 << 48)
+			else if (right.ToUnsignedLongInt() >= 1uL << 48)
 				return "unsigned short int";
 			else if (right.ToUnsignedLongInt() >= 4294967296)
 				return "unsigned int";
@@ -1047,7 +1138,7 @@ public struct NStarEntity
 		}
 		else if (leftType == "long int")
 		{
-			if (right.ToLongInt() >= (long)1 << 48)
+			if (right.ToLongInt() >= 1L << 48)
 				return "short int";
 			else if (right.ToLongInt() >= 4294967296)
 				return "int";
@@ -1056,7 +1147,7 @@ public struct NStarEntity
 			else
 				return "long int";
 		}
-		else if (leftType == "long char" || rightType == "long char")
+		else if (leftType == (t = "long char") || rightType == t)
 		{
 			if (rightType.ToString() is "short int" or "int")
 				return "long int";
@@ -1083,7 +1174,7 @@ public struct NStarEntity
 			else
 				return "int";
 		}
-		else if (leftType == "char" || rightType == "char")
+		else if (leftType == (t = "char") || rightType == t)
 		{
 			if (rightType == "short int")
 				return "int";
@@ -1100,7 +1191,19 @@ public struct NStarEntity
 	{
 		if (ValidateRealType(leftType, rightType) is String s)
 			return s;
-		if (leftType == "unsigned long int")
+		string t;
+		if (leftType == "long long")
+		{
+			if (right.ToLongLong() <= 32768)
+				return "short int";
+			else if (right.ToLongLong() <= 2147483648)
+				return "int";
+			else if (right.ToLongLong() <= 9223372036854775808)
+				return "long int";
+			else
+				return "long long";
+		}
+		else if (leftType == "unsigned long int")
 		{
 			if (right.ToUnsignedLongInt() <= 256)
 				return "byte";
@@ -1124,7 +1227,7 @@ public struct NStarEntity
 			else
 				return "long int";
 		}
-		else if (leftType == "long char" || rightType == "long char")
+		else if (leftType == (t = "long char") || rightType == t)
 		{
 			if (rightType.ToString() is "short int" or "int")
 				return "long int";
@@ -1151,7 +1254,7 @@ public struct NStarEntity
 			else
 				return "int";
 		}
-		else if (leftType == "char" || rightType == "char")
+		else if (leftType == (t = "char") || rightType == t)
 		{
 			if (rightType == "short int")
 				return "int";
@@ -1166,25 +1269,26 @@ public struct NStarEntity
 
 	private static String? ValidateRealType(String leftType, String rightType)
 	{
-		if (leftType == "long real" || rightType == "long real")
-			return "long real";
-		else if (leftType == "long long" || rightType == "long long")
+		string t;
+		if (leftType == (t = "long complex") || rightType == t || leftType == (t = "long real") || rightType == t)
+			return t;
+		else if (leftType == (t = "long long") || rightType == t)
 		{
-			if (leftType == "real" || rightType == "real")
+			if (leftType == (t = "real") || rightType == t)
 				return "long real";
 			else
-				return "long long";
+				return null;
 		}
-		else if (leftType == "unsigned long long" || rightType == "unsigned long long")
+		else if (leftType == (t = "unsigned long long") || rightType == t)
 		{
 			if (new List<String> { "short int", "int", "long int", "real" }.Contains(leftType)
 				|| new List<String> { "short int", "int", "long int", "real" }.Contains(rightType))
 				return "long real";
 			else
-				return "unsigned long long";
+				return null;
 		}
-		else if (leftType == "real" || rightType == "real")
-			return "real";
+		else if (leftType == (t = "complex") || rightType == t || leftType == (t = "real") || rightType == t)
+			return t;
 		else if (rightType == "bool")
 			return "byte";
 		return null;
@@ -1202,6 +1306,7 @@ public struct NStarEntity
 
 	private static String ValidatePostUSIType(String leftType, String rightType)
 	{
+		string t;
 		if (leftType == "short int")
 		{
 			if (rightType == "unsigned short int")
@@ -1209,7 +1314,7 @@ public struct NStarEntity
 			else
 				return "short int";
 		}
-		else if (leftType == "short char" || rightType == "short char")
+		else if (leftType == (t = "short char") || rightType == t)
 			return "short char";
 		else if (leftType.ToString() is "byte" or "bool")
 			return "byte";
@@ -1218,7 +1323,7 @@ public struct NStarEntity
 	}
 
 	public override readonly bool Equals(object? obj) => obj != null
-&& obj is NStarEntity m && ToBool() == m.ToBool() && ToReal() == m.ToReal() && ToString() == m.ToString();
+		&& obj is NStarEntity m && ToBool() == m.ToBool() && ToReal() == m.ToReal() && ToString() == m.ToString();
 
 	public override readonly int GetHashCode()
 	{
@@ -1239,6 +1344,10 @@ public struct NStarEntity
 				return dt.GetHashCode();
 			else if (s == "unsigned long int" && Object is ulong uli)
 				return uli.GetHashCode();
+			else if (s == "long long" && Object is MpzT ll)
+				return ll.GetHashCode();
+			else if (s == "complex" && Object is Complex c)
+				return c.GetHashCode();
 			else if (s == "string")
 				return String.GetHashCode();
 			else if (s == "list")
@@ -1249,9 +1358,23 @@ public struct NStarEntity
 
 	public static implicit operator NStarEntity(bool x) => new(x);
 
+	public static implicit operator NStarEntity(ushort x) => new(x);
+
 	public static implicit operator NStarEntity(char x) => new(x);
 
+	public static implicit operator NStarEntity(int x) => new(x);
+
+	public static implicit operator NStarEntity(uint x) => new(x);
+
+	public static implicit operator NStarEntity(long x) => new(x, LongIntType);
+
+	public static implicit operator NStarEntity(ulong x) => new(x, UnsignedLongIntType);
+
+	public static implicit operator NStarEntity(MpzT x) => new(x, LongLongType);
+
 	public static implicit operator NStarEntity(double x) => new(x);
+
+	public static implicit operator NStarEntity(Complex x) => new(x, ComplexType);
 
 	public static implicit operator NStarEntity(string x) => new((String)x);
 
@@ -1263,31 +1386,29 @@ public struct NStarEntity
 	{
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
-			var basic_type = x.InnerType.MainType.Peek().Name;
-			if (new List<String> { "byte", "short int", "unsigned short int", "int", "unsigned int", "real" }
-				.Contains(basic_type))
-			{
-				if (basic_type == "real")
+			var basicType = x.InnerType.MainType.Peek().Name;
+				if (basicType == "complex")
+					return ValidateFixing(new(+x.ToComplex(), ComplexType), ComplexType, x.Fixed);
+				else if (basicType == "real")
 					return ValidateFixing(+x.ToReal(), RealType, x.Fixed);
-				else if (basic_type == "unsigned long int")
+				else if (basicType == "unsigned long int")
 					return ValidateFixing(new(+x.ToUnsignedLongInt(), UnsignedLongIntType), UnsignedLongIntType, x.Fixed);
-				else if (basic_type == "long int")
+				else if (basicType == "long long")
+					return ValidateFixing(new(+x.ToLongLong(), LongLongType), LongLongType, x.Fixed);
+				else if (basicType == "long int")
 					return ValidateFixing(new(+x.ToLongInt(), LongIntType), LongIntType, x.Fixed);
-				else if (basic_type == "unsigned int")
+				else if (basicType == "unsigned int")
 					return ValidateFixing(+x.ToUnsignedInt(), UnsignedIntType, x.Fixed);
-				else if (basic_type == "int")
+				else if (basicType == "int")
 					return ValidateFixing(+x.ToInt(), IntType, x.Fixed);
-				else if (basic_type == "unsigned short int")
+				else if (basicType == "unsigned short int")
 					return ValidateFixing(+x.ToUnsignedShortInt(), UnsignedShortIntType, x.Fixed);
-				else if (basic_type == "short int")
+				else if (basicType == "short int")
 					return ValidateFixing(+x.ToShortInt(), ShortIntType, x.Fixed);
-				else if (basic_type == "byte")
+				else if (basicType == "byte")
 					return ValidateFixing(+x.ToByte(), ByteType, x.Fixed);
 				else
 					return new();
-			}
-			else
-				return new();
 		}
 		else
 			return new();
@@ -1297,31 +1418,29 @@ public struct NStarEntity
 	{
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
-			var basic_type = x.InnerType.MainType.Peek().Name;
-			if (new List<String> { "byte", "short int", "unsigned short int", "int", "unsigned int", "real" }
-				.Contains(basic_type))
-			{
-				if (basic_type == "real")
+			var basicType = x.InnerType.MainType.Peek().Name;
+				if (basicType == "complex")
+					return ValidateFixing(new(-x.ToComplex(), ComplexType), ComplexType, x.Fixed);
+				else if (basicType == "real")
 					return ValidateFixing(-x.ToReal(), RealType, x.Fixed);
-				else if (basic_type == "unsigned long int")
+				else if (basicType == "long long")
+					return ValidateFixing(new(-x.ToLongLong(), LongLongType), LongLongType, x.Fixed);
+				else if (basicType == "unsigned long int")
 					return ValidateFixing(new(-x.ToLongInt(), UnsignedLongIntType), UnsignedLongIntType, x.Fixed);
-				else if (basic_type == "long int")
+				else if (basicType == "long int")
 					return ValidateFixing(new(-x.ToLongInt(), LongIntType), LongIntType, x.Fixed);
-				else if (basic_type == "unsigned int")
+				else if (basicType == "unsigned int")
 					return ValidateFixing(-x.ToInt(), UnsignedIntType, x.Fixed);
-				else if (basic_type == "int")
+				else if (basicType == "int")
 					return ValidateFixing(-x.ToInt(), IntType, x.Fixed);
-				else if (basic_type == "unsigned short int")
+				else if (basicType == "unsigned short int")
 					return ValidateFixing(-x.ToShortInt(), UnsignedShortIntType, x.Fixed);
-				else if (basic_type == "short int")
+				else if (basicType == "short int")
 					return ValidateFixing(-x.ToShortInt(), ShortIntType, x.Fixed);
-				else if (basic_type == "byte")
+				else if (basicType == "byte")
 					return ValidateFixing(-x.ToByte(), ByteType, x.Fixed);
 				else
 					return new();
-			}
-			else
-				return new();
 		}
 		else
 			return new();
@@ -1335,28 +1454,25 @@ public struct NStarEntity
 	{
 		if (TypeIsPrimitive(x.InnerType.MainType))
 		{
-			var basic_type = x.InnerType.MainType.Peek().Name;
-			if (new List<String> { "short int", "unsigned short int", "int", "unsigned int" }.Contains(basic_type))
-			{
-				if (basic_type == "unsigned long int")
+			var basicType = x.InnerType.MainType.Peek().Name;
+				if (basicType == "long long")
+					return ValidateFixing(new(~x.ToLongLong(), LongLongType), LongLongType, x.Fixed);
+				else if (basicType == "unsigned long int")
 					return ValidateFixing(new(~x.ToUnsignedLongInt(), UnsignedLongIntType), UnsignedLongIntType, x.Fixed);
-				else if (basic_type == "long int")
+				else if (basicType == "long int")
 					return ValidateFixing(new(~x.ToLongInt(), LongIntType), LongIntType, x.Fixed);
-				else if (basic_type == "unsigned int")
+				else if (basicType == "unsigned int")
 					return ValidateFixing(~x.ToUnsignedInt(), UnsignedIntType, x.Fixed);
-				else if (basic_type == "int")
+				else if (basicType == "int")
 					return ValidateFixing(~x.ToInt(), IntType, x.Fixed);
-				else if (basic_type == "unsigned short int")
+				else if (basicType == "unsigned short int")
 					return ValidateFixing(~x.ToUnsignedShortInt(), UnsignedShortIntType, x.Fixed);
-				else if (basic_type == "short int")
+				else if (basicType == "short int")
 					return ValidateFixing(~x.ToShortInt(), ShortIntType, x.Fixed);
-				else if (basic_type == "byte")
+				else if (basicType == "byte")
 					return ValidateFixing(~x.ToByte(), ByteType, x.Fixed);
 				else
 					return new();
-			}
-			else
-				return new();
 		}
 		else
 			return new();
@@ -1366,37 +1482,41 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(left.InnerType.MainType) || !TypeIsPrimitive(right.InnerType.MainType))
 			return new();
-		var left_type = left.InnerType.MainType.Peek().Name;
-		var right_type = right.InnerType.MainType.Peek().Name;
-		if (left_type == "null")
-			left_type = right_type;
-		else if (right_type == "null")
-			right_type = left_type;
-		if (!ConvertibleTypesList.Contains(left_type) || !ConvertibleTypesList.Contains(right_type))
-			return new();
+		var leftType = left.InnerType.MainType.Peek().Name;
+		var rightType = right.InnerType.MainType.Peek().Name;
+		if (leftType == "null")
+			leftType = rightType;
+		else if (rightType == "null")
+			rightType = leftType;
 		string t;
-		if (left_type == (t = "string") || right_type == t)
-			return PerformOperation(left, right, x => x.ToString(), (x, y) => x.Concat(y), left_type, right_type, t);
-		else if (left_type == (t = "real") || right_type == t)
-			return PerformOperation(left, right, x => x.ToReal(), (x, y) => x + y, left_type, right_type, t);
-		else if (left_type == (t = "unsigned long int") || right_type == t)
+		if (leftType == (t = "string") || rightType == t)
+			return PerformOperation(left, right, x => x.ToString(), (x, y) => x.Concat(y), leftType, rightType, t);
+		else if (leftType == (t = "complex") || rightType == t)
+			return PerformOperation(left, right, x => x.ToComplex(),
+				(x, y) => new(x + y, ComplexType), leftType, rightType, t);
+		else if (leftType == (t = "real") || rightType == t)
+			return PerformOperation(left, right, x => x.ToReal(), (x, y) => x + y, leftType, rightType, t);
+		else if (leftType == (t = "long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToLongLong(),
+				(x, y) => new(x + y, LongLongType), leftType, rightType, t);
+		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
-				(x, y) => new(x + y, UnsignedLongIntType), left_type, right_type, t);
-		else if (left_type == (t = "long int") || right_type == t)
+				(x, y) => new(x + y, UnsignedLongIntType), leftType, rightType, t);
+		else if (leftType == (t = "long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongInt(),
-				(x, y) => new(x + y, LongIntType), left_type, right_type, t);
-		else if (left_type == (t = "unsigned int") || right_type == t)
-			return PerformOperation(left, right, x => x.ToUnsignedInt(), (x, y) => x + y, left_type, right_type, t);
-		else if (left_type == (t = "int") || right_type == t)
-			return PerformOperation(left, right, x => x.ToInt(), (x, y) => x + y, left_type, right_type, t);
-		else if (left_type == (t = "char") || right_type == t)
-			return PerformOperation(left, right, x => x.ToChar(), (x, y) => x + y, left_type, right_type, t);
-		else if (left_type == (t = "unsigned short int") || right_type == t)
-			return PerformOperation(left, right, x => x.ToUnsignedShortInt(), (x, y) => x + y, left_type, right_type, t);
-		else if (left_type == (t = "short int") || right_type == t)
-			return PerformOperation(left, right, x => x.ToShortInt(), (x, y) => x + y, left_type, right_type, t);
-		else if (left_type == (t = "byte") || left_type == "bool" || right_type == t || right_type == "bool")
-			return PerformOperation(left, right, x => x.ToByte(), (x, y) => x + y, left_type, right_type, t);
+				(x, y) => new(x + y, LongIntType), leftType, rightType, t);
+		else if (leftType == (t = "unsigned int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedInt(), (x, y) => x + y, leftType, rightType, t);
+		else if (leftType == (t = "int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToInt(), (x, y) => x + y, leftType, rightType, t);
+		else if (leftType == (t = "char") || rightType == t)
+			return PerformOperation(left, right, x => x.ToChar(), (x, y) => x + y, leftType, rightType, t);
+		else if (leftType == (t = "unsigned short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedShortInt(), (x, y) => x + y, leftType, rightType, t);
+		else if (leftType == (t = "short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToShortInt(), (x, y) => x + y, leftType, rightType, t);
+		else if (leftType == (t = "byte") || leftType == "bool" || rightType == t || rightType == "bool")
+			return PerformOperation(left, right, x => x.ToByte(), (x, y) => x + y, leftType, rightType, t);
 		else
 			return new();
 	}
@@ -1405,71 +1525,79 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(left.InnerType.MainType) || !TypeIsPrimitive(right.InnerType.MainType))
 			return new();
-		var left_type = left.InnerType.MainType.Peek().Name;
-		var right_type = right.InnerType.MainType.Peek().Name;
-		if (left_type == "null")
-			left_type = right_type;
-		else if (right_type == "null")
-			right_type = left_type;
-		if (!ConvertibleTypesList.Contains(left_type) || !ConvertibleTypesList.Contains(right_type))
-			return new();
+		var leftType = left.InnerType.MainType.Peek().Name;
+		var rightType = right.InnerType.MainType.Peek().Name;
+		if (leftType == "null")
+			leftType = rightType;
+		else if (rightType == "null")
+			rightType = leftType;
 		string t;
-		if (left_type == "string" || right_type == "string")
-			return StringSubtract(left, right, left_type, right_type);
-		else if (left_type == (t = "real") || right_type == t)
-			return PerformOperation(left, right, x => x.ToReal(), (x, y) => x - y, left_type, right_type, t);
-		else if (left_type == (t = "unsigned long int") || right_type == t)
+		if (leftType == (t = "string") || rightType == t)
+			return StringSubtract(left, right, leftType, rightType);
+		else if (leftType == (t = "complex") || rightType == t)
+			return PerformOperation(left, right, x => x.ToComplex(),
+				(x, y) => new(x - y, ComplexType), leftType, rightType, t);
+		else if (leftType == (t = "real") || rightType == t)
+			return PerformOperation(left, right, x => x.ToReal(), (x, y) => x - y, leftType, rightType, t);
+		else if (leftType == (t = "long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToLongLong(),
+				(x, y) => new(x - y, LongLongType), leftType, rightType, t);
+		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
-				(x, y) => new(x - y, UnsignedLongIntType), left_type, right_type, t);
-		else if (left_type == (t = "long int") || right_type == t)
+				(x, y) => new(x - y, UnsignedLongIntType), leftType, rightType, t);
+		else if (leftType == (t = "long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongInt(),
-				(x, y) => new(x - y, LongIntType), left_type, right_type, t);
-		else if (left_type == (t = "unsigned int") || right_type == t)
-			return PerformOperation(left, right, x => x.ToUnsignedInt(), (x, y) => x - y, left_type, right_type, t);
-		else if (left_type == (t = "int") || right_type == t)
-			return PerformOperation(left, right, x => x.ToInt(), (x, y) => x - y, left_type, right_type, t);
-		else if (left_type == (t = "char") || right_type == t)
-			return PerformOperation(left, right, x => x.ToChar(), (x, y) => x - y, left_type, right_type, t);
-		else if (left_type == (t = "unsigned short int") || right_type == t)
-			return PerformOperation(left, right, x => x.ToUnsignedShortInt(), (x, y) => x - y, left_type, right_type, t);
-		else if (left_type == (t = "short int") || right_type == t)
-			return PerformOperation(left, right, x => x.ToShortInt(), (x, y) => x - y, left_type, right_type, t);
-		else if (left_type == (t = "byte") || left_type == "bool" || right_type == t || right_type == "bool")
-			return PerformOperation(left, right, x => x.ToByte(), (x, y) => x - y, left_type, right_type, t);
+				(x, y) => new(x - y, LongIntType), leftType, rightType, t);
+		else if (leftType == (t = "unsigned int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedInt(), (x, y) => x - y, leftType, rightType, t);
+		else if (leftType == (t = "int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToInt(), (x, y) => x - y, leftType, rightType, t);
+		else if (leftType == (t = "char") || rightType == t)
+			return PerformOperation(left, right, x => x.ToChar(), (x, y) => x - y, leftType, rightType, t);
+		else if (leftType == (t = "unsigned short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedShortInt(), (x, y) => x - y, leftType, rightType, t);
+		else if (leftType == (t = "short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToShortInt(), (x, y) => x - y, leftType, rightType, t);
+		else if (leftType == (t = "byte") || leftType == "bool" || rightType == t || rightType == "bool")
+			return PerformOperation(left, right, x => x.ToByte(), (x, y) => x - y, leftType, rightType, t);
 		else
 			return new();
 	}
 
-	private static NStarEntity StringSubtract(NStarEntity left, NStarEntity right, String left_type, String right_type)
+	private static NStarEntity StringSubtract(NStarEntity left, NStarEntity right, String leftType, String rightType)
 	{
-		if (byte.TryParse(left.ToString().ToString(), out var left_byte)
-			&& byte.TryParse(right.ToString().ToString(), out var right_byte))
-			return PerformOperation(left_byte, right_byte, (x, y) => x - y, left_type, right_type, "byte");
-		else if (short.TryParse(left.ToString().ToString(), out var left_short_int)
-			&& short.TryParse(right.ToString().ToString(), out var right_short_int))
-			return PerformOperation(left_short_int, right_short_int, (x, y) => x - y, left_type, right_type, "short int");
-		else if (ushort.TryParse(left.ToString().ToString(), out var left_unsigned_short_int)
-			&& ushort.TryParse(right.ToString().ToString(), out var right_unsigned_short_int))
-			return PerformOperation(left_unsigned_short_int, right_unsigned_short_int,
-				(x, y) => x - y, left_type, right_type, "unsigned short int");
-		else if (int.TryParse(left.ToString().ToString(), out var left_int) &&
-			int.TryParse(right.ToString().ToString(), out var right_int))
-			return PerformOperation(left_int, right_int, (x, y) => x - y, left_type, right_type, "int");
-		else if (uint.TryParse(left.ToString().ToString(), out var left_unsigned_int) &&
-			uint.TryParse(right.ToString().ToString(), out var right_unsigned_int))
-			return PerformOperation(left_unsigned_int, right_unsigned_int,
-				(x, y) => x - y, left_type, right_type, "unsigned int");
-		else if (long.TryParse(left.ToString().ToString(), out var left_long_int)
-			&& long.TryParse(right.ToString().ToString(), out var right_long_int))
-			return PerformOperation(left_long_int, right_long_int,
-				(x, y) => new(x - y, LongIntType), left_type, right_type, "long int");
-		else if (ulong.TryParse(left.ToString().ToString(), out var left_unsigned_long_int) &&
-			ulong.TryParse(right.ToString().ToString(), out var right_unsigned_long_int))
-			return PerformOperation(left_unsigned_long_int, right_unsigned_long_int,
-				(x, y) => new(x - y, UnsignedLongIntType), left_type, right_type, "unsigned long int");
-		else if (double.TryParse(left.ToString().ToString(), out var left_real)
-			&& double.TryParse(right.ToString().ToString(), out var right_real))
-			return PerformOperation(left_real, right_real, (x, y) => x - y, left_type, right_type, "real");
+		if (byte.TryParse(left.ToString().ToString(), out var leftByte)
+			&& byte.TryParse(right.ToString().ToString(), out var rightByte))
+			return PerformOperation(leftByte, rightByte, (x, y) => x - y, leftType, rightType, "byte");
+		else if (short.TryParse(left.ToString().ToString(), out var leftShortInt)
+			&& short.TryParse(right.ToString().ToString(), out var rightShortInt))
+			return PerformOperation(leftShortInt, rightShortInt, (x, y) => x - y, leftType, rightType, "short int");
+		else if (ushort.TryParse(left.ToString().ToString(), out var leftUnsignedShortInt)
+			&& ushort.TryParse(right.ToString().ToString(), out var rightUnsignedShortInt))
+			return PerformOperation(leftUnsignedShortInt, rightUnsignedShortInt,
+				(x, y) => x - y, leftType, rightType, "unsigned short int");
+		else if (int.TryParse(left.ToString().ToString(), out var leftInt) &&
+			int.TryParse(right.ToString().ToString(), out var rightInt))
+			return PerformOperation(leftInt, rightInt, (x, y) => x - y, leftType, rightType, "int");
+		else if (uint.TryParse(left.ToString().ToString(), out var leftUnsignedInt) &&
+			uint.TryParse(right.ToString().ToString(), out var rightUnsignedInt))
+			return PerformOperation(leftUnsignedInt, rightUnsignedInt,
+				(x, y) => x - y, leftType, rightType, "unsigned int");
+		else if (long.TryParse(left.ToString().ToString(), out var leftLongInt)
+			&& long.TryParse(right.ToString().ToString(), out var rightLongInt))
+			return PerformOperation(leftLongInt, rightLongInt,
+				(x, y) => new(x - y, LongIntType), leftType, rightType, "long int");
+		else if (ulong.TryParse(left.ToString().ToString(), out var leftUnsignedLongInt) &&
+			ulong.TryParse(right.ToString().ToString(), out var rightUnsignedLongInt))
+			return PerformOperation(leftUnsignedLongInt, rightUnsignedLongInt,
+				(x, y) => new(x - y, UnsignedLongIntType), leftType, rightType, "unsigned long int");
+		else if (MpzT.TryParse(left.ToString().ToString(), out var leftLongLong)
+			&& MpzT.TryParse(right.ToString().ToString(), out var rightLongLong))
+			return PerformOperation(leftLongLong, rightLongLong,
+				(x, y) => new(x - y, LongLongType), leftType, rightType, "long long");
+		else if (double.TryParse(left.ToString().ToString(), out var leftReal)
+			&& double.TryParse(right.ToString().ToString(), out var rightReal))
+			return PerformOperation(leftReal, rightReal, (x, y) => x - y, leftType, rightType, "real");
 		else
 			return new();
 	}
@@ -1478,46 +1606,49 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(left.InnerType.MainType) || !TypeIsPrimitive(right.InnerType.MainType))
 			return new();
-		var left_type = left.InnerType.MainType.Peek().Name;
-		var right_type = right.InnerType.MainType.Peek().Name;
-		if (left_type == "null")
-			left_type = right_type;
-		else if (right_type == "null")
-			right_type = left_type;
-		if (!ConvertibleTypesList.Contains(left_type) || !ConvertibleTypesList.Contains(right_type))
-			return new();
+		var leftType = left.InnerType.MainType.Peek().Name;
+		var rightType = right.InnerType.MainType.Peek().Name;
+		if (leftType == "null")
+			leftType = rightType;
+		else if (rightType == "null")
+			rightType = leftType;
 		string t;
-		if (left_type == "string")
-			return StringMultiply(left, right, right_type);
-		else if (right_type == "string")
+		if (leftType == "string")
+			return StringMultiply(left, right, rightType);
+		else if (rightType == "string")
 			return new String(RedStarLinq.Fill(right.ToString(), Max((int)left.ToUnsignedInt(), 0)).JoinIntoSingle());
-		else if (left_type == (t = "real") || right_type == t)
-			return PerformOperation(left, right, x => x.ToReal(), (x, y) => x * y, left_type, right_type, t);
-		else if (left_type == (t = "unsigned long int") || right_type == t)
+		else if (leftType == (t = "complex") || rightType == t)
+			return PerformOperation(left, right, x => x.ToReal(), (x, y) => x * y, leftType, rightType, t);
+		else if (leftType == (t = "real") || rightType == t)
+			return PerformOperation(left, right, x => x.ToReal(), (x, y) => x * y, leftType, rightType, t);
+		else if (leftType == (t = "long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToLongLong(),
+				(x, y) => new(x * y, LongLongType), leftType, rightType, t);
+		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
-				(x, y) => new(x * y, UnsignedLongIntType), left_type, right_type, t);
-		else if (left_type == (t = "long int") || right_type == t)
+				(x, y) => new(x * y, UnsignedLongIntType), leftType, rightType, t);
+		else if (leftType == (t = "long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongInt(),
-				(x, y) => new(x * y, LongIntType), left_type, right_type, t);
-		else if (left_type == (t = "unsigned int") || right_type == t)
-			return PerformOperation(left, right, x => x.ToUnsignedInt(), (x, y) => x * y, left_type, right_type, t);
-		else if (left_type == (t = "int") || right_type == t)
-			return PerformOperation(left, right, x => x.ToInt(), (x, y) => x * y, left_type, right_type, t);
-		else if (left_type == (t = "char") || right_type == t)
-			return PerformOperation(left, right, x => x.ToChar(), (x, y) => x * y, left_type, right_type, t);
-		else if (left_type == (t = "unsigned short int") || right_type == t)
-			return PerformOperation(left, right, x => x.ToUnsignedShortInt(), (x, y) => x * y, left_type, right_type, t);
-		else if (left_type == (t = "short int") || right_type == t)
-			return PerformOperation(left, right, x => x.ToShortInt(), (x, y) => x * y, left_type, right_type, t);
-		else if (left_type == (t = "byte") || left_type == "bool" || right_type == t || right_type == "bool")
-			return PerformOperation(left, right, x => x.ToByte(), (x, y) => x * y, left_type, right_type, t);
+				(x, y) => new(x * y, LongIntType), leftType, rightType, t);
+		else if (leftType == (t = "unsigned int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedInt(), (x, y) => x * y, leftType, rightType, t);
+		else if (leftType == (t = "int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToInt(), (x, y) => x * y, leftType, rightType, t);
+		else if (leftType == (t = "char") || rightType == t)
+			return PerformOperation(left, right, x => x.ToChar(), (x, y) => x * y, leftType, rightType, t);
+		else if (leftType == (t = "unsigned short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedShortInt(), (x, y) => x * y, leftType, rightType, t);
+		else if (leftType == (t = "short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToShortInt(), (x, y) => x * y, leftType, rightType, t);
+		else if (leftType == (t = "byte") || leftType == "bool" || rightType == t || rightType == "bool")
+			return PerformOperation(left, right, x => x.ToByte(), (x, y) => x * y, leftType, rightType, t);
 		else
 			return new();
 	}
 
-	private static NStarEntity StringMultiply(NStarEntity left, NStarEntity right, String right_type)
+	private static NStarEntity StringMultiply(NStarEntity left, NStarEntity right, String rightType)
 	{
-		if (right_type != "string" || uint.TryParse(right.ToString().ToString(), out _))
+		if (rightType != "string" || uint.TryParse(right.ToString().ToString(), out _))
 			return (NStarEntity)new String(RedStarLinq.Fill(left.ToString(), Max((int)right.ToUnsignedInt(), 0))
 				.JoinIntoSingle());
 		if (!uint.TryParse(left.ToString().ToString(), out _))
@@ -1531,69 +1662,78 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(left.InnerType.MainType) || !TypeIsPrimitive(right.InnerType.MainType))
 			return new();
-		var left_type = left.InnerType.MainType.Peek().Name;
-		var right_type = right.InnerType.MainType.Peek().Name;
-		if (left_type == "null")
-			left_type = right_type;
-		else if (right_type == "null")
-			right_type = left_type;
-		if (!ConvertibleTypesList.Contains(left_type) || !ConvertibleTypesList.Contains(right_type))
-			return new();
-		var t = GetQuotientType(left_type, right, right_type);
-		if (left_type == "string" || right_type == "string")
-			return StringDivide(left, right, left_type, right_type);
-		else if (left_type == "real" || right_type == "real")
-			return PerformOperation(left, right, x => x.ToReal(), (x, y) => x / y, left_type, right_type, t);
+		var leftType = left.InnerType.MainType.Peek().Name;
+		var rightType = right.InnerType.MainType.Peek().Name;
+		if (leftType == "null")
+			leftType = rightType;
+		else if (rightType == "null")
+			rightType = leftType;
+		var quotientType = GetQuotientType(leftType, right, rightType);
+		string t;
+		if (leftType == (t = "string") || rightType == t)
+			return StringDivide(left, right, leftType, rightType);
+		else if (leftType == (t = "complex") || rightType == t)
+			return PerformOperation(left, right, x => x.ToComplex(),
+				(x, y) => new(x / y, ComplexType), leftType, rightType, quotientType);
+		else if (leftType == (t = "real") || rightType == t)
+			return PerformOperation(left, right, x => x.ToReal(), (x, y) => x / y, leftType, rightType, quotientType);
 		else if (right == 0)
 			return new();
-		else if (left_type == "unsigned long int" || right_type == "unsigned long int")
+		else if (leftType == (t = "long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToLongLong(),
+				(x, y) => new(x / y, LongLongType), leftType, rightType, quotientType);
+		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
-				(x, y) => new(x / y, UnsignedLongIntType), left_type, right_type, t);
-		else if (left_type == "long int" || right_type == "long int")
+				(x, y) => new(x / y, UnsignedLongIntType), leftType, rightType, quotientType);
+		else if (leftType == (t = "long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongInt(),
-				(x, y) => new(x / y, LongIntType), left_type, right_type, t);
-		else if (left_type == "unsigned int" || right_type == "unsigned int")
-			return PerformOperation(left, right, x => x.ToUnsignedInt(), (x, y) => x / y, left_type, right_type, t);
-		else if (left_type == "int" || right_type == "int")
-			return PerformOperation(left, right, x => x.ToInt(), (x, y) => x / y, left_type, right_type, t);
-		else if (left_type == "char" || right_type == "char")
-			return PerformOperation(left, right, x => x.ToChar(), (x, y) => x / y, left_type, right_type, t);
-		else if (left_type == "unsigned short int" || right_type == "unsigned short int")
-			return PerformOperation(left, right, x => x.ToUnsignedShortInt(), (x, y) => x / y, left_type, right_type, t);
-		else if (left_type == "short int" || right_type == "short int")
-			return PerformOperation(left, right, x => x.ToShortInt(), (x, y) => x / y, left_type, right_type, t);
-		else if (left_type == (t = "byte") || left_type == "bool" || right_type == t || right_type == "bool")
-			return PerformOperation(left, right, x => x.ToByte(), (x, y) => x / y, left_type, right_type, t);
+				(x, y) => new(x / y, LongIntType), leftType, rightType, quotientType);
+		else if (leftType == (t = "unsigned int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedInt(), (x, y) => x / y, leftType, rightType, quotientType);
+		else if (leftType == (t = "int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToInt(), (x, y) => x / y, leftType, rightType, quotientType);
+		else if (leftType == (t = "char") || rightType == t)
+			return PerformOperation(left, right, x => x.ToChar(), (x, y) => x / y, leftType, rightType, quotientType);
+		else if (leftType == (t = "unsigned short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedShortInt(),
+				(x, y) => x / y, leftType, rightType, quotientType);
+		else if (leftType == (t = "short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToShortInt(), (x, y) => x / y, leftType, rightType, quotientType);
+		else if (leftType == (quotientType = "byte") || leftType == "bool" || rightType == quotientType || rightType == "bool")
+			return PerformOperation(left, right, x => x.ToByte(), (x, y) => x / y, leftType, rightType, quotientType);
 		else
 			return new();
 	}
 
-	private static NStarEntity StringDivide(NStarEntity left, NStarEntity right, String left_type, String right_type)
+	private static NStarEntity StringDivide(NStarEntity left, NStarEntity right, String leftType, String rightType)
 	{
-		var t = GetQuotientType(left_type, right, right_type);
-		if (short.TryParse(left.ToString().ToString(), out var left_short_int)
-			&& short.TryParse(right.ToString().ToString(), out var right_short_int))
-			return PerformOperation(left_short_int, right_short_int, (x, y) => x / y, left_type, right_type, t);
-		else if (ushort.TryParse(left.ToString().ToString(), out var left_unsigned_short_int)
-			&& ushort.TryParse(right.ToString().ToString(), out var right_unsigned_short_int))
-			return PerformOperation(left_unsigned_short_int, right_unsigned_short_int,
-				(x, y) => x / y, left_type, right_type, t);
-		else if (int.TryParse(left.ToString().ToString(), out var left_int)
-			&& int.TryParse(right.ToString().ToString(), out var right_int))
-			return PerformOperation(left_int, right_int, (x, y) => x / y, left_type, right_type, t);
-		else if (uint.TryParse(left.ToString().ToString(), out var left_unsigned_int)
-			&& uint.TryParse(right.ToString().ToString(), out var right_unsigned_int))
-			return PerformOperation(left_unsigned_int, right_unsigned_int, (x, y) => x / y, left_type, right_type, t);
-		else if (long.TryParse(left.ToString().ToString(), out var left_long_int)
-			&& long.TryParse(right.ToString().ToString(), out var right_long_int))
-			return PerformOperation(left_long_int, right_long_int, (x, y) => new(x / y, LongIntType), left_type, right_type, t);
-		else if (ulong.TryParse(left.ToString().ToString(), out var left_unsigned_long_int)
-			&& ulong.TryParse(right.ToString().ToString(), out var right_unsigned_long_int))
-			return PerformOperation(left_unsigned_long_int, right_unsigned_long_int,
-				(x, y) => new(x / y, UnsignedLongIntType), left_type, right_type, t);
-		else if (double.TryParse(left.ToString().ToString(), out var left_real)
-			&& double.TryParse(right.ToString().ToString(), out var right_real))
-			return PerformOperation(left_real, right_real, (x, y) => x / y, left_type, right_type, t);
+		var t = GetQuotientType(leftType, right, rightType);
+		if (short.TryParse(left.ToString().ToString(), out var leftShortInt)
+			&& short.TryParse(right.ToString().ToString(), out var rightShortInt))
+			return PerformOperation(leftShortInt, rightShortInt, (x, y) => x / y, leftType, rightType, t);
+		else if (ushort.TryParse(left.ToString().ToString(), out var leftUnsignedShortInt)
+			&& ushort.TryParse(right.ToString().ToString(), out var rightUnsignedShortInt))
+			return PerformOperation(leftUnsignedShortInt, rightUnsignedShortInt,
+				(x, y) => x / y, leftType, rightType, t);
+		else if (int.TryParse(left.ToString().ToString(), out var leftInt)
+			&& int.TryParse(right.ToString().ToString(), out var rightInt))
+			return PerformOperation(leftInt, rightInt, (x, y) => x / y, leftType, rightType, t);
+		else if (uint.TryParse(left.ToString().ToString(), out var leftUnsignedInt)
+			&& uint.TryParse(right.ToString().ToString(), out var rightUnsignedInt))
+			return PerformOperation(leftUnsignedInt, rightUnsignedInt, (x, y) => x / y, leftType, rightType, t);
+		else if (long.TryParse(left.ToString().ToString(), out var leftLongInt)
+			&& long.TryParse(right.ToString().ToString(), out var rightLongInt))
+			return PerformOperation(leftLongInt, rightLongInt, (x, y) => new(x / y, LongIntType), leftType, rightType, t);
+		else if (ulong.TryParse(left.ToString().ToString(), out var leftUnsignedLongInt)
+			&& ulong.TryParse(right.ToString().ToString(), out var rightUnsignedLongInt))
+			return PerformOperation(leftUnsignedLongInt, rightUnsignedLongInt,
+				(x, y) => new(x / y, UnsignedLongIntType), leftType, rightType, t);
+		else if (MpzT.TryParse(left.ToString().ToString(), out var leftLongLong)
+			&& MpzT.TryParse(right.ToString().ToString(), out var rightLongLong))
+			return PerformOperation(leftLongLong, rightLongLong, (x, y) => new(x / y, LongLongType), leftType, rightType, t);
+		else if (double.TryParse(left.ToString().ToString(), out var leftReal)
+			&& double.TryParse(right.ToString().ToString(), out var rightReal))
+			return PerformOperation(leftReal, rightReal, (x, y) => x / y, leftType, rightType, t);
 		else
 			return new();
 	}
@@ -1602,84 +1742,279 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(left.InnerType.MainType) || !TypeIsPrimitive(right.InnerType.MainType))
 			return new();
-		var left_type = left.InnerType.MainType.Peek().Name;
-		var right_type = right.InnerType.MainType.Peek().Name;
-		if (left_type == "null")
-			left_type = right_type;
-		else if (right_type == "null")
-			right_type = left_type;
-		if (!ConvertibleTypesList.Contains(left_type) || !ConvertibleTypesList.Contains(right_type))
-			return new();
-		var t = GetRemainderType(left_type, right, right_type);
+		var leftType = left.InnerType.MainType.Peek().Name;
+		var rightType = right.InnerType.MainType.Peek().Name;
+		if (leftType == "null")
+			leftType = rightType;
+		else if (rightType == "null")
+			rightType = leftType;
+		var remainderType = GetRemainderType(leftType, right, rightType);
+		string t;
 		if (right.ToReal() == 0)
 			return new();
-		else if (left_type == "string" || right_type == "string")
-			return StringMod(left, right, left_type, right_type);
-		else if (left_type == "real" || right_type == "real")
-			return PerformOperation(left, right, x => x.ToReal(), (x, y) => x - Floor(x / y) * y, left_type, right_type, t);
-		else if (left_type == "unsigned long int" || right_type == "unsigned long int")
+		else if (leftType == (t = "string") || rightType == t)
+			return StringMod(left, right, leftType, rightType);
+		else if (leftType == (t = "real") || rightType == t)
+			return PerformOperation(left, right, x => x.ToReal(),
+				(x, y) => x - Floor(x / y) * y, leftType, rightType, remainderType);
+		else if (leftType == (t = "long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToLongLong(),
+				(x, y) => new(x - x / y * y, LongLongType), leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
-				(x, y) => new(x - x / y * y, UnsignedLongIntType), left_type, right_type, t);
-		else if (left_type == "long int" || right_type == "long int")
+				(x, y) => new(x - x / y * y, UnsignedLongIntType), leftType, rightType, remainderType);
+		else if (leftType == (t = "long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongInt(),
-				(x, y) => new(x - x / y * y, LongIntType), left_type, right_type, t);
-		else if (left_type == "unsigned int" || right_type == "unsigned int")
-			return PerformOperation(left, right, x => x.ToUnsignedInt(), (x, y) => x - x / y * y, left_type, right_type, t);
-		else if (left_type == "int" || right_type == "int")
-			return PerformOperation(left, right, x => x.ToInt(), (x, y) => x - x / y * y, left_type, right_type, t);
-		else if (left_type == "char" || right_type == "char")
-			return PerformOperation(left, right, x => x.ToChar(), (x, y) => x - x / y * y, left_type, right_type, t);
-		else if (left_type == "unsigned short int" || right_type == "unsigned short int")
+				(x, y) => new(x - x / y * y, LongIntType), leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedInt(),
+				(x, y) => x - x / y * y, leftType, rightType, remainderType);
+		else if (leftType == (t = "int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToInt(),
+				(x, y) => x - x / y * y, leftType, rightType, remainderType);
+		else if (leftType == (t = "char") || rightType == t)
+			return PerformOperation(left, right, x => x.ToChar(),
+				(x, y) => x - x / y * y, leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned short int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedShortInt(),
-				(x, y) => x - x / y * y, left_type, right_type, t);
-		else if (left_type == "short int" || right_type == "short int")
-			return PerformOperation(left, right, x => x.ToShortInt(), (x, y) => x - x / y * y, left_type, right_type, t);
-		else if (left_type == "byte" || left_type == "bool" || right_type == "byte" || right_type == "bool")
-			return PerformOperation(left, right, x => x.ToByte(), (x, y) => x - x / y * y, left_type, right_type, t);
+				(x, y) => x - x / y * y, leftType, rightType, remainderType);
+		else if (leftType == (t = "short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToShortInt(),
+				(x, y) => x - x / y * y, leftType, rightType, remainderType);
+		else if (leftType == "byte" || leftType == "bool" || rightType == "byte" || rightType == "bool")
+			return PerformOperation(left, right, x => x.ToByte(),
+				(x, y) => x - x / y * y, leftType, rightType, remainderType);
 		else
 			return new();
 	}
 
-	private static NStarEntity StringMod(NStarEntity left, NStarEntity right, String left_type, String right_type)
+	private static NStarEntity StringMod(NStarEntity left, NStarEntity right, String leftType, String rightType)
 	{
-		var t = GetRemainderType(left_type, right, right_type);
-		if (short.TryParse(left.ToString().ToString(), out var left_short_int)
-			&& short.TryParse(right.ToString().ToString(), out var right_short_int))
-			return PerformOperation(left_short_int, right_short_int, (x, y) => x - x / y * y, left_type, right_type, t);
-		else if (ushort.TryParse(left.ToString().ToString(), out var left_unsigned_short_int)
-			&& ushort.TryParse(right.ToString().ToString(), out var right_unsigned_short_int))
-			return PerformOperation(left_unsigned_short_int, right_unsigned_short_int,
-				(x, y) => x - x / y * y, left_type, right_type, t);
-		else if (int.TryParse(left.ToString().ToString(), out var left_int)
-			&& int.TryParse(right.ToString().ToString(), out var right_int))
-			return PerformOperation(left_int, right_int, (x, y) => x - x / y * y, left_type, right_type, t);
-		else if (uint.TryParse(left.ToString().ToString(), out var left_unsigned_int)
-			&& uint.TryParse(right.ToString().ToString(), out var right_unsigned_int))
-			return PerformOperation(left_unsigned_int, right_unsigned_int, (x, y) => x - x / y * y, left_type, right_type, t);
-		else if (long.TryParse(left.ToString().ToString(), out var left_long_int)
-			&& long.TryParse(right.ToString().ToString(), out var right_long_int))
-			return PerformOperation(left_long_int, right_long_int,
-				(x, y) => new(x - x / y * y, LongIntType), left_type, right_type, t);
-		else if (ulong.TryParse(left.ToString().ToString(), out var left_unsigned_long_int)
-			&& ulong.TryParse(right.ToString().ToString(), out var right_unsigned_long_int))
-			return PerformOperation(left_unsigned_long_int, right_unsigned_long_int,
-				(x, y) => new(x - x / y * y, UnsignedLongIntType), left_type, right_type, t);
-		else if (double.TryParse(left.ToString().ToString(), out var left_real)
-			&& double.TryParse(right.ToString().ToString(), out var right_real))
-			return PerformOperation(left_real, right_real, (x, y) => x - Floor(x / y) * y, left_type, right_type, t);
+		var t = GetRemainderType(leftType, right, rightType);
+		if (short.TryParse(left.ToString().ToString(), out var leftShortInt)
+			&& short.TryParse(right.ToString().ToString(), out var rightShortInt))
+			return PerformOperation(leftShortInt, rightShortInt, (x, y) => x - x / y * y, leftType, rightType, t);
+		else if (ushort.TryParse(left.ToString().ToString(), out var leftUnsignedShortInt)
+			&& ushort.TryParse(right.ToString().ToString(), out var rightUnsignedShortInt))
+			return PerformOperation(leftUnsignedShortInt, rightUnsignedShortInt,
+				(x, y) => x - x / y * y, leftType, rightType, t);
+		else if (int.TryParse(left.ToString().ToString(), out var leftInt)
+			&& int.TryParse(right.ToString().ToString(), out var rightInt))
+			return PerformOperation(leftInt, rightInt, (x, y) => x - x / y * y, leftType, rightType, t);
+		else if (uint.TryParse(left.ToString().ToString(), out var leftUnsignedInt)
+			&& uint.TryParse(right.ToString().ToString(), out var rightUnsignedInt))
+			return PerformOperation(leftUnsignedInt, rightUnsignedInt, (x, y) => x - x / y * y, leftType, rightType, t);
+		else if (long.TryParse(left.ToString().ToString(), out var leftLongInt)
+			&& long.TryParse(right.ToString().ToString(), out var rightLongInt))
+			return PerformOperation(leftLongInt, rightLongInt,
+				(x, y) => new(x - x / y * y, LongIntType), leftType, rightType, t);
+		else if (ulong.TryParse(left.ToString().ToString(), out var leftUnsignedLongInt)
+			&& ulong.TryParse(right.ToString().ToString(), out var rightUnsignedLongInt))
+			return PerformOperation(leftUnsignedLongInt, rightUnsignedLongInt,
+				(x, y) => new(x - x / y * y, UnsignedLongIntType), leftType, rightType, t);
+		else if (MpzT.TryParse(left.ToString().ToString(), out var leftLongLong)
+			&& MpzT.TryParse(right.ToString().ToString(), out var rightLongLong))
+			return PerformOperation(leftLongLong, rightLongLong,
+				(x, y) => new(x - x / y * y, LongLongType), leftType, rightType, t);
+		else if (double.TryParse(left.ToString().ToString(), out var leftReal)
+			&& double.TryParse(right.ToString().ToString(), out var rightReal))
+			return PerformOperation(leftReal, rightReal, (x, y) => x - Floor(x / y) * y, leftType, rightType, t);
 		else
 			return new();
 	}
 
-	public static NStarEntity operator &(NStarEntity left, NStarEntity right) => left.ToInt() & right.ToInt();
+	public static NStarEntity operator &(NStarEntity left, NStarEntity right)
+	{
+		if (!TypeIsPrimitive(left.InnerType.MainType) || !TypeIsPrimitive(right.InnerType.MainType))
+			return new();
+		var leftType = left.InnerType.MainType.Peek().Name;
+		var rightType = right.InnerType.MainType.Peek().Name;
+		if (leftType == "null")
+			leftType = rightType;
+		else if (rightType == "null")
+			rightType = leftType;
+		var remainderType = GetRemainderType(leftType, right, rightType);
+		string t;
+		if (right.ToLongLong() == 0)
+			return new();
+		else if (leftType == (t = "long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToLongLong(),
+				(x, y) => new(x & y, LongLongType), leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned long int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
+				(x, y) => new(x & y, UnsignedLongIntType), leftType, rightType, remainderType);
+		else if (leftType == (t = "long int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToLongInt(),
+				(x, y) => new(x & y, LongIntType), leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedInt(),
+				(x, y) => x & y, leftType, rightType, remainderType);
+		else if (leftType == (t = "int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToInt(),
+				(x, y) => x & y, leftType, rightType, remainderType);
+		else if (leftType == (t = "char") || rightType == t)
+			return PerformOperation(left, right, x => x.ToChar(),
+				(x, y) => x & y, leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedShortInt(),
+				(x, y) => x & y, leftType, rightType, remainderType);
+		else if (leftType == (t = "short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToShortInt(),
+				(x, y) => x & y, leftType, rightType, remainderType);
+		else if (leftType == "byte" || leftType == "bool" || rightType == "byte" || rightType == "bool")
+			return PerformOperation(left, right, x => x.ToByte(),
+				(x, y) => x & y, leftType, rightType, remainderType);
+		else
+			return new();
+	}
 
-	public static NStarEntity operator |(NStarEntity left, NStarEntity right) => left.ToInt() | right.ToInt();
+	public static NStarEntity operator |(NStarEntity left, NStarEntity right)
+	{
+		if (!TypeIsPrimitive(left.InnerType.MainType) || !TypeIsPrimitive(right.InnerType.MainType))
+			return new();
+		var leftType = left.InnerType.MainType.Peek().Name;
+		var rightType = right.InnerType.MainType.Peek().Name;
+		if (leftType == "null")
+			leftType = rightType;
+		else if (rightType == "null")
+			rightType = leftType;
+		var remainderType = GetRemainderType(leftType, right, rightType);
+		string t;
+		if (right.ToLongLong() == 0)
+			return new();
+		else if (leftType == (t = "long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToLongLong(),
+				(x, y) => new(x | y, LongLongType), leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned long int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
+				(x, y) => new(x | y, UnsignedLongIntType), leftType, rightType, remainderType);
+		else if (leftType == (t = "long int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToLongInt(),
+				(x, y) => new(x | y, LongIntType), leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedInt(),
+				(x, y) => x | y, leftType, rightType, remainderType);
+		else if (leftType == (t = "int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToInt(),
+				(x, y) => x | y, leftType, rightType, remainderType);
+		else if (leftType == (t = "char") || rightType == t)
+			return PerformOperation(left, right, x => x.ToChar(),
+				(x, y) => x | y, leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedShortInt(),
+				(x, y) => x | y, leftType, rightType, remainderType);
+		else if (leftType == (t = "short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToShortInt(),
+				(x, y) => x | y, leftType, rightType, remainderType);
+		else if (leftType == "byte" || leftType == "bool" || rightType == "byte" || rightType == "bool")
+			return PerformOperation(left, right, x => x.ToByte(),
+				(x, y) => x | y, leftType, rightType, remainderType);
+		else
+			return new();
+	}
 
-	public static NStarEntity operator ^(NStarEntity left, NStarEntity right) => left.ToInt() ^ right.ToInt();
+	public static NStarEntity operator ^(NStarEntity left, NStarEntity right)
+	{
+		if (!TypeIsPrimitive(left.InnerType.MainType) || !TypeIsPrimitive(right.InnerType.MainType))
+			return new();
+		var leftType = left.InnerType.MainType.Peek().Name;
+		var rightType = right.InnerType.MainType.Peek().Name;
+		if (leftType == "null")
+			leftType = rightType;
+		else if (rightType == "null")
+			rightType = leftType;
+		var remainderType = GetRemainderType(leftType, right, rightType);
+		string t;
+		if (right.ToLongLong() == 0)
+			return new();
+		else if (leftType == (t = "long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToLongLong(),
+				(x, y) => new(x ^ y, LongLongType), leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned long int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
+				(x, y) => new(x ^ y, UnsignedLongIntType), leftType, rightType, remainderType);
+		else if (leftType == (t = "long int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToLongInt(),
+				(x, y) => new(x ^ y, LongIntType), leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedInt(),
+				(x, y) => x ^ y, leftType, rightType, remainderType);
+		else if (leftType == (t = "int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToInt(),
+				(x, y) => x ^ y, leftType, rightType, remainderType);
+		else if (leftType == (t = "char") || rightType == t)
+			return PerformOperation(left, right, x => x.ToChar(),
+				(x, y) => x ^ y, leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedShortInt(),
+				(x, y) => x ^ y, leftType, rightType, remainderType);
+		else if (leftType == (t = "short int") || rightType == t)
+			return PerformOperation(left, right, x => x.ToShortInt(),
+				(x, y) => x ^ y, leftType, rightType, remainderType);
+		else if (leftType == "byte" || leftType == "bool" || rightType == "byte" || rightType == "bool")
+			return PerformOperation(left, right, x => x.ToByte(),
+				(x, y) => x ^ y, leftType, rightType, remainderType);
+		else
+			return new();
+	}
 
-	public static NStarEntity operator >>(NStarEntity left, int right) => left.ToInt() >> right;
+	public static NStarEntity operator >>(NStarEntity left, int right)
+	{
+		if (TypeIsPrimitive(left.InnerType.MainType))
+		{
+			var basicType = left.InnerType.MainType.Peek().Name;
+			if (basicType == "long long")
+				return ValidateFixing(new(left.ToLongLong() >> right, LongLongType), LongLongType, left.Fixed);
+			else if (basicType == "unsigned long int")
+				return ValidateFixing(new(left.ToUnsignedLongInt() >> right, UnsignedLongIntType),
+					UnsignedLongIntType, left.Fixed);
+			else if (basicType == "long int")
+				return ValidateFixing(new(left.ToLongInt() >> right, LongIntType), LongIntType, left.Fixed);
+			else if (basicType == "unsigned int")
+				return ValidateFixing(left.ToUnsignedInt() >> right, UnsignedIntType, left.Fixed);
+			else if (basicType == "int")
+				return ValidateFixing(left.ToInt() >> right, IntType, left.Fixed);
+			else if (basicType == "unsigned short int")
+				return ValidateFixing(left.ToUnsignedShortInt() >> right, UnsignedShortIntType, left.Fixed);
+			else if (basicType == "short int")
+				return ValidateFixing(left.ToShortInt() >> right, ShortIntType, left.Fixed);
+			else if (basicType == "byte")
+				return ValidateFixing(left.ToByte() >> right, ByteType, left.Fixed);
+			else
+				return new();
+		}
+		else
+			return new();
+	}
 
-	public static NStarEntity operator <<(NStarEntity left, int right) => left.ToInt() << right;
+	public static NStarEntity operator <<(NStarEntity left, int right)
+	{
+		if (TypeIsPrimitive(left.InnerType.MainType))
+		{
+			var basicType = left.InnerType.MainType.Peek().Name;
+			if (basicType == "long long")
+				return ValidateFixing(new(left.ToLongLong() << right, LongLongType), LongLongType, left.Fixed);
+			else if (basicType == "unsigned long int")
+				return ValidateFixing(new(left.ToUnsignedLongInt() << right, UnsignedLongIntType),
+					UnsignedLongIntType, left.Fixed);
+			else if (basicType == "long int")
+				return ValidateFixing(new(left.ToLongInt() << right, LongIntType), LongIntType, left.Fixed);
+			else if (basicType == "unsigned int")
+				return ValidateFixing(left.ToUnsignedInt() << right, UnsignedIntType, left.Fixed);
+			else if (basicType == "int")
+				return ValidateFixing(left.ToInt() << right, IntType, left.Fixed);
+			else if (basicType == "unsigned short int")
+				return ValidateFixing(left.ToUnsignedShortInt() << right, UnsignedShortIntType, left.Fixed);
+			else if (basicType == "short int")
+				return ValidateFixing(left.ToShortInt() << right, ShortIntType, left.Fixed);
+			else if (basicType == "byte")
+				return ValidateFixing(left.ToByte() << right, ByteType, left.Fixed);
+			else
+				return new();
+		}
+		else
+			return new();
+	}
 
 	public static bool operator ==(NStarEntity left, NStarEntity right) =>
 		left.ToBool() == right.ToBool() && left.ToReal() == right.ToReal() && left.ToString() == right.ToString();

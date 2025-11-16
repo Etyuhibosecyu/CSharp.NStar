@@ -35,7 +35,7 @@ namespace AvaloniaEdit.Document;
         {
             get
             {
-                OffsetChangeMap map = OffsetChangeMapOrNull;
+                var map = OffsetChangeMapOrNull;
                 if (map == null)
                 {
                     // create OffsetChangeMap on demand
@@ -98,7 +98,7 @@ namespace AvaloniaEdit.Document;
         /// <inheritdoc/>
         public override TextChangeEventArgs Invert()
         {
-            OffsetChangeMap map = OffsetChangeMapOrNull;
+            var map = OffsetChangeMapOrNull;
             if (map != null)
             {
                 map = map.Invert();

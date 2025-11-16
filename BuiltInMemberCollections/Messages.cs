@@ -18,7 +18,7 @@ public static class Messages
 		} + codeString + " in line " + line.ToString() + " at position " + column.ToString() + ": " + code switch
 		{
 			0x0000 => "unexpected end of code reached",
-			0x0001 => "too large number; long long type is under development",
+			0x0001 => "too large number; long long type cannot be used in this context",
 			0x0002 => "unrecognized escape-sequence",
 			0x0003 => "unrecognized sequence of symbols",
 			0x0004 => "expected: identifier",
@@ -211,6 +211,8 @@ public static class Messages
 				+ " in the constructor the type \"" + parameters[0] + "\"; consider reordering the class members,"
 				+ " especially placing the properties before the constructors",
 			0x4070 => "the property \"" + parameters[0] + "\" is get-only and cannot be set",
+			0x4080 => "the operator \"" + parameters[0] + "\" cannot be used in this context",
+			0x4081 => "the second operand of the operator \"" + parameters[0] + "\" must be of the type, convertible to int",
 			0x8000 => "the properties and the methods are static in the static class implicitly;" +
 				" the word \"static\" is not necessary",
 			0x8001 => "the semicolon in the end of the line with condition or cycle may easily be unnoticed" +

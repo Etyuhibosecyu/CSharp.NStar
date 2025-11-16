@@ -115,7 +115,7 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 	/// </summary>
 	public int GetNewOffset(int offset, AnchorMovementType movementType = AnchorMovementType.Default)
 	{
-		IList<OffsetChangeMapEntry> items = Items;
+		var items = Items;
 		int count = items.Count;
 		for (int i = 0; i < count; i++) {
 			offset = items[i].GetNewOffset(offset, movementType);
@@ -129,7 +129,7 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 	public bool IsValidForDocumentChange(int offset, int removalLength, int insertionLength)
 	{
 		int endOffset = offset + removalLength;
-		foreach (OffsetChangeMapEntry entry in this) {
+		foreach (var entry in this) {
 			// check that ChangeMapEntry is in valid range for this document change
 			if (entry.Offset < offset || entry.Offset + entry.RemovalLength > endOffset)
 				return false;
@@ -148,7 +148,7 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 			return this;
 		OffsetChangeMap newMap = new OffsetChangeMap(Count);
 		for (int i = Count - 1; i >= 0; i--) {
-			OffsetChangeMapEntry entry = this[i];
+			var entry = this[i];
 			// swap InsertionLength and RemovalLength
 			newMap.Add(new OffsetChangeMapEntry(entry.Offset, entry.InsertionLength, entry.RemovalLength));
 		}

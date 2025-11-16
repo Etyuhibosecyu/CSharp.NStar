@@ -218,7 +218,7 @@ namespace AvaloniaEdit.Document;
                 {
                     return Right.LeftMost;
                 }
-                DocumentLine node = this;
+                var node = this;
                 DocumentLine oldNode;
                 do
                 {
@@ -244,7 +244,7 @@ namespace AvaloniaEdit.Document;
                 {
                     return Left.RightMost;
                 }
-                DocumentLine node = this;
+                var node = this;
                 DocumentLine oldNode;
                 do
                 {

@@ -30,12 +30,11 @@ namespace AvaloniaEdit.Rendering;
             if (_nonPrintableCharacterTexts == null)
                 _nonPrintableCharacterTexts = new Dictionary<string, TextLine>();
 
-            TextLine textLine;
-            if (!_nonPrintableCharacterTexts.TryGetValue(text, out textLine))
-            {
-                textLine = FormattedTextElement.PrepareText(TextFormatter.Current, text, properties);
-                _nonPrintableCharacterTexts[text] = textLine;
-            }
-            return textLine;
+		if (!_nonPrintableCharacterTexts.TryGetValue(text, out var textLine))
+		{
+			textLine = FormattedTextElement.PrepareText(TextFormatter.Current, text, properties);
+			_nonPrintableCharacterTexts[text] = textLine;
+		}
+		return textLine;
         }
     }

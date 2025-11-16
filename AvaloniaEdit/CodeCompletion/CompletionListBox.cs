@@ -53,10 +53,7 @@ namespace AvaloniaEdit.CodeCompletion;
             set
             {
                 value = value.CoerceValue(0, ItemCount - VisibleItemCount);
-                if (ScrollViewer != null)
-                {
-                    ScrollViewer.Offset = ScrollViewer.Offset.WithY((double)value / ItemCount * ScrollViewer.Extent.Height);
-                }
+                ScrollViewer?.Offset = ScrollViewer.Offset.WithY((double)value / ItemCount * ScrollViewer.Extent.Height);
             }
         }
 

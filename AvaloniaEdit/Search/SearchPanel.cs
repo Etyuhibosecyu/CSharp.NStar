@@ -186,7 +186,7 @@ namespace AvaloniaEdit.Search;
 		ArgumentNullException.ThrowIfNull(editor);
 		if (editor.TextArea == null) throw new ArgumentNullException(nameof(editor.TextArea));
 
-            TextArea textArea = editor.TextArea;
+            var textArea = editor.TextArea;
 
             var panel = new SearchPanel();
             panel.AttachInternal(editor);
@@ -286,7 +286,7 @@ namespace AvaloniaEdit.Search;
 
         void SelectAll(ExecutedRoutedEventArgs e)
         {
-            TextBox focusedTextBox = GetFocusedTextBox();
+            var focusedTextBox = GetFocusedTextBox();
 
             if (focusedTextBox == null)
                 return;
@@ -297,7 +297,7 @@ namespace AvaloniaEdit.Search;
 
         void Cut(ExecutedRoutedEventArgs e)
         {
-            TextBox focusedTextBox = GetFocusedTextBox();
+            var focusedTextBox = GetFocusedTextBox();
 
             if (focusedTextBox == null)
                 return;
@@ -308,7 +308,7 @@ namespace AvaloniaEdit.Search;
 
         void Copy(ExecutedRoutedEventArgs e)
         {
-            TextBox focusedTextBox = GetFocusedTextBox();
+            var focusedTextBox = GetFocusedTextBox();
 
             if (focusedTextBox == null)
                 return;
@@ -319,7 +319,7 @@ namespace AvaloniaEdit.Search;
 
         void Paste(ExecutedRoutedEventArgs e)
         {
-            TextBox focusedTextBox = GetFocusedTextBox();
+            var focusedTextBox = GetFocusedTextBox();
 
             if (focusedTextBox == null)
                 return;
@@ -330,7 +330,7 @@ namespace AvaloniaEdit.Search;
 
         void Undo(ExecutedRoutedEventArgs e)
         {
-            TextBox focusedTextBox = GetFocusedTextBox();
+            var focusedTextBox = GetFocusedTextBox();
 
             if (focusedTextBox == null)
                 return;
@@ -341,7 +341,7 @@ namespace AvaloniaEdit.Search;
 
         void Redo(ExecutedRoutedEventArgs e)
         {
-            TextBox focusedTextBox = GetFocusedTextBox();
+            var focusedTextBox = GetFocusedTextBox();
 
             if (focusedTextBox == null)
                 return;
@@ -565,8 +565,7 @@ namespace AvaloniaEdit.Search;
         {
             _textArea.RemoveChild(this);
 
-            if (_messageView != null)
-                _messageView.IsVisible = false;
+            _messageView?.IsVisible = false;
 
             _textArea.TextView.BackgroundRenderers.Remove(_renderer);
             
@@ -616,7 +615,7 @@ namespace AvaloniaEdit.Search;
         private static int GetSearchResultIndex(TextSegmentCollection<SearchResult> searchResults, SearchResult match)
         {
             int index = 0;
-            foreach (SearchResult searchResult in searchResults)
+            foreach (var searchResult in searchResults)
             {
                 if (searchResult.Equals(match))
                     return index;

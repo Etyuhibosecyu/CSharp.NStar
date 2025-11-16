@@ -73,7 +73,7 @@ public sealed class TreeBranch
 		Container = container;
 	}
 
-	public static TreeBranch DoNotAdd() => new("DoNotAdd", 0, int.MaxValue, new());
+	public static TreeBranch DoNotAdd() => new(nameof(DoNotAdd), 0, int.MaxValue, new());
 
 	public void Add(TreeBranch item)
 	{

@@ -48,7 +48,7 @@ public class XshdRuleSet : XshdElement
 	/// </summary>
 	public void AcceptElements(IXshdVisitor visitor)
 	{
-		foreach (XshdElement element in Elements) {
+		foreach (var element in Elements) {
 			element.AcceptVisitor(visitor);
 		}
 	}

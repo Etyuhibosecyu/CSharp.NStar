@@ -281,8 +281,7 @@ public class CompletionList : TemplatedControl
 		{
 			if (_listBox == null && value != null)
 				ApplyTemplate();
-			if (_listBox != null) // may still be null if ApplyTemplate fails, or if listBox and value both are null
-				_listBox.SelectedItem = value;
+			_listBox?.SelectedItem = value;
 		}
 	}
 

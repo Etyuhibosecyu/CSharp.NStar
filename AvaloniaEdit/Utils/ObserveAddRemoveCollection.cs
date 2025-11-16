@@ -45,7 +45,7 @@ namespace AvaloniaEdit.Utils;
         {
             if (_onRemove != null)
             {
-                foreach (T val in this)
+                foreach (var val in this)
                     _onRemove(val);
             }
             base.ClearItems();

@@ -32,7 +32,7 @@ public static class NStarUtilityFunctions
 		if (x <= 1)
 			return 1;
 		else if (x > 170)
-			return (double)1 / 0;
+			return 1d / 0;
 		else
 		{
 			double n = 1;
@@ -69,6 +69,8 @@ public static class NStarUtilityFunctions
 		random_calls++;
 		return a;
 	}
+
+	public static double Log(double a, double x) => Math.Log(x, a);
 
 	public static Complex Log(double a, Complex x) => Complex.Log(x, a);
 

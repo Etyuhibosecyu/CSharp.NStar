@@ -39,7 +39,6 @@ public static class MemberConverters
 			"IntToReal" => "(double)",
 			"IsSummertime" => nameof(DateTime.IsDaylightSavingTime),
 			nameof(DateTime.IsDaylightSavingTime) => [],
-			"Log" => ((String)nameof(NStarUtilityFunctions)).Add('.').AddRange(nameof(Log)),
 			nameof(RedStarLinqMath.Max) => ((String)nameof(RedStarLinqMath)).Add('.').AddRange(nameof(RedStarLinqMath.Max)),
 			"Max3" => [],
 			nameof(RedStarLinqMath.Mean) => ((String)nameof(RedStarLinqMath)).Add('.').AddRange(nameof(RedStarLinqMath.Mean)),

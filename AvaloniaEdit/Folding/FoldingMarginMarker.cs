@@ -42,8 +42,7 @@ namespace AvaloniaEdit.Folding;
                     _isExpanded = value;
                     InvalidateVisual();
                 }
-                if (FoldingSection != null)
-                    FoldingSection.IsFolded = !value;
+                FoldingSection?.IsFolded = !value;
             }
         }
 

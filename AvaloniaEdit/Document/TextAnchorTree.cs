@@ -83,7 +83,7 @@ namespace AvaloniaEdit.Document;
             }
             else
             {
-                TextAnchorNode endNode = FindNode(ref offset);
+                var endNode = FindNode(ref offset);
                 Debug.Assert(endNode.Length > 0);
 
                 if (offset > 0)
@@ -120,7 +120,7 @@ namespace AvaloniaEdit.Document;
             // MovementType.BeforeInsertion in front of those with MovementType.AfterInsertion
             List<TextAnchorNode> beforeInsert = new List<TextAnchorNode>();
             //List<TextAnchorNode> afterInsert = new List<TextAnchorNode>();
-            TextAnchorNode temp = beginNode;
+            var temp = beginNode;
             while (temp != endNode)
             {
                 TextAnchor anchor = (TextAnchor)temp.Target;
@@ -141,7 +141,7 @@ namespace AvaloniaEdit.Document;
             }
             // now again go through the range and swap the nodes with those in the beforeInsert list
             temp = beginNode;
-            foreach (TextAnchorNode node in beforeInsert)
+            foreach (var node in beforeInsert)
             {
                 SwapAnchors(node, temp);
                 temp = temp.Successor;
@@ -225,7 +225,7 @@ namespace AvaloniaEdit.Document;
             // if the text change is happening after the last anchor, we don't have to do anything
             if (_root == null || offset >= _root.TotalLength)
                 return;
-            TextAnchorNode node = FindNode(ref offset);
+            var node = FindNode(ref offset);
             TextAnchorNode firstDeletionSurvivor = null;
             // go forward through the tree and delete all nodes in the removal segment
             while (node != null && offset + remainingRemovalLength > node.Length)
@@ -247,7 +247,7 @@ namespace AvaloniaEdit.Document;
                 else
                 {
                     // delete node
-                    TextAnchorNode s = node.Successor;
+                    var s = node.Successor;
                     remainingRemovalLength -= node.Length;
                     RemoveNode(node);
                     // we already deleted the node, don't delete it twice
@@ -311,9 +311,9 @@ namespace AvaloniaEdit.Document;
             while (_nodesToDelete.Count > 0)
             {
                 int pos = _nodesToDelete.Count - 1;
-                TextAnchorNode n = _nodesToDelete[pos];
+                var n = _nodesToDelete[pos];
                 // combine section of n with the following section
-                TextAnchorNode s = n.Successor;
+                var s = n.Successor;
                 if (s != null)
                 {
                     s.Length += n.Length;
@@ -337,7 +337,7 @@ namespace AvaloniaEdit.Document;
         /// </summary>
         private TextAnchorNode FindNode(ref int offset)
         {
-            TextAnchorNode n = _root;
+            var n = _root;
             while (true)
             {
                 if (n.Left != null)
@@ -411,7 +411,7 @@ namespace AvaloniaEdit.Document;
             else
             {
                 // insert anchor in middle of tree
-                TextAnchorNode n = FindNode(ref offset);
+                var n = FindNode(ref offset);
                 Debug.Assert(offset < n.Length);
                 // split segment 'n' at offset
                 anchor.Node.TotalLength = anchor.Node.Length = offset;
@@ -466,7 +466,7 @@ namespace AvaloniaEdit.Document;
             Debug.Assert(node.Left == null || node.Left.Color == Black);
             Debug.Assert(node.Right == null || node.Right.Color == Black);
 
-            TextAnchorNode parentNode = node.Parent;
+            var parentNode = node.Parent;
             if (parentNode == null)
             {
                 // we inserted in the root -> the node must be black
@@ -485,8 +485,8 @@ namespace AvaloniaEdit.Document;
             // parentNode is red, so there is a conflict here!
 
             // because the root is black, parentNode is not the root -> there is a grandparent node
-            TextAnchorNode grandparentNode = parentNode.Parent;
-            TextAnchorNode uncleNode = Sibling(parentNode);
+            var grandparentNode = parentNode.Parent;
+            var uncleNode = Sibling(parentNode);
             if (uncleNode != null && uncleNode.Color == Red)
             {
                 parentNode.Color = Black;
@@ -534,15 +534,15 @@ namespace AvaloniaEdit.Document;
             {
                 // replace removedNode with it's in-order successor
 
-                TextAnchorNode leftMost = removedNode.Right.LeftMost;
+                var leftMost = removedNode.Right.LeftMost;
                 RemoveNode(leftMost); // remove leftMost from its current location
 
                 // and overwrite the removedNode with it
                 ReplaceNode(removedNode, leftMost);
                 leftMost.Left = removedNode.Left;
-                if (leftMost.Left != null) leftMost.Left.Parent = leftMost;
+                leftMost.Left?.Parent = leftMost;
                 leftMost.Right = removedNode.Right;
-                if (leftMost.Right != null) leftMost.Right.Parent = leftMost;
+                leftMost.Right?.Parent = leftMost;
                 leftMost.Color = removedNode.Color;
 
                 UpdateAugmentedData(leftMost);
@@ -552,8 +552,8 @@ namespace AvaloniaEdit.Document;
 
             // now either removedNode.left or removedNode.right is null
             // get the remaining child
-            TextAnchorNode parentNode = removedNode.Parent;
-            TextAnchorNode childNode = removedNode.Left ?? removedNode.Right;
+            var parentNode = removedNode.Parent;
+            var childNode = removedNode.Left ?? removedNode.Right;
             ReplaceNode(removedNode, childNode);
             if (parentNode != null) UpdateAugmentedData(parentNode);
             if (removedNode.Color == Black)
@@ -576,7 +576,7 @@ namespace AvaloniaEdit.Document;
                 return;
 
             // warning: node may be null
-            TextAnchorNode sibling = Sibling(node, parentNode);
+            var sibling = Sibling(node, parentNode);
             if (sibling.Color == Red)
             {
                 parentNode.Color = Red;
@@ -669,17 +669,14 @@ namespace AvaloniaEdit.Document;
                 else
                     replacedNode.Parent.Right = newNode;
             }
-            if (newNode != null)
-            {
-                newNode.Parent = replacedNode.Parent;
-            }
+            newNode?.Parent = replacedNode.Parent;
             replacedNode.Parent = null;
         }
 
         private void RotateLeft(TextAnchorNode p)
         {
             // let q be p's right child
-            TextAnchorNode q = p.Right;
+            var q = p.Right;
             Debug.Assert(q != null);
             Debug.Assert(q.Parent == p);
             // set q to be the new root
@@ -687,7 +684,7 @@ namespace AvaloniaEdit.Document;
 
             // set p's right child to be q's left child
             p.Right = q.Left;
-            if (p.Right != null) p.Right.Parent = p;
+            p.Right?.Parent = p;
             // set q's left child to be p
             q.Left = p;
             p.Parent = q;
@@ -698,7 +695,7 @@ namespace AvaloniaEdit.Document;
         private void RotateRight(TextAnchorNode p)
         {
             // let q be p's left child
-            TextAnchorNode q = p.Left;
+            var q = p.Left;
             Debug.Assert(q != null);
             Debug.Assert(q.Parent == p);
             // set q to be the new root
@@ -706,7 +703,7 @@ namespace AvaloniaEdit.Document;
 
             // set p's left child to be q's right child
             p.Left = q.Right;
-            if (p.Left != null) p.Left.Parent = p;
+            p.Left?.Parent = p;
             // set q's right child to be p
             q.Right = p;
             p.Parent = q;

@@ -177,10 +177,8 @@ namespace AvaloniaEdit.Editing;
             if (e.Data.Contains(DataFormats.Text))
             {
                 e.Handled = true;
-                int visualColumn;
-                bool isAtEndOfLine;
-                int offset = GetOffsetFromMousePosition(e.GetPosition(TextArea.TextView), out visualColumn, out isAtEndOfLine);
-                if (offset >= 0)
+			int offset = GetOffsetFromMousePosition(e.GetPosition(TextArea.TextView), out var visualColumn, out var isAtEndOfLine);
+			if (offset >= 0)
                 {
                     TextArea.Caret.Position = new TextViewPosition(TextArea.Document.GetLocation(offset), visualColumn) { IsAtEndOfLine = isAtEndOfLine };
                     TextArea.Caret.DesiredXPos = double.NaN;
@@ -221,7 +219,7 @@ namespace AvaloniaEdit.Editing;
         {
             try
             {
-                DragDropEffects effect = GetEffect(e);
+                var effect = GetEffect(e);
                 e.DragEffects = effect;
                 if (effect != DragDropEffects.None)
                 {
@@ -326,13 +324,13 @@ namespace AvaloniaEdit.Editing;
             // mouse capture and Drag'n'Drop doesn't mix
             e.Pointer.Capture(null);
 
-            DataObject dataObject = TextArea.Selection.CreateDataObject(TextArea);
+            var dataObject = TextArea.Selection.CreateDataObject(TextArea);
 
-            DragDropEffects allowedEffects = DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link;
+            var allowedEffects = DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link;
             var deleteOnMove = TextArea.Selection.Segments.Select(s => new AnchorSegment(TextArea.Document, s)).ToList();
             foreach (ISegment s in deleteOnMove)
             {
-                ISegment[] result = TextArea.GetDeletableSegments(s);
+                var result = TextArea.GetDeletableSegments(s);
                 if (result.Length != 1 || result[0].Offset != s.Offset || result[0].EndOffset != s.EndOffset)
                 {
                     allowedEffects &= ~DragDropEffects.Move;

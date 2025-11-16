@@ -733,11 +733,11 @@ namespace AvaloniaEdit.Rendering;
                 throw new InvalidOperationException("Line belongs to wrong document");
             VerifyAccess();
 
-            VisualLine l = GetVisualLine(documentLine.LineNumber);
+            var l = GetVisualLine(documentLine.LineNumber);
             if (l == null)
             {
-                TextRunProperties globalTextRunProperties = CreateGlobalTextRunProperties();
-                VisualLineTextParagraphProperties paragraphProperties = CreateParagraphProperties(globalTextRunProperties);
+                var globalTextRunProperties = CreateGlobalTextRunProperties();
+                var paragraphProperties = CreateParagraphProperties(globalTextRunProperties);
 
                 while (_heightTree.GetIsCollapsed(documentLine.LineNumber))
                 {
@@ -927,8 +927,8 @@ namespace AvaloniaEdit.Rendering;
         /// <returns>Width the longest line</returns>
         private double CreateAndMeasureVisualLines(Size availableSize)
         {
-            TextRunProperties globalTextRunProperties = CreateGlobalTextRunProperties();
-            VisualLineTextParagraphProperties paragraphProperties = CreateParagraphProperties(globalTextRunProperties);
+            var globalTextRunProperties = CreateGlobalTextRunProperties();
+            var paragraphProperties = CreateParagraphProperties(globalTextRunProperties);
 
             //Debug.WriteLine("Measure availableSize=" + availableSize + ", scrollOffset=" + _scrollOffset);
             var firstLineInView = _heightTree.GetLineByVisualPosition(_scrollOffset.Y);
@@ -1081,7 +1081,7 @@ namespace AvaloniaEdit.Rendering;
                 {
                     paragraphProperties.firstLineInParagraph = false;
 
-                    TextEditorOptions options = this.Options;
+                    var options = this.Options;
                     double indentation = 0;
                     if (options.InheritWordWrapIndentation)
                     {
@@ -1491,8 +1491,7 @@ namespace AvaloniaEdit.Rendering;
             _defaultLineHeight = _defaultTextHeight * Options.LineHeightFactor;
 
             // Update heightTree.DefaultLineHeight, if a document is loaded.
-            if (_heightTree != null)
-                _heightTree.DefaultLineHeight = _defaultLineHeight;
+            _heightTree?.DefaultLineHeight = _defaultLineHeight;
         }
 
         private static double ValidateVisualOffset(double offset)

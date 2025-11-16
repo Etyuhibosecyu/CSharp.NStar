@@ -162,7 +162,7 @@ namespace AvaloniaEdit.Document;
         public static ISegment GetTrailingWhitespace(TextDocument document, DocumentLine documentLine)
         {
 		ArgumentNullException.ThrowIfNull(documentLine);
-		ISegment segment = GetWhitespaceBefore(document, documentLine.EndOffset);
+		var segment = GetWhitespaceBefore(document, documentLine.EndOffset);
             // If the whole line consists of whitespace, we consider all of it as leading whitespace,
             // so return an empty segment as trailing whitespace.
             if (segment.Offset == documentLine.Offset)
@@ -353,8 +353,8 @@ namespace AvaloniaEdit.Document;
                     // Don't stop in the middle of a surrogate pair
                     if (!char.IsSurrogatePair(charBefore, charAfter))
                     {
-                        CharacterClass classBefore = GetCharacterClass(charBefore);
-                        CharacterClass classAfter = GetCharacterClass(charAfter);
+                        var classBefore = GetCharacterClass(charBefore);
+                        var classAfter = GetCharacterClass(charAfter);
                         // get correct class for characters outside BMP:
                         if (char.IsLowSurrogate(charBefore) && nextPos >= 2)
                         {

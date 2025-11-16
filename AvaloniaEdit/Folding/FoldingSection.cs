@@ -59,8 +59,8 @@ namespace AvaloniaEdit.Folding;
             }
             // It is possible that StartOffset/EndOffset get set to invalid values via the property setters in TextSegment,
             // so we coerce those values into the valid range.
-            DocumentLine startLine = _manager.Document.GetLineByOffset(StartOffset.CoerceValue(0, _manager.Document.TextLength));
-            DocumentLine endLine = _manager.Document.GetLineByOffset(EndOffset.CoerceValue(0, _manager.Document.TextLength));
+            var startLine = _manager.Document.GetLineByOffset(StartOffset.CoerceValue(0, _manager.Document.TextLength));
+            var endLine = _manager.Document.GetLineByOffset(EndOffset.CoerceValue(0, _manager.Document.TextLength));
             if (startLine == endLine)
             {
                 RemoveCollapsedLineSection();
@@ -70,7 +70,7 @@ namespace AvaloniaEdit.Folding;
                 if (CollapsedSections == null)
                     CollapsedSections = new CollapsedLineSection[_manager.TextViews.Count];
                 // Validate collapsed line sections
-                DocumentLine startLinePlusOne = startLine.NextLine;
+                var startLinePlusOne = startLine.NextLine;
                 for (int i = 0; i < CollapsedSections.Length; i++)
                 {
                     var collapsedSection = CollapsedSections[i];

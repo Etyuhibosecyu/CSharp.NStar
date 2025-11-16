@@ -123,8 +123,8 @@ namespace AvaloniaEdit.Document;
             var node = nodes[middle];
             node.Left = BuildTree(nodes, start, middle, subtreeHeight - 1);
             node.Right = BuildTree(nodes, middle + 1, end, subtreeHeight - 1);
-            if (node.Left != null) node.Left.Parent = node;
-            if (node.Right != null) node.Right.Parent = node;
+            node.Left?.Parent = node;
+            node.Right?.Parent = node;
             if (subtreeHeight == 1)
                 node.Color = Red;
             UpdateAfterChildrenChange(node);
@@ -462,9 +462,9 @@ namespace AvaloniaEdit.Document;
                 // and overwrite the removedNode with it
                 ReplaceNode(removedNode, leftMost);
                 leftMost.Left = removedNode.Left;
-                if (leftMost.Left != null) leftMost.Left.Parent = leftMost;
+                leftMost.Left?.Parent = leftMost;
                 leftMost.Right = removedNode.Right;
-                if (leftMost.Right != null) leftMost.Right.Parent = leftMost;
+                leftMost.Right?.Parent = leftMost;
                 leftMost.Color = removedNode.Color;
 
                 UpdateAfterChildrenChange(leftMost);
@@ -591,10 +591,7 @@ namespace AvaloniaEdit.Document;
                 else
                     replacedNode.Parent.Right = newNode;
             }
-            if (newNode != null)
-            {
-                newNode.Parent = replacedNode.Parent;
-            }
+            newNode?.Parent = replacedNode.Parent;
             replacedNode.Parent = null;
         }
 
@@ -609,7 +606,7 @@ namespace AvaloniaEdit.Document;
 
             // set p's right child to be q's left child
             p.Right = q.Left;
-            if (p.Right != null) p.Right.Parent = p;
+            p.Right?.Parent = p;
             // set q's left child to be p
             q.Left = p;
             p.Parent = q;
@@ -627,7 +624,7 @@ namespace AvaloniaEdit.Document;
 
             // set p's left child to be q's right child
             p.Left = q.Right;
-            if (p.Left != null) p.Left.Parent = p;
+            p.Left?.Parent = p;
             // set q's right child to be p
             q.Right = p;
             p.Parent = q;

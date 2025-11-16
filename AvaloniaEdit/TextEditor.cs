@@ -427,8 +427,7 @@ namespace AvaloniaEdit;
                     ReadOnlySectionDocument.Instance :
                     NoReadOnlySections.Instance;
 
-                if (editor.SearchPanel != null)
-                    editor.SearchPanel.IsReplaceMode = isReadonly ?
+                editor.SearchPanel?.IsReplaceMode = isReadonly ?
                         false : editor.SearchPanel.IsReplaceMode;
             }
         }
@@ -1250,8 +1249,8 @@ namespace AvaloniaEdit;
         public void ScrollTo(int line, int column, VisualYPosition yPositionMode,
             double referencedVerticalViewPortOffset, double minimumScrollFraction)
         {
-            TextView textView = textArea.TextView;
-            TextDocument document = textView.Document;
+            var textView = textArea.TextView;
+            var document = textView.Document;
             if (ScrollViewer != null && document != null)
             {
                 if (line < 1)
@@ -1265,12 +1264,12 @@ namespace AvaloniaEdit;
                     // Word wrap is enabled. Ensure that we have up-to-date info about line height so that we scroll
                     // to the correct position.
                     // This avoids that the user has to repeat the ScrollTo() call several times when there are very long lines.
-                    VisualLine vl = textView.GetOrConstructVisualLine(document.GetLineByNumber(line));
+                    var vl = textView.GetOrConstructVisualLine(document.GetLineByNumber(line));
                     double remainingHeight = referencedVerticalViewPortOffset;
 
                     while (remainingHeight > 0)
                     {
-                        DocumentLine prevLine = vl.FirstDocumentLine.PreviousLine;
+                        var prevLine = vl.FirstDocumentLine.PreviousLine;
                         if (prevLine == null)
                             break;
                         vl = textView.GetOrConstructVisualLine(prevLine);
@@ -1278,7 +1277,7 @@ namespace AvaloniaEdit;
                     }
                 }
 
-                Point p = textArea.TextView.GetVisualPosition(
+                var p = textArea.TextView.GetVisualPosition(
                     new TextViewPosition(line, Math.Max(1, column)),
                     yPositionMode);
 

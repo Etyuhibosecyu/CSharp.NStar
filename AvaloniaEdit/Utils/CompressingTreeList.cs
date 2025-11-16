@@ -667,9 +667,9 @@ namespace AvaloniaEdit.Utils;
                 // and overwrite the removedNode with it
                 ReplaceNode(removedNode, leftMost);
                 leftMost.Left = removedNode.Left;
-                if (leftMost.Left != null) leftMost.Left.Parent = leftMost;
+                leftMost.Left?.Parent = leftMost;
                 leftMost.Right = removedNode.Right;
-                if (leftMost.Right != null) leftMost.Right.Parent = leftMost;
+                leftMost.Right?.Parent = leftMost;
                 leftMost.Color = removedNode.Color;
 
                 UpdateAugmentedData(leftMost);
@@ -796,10 +796,7 @@ namespace AvaloniaEdit.Utils;
                 else
                     replacedNode.Parent.Right = newNode;
             }
-            if (newNode != null)
-            {
-                newNode.Parent = replacedNode.Parent;
-            }
+            newNode?.Parent = replacedNode.Parent;
             replacedNode.Parent = null;
         }
 
@@ -814,7 +811,7 @@ namespace AvaloniaEdit.Utils;
 
             // set p's right child to be q's left child
             p.Right = q.Left;
-            if (p.Right != null) p.Right.Parent = p;
+            p.Right?.Parent = p;
             // set q's left child to be p
             q.Left = p;
             p.Parent = q;
@@ -833,7 +830,7 @@ namespace AvaloniaEdit.Utils;
 
             // set p's left child to be q's right child
             p.Left = q.Right;
-            if (p.Left != null) p.Left.Parent = p;
+            p.Left?.Parent = p;
             // set q's right child to be p
             q.Right = p;
             p.Parent = q;

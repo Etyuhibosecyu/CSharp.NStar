@@ -81,7 +81,7 @@ internal sealed class Deque<T> : ICollection<T>
 			_tail = _arr.Length - 1;
 		else
 			_tail--;
-		T val = _arr[_tail];
+		var val = _arr[_tail];
 		_arr[_tail] = default(T); // allow GC to collect the element
 		Count--;
 		return val;
@@ -109,7 +109,7 @@ internal sealed class Deque<T> : ICollection<T>
 	{
 		if (Count == 0)
 			throw new InvalidOperationException();
-		T val = _arr[_head];
+		var val = _arr[_head];
 		_arr[_head] = default(T); // allow GC to collect the element
 		_head++;
 		if (_head == _arr.Length) _head = 0;
@@ -149,8 +149,8 @@ internal sealed class Deque<T> : ICollection<T>
 	/// <inheritdoc/>
 	public bool Contains(T item)
 	{
-		EqualityComparer<T> comparer = EqualityComparer<T>.Default;
-		foreach (T element in this)
+		var comparer = EqualityComparer<T>.Default;
+		foreach (var element in this)
 			if (comparer.Equals(item, element))
 				return true;
 		return false;

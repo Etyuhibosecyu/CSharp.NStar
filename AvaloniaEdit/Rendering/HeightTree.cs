@@ -67,8 +67,7 @@ namespace AvaloniaEdit.Rendering;
 
 	public void Dispose()
 	{
-		if (_weakLineTracker != null)
-			_weakLineTracker.Deregister();
+		_weakLineTracker?.Deregister();
 		this._root = null;
 		this._weakLineTracker = null;
 	}
@@ -149,8 +148,8 @@ namespace AvaloniaEdit.Rendering;
 		var node = nodes[middle];
 		node.Left = BuildTree(nodes, start, middle, subtreeHeight - 1);
 		node.Right = BuildTree(nodes, middle + 1, end, subtreeHeight - 1);
-		if (node.Left != null) node.Left.Parent = node;
-		if (node.Right != null) node.Right.Parent = node;
+		node.Left?.Parent = node;
+		node.Right?.Parent = node;
 		if (subtreeHeight == 1)
 			node.Color = Red;
 		UpdateAugmentedData(node, UpdateAfterChildrenChangeRecursionMode.None);
@@ -275,11 +274,9 @@ namespace AvaloniaEdit.Rendering;
 		// split the collapsedSections from the new parent into its old children:
 		if (collapsedP != null) {
 			foreach (var cs in collapsedP) {
-				if (node.Parent.Right != null)
-					node.Parent.Right.AddDirectlyCollapsed(cs);
+				node.Parent.Right?.AddDirectlyCollapsed(cs);
 				node.Parent.LineNode.AddDirectlyCollapsed(cs);
-				if (node.Right != null)
-					node.Right.AddDirectlyCollapsed(cs);
+				node.Right?.AddDirectlyCollapsed(cs);
 			}
 		}
 		MergeCollapsedSectionsIfPossible(node);
@@ -303,11 +300,9 @@ namespace AvaloniaEdit.Rendering;
 		// split the collapsedSections from the new parent into its old children:
 		if (collapsedP != null) {
 			foreach (var cs in collapsedP) {
-				if (node.Parent.Left != null)
-					node.Parent.Left.AddDirectlyCollapsed(cs);
+				node.Parent.Left?.AddDirectlyCollapsed(cs);
 				node.Parent.LineNode.AddDirectlyCollapsed(cs);
-				if (node.Left != null)
-					node.Left.AddDirectlyCollapsed(cs);
+				node.Left?.AddDirectlyCollapsed(cs);
 			}
 		}
 		MergeCollapsedSectionsIfPossible(node);
@@ -405,8 +400,8 @@ namespace AvaloniaEdit.Rendering;
 					    || (node.Right.CollapsedSections != null && node.Right.CollapsedSections.Contains(cs)))
 					{
 						// all children of node contain cs: -> merge!
-						if (node.Left != null) node.Left.RemoveDirectlyCollapsed(cs);
-						if (node.Right != null) node.Right.RemoveDirectlyCollapsed(cs);
+						node.Left?.RemoveDirectlyCollapsed(cs);
+						node.Right?.RemoveDirectlyCollapsed(cs);
 						collapsedL.RemoveAt(i);
 						node.AddDirectlyCollapsed(cs);
 						merged = true;
@@ -817,9 +812,9 @@ namespace AvaloniaEdit.Rendering;
 			// and overwrite the removedNode with it
 			ReplaceNode(removedNode, leftMost);
 			leftMost.Left = removedNode.Left;
-			if (leftMost.Left != null) leftMost.Left.Parent = leftMost;
+			leftMost.Left?.Parent = leftMost;
 			leftMost.Right = removedNode.Right;
-			if (leftMost.Right != null) leftMost.Right.Parent = leftMost;
+			leftMost.Right?.Parent = leftMost;
 			leftMost.Color = removedNode.Color;
 
 			UpdateAfterChildrenChange(leftMost);
@@ -931,9 +926,7 @@ namespace AvaloniaEdit.Rendering;
 			else
 				replacedNode.Parent.Right = newNode;
 		}
-		if (newNode != null) {
-			newNode.Parent = replacedNode.Parent;
-		}
+		newNode?.Parent = replacedNode.Parent;
 		replacedNode.Parent = null;
 	}
 
@@ -948,7 +941,7 @@ namespace AvaloniaEdit.Rendering;
 
 		// set p's right child to be q's left child
 		p.Right = q.Left;
-		if (p.Right != null) p.Right.Parent = p;
+		p.Right?.Parent = p;
 		// set q's left child to be p
 		q.Left = p;
 		p.Parent = q;
@@ -966,7 +959,7 @@ namespace AvaloniaEdit.Rendering;
 
 		// set p's left child to be q's right child
 		p.Left = q.Right;
-		if (p.Left != null) p.Left.Parent = p;
+		p.Left?.Parent = p;
 		// set q's right child to be p
 		q.Right = p;
 		p.Parent = q;

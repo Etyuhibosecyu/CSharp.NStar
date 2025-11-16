@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Mpir.NET;
+using Newtonsoft.Json;
 using NStar.Core;
 using System;
 using System.Collections;
@@ -16,8 +17,8 @@ public static class JsonConverters
 	public static JsonSerializerSettings SerializerSettings { get; } = new()
 	{
 		Converters = [new StringConverter(), new IEnumerableConverter(), new TypeConverter(), new TupleConverter(),
-			new UniversalConverter(), new ComplexConverter(), new ValueTypeConverter(), new IClassConverter(),
-			new DoubleConverter()]
+			new UniversalConverter(), new ComplexConverter(), new MpzTConverter(),
+			new DoubleConverter(), new ValueTypeConverter(), new IClassConverter()]
 	};
 
 	public class ComplexConverter : JsonConverter<Complex>
@@ -27,7 +28,7 @@ public static class JsonConverters
 		public override void WriteJson(JsonWriter writer, Complex value, JsonSerializer serializer)
 		{
 			writer.WriteRaw(JsonConvert.SerializeObject(value.Real, SerializerSettings));
-			if (value.Imaginary >= 0)
+			if (value.Imaginary is 0d / 0 or >= 0)
 				writer.WriteRaw("+");
 			writer.WriteRaw(JsonConvert.SerializeObject(value.Imaginary, SerializerSettings));
 			writer.WriteRaw("I");
@@ -40,19 +41,24 @@ public static class JsonConverters
 			bool hasExistingValue, JsonSerializer serializer) => throw new NotImplementedException();
 		public override void WriteJson(JsonWriter writer, double value, JsonSerializer serializer)
 		{
-			if (value is (double)1 / 0)
+			if (value is 1d / 0)
 			{
 				writer.WriteRaw("Infty");
 				return;
 			}
-			if (value is (double)-1 / 0)
+			if (value is -1d / 0)
 			{
 				writer.WriteRaw("-Infty");
 				return;
 			}
-			if (value is (double)0 / 0)
+			if (value is 0d / 0)
 			{
 				writer.WriteRaw("Uncty");
+				return;
+			}
+			if (value is -0d)
+			{
+				writer.WriteRaw("0");
 				return;
 			}
 			var truncated = unchecked((long)Truncate(value));
@@ -119,6 +125,14 @@ public static class JsonConverters
 				writer.WriteRaw(", " + JsonConvert.SerializeObject(en.Current, SerializerSettings));
 			writer.WriteRaw(")");
 		}
+	}
+
+	public class MpzTConverter : JsonConverter<MpzT>
+	{
+		public override MpzT ReadJson(JsonReader reader, Type objectType, MpzT existingValue,
+			bool hasExistingValue, JsonSerializer serializer) => throw new NotImplementedException();
+		public override void WriteJson(JsonWriter writer, MpzT value, JsonSerializer serializer) =>
+			writer.WriteRaw(value.ToString());
 	}
 
 	public class StringConverter : JsonConverter<String>

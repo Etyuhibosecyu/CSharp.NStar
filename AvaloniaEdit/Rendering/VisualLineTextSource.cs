@@ -41,11 +41,11 @@ internal sealed class VisualLineTextSource : ITextSource, ITextRunConstructionCo
 	public TextRun GetTextRun(int textSourceCharacterIndex)
 	{
 		try {
-			foreach (VisualLineElement element in VisualLine.Elements) {
+			foreach (var element in VisualLine.Elements) {
 				if (textSourceCharacterIndex >= element.VisualColumn
 					&& textSourceCharacterIndex < element.VisualColumn + element.VisualLength) {
 					int relativeOffset = textSourceCharacterIndex - element.VisualColumn;
-					TextRun run = element.CreateTextRun(textSourceCharacterIndex, this);
+					var run = element.CreateTextRun(textSourceCharacterIndex, this);
 					if (run == null)
 						throw new ArgumentNullException(element.GetType().Name + ".CreateTextRun");
 					if (run.Length == 0)
@@ -73,7 +73,7 @@ internal sealed class VisualLineTextSource : ITextSource, ITextRunConstructionCo
         private TextRun CreateTextRunForNewLine()
         {
             string newlineText = "";
-            DocumentLine lastDocumentLine = VisualLine.LastDocumentLine;
+            var lastDocumentLine = VisualLine.LastDocumentLine;
             if (lastDocumentLine.DelimiterLength == 2)
             {
                 newlineText = TextView.Options.EndOfLineCRLFGlyph;
@@ -102,7 +102,7 @@ internal sealed class VisualLineTextSource : ITextSource, ITextRunConstructionCo
         public ReadOnlyMemory<char> GetPrecedingText(int textSourceCharacterIndexLimit)
 	{
 		try {
-			foreach (VisualLineElement element in VisualLine.Elements) {
+			foreach (var element in VisualLine.Elements) {
 				if (textSourceCharacterIndexLimit > element.VisualColumn
 					&& textSourceCharacterIndexLimit <= element.VisualColumn + element.VisualLength) {
 					var span = element.GetPrecedingText(textSourceCharacterIndexLimit, this);

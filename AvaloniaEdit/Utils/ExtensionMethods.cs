@@ -94,7 +94,7 @@ namespace AvaloniaEdit.Utils;
 	#region AddRange / Sequence
 	public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> elements)
         {
-            foreach (T e in elements)
+            foreach (var e in elements)
                 collection.Add(e);
         }
 
@@ -209,7 +209,7 @@ namespace AvaloniaEdit.Utils;
 
             // Translate the point back to control coordinates.
             var inv = m.Value.Invert();
-            Point result = devicePoint.Transform(inv);
+            var result = devicePoint.Transform(inv);
             return result;
         }
         #endregion

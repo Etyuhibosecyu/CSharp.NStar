@@ -47,7 +47,7 @@ namespace AvaloniaEdit;
             var fields = typeof(TextEditorOptions).GetRuntimeFields();
 
             // copy each value over to 'this'
-            foreach (FieldInfo fi in fields)
+            foreach (var fi in fields)
             {
                 if (!fi.IsStatic)
                     fi.SetValue(this, fi.GetValue(options));

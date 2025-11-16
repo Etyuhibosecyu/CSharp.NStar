@@ -256,7 +256,7 @@ namespace AvaloniaEdit.Highlighting;
 
         	List<HtmlElement> elements = new List<HtmlElement>();
         	for (int i = 0; i < this.Sections.Count; i++) {
-        		HighlightedSection s = this.Sections[i];
+        		var s = this.Sections[i];
         		if (SimpleSegment.GetOverlap(s, requestedSegment).Length > 0) {
         			elements.Add(new HtmlElement(s.Offset, i, false, s.Color));
         			elements.Add(new HtmlElement(s.Offset + s.Length, i, true, s.Color));
@@ -264,9 +264,9 @@ namespace AvaloniaEdit.Highlighting;
         	}
         	elements.Sort();
 
-        	IDocument document = this.Document;
+        	var document = this.Document;
         	int textOffset = startOffset;
-        	foreach (HtmlElement e in elements) {
+        	foreach (var e in elements) {
         		int newOffset = Math.Min(e.Offset, endOffset);
         		if (newOffset > startOffset) {
         			document.WriteTextTo(writer, textOffset, newOffset - textOffset);

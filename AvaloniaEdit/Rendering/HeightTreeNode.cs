@@ -47,7 +47,7 @@ internal sealed class HeightTreeNode
 
 	internal HeightTreeNode LeftMost {
 		get {
-			HeightTreeNode node = this;
+			var node = this;
 			while (node.Left != null)
 				node = node.Left;
 			return node;
@@ -56,7 +56,7 @@ internal sealed class HeightTreeNode
 
 	internal HeightTreeNode RightMost {
 		get {
-			HeightTreeNode node = this;
+			var node = this;
 			while (node.Right != null)
 				node = node.Right;
 			return node;
@@ -71,7 +71,7 @@ internal sealed class HeightTreeNode
 			if (Right != null) {
 				return Right.LeftMost;
 			} else {
-				HeightTreeNode node = this;
+				var node = this;
 				HeightTreeNode oldNode;
 				do {
 					oldNode = node;

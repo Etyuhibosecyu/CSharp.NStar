@@ -40,7 +40,7 @@ internal sealed class TextAnchorNode : WeakReference
 	
 	internal TextAnchorNode LeftMost {
 		get {
-			TextAnchorNode node = this;
+			var node = this;
 			while (node.Left != null)
 				node = node.Left;
 			return node;
@@ -49,7 +49,7 @@ internal sealed class TextAnchorNode : WeakReference
 	
 	internal TextAnchorNode RightMost {
 		get {
-			TextAnchorNode node = this;
+			var node = this;
 			while (node.Right != null)
 				node = node.Right;
 			return node;
@@ -64,7 +64,7 @@ internal sealed class TextAnchorNode : WeakReference
 			if (Right != null) {
 				return Right.LeftMost;
 			} else {
-				TextAnchorNode node = this;
+				var node = this;
 				TextAnchorNode oldNode;
 				do {
 					oldNode = node;
@@ -84,7 +84,7 @@ internal sealed class TextAnchorNode : WeakReference
 			if (Left != null) {
 				return Left.RightMost;
 			} else {
-				TextAnchorNode node = this;
+				var node = this;
 				TextAnchorNode oldNode;
 				do {
 					oldNode = node;

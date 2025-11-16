@@ -51,8 +51,8 @@ namespace AvaloniaEdit.Snippets;
             InsertionPosition = insertionPosition;
             _startPosition = insertionPosition;
 
-            DocumentLine startLine = Document.GetLineByOffset(insertionPosition);
-            ISegment indentation = TextUtilities.GetWhitespaceAfter(Document, startLine.Offset);
+            var startLine = Document.GetLineByOffset(insertionPosition);
+            var indentation = TextUtilities.GetWhitespaceAfter(Document, startLine.Offset);
             Indentation = Document.GetText(indentation.Offset, Math.Min(indentation.EndOffset, insertionPosition) - indentation.Offset);
             Tab = textArea.Options.IndentationString;
 
@@ -194,7 +194,7 @@ namespace AvaloniaEdit.Snippets;
             TextDocumentWeakEventManager.UpdateFinished.AddHandler(Document, OnUpdateFinished);
             _deactivateIfSnippetEmpty = (endPosition != _startPosition);
 
-            foreach (IActiveElement element in _registeredElements)
+            foreach (var element in _registeredElements)
             {
                 element.OnInsertionCompleted();
             }
@@ -209,7 +209,7 @@ namespace AvaloniaEdit.Snippets;
             {
                 _myInputHandler = new SnippetInputHandler(this);
                 // disable existing snippet input handlers - there can be only 1 active snippet
-                foreach (TextAreaStackedInputHandler h in TextArea.StackedInputHandlers)
+                foreach (var h in TextArea.StackedInputHandlers)
                 {
                     if (h is SnippetInputHandler)
                         TextArea.PopStackedInputHandler(h);
@@ -241,7 +241,7 @@ namespace AvaloniaEdit.Snippets;
             TextDocumentWeakEventManager.UpdateFinished.RemoveHandler(Document, OnUpdateFinished);
             _currentStatus = Status.RaisingDeactivated;
             TextArea.PopStackedInputHandler(_myInputHandler);
-            foreach (IActiveElement element in _registeredElements)
+            foreach (var element in _registeredElements)
             {
                 element.Deactivate(e);
             }

@@ -9,6 +9,7 @@ global using static CSharp.NStar.NStarType;
 global using static CSharp.NStar.TypeChecks;
 global using static CSharp.NStar.TypeConverters;
 global using static NStar.Core.Extents;
+global using static System.Math;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 using System.Runtime.CompilerServices;
@@ -39,7 +40,7 @@ public static class MemberChecks
 		return false;
 	}
 
-	public static bool PropertyExists(NStarType container, String name, [MaybeNullWhen(false)]
+	public static bool PropertyExists(NStarType container, String name, bool @static, [MaybeNullWhen(false)]
 		out UserDefinedProperty? property)
 	{
 		if (UserDefinedProperties.TryGetValue(container.MainType, out var containerProperties)
@@ -49,7 +50,7 @@ public static class MemberChecks
 			return true;
 		}
 		else if (UserDefinedTypes.TryGetValue(SplitType(container.MainType), out var userDefinedType)
-			&& PropertyExists(userDefinedType.BaseType, name, out property))
+			&& PropertyExists(userDefinedType.BaseType, name, @static, out property))
 			return true;
 		var containerType = SplitType(container.MainType);
 		if (!TypeExists(containerType, out var netType))
@@ -57,13 +58,30 @@ public static class MemberChecks
 			property = null;
 			return false;
 		}
-		if (!netType.TryWrap(x => x.GetProperty(name.ToString()), out var netProperty))
-			netProperty = netType.GetProperties().Find(x => x.Name == name.ToString());
+		if (!netType.TryWrap(x => x.GetProperty(name.ToString(),
+			(@static ? BindingFlags.Static : BindingFlags.Instance) | BindingFlags.Public), out var netProperty))
+			netProperty = netType.GetProperties((@static ? BindingFlags.Static : BindingFlags.Instance) | BindingFlags.Public)
+				.Find(x => x.Name == name.ToString());
 		if (netProperty != null)
 		{
 			property = new(TypeMappingBack(netProperty.PropertyType, netType.GetGenericArguments(), container.ExtraTypes),
-				PropertyAttributes.None, "null");
+				@static ? PropertyAttributes.Static : PropertyAttributes.None, "null");
 			return true;
+		}
+		if (!netType.TryWrap(x => x.GetField(name.ToString(),
+			(@static ? BindingFlags.Static : BindingFlags.Instance) | BindingFlags.Public), out var netField))
+			netField = netType.GetFields((@static ? BindingFlags.Static : BindingFlags.Instance) | BindingFlags.Public)
+				.Find(x => x.Name == name.ToString());
+		if (netField != null)
+		{
+			property = new(TypeMappingBack(netField.FieldType, netType.GetGenericArguments(), container.ExtraTypes),
+				@static ? PropertyAttributes.Static : PropertyAttributes.None, "null");
+			return true;
+		}
+		if (@static)
+		{
+			property = null;
+			return false;
 		}
 		if (!netType.TryWrap(x => x.GetEvent(name.ToString()), out var netEvent))
 			netEvent = netType.GetEvents().Find(x => x.Name == name.ToString());
@@ -81,7 +99,7 @@ public static class MemberChecks
 		return false;
 	}
 
-	public static bool UserDefinedPropertyExists(BlockStack container, String name,
+	public static bool UserDefinedPropertyExists(BlockStack container, String name, bool @static,
 		[MaybeNullWhen(false)] out UserDefinedProperty? property, [MaybeNullWhen(false)] out BlockStack matchingContainer,
 		out bool inBase, out BlockStack actualContainer)
 	{
@@ -95,7 +113,7 @@ public static class MemberChecks
 			return true;
 		}
 		else if (CheckContainer(container, x => UserDefinedTypes.TryGetValue(SplitType(x), out userDefinedType),
-			out matchingContainer) && PropertyExists(userDefinedType.BaseType, name, out property))
+			out matchingContainer) && PropertyExists(userDefinedType.BaseType, name, @static, out property))
 		{
 			inBase = true;
 			actualContainer = userDefinedType.BaseType.MainType;
@@ -318,22 +336,48 @@ public static class MemberChecks
 		return false;
 	}
 
-	public static bool ExtendedMethodExists(BlockStack container, String name, List<NStarType> parameterTypes,
+	public static bool ExtendedMethodExists(BlockStack container, String name, List<NStarType> callParameterTypes,
 		[MaybeNullWhen(false)] out UserDefinedMethodOverloads functions, out bool user)
 	{
 		if (PublicFunctions.TryGetValue(name, out var functionOverload))
 		{
-			BlockStack? mainType;
+			BlockStack mainType;
 			if (functionOverload.ExtraTypes.Contains(functionOverload.ReturnType))
 				mainType = FindParameter(functionOverload.ReturnType).MainType;
 			else
 				mainType = GetBlockStack(functionOverload.ReturnType);
 			BranchCollection extraTypes = new(functionOverload.ReturnExtraTypes.ToList(GetTypeAsBranch));
-			functions = [new(name, [], new(mainType, extraTypes),
-				functionOverload.Attributes, [.. functionOverload.Parameters.Convert((x, index) =>
-				new ExtendedMethodParameter(functionOverload.ExtraTypes.Contains(x.Type)
-				? parameterTypes[index] : BasicTypeToExtendedType(x.Type, x.ExtraTypes),
-				x.Name, x.Attributes, x.DefaultValue))])];
+			NStarType ReturnNStarType = (mainType, extraTypes);
+			ExtendedMethodParameters parameters = [.. functionOverload.Parameters.Convert((x, index) =>
+			{
+				NStarType NStarType;
+				if (functionOverload.ExtraTypes.Contains(x.Type))
+					NStarType = FindParameter(x.Type);
+				else
+					NStarType = new(GetBlockStack(x.Type), new(x.ExtraTypes.Convert(GetTypeAsBranch)));
+				return new ExtendedMethodParameter(NStarType, x.Name, x.Attributes, x.DefaultValue);
+			})];
+			var functionParameterTypes = parameters.ToList(x => x.Type);
+			if (parameters.Length != 0 && (parameters[^1].Attributes & ParameterAttributes.Params) == ParameterAttributes.Params
+				&& callParameterTypes.Length > functionParameterTypes.Length)
+			{
+				functionParameterTypes.RemoveAt(^1);
+				functionParameterTypes.AddSeries(parameters[^1].Type,
+					callParameterTypes.Length - functionParameterTypes.Length);
+			}
+			var patterns = GetNStarReplacementPatterns(functionOverload.ExtraTypes,
+				callParameterTypes, functionParameterTypes)
+				.AddRange(GetNStarReplacementPatterns(functionOverload.ExtraTypes,
+				functionParameterTypes, callParameterTypes));
+			for (var j = 0; j < patterns.Length; j++)
+			{
+				ReturnNStarType = ReplaceExtraType(ReturnNStarType, patterns[j]);
+				for (var k = 0; k < functionParameterTypes.Length; k++)
+					functionParameterTypes[k] = ReplaceExtraType(functionParameterTypes[k], patterns[j]);
+				parameters[j] = new(functionParameterTypes[j], parameters[j].Name, parameters[j].Attributes,
+					parameters[j].DefaultValue);
+			}
+			functions = [new(name, [], ReturnNStarType, functionOverload.Attributes, parameters)];
 			user = false;
 			return true;
 		}
@@ -361,17 +405,17 @@ public static class MemberChecks
 				var x = arrayParameters[j];
 				if (!(!x.Package && x.RestrictionType.ExtraTypes.Length == 0
 					&& x.RestrictionType.MainType.Length == 1
-					&& x.RestrictionType.MainType.Peek().BlockType == BlockType.Extra && parameterTypes.Length > j))
+					&& x.RestrictionType.MainType.Peek().BlockType == BlockType.Extra && callParameterTypes.Length > j))
 					continue;
 				functions[i] = new(functions[i].RealName, [], ReplaceExtraType(functions[i].ReturnNStarType,
-					(x.RestrictionType.MainType.Peek().Name, parameterTypes[j])), functions[i].Attributes,
+					(x.RestrictionType.MainType.Peek().Name, callParameterTypes[j])), functions[i].Attributes,
 					[.. functions[i].Parameters.Convert(y => new ExtendedMethodParameter(ReplaceExtraType(y.Type,
-					(x.RestrictionType.MainType.Peek().Name, parameterTypes[j])), y.Name, y.Attributes, y.DefaultValue))]);
+					(x.RestrictionType.MainType.Peek().Name, callParameterTypes[j])), y.Name, y.Attributes, y.DefaultValue))]);
 			}
 		}
 		user = true;
 		return true;
-		NStarType FindParameter(String typeName) => parameterTypes[functionOverload.Parameters.FindIndex(x =>
+		NStarType FindParameter(String typeName) => callParameterTypes[functionOverload.Parameters.FindIndex(x =>
 			typeName == x.Type || x.ExtraTypes.Contains(typeName))];
 		TreeBranch GetTypeAsBranch(String typeName) => new("type", 0, [])
 		{
@@ -473,7 +517,7 @@ public static class MemberChecks
 		GetNStarReplacementPatterns(List<String> genericArguments, List<NStarType> callParameterTypes,
 		List<NStarType> functionParameterTypes)
 	{
-		var length = callParameterTypes.Length;
+		var length = Min(callParameterTypes.Length, functionParameterTypes.Length);
 		List<(String ExtraType, NStarType TypeToInsert)> result = [];
 		for (var i = 0; i < genericArguments.Length; i++)
 		{

@@ -5558,6 +5558,16 @@ loop
 } while! (i * i >= 10);
 return list;
 ", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+[string, int] dic = (""0"": 0, ""1"": 1, ""2"": 2, ""3"": 3);
+return (dic, dic[""1""]);
+", """((("0", 0), ("1", 1), ("2", 2), ("3", 3)), 1)""", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+int x = 123;
+[string, int] dic = (""0"": 0, ""1"": 1, ""2"": 2, ""3"": 3);
+var x2 = x * 3;
+return (dic, dic[""1""], x2);
+", """((("0", 0), ("1", 1), ("2", 2), ("3", 3)), 1, 369)""", "Ошибок нет")]
 	[DataRow(@"Class Box
 {
 	required typename T { get, init };
@@ -5580,30 +5590,273 @@ Box[int] intBox = new();
 intBox.Put(42);
 return (stringBox.Get(), intBox.Get());
 ", @"(""Привет"", 42)", "Ошибок нет")]
-//	[DataRow(@"return Sqrt(I);
-//", "0.7071067811865476+0.7071067811865475I", "Ошибок нет")]
-//	[DataRow(@"return Sqrt(-I);
-//", "0.7071067811865476-0.7071067811865475I", "Ошибок нет")]
-//	[DataRow(@"return Exp(I);
-//", "0.5403023058681398+0.8414709848078965I", "Ошибок нет")]
-//	[DataRow(@"return Exp(-I);
-//", "0.5403023058681398-0.8414709848078965I", "Ошибок нет")]
-//	[DataRow(@"return ln I;
-//", "0+1.5707963267948966I", "Ошибок нет")]
-//	[DataRow(@"return ln (-I);
-//", "0-1.5707963267948966I", "Ошибок нет")]
-//	[DataRow(@"return Log(E, I);
-//", "0+1.5707963267948966I", "Ошибок нет")]
-//	[DataRow(@"return Log(E, -I);
-//", "0-1.5707963267948966I", "Ошибок нет")]
-//	[DataRow(@"return Log(I, I);
-//", "null", @"Error 4026 in line 1 at position 11: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
-//")]
-//	[DataRow(@"return Log(I, -I);
-//", "null", @"Error 4026 in line 1 at position 11: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
-//")]
+	[DataRow(@"Class Stack
+{
+	required typename T { get, init };
+	private () T _items;
+	private int _count;
+
+	Constructor()
+	{
+		_items = new(4);
+		_count = 0;
+	}
+
+	Constructor(int capacity)
+	{
+		_items = new(capacity);
+		_count = 0;
+	}
+
+	null Function Push(T item)
+	{
+		_items.Add(item);
+		_count++;
+	}
+
+	T Function Pop()
+	{
+		if (_count == 0)
+			return null;
+		T item = _items[_count];
+		_items.RemoveAt(_count--);
+		return item;
+	}
+}
+Stack[int] intStack = new Stack[int]();
+intStack.Push(1);
+intStack.Push(2);
+Stack[string] stringStack = new Stack[string]();
+stringStack.Push(""Hello"");
+return (intStack.Pop(), intStack.Pop(), intStack.Pop(), stringStack.Pop());
+", @"(2, 1, 0, ""Hello"")", "Ошибок нет")]
+	[DataRow(@"return Sqrt(I);
+", "0.7071067811865476+0.7071067811865475I", "Ошибок нет")]
+	[DataRow(@"return Sqrt(-I);
+", "0.7071067811865476-0.7071067811865475I", "Ошибок нет")]
+	[DataRow(@"return Exp(I);
+", "0.5403023058681398+0.8414709848078965I", "Ошибок нет")]
+	[DataRow(@"return Exp(-I);
+", "0.5403023058681398-0.8414709848078965I", "Ошибок нет")]
+	[DataRow(@"return ln I;
+", "0+1.5707963267948966I", "Ошибок нет")]
+	[DataRow(@"return ln (-I);
+", "0-1.5707963267948966I", "Ошибок нет")]
+	[DataRow(@"return Log(E, I);
+", "0+1.5707963267948966I", "Ошибок нет")]
+	[DataRow(@"return Log(E, -I);
+", "0-1.5707963267948966I", "Ошибок нет")]
+	[DataRow(@"return Log(I, I);
+", "null", @"Error 4026 in line 1 at position 11: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
+")]
+	[DataRow(@"return Log(I, -I);
+", "null", @"Error 4026 in line 1 at position 11: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
+")]
+	[DataRow(@"return ln (-5c);
+", "1.6094379124341003+3.141592653589793I", "Ошибок нет")]
+	[DataRow(@"return Log(E, -5c);
+", "1.6094379124341003+3.141592653589793I", "Ошибок нет")]
+	[DataRow(@"return ln (+5c);
+", "1.6094379124341003+0I", "Ошибок нет")]
+	[DataRow(@"return Log(E, +5c);
+", "1.6094379124341003+0I", "Ошибок нет")]
+	[DataRow(@"var x = Sqrt(I);
+return x;
+", "0.7071067811865476+0.7071067811865475I", "Ошибок нет")]
+	[DataRow(@"var x = Sqrt(-I);
+return x;
+", "0.7071067811865476-0.7071067811865475I", "Ошибок нет")]
+	[DataRow(@"var x = Exp(I);
+return x;
+", "0.5403023058681398+0.8414709848078965I", "Ошибок нет")]
+	[DataRow(@"var x = Exp(-I);
+return x;
+", "0.5403023058681398-0.8414709848078965I", "Ошибок нет")]
+	[DataRow(@"var x = ln I;
+return x;
+", "0+1.5707963267948966I", "Ошибок нет")]
+	[DataRow(@"var x = ln (-I);
+return x;
+", "0-1.5707963267948966I", "Ошибок нет")]
+	[DataRow(@"var x = Log(E, I);
+return x;
+", "0+1.5707963267948966I", "Ошибок нет")]
+	[DataRow(@"var x = Log(E, -I);
+return x;
+", "0-1.5707963267948966I", "Ошибок нет")]
+	[DataRow(@"var x = Log(I, I);
+return x;
+", "0+0I", @"Error 4026 in line 1 at position 12: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
+")]
+	[DataRow(@"var x = Log(I, -I);
+return x;
+", "0+0I", @"Error 4026 in line 1 at position 12: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
+")]
+	[DataRow(@"var x = ln (-5c);
+return x;
+", "1.6094379124341003+3.141592653589793I", "Ошибок нет")]
+	[DataRow(@"var x = Log(E, -5c);
+return x;
+", "1.6094379124341003+3.141592653589793I", "Ошибок нет")]
+	[DataRow(@"var x = ln (+5c);
+return x;
+", "1.6094379124341003+0I", "Ошибок нет")]
+	[DataRow(@"var x = Log(E, +5c);
+return x;
+", "1.6094379124341003+0I", "Ошибок нет")]
+	[DataRow(@"var x = I;
+return Sqrt(x);
+", "0.7071067811865476+0.7071067811865475I", "Ошибок нет")]
+	[DataRow(@"var x = -I;
+return Sqrt(x);
+", "0.7071067811865476-0.7071067811865475I", "Ошибок нет")]
+	[DataRow(@"var x = I;
+return Exp(x);
+", "0.5403023058681398+0.8414709848078965I", "Ошибок нет")]
+	[DataRow(@"var x = -I;
+return Exp(x);
+", "0.5403023058681398-0.8414709848078965I", "Ошибок нет")]
+	[DataRow(@"var x = I;
+return ln x;
+", "0+1.5707963267948966I", "Ошибок нет")]
+	[DataRow(@"var x = -I;
+return ln x;
+", "0-1.5707963267948966I", "Ошибок нет")]
+	[DataRow(@"var x = I;
+return Log(E, x);
+", "0+1.5707963267948966I", "Ошибок нет")]
+	[DataRow(@"var x = -I;
+return Log(E, x);
+", "0-1.5707963267948966I", "Ошибок нет")]
+	[DataRow(@"var x = I;
+return Log(I, x);
+", "null", @"Error 4026 in line 2 at position 11: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
+")]
+	[DataRow(@"var x = -I;
+return Log(I, x);
+", "null", @"Error 4026 in line 2 at position 11: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
+")]
+	[DataRow(@"var x = -5c;
+return ln x;
+", "1.6094379124341003+3.141592653589793I", "Ошибок нет")]
+	[DataRow(@"var x = -5c;
+return Log(E, x);
+", "1.6094379124341003+3.141592653589793I", "Ошибок нет")]
+	[DataRow(@"var x = +5c;
+return ln x;
+", "1.6094379124341003+0I", "Ошибок нет")]
+	[DataRow(@"var x = +5c;
+return Log(E, x);
+", "1.6094379124341003+0I", "Ошибок нет")]
 	[DataRow(@"return 100000000000000000*100000000000000000000;
-", "0", @"Error 0001 in line 1 at position 26: too large number; long long type is under development
+", "10000000000000000000000000000000000000", "Ошибок нет")]
+	[DataRow(@"var x = 100000000000000000*100000000000000000000;
+return x;
+", "10000000000000000000000000000000000000", "Ошибок нет")]
+	[DataRow(@"var x = 100000000000000000000;
+return 100000000000000000*x;
+", "10000000000000000000000000000000000000", "Ошибок нет")]
+	[DataRow(@"var x = 100000000000000000;
+return x*100000000000000000000;
+", "10000000000000000000000000000000000000", "Ошибок нет")]
+	[DataRow(@"return 1LL << 100;
+", @"1267650600228229401496703205376", "Ошибок нет")]
+	[DataRow(@"var x = 1LL;
+return x << 100;
+", "1267650600228229401496703205376", "Ошибок нет")]
+	[DataRow(@"var x = 1LL << 100;
+return x;
+", "1267650600228229401496703205376", "Ошибок нет")]
+	[DataRow(@"var x = 1LL << 100;
+return x & x - 1;
+", "0", "Ошибок нет")]
+	[DataRow(@"return 1LL << 100LL;
+", "null", @"Error 4081 in line 1 at position 11: the second operand of the operator ""<<"" must be of the type, convertible to int
+")]
+	[DataRow(@"var x = 1LL;
+return x << 100LL;
+", "null", @"Error 4081 in line 2 at position 9: the second operand of the operator ""<<"" must be of the type, convertible to int
+")]
+	[DataRow(@"return 1LL >> 100LL;
+", "null", @"Error 4081 in line 1 at position 11: the second operand of the operator "">>"" must be of the type, convertible to int
+")]
+	[DataRow(@"var x = 1LL;
+return x >> 100LL;
+", "null", @"Error 4081 in line 2 at position 9: the second operand of the operator "">>"" must be of the type, convertible to int
+")]
+	[DataRow(@"long long a = 123456789012345678901234567890;
+long long b = 1000;
+long long c = a + b;
+long long d = a * b;
+long long e = a - b;
+long long f = a / b;  // целочисленное деление
+long long g = a % b; // остаток
+bool isGreater = a > b;
+bool isEqual = a == b;
+long long abs = Abs(a);
+long long pow_ = a pow 3;
+int sign = a.Sign;  // -1, 0, 1
+int sign2 = (-a).Sign;  // -1, 0, 1
+int x = a % 2147483648;
+string s = """" + a;
+return (a, b, c, d, e, f, g, isGreater, isEqual, abs, pow_, sign, sign2, x, s);
+", "(123456789012345678901234567890, 1000, 123456789012345678901234568890, 123456789012345678901234567890000,"
+		+ " 123456789012345678901234566890, 123456789012345678901234567, 890, true, false, 123456789012345678901234567890,"
+		+ " 1881676372353657772546716040589641726257477229849409426207693797722198701224860897069000, 1, -1, 1312754386,"
+		+ @" ""123456789012345678901234567890"")", "Ошибок нет")]
+	[DataRow(@"return 2LL pow 100;
+", @"1267650600228229401496703205376", "Ошибок нет")]
+	[DataRow(@"var x = 2LL;
+return x pow 100;
+", "1267650600228229401496703205376", "Ошибок нет")]
+	[DataRow(@"var x = 2LL pow 100;
+return x;
+", "1267650600228229401496703205376", "Ошибок нет")]
+	[DataRow(@"return 2LL pow 100LL;
+", "null", @"Error 4006 in line 1 at position 11: cannot apply the operator ""pow"" to the types ""long long"" and ""long long""
+")]
+	[DataRow(@"var x = 2LL;
+return x pow 100LL;
+", "null", @"Error 4006 in line 2 at position 9: cannot apply the operator ""pow"" to the types ""long long"" and ""long long""
+")]
+	[DataRow(@"complex c1 = 3.0+4.0I;
+complex c2 = 5.0;
+complex sum = c1 + c2;
+complex diff = c1 - c2;
+complex prod = c1 * c2;
+complex quot = c1 / c2;
+complex conjugate = complex.Conjugate(c1);
+complex sqrt = complex.Sqrt(c1);
+complex log = complex.Log(c1);
+real abs = c1.Magnitude;
+real arg = c1.Phase;
+bool eq = c1 == c2;
+bool ne = c1 != c2;
+complex polar = complex.FromPolarCoordinates(5.0, Pi / 4);
+string str = """" + c1;
+return (c1, c2, sum, diff, prod, quot, conjugate, sqrt, log, abs, arg, eq, ne, polar, str);
+", "(3+4I, 5+0I, 8+4I, -2+4I, 15+20I, 0.6+0.8I, 3-4I, 2+1I, 1.6094379124341003+0.9272952180016122I, 5, 0.9272952180016122,"
+		+ @" false, true, 3.5355339059327378+3.5355339059327378I, ""3+4I"")", "Ошибок нет")]
+	[DataRow(@"complex c1 = 3.0+4.0I;
+complex c2 = 5.0;
+complex zero = complex.Zero;
+complex divByZero = c1 / zero;
+complex nan = Uncty;
+complex inf = Infty;
+complex bad = nan + inf;
+int i = c1 % 2147483648;
+real r = c1;
+complex pow_ = c1 ** 2;
+complex badPolar = complex.FromPolarCoordinates(-1.0, Math.PI);  // Модуль < 0 — неявно обрабатывается, но может быть неочевидно
+complex c4 = new complex(0.1 + 0.2, 0);
+complex c5 = new complex(0.3, 0);
+bool almostEqual = c4 == c5;  // Может быть false из-за погрешностей FP!
+return (c1, c2, zero, divByZero, nan, inf, bad, i, r, pow_, badPolar, almostEqual);
+", @"(3+4I, 5+0I, 0+0I, Uncty+UnctyI, Uncty+0I, Infty+0I, Uncty+0I, 0, null, 0+0I, -1+0I, false)",
+		@"Error 2012 in line 10 at position 19: expected: identifier or basic expression or expression in round brackets
+Error 4014 in line 8 at position 8: cannot convert from the type ""complex"" to the type ""int""
+Error 4014 in line 9 at position 7: cannot convert from the type ""complex"" to the type ""real""
+Error 4001 in line 15 at position 51: the identifier ""r"" is not defined in this location
 ")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """

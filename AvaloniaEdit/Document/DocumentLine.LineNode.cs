@@ -60,7 +60,7 @@ namespace AvaloniaEdit.Document;
         {
             get
             {
-                DocumentLine node = this;
+                var node = this;
                 while (node.Left != null)
                     node = node.Left;
                 return node;
@@ -71,7 +71,7 @@ namespace AvaloniaEdit.Document;
         {
             get
             {
-                DocumentLine node = this;
+                var node = this;
                 while (node.Right != null)
                     node = node.Right;
                 return node;

@@ -82,8 +82,8 @@ public sealed class BackgroundGeometryBuilder
 	public void AddSegment(TextView textView, ISegment segment)
 	{
 		ArgumentNullException.ThrowIfNull(textView);
-		Size pixelSize = PixelSnapHelpers.GetPixelSize(textView);
-		foreach (Rect r in GetRectsForSegment(textView, segment, ExtendToFullWidthAtLineEnd)) {
+		var pixelSize = PixelSnapHelpers.GetPixelSize(textView);
+		foreach (var r in GetRectsForSegment(textView, segment, ExtendToFullWidthAtLineEnd)) {
 			AddRectangle(pixelSize, r);
 		}
 	}
@@ -144,7 +144,7 @@ public sealed class BackgroundGeometryBuilder
 			end = new TextViewPosition(textView.Document.GetLocation(segmentEnd));
 		}
 
-		foreach (VisualLine vl in textView.VisualLines) {
+		foreach (var vl in textView.VisualLines) {
 			int vlStartOffset = vl.FirstDocumentLine.Offset;
 			if (vlStartOffset > segmentEnd)
 				break;
@@ -182,11 +182,11 @@ public sealed class BackgroundGeometryBuilder
 
 	private static IEnumerable<Rect> ProcessTextLines(TextView textView, VisualLine visualLine, int segmentStartVc, int segmentEndVc)
 	{
-		TextLine lastTextLine = visualLine.TextLines.Last();
-		Vector scrollOffset = textView.ScrollOffset;
+		var lastTextLine = visualLine.TextLines.Last();
+		var scrollOffset = textView.ScrollOffset;
 
 		for (int i = 0; i < visualLine.TextLines.Count; i++) {
-			TextLine line = visualLine.TextLines[i];
+			var line = visualLine.TextLines[i];
 			double y = visualLine.GetTextLineVisualYPosition(line, VisualYPosition.LineTop);
                 double lineHeight = Math.Max(line.Height, textView.DefaultLineHeight);
 			int visualStartCol = visualLine.GetTextLineVisualStartColumn(line);
@@ -307,8 +307,8 @@ public sealed class BackgroundGeometryBuilder
 		} else {
 			if (!_lastRight.IsClose(right)) {
 				double cr = right < _lastRight ? -_cornerRadius : _cornerRadius;
-				SweepDirection dir1 = right < _lastRight ? SweepDirection.Clockwise : SweepDirection.CounterClockwise;
-				SweepDirection dir2 = right < _lastRight ? SweepDirection.CounterClockwise : SweepDirection.Clockwise;
+				var dir1 = right < _lastRight ? SweepDirection.Clockwise : SweepDirection.CounterClockwise;
+				var dir2 = right < _lastRight ? SweepDirection.CounterClockwise : SweepDirection.Clockwise;
 				_figure.Segments.Insert(_insertionIndex++, MakeArc(_lastRight + cr, _lastBottom, dir1));
 				_figure.Segments.Insert(_insertionIndex++, MakeLineSegment(right - cr, top));
 				_figure.Segments.Insert(_insertionIndex++, MakeArc(right, top + _cornerRadius, dir2));
@@ -317,8 +317,8 @@ public sealed class BackgroundGeometryBuilder
 			_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft, _lastTop + _cornerRadius));
 			if (!_lastLeft.IsClose(left)) {
 				double cr = left < _lastLeft ? _cornerRadius : -_cornerRadius;
-				SweepDirection dir1 = left < _lastLeft ? SweepDirection.CounterClockwise : SweepDirection.Clockwise;
-				SweepDirection dir2 = left < _lastLeft ? SweepDirection.Clockwise : SweepDirection.CounterClockwise;
+				var dir1 = left < _lastLeft ? SweepDirection.CounterClockwise : SweepDirection.Clockwise;
+				var dir2 = left < _lastLeft ? SweepDirection.Clockwise : SweepDirection.CounterClockwise;
 				_figure.Segments.Insert(_insertionIndex, MakeArc(_lastLeft, _lastBottom - _cornerRadius, dir1));
 				_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft - cr, _lastBottom));
 				_figure.Segments.Insert(_insertionIndex, MakeArc(left + cr, _lastBottom, dir2));
