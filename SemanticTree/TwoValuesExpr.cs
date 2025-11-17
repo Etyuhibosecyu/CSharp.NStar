@@ -24,6 +24,7 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 			"%" => TranslateTimeModExpr(ref errors, ref i, LeftNStarType, RightNStarType, PrevNStarType),
 			"+" => TranslateTimePlusExpr(ref errors, ref i, LeftNStarType, RightNStarType, PrevNStarType),
 			"-" => TranslateTimeMinusExpr(ref errors, ref i, LeftNStarType, RightNStarType, PrevNStarType),
+			">>>" => TranslateTimeUnsignedRightShiftExpr(ref errors, ref i, LeftNStarType, RightNStarType),
 			">>" => TranslateTimeRightShiftExpr(ref errors, ref i, LeftNStarType, RightNStarType),
 			"<<" => TranslateTimeLeftShiftExpr(ref errors, ref i, LeftNStarType, RightNStarType),
 			"==" => TranslateTimeSingularExpr(i, NStarEntity.Eq(Value1, Value2)),
@@ -297,6 +298,29 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 			Branch[Max(i - 3, 0)] = new((Value1 - Value2).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
 		else if (i >= 4 && TypeEqualsToPrimitive(PrevNStarType, "string") && Branch[i - 2].Name == "+")
 			Branch[Max(i - 3, 0)] = new((Value1 - Value2).ToString(true, true), Branch.Pos, Branch.EndPos, Branch.Container);
+		else
+		{
+			Branch[i].Extra = GetResultType(LeftNStarType, RightNStarType, Value1.ToString(true), Value2.ToString(true));
+			i++;
+			result = Branch[i - 2].Name.Copy().Add(' ').AddRange(Branch[i].Name).Add(' ').AddRange(Branch[i - 1].Name);
+		}
+		return result;
+	}
+
+	private String TranslateTimeUnsignedRightShiftExpr(ref List<String>? errors, ref int i,
+		NStarType LeftNStarType, NStarType RightNStarType)
+	{
+		String result = [];
+		if (!TypesAreCompatible(RightNStarType, IntType, out var warning, Value2.ToString(true, true), out _, out _) || warning)
+		{
+			var otherPos = Branch[i].Pos;
+			GenerateMessage(ref errors, 0x4081, otherPos, Branch[i].Name);
+			Branch[i].Extra = NullType;
+			return "default!";
+		}
+		if (i == 2)
+			Branch[Max(i - 3, 0)] = new((Value1 >>> Value2.ToInt()).ToString(true, true),
+				Branch.Pos, Branch.EndPos, Branch.Container);
 		else
 		{
 			Branch[i].Extra = GetResultType(LeftNStarType, RightNStarType, Value1.ToString(true), Value2.ToString(true));

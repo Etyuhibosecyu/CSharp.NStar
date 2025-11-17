@@ -5858,6 +5858,51 @@ Error 4014 in line 8 at position 8: cannot convert from the type ""complex"" to 
 Error 4014 in line 9 at position 7: cannot convert from the type ""complex"" to the type ""real""
 Error 4001 in line 15 at position 51: the identifier ""r"" is not defined in this location
 ")]
+	[DataRow(@"var x = 200 >>> 3;
+return x;
+", "25", "Ошибок нет")]
+	[DataRow(@"var x = -281470681808896 >>> 16;
+return x;
+", "281470681808895", "Ошибок нет")]
+	[DataRow(@"int x = 200;
+var y = x >>> 3;
+return y;
+", "25", "Ошибок нет")]
+	[DataRow(@"long int x = -281470681808896;
+var y = x >>> 16;
+return y;
+", "281470681808895", "Ошибок нет")]
+	[DataRow(@"var z = 0 >>> 10;
+return z;
+", "0", "Ошибок нет")]
+	[DataRow(@"int zero = 0;
+var z = zero >>> 10;
+return z;
+", "0", "Ошибок нет")]
+	[DataRow(@"unsigned int zero = 0;
+var z = zero >>> 10;
+return z;
+", "0", "Ошибок нет")]
+	[DataRow(@"unsigned int x = 100 >>> 2.5;
+return x;
+", "0", @"Error 4081 in line 1 at position 21: the second operand of the operator "">>>"" must be of the type, convertible to int
+Error 4014 in line 1 at position 17: cannot convert from the type ""real"" to the type ""unsigned int""
+")]
+	[DataRow(@"int a = 10;
+unsigned int b = 5;
+unsigned int c = a >>> b;
+return c;
+", "0", @"Error 4081 in line 3 at position 19: the second operand of the operator "">>>"" must be of the type, convertible to int
+")]
+	[DataRow(@"unsigned int x = 100;
+unsigned int y = x >>> 2.5;
+return y;
+", "0", @"Error 4081 in line 2 at position 19: the second operand of the operator "">>>"" must be of the type, convertible to int
+")]
+	[DataRow(@"int x = 200;
+if (x >>> 3 > 10)
+	return x;
+", "200", "Ошибок нет")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());

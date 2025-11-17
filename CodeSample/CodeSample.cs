@@ -48,7 +48,7 @@ public class CodeSample(String newString)
 	private bool wreckOccurred = false;
 	private readonly List<String> errors = [];
 	private readonly List<LexemTree> lexemTree = [DoubleEqualLexemTree('^'), DoubleEqualLexemTree('|'),
-		DoubleEqualLexemTree('&'), TripleEqualLexemTree('>'), TripleEqualLexemTree('<'), DoubleEqualLexemTree('!'),
+		DoubleEqualLexemTree('&'), TripleEqualLexemTree('>'), DoubleEqualLexemTree('<'), DoubleEqualLexemTree('!'),
 		new LexemTree('?', [new LexemTree('!', ['='], allowNone: false), EqualLexemTree('>'), EqualLexemTree('<'),
 			'=', '?', '.', '[']), ',', ':', '@', '#', '$', '~', DoubleEqualLexemTree('+'), DoubleEqualLexemTree('-'),
 		EqualLexemTree('*'), EqualLexemTree('/'), EqualLexemTree('%'), new LexemTree('=', ['=', '>']), TripleLexemTree('.')];

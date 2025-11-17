@@ -1958,6 +1958,35 @@ public struct NStarEntity
 			return new();
 	}
 
+	public static NStarEntity operator >>>(NStarEntity left, int right)
+	{
+		if (TypeIsPrimitive(left.InnerType.MainType))
+		{
+			var basicType = left.InnerType.MainType.Peek().Name;
+			if (basicType == "long long")
+				return ValidateFixing(new(left.ToLongLong() >>> right, LongLongType), LongLongType, left.Fixed);
+			else if (basicType == "unsigned long int")
+				return ValidateFixing(new(left.ToUnsignedLongInt() >>> right, UnsignedLongIntType),
+					UnsignedLongIntType, left.Fixed);
+			else if (basicType == "long int")
+				return ValidateFixing(new(left.ToLongInt() >>> right, LongIntType), LongIntType, left.Fixed);
+			else if (basicType == "unsigned int")
+				return ValidateFixing(left.ToUnsignedInt() >>> right, UnsignedIntType, left.Fixed);
+			else if (basicType == "int")
+				return ValidateFixing(left.ToInt() >>> right, IntType, left.Fixed);
+			else if (basicType == "unsigned short int")
+				return ValidateFixing(left.ToUnsignedShortInt() >>> right, UnsignedShortIntType, left.Fixed);
+			else if (basicType == "short int")
+				return ValidateFixing(left.ToShortInt() >>> right, ShortIntType, left.Fixed);
+			else if (basicType == "byte")
+				return ValidateFixing(left.ToByte() >>> right, ByteType, left.Fixed);
+			else
+				return new();
+		}
+		else
+			return new();
+	}
+
 	public static NStarEntity operator >>(NStarEntity left, int right)
 	{
 		if (TypeIsPrimitive(left.InnerType.MainType))

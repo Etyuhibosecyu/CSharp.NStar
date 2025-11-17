@@ -42,7 +42,7 @@ public partial class MainParsing : LexemStream
 		{ "BitwiseXorExpr", ("BitwiseOrExpr", "Expr", new("^")) },
 		{ "BitwiseOrExpr", ("BitwiseAndExpr", "Expr", new("|")) },
 		{ "BitwiseAndExpr", ("BitwiseShiftExpr", "Expr", new("&")) },
-		{ "BitwiseShiftExpr", ("PMExpr", "Expr", new(">>", "<<")) }, { "PMExpr", ("MulDivExpr", "Expr", new("+", "-")) },
+		{ "BitwiseShiftExpr", ("PMExpr", "Expr", new(">>>", ">>", "<<")) }, { "PMExpr", ("MulDivExpr", "Expr", new("+", "-")) },
 		{ "MulDivExpr", ("PowExpr", "Expr", new("*", "/", "%")) }, { "PowExpr", ("TetraExpr", "Expr", new("pow")) },
 		{ "TetraExpr", ("RangeExpr", "Expr", []) }, { "RangeExpr", (nameof(UnaryExpr), "Expr", []) },
 		{ "PrefixExpr", ("PostfixExpr", "Expr", []) }
