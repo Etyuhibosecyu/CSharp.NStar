@@ -4991,6 +4991,41 @@ const typename real = () ListHashSet[string];
 typename T = () real;
 return T;
 ", "list(2) System.Collections.ListHashSet[string]", "Ошибок нет")]
+	[DataRow(@"typename T = typename;
+return T;
+", "null", @"Error 4090 in line 1 at position 13: the recursive type cannot be value of itself
+")]
+	[DataRow(@"const typename T = typename;
+return T;
+", "null", @"Error 4090 in line 1 at position 19: the recursive type cannot be value of itself
+")]
+	[DataRow(@"Class MyClass
+{
+	const typename T = typename;
+	typename T2 = typename;
+}
+return (MyClass.T, new MyClass().T2);
+", "(null, null)", @"Error 4090 in line 3 at position 20: the recursive type cannot be value of itself
+Error 4090 in line 4 at position 15: the recursive type cannot be value of itself
+")]
+	[DataRow(@"typename real = int;
+typename T = typeof(real);
+return T;
+", "null", @"Error 4091 in line 2 at position 20: cannot get type of the type
+")]
+	[DataRow(@"typename x = int;
+repeat (3)
+	x = () x;
+typename T = typeof(x);
+return T;
+", "null", @"Error 4091 in line 4 at position 20: cannot get type of the type
+")]
+	[DataRow(@"typename typename = int;
+return typename;
+", "null", @"Error 4092 in line 1 at position 9: the recursive type variable, property or constant cannot have the name ""typename""
+Error 4001 in line 1 at position 20: the identifier ""int"" is not defined in this location
+Error 4001 in line 2 at position 7: the identifier ""typename"" is not defined in this location
+")]
 	[DataRow(@"Class Person
 {
 	string Name { get, private set };

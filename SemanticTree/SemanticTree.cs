@@ -715,17 +715,29 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 		constructorTop.AddRange(name).AddRange(" = default!");
 		branch[^1].Extra ??= NStarType;
 		var expr = ParseAction(branch[^1].Name)(branch[^1], out var innerErrors);
-		if (branch[^1].Extra is not NStarType ValueNStarType)
+		if (branch[^1].Name != "null" && expr.ToString() is "_" or "default" or "default!" or "_ = default" or "_ = default!")
+		{
+			AddRange(ref errors, innerErrors);
+			branch[^1].Replace(new("null", branch.Pos, branch.EndPos, branch.Container) { Extra = NullType });
+			return result.AddRange("default!;");
+		}
+		else if (TypeEqualsToPrimitive(NStarType, "typename") && name == "typename")
+		{
+			GenerateMessage(ref errors, 0x4092, branch[1].Pos);
+			ValidateStatic(constructorTop, constructorCore);
+			return result.AddRange("default!;");
+		}
+		else if (branch[^1].Extra is not NStarType ValueNStarType)
 		{
 			GenerateMessage(ref errors, 0x4014, branch[^1].Pos, null!, NullType, NStarType);
 			ValidateStatic(constructorTop, constructorCore);
-			return "default!";
+			return result.AddRange("default!;");
 		}
 		else if (!TypesAreCompatible(ValueNStarType, NStarType, out var warning, expr, out _, out var extraMessage) || warning)
 		{
 			GenerateMessage(ref errors, 0x4014, branch[^1].Pos, extraMessage!, ValueNStarType, NStarType);
 			ValidateStatic(constructorTop, constructorCore);
-			return "default!";
+			return result.AddRange("default!;");
 		}
 		result.AddRange(expr);
 		constructorCore.AddRange("if (").AddRange(name).AddRange(" is ");
@@ -794,16 +806,26 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 			}
 			branch[^1].Extra ??= NStarType;
 			var expr = ParseAction(branch[^1].Name)(branch[^1], out var innerErrors);
-			if (branch[^1].Extra is not NStarType ValueNStarType)
+			if (expr.ToString() is "_" or "default" or "default!" or "_ = default" or "_ = default!")
+			{
+				AddRange(ref errors, innerErrors);
+				return [];
+			}
+			else if (TypeEqualsToPrimitive(NStarType, "typename") && name == "typename")
+			{
+				GenerateMessage(ref errors, 0x4092, branch[1].Pos);
+				return [];
+			}
+			else if (branch[^1].Extra is not NStarType ValueNStarType)
 			{
 				GenerateMessage(ref errors, 0x4014, branch[^1].Pos, null!, NullType, NStarType);
-				return "default!";
+				return [];
 			}
 			else if (!TypesAreCompatible(ValueNStarType, NStarType, out var warning, expr, out _, out var extraMessage)
 				|| warning)
 			{
 				GenerateMessage(ref errors, 0x4014, branch[^1].Pos, extraMessage!, ValueNStarType, NStarType);
-				return "default!";
+				return [];
 			}
 			result.AddRange(expr);
 			AddRange(ref errors, innerErrors);
@@ -940,15 +962,31 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 			var prevIndex = branch.Parent!.Elements.FindIndex(x => ReferenceEquals(branch, x));
 			if (prevIndex >= 1 && branch.Parent[prevIndex - 1].Extra is NStarType AssigningNStarType
 				&& branch.Parent.Length >= 3 && branch.Parent[prevIndex + 1].Name == "=")
+			{
+				if (TypeEqualsToPrimitive(AssigningNStarType, "typename") && varName == "typename")
+				{
+					var otherPos = branch[1].Pos;
+					GenerateMessage(ref errors, 0x4092, otherPos);
+					branch.Replace(new("_", branch.FirstPos, branch[0].EndPos, branch.Container) { Extra = NullType });
+					return "_";
+				}
 				branch.Extra = branch[prevIndex - 1].Extra = AssigningNStarType;
+			}
 			else if (branch.Parent[prevIndex - 1].Extra == null && prepass) { }
 			else
 			{
-				var otherPos = branch[1 - 1].Pos;
+				var otherPos = branch[0].Pos;
 				GenerateMessage(ref errors, 0x4011, otherPos);
 				branch.Replace(new("_", branch.FirstPos, branch[0].EndPos, branch.Container) { Extra = NullType });
 				return "_";
 			}
+		}
+		else if (TypeEqualsToPrimitive(NStarType, "typename") && varName == "typename")
+		{
+			var otherPos = branch[1].Pos;
+			GenerateMessage(ref errors, 0x4092, otherPos);
+			branch.Replace(new("_", branch.FirstPos, branch[0].EndPos, branch.Container) { Extra = NullType });
+			return "_";
 		}
 		else if (UserDefinedTypes.TryGetValue(SplitType(NStarType.MainType),
 			out var userDefinedType) && (userDefinedType.Attributes & TypeAttributes.Static) == TypeAttributes.Static)
@@ -1303,6 +1341,13 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 			else if (branch.Length == 1 && branch.Extra is NStarType RecursiveNStarType
 				&& RecursiveNStarType.Equals(RecursiveType) && PrimitiveTypes.ContainsKey(branchName))
 			{
+				if (branchName == "typename")
+				{
+					var otherPos = branch.FirstPos;
+					GenerateMessage(ref errors, 0x4090, otherPos, branchName);
+					branch.Replace(new("null", branch.Pos, branch.EndPos, branch.Container) { Extra = NullType });
+					return "_";
+				}
 				NStarType primitiveType = (new([new(PrimitiveTypes.ContainsKey(branchName)
 					? BlockType.Primitive : BlockType.Extra, branchName, 1)]), NoBranches);
 				branch[0] = new("type", branch.Pos, branch.Container) { Extra = primitiveType };
@@ -1514,8 +1559,27 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 		if (branch[0].Extra is not NStarType NStarType)
 			NStarType = NullType;
 		var extra = new List<object> { (String)"Static", NStarType };
+		//if (branch.Extra == null)
+		//{
+		//	var otherPos = branch.FirstPos;
+		//	GenerateMessage(ref errors, 0x4000, otherPos);
+		//	branch.Replace(new("null", branch.Pos, branch.EndPos, branch.Container) { Extra = NullType });
+		//	result.Replace("_");
+		//	return default!;
+		//}
 		var bTypename = branch.Extra is NStarType OuterNStarType && OuterNStarType.Equals(RecursiveType);
 		var bExtraType = !TypeIsFullySpecified(NStarType, branch.Container);
+		if (NStarType.Equals(RecursiveType))
+		{
+			var otherPos = branch.FirstPos;
+			GenerateMessage(ref errors, 0x4090, otherPos);
+			branch.Parent![branch.Parent.Elements.IndexOf(branch)] = new("null", branch.Pos, branch.EndPos, branch.Container)
+			{
+				Extra = NullType
+			};
+			result.Replace("_");
+			return default!;
+		}
 		if (bExtraType)
 		{
 			var fullName = TypeReflected(ref NStarType, branch, ref errors);
@@ -4280,7 +4344,13 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 			return "typeof(dynamic)";
 		}
 		var parseResult = ParseAction(branch[0].Name)(branch[0], out errors);
-		if (TryReadValue(parseResult, out var value))
+		if (branch[0].Extra is NStarType NStarType && NStarType.Equals(RecursiveType))
+		{
+			GenerateMessage(ref errors, 0x4091, branch.FirstPos);
+			branch.Extra = NullType;
+			return "default!";
+		}
+		if (TryReadValue(parseResult, out var value) || TryReadValue(branch[0].Name, out value))
 		{
 			var InnerNStarType = value.InnerType;
 			return ((String)"typeof(").AddRange(Type(ref InnerNStarType, branch, ref errors)).Add(')');
@@ -4395,6 +4465,8 @@ public sealed partial class SemanticTree(List<Lexem> lexems, String input, TreeB
 				&& constant.HasValue && constant.Value.DefaultValue != null))
 				return "dynamic";
 			result.AddRange(ParseAction(constant.Value.DefaultValue.Name)(constant.Value.DefaultValue, out innerErrors));
+			if (result == "default!")
+				return result;
 			if (!(result.StartsWith("typeof(") && result.EndsWith(')')))
 				throw new InvalidOperationException();
 			AddRange(ref errors, innerErrors);

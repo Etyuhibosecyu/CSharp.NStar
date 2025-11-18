@@ -213,6 +213,9 @@ public static class Messages
 			0x4070 => "the property \"" + parameters[0] + "\" is get-only and cannot be set",
 			0x4080 => "the operator \"" + parameters[0] + "\" cannot be used in this context",
 			0x4081 => "the second operand of the operator \"" + parameters[0] + "\" must be of the type, convertible to int",
+			0x4090 => "the recursive type cannot be value of itself",
+			0x4091 => "cannot get type of the type",
+			0x4092 => "the recursive type variable, property or constant cannot have the name \"typename\"",
 			0x8000 => "the properties and the methods are static in the static class implicitly;" +
 				" the word \"static\" is not necessary",
 			0x8001 => "the semicolon in the end of the line with condition or cycle may easily be unnoticed" +
