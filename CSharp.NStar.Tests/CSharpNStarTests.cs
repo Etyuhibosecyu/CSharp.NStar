@@ -5558,6 +5558,88 @@ loop
 } while! (i * i >= 10);
 return list;
 ", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+for (int i in Chain(0, 10)) while (i * i % 20 < 10)
+{
+	list.Add(i);
+}
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+repeat (10) while (i * i % 20 < 10)
+{
+	list.Add(i++);
+}
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+loop
+{
+	list.Add(i++);
+} while (i * i % 20 < 10);
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+for (int i in Chain(0, 10)) while! (i * i % 20 >= 10)
+{
+	list.Add(i);
+}
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+repeat (10) while! (i * i % 20 >= 10)
+{
+	list.Add(i++);
+}
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+loop
+{
+	list.Add(i++);
+} while! (i * i % 20 >= 10);
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+repeat (10) while (i * i % 20 < 10)
+{
+	list.Add(i);
+	i++;
+}
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+loop
+{
+	list.Add(i);
+	i++;
+} while (i * i % 20 < 10);
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+repeat (10) while! (i * i % 20 >= 10)
+{
+	list.Add(i);
+	i++;
+}
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+int i = 0;
+loop
+{
+	list.Add(i);
+	i++;
+} while! (i * i % 20 >= 10);
+return list;
+", "(0, 1, 2, 3)", "Ошибок нет")]
 	[DataRow(@"using System.Collections;
 [string, int] dic = (""0"": 0, ""1"": 1, ""2"": 2, ""3"": 3);
 return (dic, dic[""1""]);
@@ -5903,6 +5985,11 @@ return y;
 if (x >>> 3 > 10)
 	return x;
 ", "200", "Ошибок нет")]
+	[DataRow(@"object obj1 = new System.Collections.Buffer[int](10);
+object obj2 = ""AAA"";
+object obj3 = 123;
+return (obj1, obj2, obj3, typeof(obj1), typeof(obj2), typeof(obj3));
+", @"((), ""AAA"", 123, System.Collections.Buffer[int], string, int)", "Ошибок нет")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());

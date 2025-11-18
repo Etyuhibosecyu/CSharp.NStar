@@ -1301,10 +1301,18 @@ public partial class MainParsing : LexemStream
 			return IncreaseStack("Expr", currentTask: nameof(ActionChain3), pos_: pos, applyPos: true, applyCurrentTask: true,
 				currentExtra: new List<object>());
 		_ErLStack[_Stackpos].AddRange(errors ?? []);
-		if (treeBranch != null && (treeBranch.Length != 0
-			|| treeBranch.Name.ToString() is "while" or "while!" && treeBranch.Length == 0))
+		if (treeBranch != null && (treeBranch.Length != 0 || treeBranch.Name.ToString() is "while" or "while!"))
 		{
 			AppendBranch(nameof(ActionChain));
+			if (_Stackpos >= 1 && _TaskStack[_Stackpos] == nameof(ActionChain2)
+				&& _TaskStack[_Stackpos - 1] == nameof(Main2) && _TBStack[_Stackpos - 1] != null
+				&& _TBStack[_Stackpos - 1]!.Length >= 3 && _TBStack[_Stackpos - 1]![^3].Name.ToString() is "repeat" or "for"
+				&& _TBStack[_Stackpos - 1]![^2].Name.ToString() is "if" or "if!"
+				&& IsLexemKeyword(lexems[_TBStack[_Stackpos - 1]![^2].Pos], ["while", "while!"]))
+			{
+				_TBStack[_Stackpos - 1]?.Add(new("else", pos - 1, container));
+				_TBStack[_Stackpos - 1]?.Add(new("break", pos - 1, container));
+			}
 			return Default();
 		}
 		else
