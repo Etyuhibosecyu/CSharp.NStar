@@ -42,4 +42,4 @@ internal sealed class GlobalTextRunProperties : TextRunProperties
 
 	public override CultureInfo? CultureInfo => cultureInfo;
 	//public override TextEffectCollection TextEffects { get { return null; } }
-    }
+	}

@@ -21,36 +21,36 @@ using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Snippets;
 
-    /// <summary>
-    /// A snippet element that has sub-elements.
-    /// </summary>
-    public class SnippetContainerElement : SnippetElement
-    {
-        private readonly NullSafeCollection<SnippetElement> _elements = new NullSafeCollection<SnippetElement>();
+	/// <summary>
+	/// A snippet element that has sub-elements.
+	/// </summary>
+	public class SnippetContainerElement : SnippetElement
+	{
+		private readonly NullSafeCollection<SnippetElement> _elements = new NullSafeCollection<SnippetElement>();
 
-        /// <summary>
-        /// Gets the list of child elements.
-        /// </summary>
-        public IList<SnippetElement> Elements => _elements;
+		/// <summary>
+		/// Gets the list of child elements.
+		/// </summary>
+		public IList<SnippetElement> Elements => _elements;
 
-        /// <inheritdoc/>
-        public override void Insert(InsertionContext context)
-        {
-            foreach (var e in Elements)
-            {
-                e.Insert(context);
-            }
-        }
+		/// <inheritdoc/>
+		public override void Insert(InsertionContext context)
+		{
+			foreach (var e in Elements)
+			{
+				e.Insert(context);
+			}
+		}
 
-        ///// <inheritdoc/>
-        //public override Inline ToTextRun()
-        //{
-        //	Span span = new Span();
-        //	foreach (SnippetElement e in this.Elements) {
-        //		Inline r = e.ToTextRun();
-        //		if (r != null)
-        //			span.Inlines.Add(r);
-        //	}
-        //	return span;
-        //}
-    }
+		///// <inheritdoc/>
+		//public override Inline ToTextRun()
+		//{
+		//	Span span = new Span();
+		//	foreach (SnippetElement e in this.Elements) {
+		//		Inline r = e.ToTextRun();
+		//		if (r != null)
+		//			span.Inlines.Add(r);
+		//	}
+		//	return span;
+		//}
+	}

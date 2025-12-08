@@ -21,11 +21,11 @@ using System.Xml;
 
 namespace AvaloniaEdit.Highlighting.Xshd;
 
-    /// <summary>
-    /// Static class with helper methods to load XSHD highlighting files.
-    /// </summary>
-    public static class HighlightingLoader
-    {
+	/// <summary>
+	/// Static class with helper methods to load XSHD highlighting files.
+	/// </summary>
+	public static class HighlightingLoader
+	{
 	#region XSHD loading
 	/// <summary>
 	/// Lodas a syntax definition from the xml reader.
@@ -33,73 +33,73 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 	public static XshdSyntaxDefinition LoadXshd(XmlReader reader) => LoadXshd(reader, false);
 
 	internal static XshdSyntaxDefinition LoadXshd(XmlReader reader, bool skipValidation)
-        {
+		{
 		ArgumentNullException.ThrowIfNull(reader);
 		try
-            {
-                reader.MoveToContent();
-                //if (reader.NamespaceURI == V2Loader.Namespace)
-                //{
-                    return V2Loader.LoadDefinition(reader, skipValidation);
-                //}
-                //else
-                //{
-                //    return V1Loader.LoadDefinition(reader, skipValidation);
-                //}
-            }
-            catch (XmlException ex)
-            {
-                throw WrapException(ex, ex.LineNumber, ex.LinePosition);
-            }
-        }
+			{
+				reader.MoveToContent();
+				//if (reader.NamespaceURI == V2Loader.Namespace)
+				//{
+					return V2Loader.LoadDefinition(reader, skipValidation);
+				//}
+				//else
+				//{
+				//	return V1Loader.LoadDefinition(reader, skipValidation);
+				//}
+			}
+			catch (XmlException ex)
+			{
+				throw WrapException(ex, ex.LineNumber, ex.LinePosition);
+			}
+		}
 
 	static Exception WrapException(Exception ex, int lineNumber, int linePosition) => new HighlightingDefinitionInvalidException(FormatExceptionMessage(ex.Message, lineNumber, linePosition), ex);
 
 	internal static string FormatExceptionMessage(string message, int lineNumber, int linePosition)
-        {
-            if (lineNumber <= 0)
-                return message;
-            else
-                return "Error at position (line " + lineNumber + ", column " + linePosition + "):\n" + message;
-        }
+		{
+			if (lineNumber <= 0)
+				return message;
+			else
+				return "Error at position (line " + lineNumber + ", column " + linePosition + "):\n" + message;
+		}
 
-        internal static XmlReader GetValidatingReader(XmlReader input, bool ignoreWhitespace)
-        {
-            var settings = new XmlReaderSettings
-            {
-                CloseInput = true,
-                IgnoreComments = true,
-                IgnoreWhitespace = ignoreWhitespace
-            };
-            //if (schemaSet != null)
-            //{
-            //    settings.Schemas = schemaSet;
-            //    settings.ValidationType = ValidationType.Schema;
-            //}
-            return XmlReader.Create(input, settings);
-        }
+		internal static XmlReader GetValidatingReader(XmlReader input, bool ignoreWhitespace)
+		{
+			var settings = new XmlReaderSettings
+			{
+				CloseInput = true,
+				IgnoreComments = true,
+				IgnoreWhitespace = ignoreWhitespace
+			};
+			//if (schemaSet != null)
+			//{
+			//	settings.Schemas = schemaSet;
+			//	settings.ValidationType = ValidationType.Schema;
+			//}
+			return XmlReader.Create(input, settings);
+		}
 
-        //internal static XmlSchemaSet LoadSchemaSet(XmlReader schemaInput)
-        //{
-        //    XmlSchemaSet schemaSet = new XmlSchemaSet();
-        //    schemaSet.Add(null, schemaInput);
-        //    schemaSet.ValidationEventHandler += delegate (object sender, ValidationEventArgs args)
-        //    {
-        //        throw new HighlightingDefinitionInvalidException(args.Message);
-        //    };
-        //    return schemaSet;
-        //}
-        #endregion
+		//internal static XmlSchemaSet LoadSchemaSet(XmlReader schemaInput)
+		//{
+		//	XmlSchemaSet schemaSet = new XmlSchemaSet();
+		//	schemaSet.Add(null, schemaInput);
+		//	schemaSet.ValidationEventHandler += delegate (object sender, ValidationEventArgs args)
+		//	{
+		//		throw new HighlightingDefinitionInvalidException(args.Message);
+		//	};
+		//	return schemaSet;
+		//}
+		#endregion
 
-        #region Load Highlighting from XSHD
-        /// <summary>
-        /// Creates a highlighting definition from the XSHD file.
-        /// </summary>
-        public static IHighlightingDefinition Load(XshdSyntaxDefinition syntaxDefinition, IHighlightingDefinitionReferenceResolver resolver)
-        {
+		#region Load Highlighting from XSHD
+		/// <summary>
+		/// Creates a highlighting definition from the XSHD file.
+		/// </summary>
+		public static IHighlightingDefinition Load(XshdSyntaxDefinition syntaxDefinition, IHighlightingDefinitionReferenceResolver resolver)
+		{
 		ArgumentNullException.ThrowIfNull(syntaxDefinition);
 		return new XmlHighlightingDefinition(syntaxDefinition, resolver);
-        }
+		}
 
 	/// <summary>
 	/// Creates a highlighting definition from the XSHD file.

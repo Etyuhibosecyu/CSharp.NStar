@@ -25,8 +25,8 @@ namespace AvaloniaEdit.Document;
 /// </summary>
 internal sealed class DocumentChangeOperation : IUndoableOperationWithContext
 {
-    private readonly TextDocument _document;
-    private readonly DocumentChangeEventArgs _change;
+	private readonly TextDocument _document;
+	private readonly DocumentChangeEventArgs _change;
 	
 	public DocumentChangeOperation(TextDocument document, DocumentChangeEventArgs change)
 	{

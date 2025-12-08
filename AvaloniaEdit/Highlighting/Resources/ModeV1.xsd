@@ -81,9 +81,9 @@
 	</xsd:complexType>
 
 	<!-- Defines the delimiting characters of the syntax, e.g., the characters that, "break up" a line
-    into separate symbols, typically key words. It is not necessary, or desirable to include the
-    characters that denot the start or end of a span. Space and Tab are implicitly defined as delimeters
-    and they don't need to be includeded explicitly (this will probably be changed at some future time).-->
+	into separate symbols, typically key words. It is not necessary, or desirable to include the
+	characters that denot the start or end of a span. Space and Tab are implicitly defined as delimeters
+	and they don't need to be includeded explicitly (this will probably be changed at some future time).-->
 	<xsd:complexType name="Delimiters">
 		<xsd:simpleContent>
 			<xsd:extension base="xsd:string">
@@ -135,7 +135,7 @@
 		<!-- Defines the rule set that is applicable in the Span. May be omitted. -->
 		<xsd:attribute name="rule" type="xsd:string" />
 		<!-- Defines wether the Span should terminate automatically at the end of line. Typical examples
-       		 include one-line comments such as // in C++ or REM in Windows .Bat files. -->
+	   		 include one-line comments such as // in C++ or REM in Windows .Bat files. -->
 		<xsd:attribute name="stopateol" type="xsd:boolean" />
 
 		<!-- OBSOLUTE: Defines whether C-style escape sequences using \ are applicable or not in the span. -->
@@ -206,31 +206,31 @@
 	<xsd:complexType name="RuleSet">
 		<xsd:sequence>
 			<!-- Defines the delimiting characters of the syntax, e.g., the characters that, "break up" a line
-        		 into separate symbols, typically key words. It is not necessary, or desirable to include the
-        		 characters that denot the start or end of a span. Space and Tab are implicitly defined as delimeters
-        		 and they don't need to be includeded explicitly (this will probably be changed at some future time).-->
+				 into separate symbols, typically key words. It is not necessary, or desirable to include the
+				 characters that denot the start or end of a span. Space and Tab are implicitly defined as delimeters
+				 and they don't need to be includeded explicitly (this will probably be changed at some future time).-->
 			<xsd:element name="Delimiters" type="Delimiters" minOccurs="0" maxOccurs="1">
 			</xsd:element>
 			<!-- A Span tag defines a scope, or what can be seen as a separate parsing context where a different set of
-            	 highlighting rules are applicable compared to the text where the span is found.
-            	 Examples of spans include:
-            	 - A string in a language as C
-            	 - A <script> tag in Html
-            	 - The internals of a tag in XML (between < and >).
-            	 A span can have a rule set associated with it that defines the highlighting rules that are applicable
-            	 in the span. -->
+				 highlighting rules are applicable compared to the text where the span is found.
+				 Examples of spans include:
+				 - A string in a language as C
+				 - A <script> tag in Html
+				 - The internals of a tag in XML (between < and >).
+				 A span can have a rule set associated with it that defines the highlighting rules that are applicable
+				 in the span. -->
 			<xsd:element name="Span" type="Span" minOccurs="0" maxOccurs="unbounded">
 			</xsd:element>
 			<!-- The MarkPrevious tag allows you to define the coloring of the item that preceeds a specific
-            	 symbol. An example of where this comes in handy is when coloring the contents of an XML-tag,
-            	 in particular the attributes and attribute names. The following definition:
-            	 <MarkPrevious bold="false" italic="false" color="Red">=</MarkPrevious>
+				 symbol. An example of where this comes in handy is when coloring the contents of an XML-tag,
+				 in particular the attributes and attribute names. The following definition:
+				 <MarkPrevious bold="false" italic="false" color="Red">=</MarkPrevious>
 				 will make teh highlighter color words that are followed by an = to be colored in Red.
 				 You can see this in this file if you view it with the default XML-mode in SharpDevelop. -->
 			<xsd:element name="MarkPrevious" type="MarkPrevious" minOccurs="0" maxOccurs="unbounded">
 			</xsd:element>
 			<!-- The MarkFollowing tag works similarly as the MarkPrevious tag but relates to the coloring
-            of the symbol that follows the specified symbol. -->
+			of the symbol that follows the specified symbol. -->
 			<xsd:element name="MarkFollowing" type="MarkFollowing" minOccurs="0" maxOccurs="unbounded">
 			</xsd:element>
 			<!-- Defines a group of keywords that should be colored the same way -->
@@ -238,11 +238,11 @@
 			</xsd:element>
 		</xsd:sequence>
 		<!-- The name of the RuleSet. Used when you refer to the RuleSet in the rule attribute of a Span tag.
-        	 Each mode file should have a rule definition without a defined name. This denotes the default rule
-        	 set for the mode. -->
+			 Each mode file should have a rule definition without a defined name. This denotes the default rule
+			 set for the mode. -->
 		<xsd:attribute name="name" type="xsd:string" />
 		<!-- Allows you to use another mode, defined in another file as a RuleSet. For an example see the
-        	 use of the JavaScript mode from the HTML-mode. -->
+			 use of the JavaScript mode from the HTML-mode. -->
 		<xsd:attribute name="reference" type="xsd:string" />
 		<!-- Defines whether case is significant for matching keywords in the mode. -->
 		<xsd:attribute name="ignorecase" type="xsd:boolean" />
@@ -266,7 +266,7 @@
 		<xsd:complexType>
 			<xsd:sequence>
 				<!-- The Environment tag defines colors, for various standard elements in the SharpDevelop GUI, if
-				     not given the default values are used. -->
+					 not given the default values are used. -->
 				<xsd:element name="Environment" type="Environment" minOccurs="0" maxOccurs="1"/>
 
 				<!-- The Properties section defines properties which are bound to the highlighting -->

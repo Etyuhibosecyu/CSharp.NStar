@@ -22,7 +22,7 @@ using AvaloniaEdit.Document;
 
 namespace AvaloniaEdit.Rendering;
 
-    /// <summary>
+	/// <summary>
 /// Base class for <see cref="IVisualLineTransformer"/> that helps
 /// colorizing the document. Derived classes can work with document lines
 /// and text offsets and this class takes care of the visual lines and visual columns.

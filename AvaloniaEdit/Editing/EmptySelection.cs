@@ -24,49 +24,47 @@ using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Editing;
 
-    sealed class EmptySelection : Selection
-    {
-        public EmptySelection(TextArea textArea) : base(textArea)
-        {
-        }
+	sealed class EmptySelection : Selection
+	{
+		public EmptySelection(TextArea textArea) : base(textArea)
+		{
+		}
 
 	public override Selection UpdateOnDocumentChange(DocumentChangeEventArgs e) => this;
 
 	public override TextViewPosition StartPosition => new TextViewPosition(TextLocation.Empty);
 
-        public override TextViewPosition EndPosition => new TextViewPosition(TextLocation.Empty);
+		public override TextViewPosition EndPosition => new TextViewPosition(TextLocation.Empty);
 
-        public override ISegment SurroundingSegment => null;
+		public override ISegment SurroundingSegment => null;
 
 	public override Selection SetEndpoint(TextViewPosition endPosition) => throw new NotSupportedException();
 
 	public override Selection StartSelectionOrSetEndpoint(TextViewPosition startPosition, TextViewPosition endPosition)
-        {
-            var document = TextArea.Document;
-            if (document == null)
-                throw ThrowUtil.NoDocumentAssigned();
-            return Create(TextArea, startPosition, endPosition);
-        }
+		{
+			var document = TextArea.Document ?? throw ThrowUtil.NoDocumentAssigned();
+		return Create(TextArea, startPosition, endPosition);
+		}
 
-        public override IEnumerable<SelectionSegment> Segments => Empty<SelectionSegment>.Array;
+		public override IEnumerable<SelectionSegment> Segments => Empty<SelectionSegment>.Array;
 
 	public override string GetText() => string.Empty;
 
 	public override void ReplaceSelectionWithText(string newText)
-        {
+		{
 		ArgumentNullException.ThrowIfNull(newText);
 		newText = AddSpacesIfRequired(newText, TextArea.Caret.Position, TextArea.Caret.Position);
-            if (newText.Length > 0)
-            {
-                if (TextArea.ReadOnlySectionProvider.CanInsert(TextArea.Caret.Offset))
-                {
-                    TextArea.Document.Insert(TextArea.Caret.Offset, newText);
-                }
-            }
-            TextArea.Caret.VisualColumn = -1;
-        }
+			if (newText.Length > 0)
+			{
+				if (TextArea.ReadOnlySectionProvider.CanInsert(TextArea.Caret.Offset))
+				{
+					TextArea.Document.Insert(TextArea.Caret.Offset, newText);
+				}
+			}
+			TextArea.Caret.VisualColumn = -1;
+		}
 
-        public override int Length => 0;
+		public override int Length => 0;
 
 	// Use reference equality because there's only one EmptySelection per text area.
 	public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);

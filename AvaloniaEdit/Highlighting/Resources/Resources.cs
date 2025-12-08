@@ -22,15 +22,13 @@ using System.Reflection;
 // ReSharper disable once CheckNamespace
 namespace AvaloniaEdit.Highlighting;
 
-    internal static class Resources
+	internal static class Resources
 {
-    private const string Prefix = "AvaloniaEdit.Highlighting.Resources.";
+	private const string Prefix = "AvaloniaEdit.Highlighting.Resources.";
 
-    public static Stream OpenStream(string name)
+	public static Stream OpenStream(string name)
 	{
-		var s = typeof(Resources).GetTypeInfo().Assembly.GetManifestResourceStream(Prefix + name);
-		if (s == null)
-			throw new FileNotFoundException("The resource file '" + name + "' was not found.");
+		var s = typeof(Resources).GetTypeInfo().Assembly.GetManifestResourceStream(Prefix + name) ?? throw new FileNotFoundException("The resource file '" + name + "' was not found.");
 		return s;
 	}
 

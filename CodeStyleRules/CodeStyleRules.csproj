@@ -2,10 +2,11 @@
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\CodeStyleRules\CodeStyleRules.csproj" />
+		<ProjectReference Include="..\BuiltInTypeCollections\BuiltInTypeCollections.csproj" />
 	</ItemGroup>
 </Project>

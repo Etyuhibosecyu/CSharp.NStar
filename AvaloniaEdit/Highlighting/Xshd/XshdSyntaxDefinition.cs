@@ -21,43 +21,43 @@ using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Highlighting.Xshd;
 
-    /// <summary>
-    /// A &lt;SyntaxDefinition&gt; element.
-    /// </summary>
-    public class XshdSyntaxDefinition
-    {
-        /// <summary>
-        /// Creates a new XshdSyntaxDefinition object.
-        /// </summary>
-        public XshdSyntaxDefinition()
-        {
-            Elements = new NullSafeCollection<XshdElement>();
-            Extensions = new NullSafeCollection<string>();
-        }
+	/// <summary>
+	/// A &lt;SyntaxDefinition&gt; element.
+	/// </summary>
+	public class XshdSyntaxDefinition
+	{
+		/// <summary>
+		/// Creates a new XshdSyntaxDefinition object.
+		/// </summary>
+		public XshdSyntaxDefinition()
+		{
+			Elements = new NullSafeCollection<XshdElement>();
+			Extensions = new NullSafeCollection<string>();
+		}
 
-        /// <summary>
-        /// Gets/sets the definition name
-        /// </summary>
-        public string Name { get; set; }
+		/// <summary>
+		/// Gets/sets the definition name
+		/// </summary>
+		public string Name { get; set; }
 
-        /// <summary>
-        /// Gets the associated extensions.
-        /// </summary>
-        public IList<string> Extensions { get; }
+		/// <summary>
+		/// Gets the associated extensions.
+		/// </summary>
+		public IList<string> Extensions { get; }
 
-        /// <summary>
-        /// Gets the collection of elements.
-        /// </summary>
-        public IList<XshdElement> Elements { get; }
+		/// <summary>
+		/// Gets the collection of elements.
+		/// </summary>
+		public IList<XshdElement> Elements { get; }
 
-        /// <summary>
-        /// Applies the visitor to all elements.
-        /// </summary>
-        public void AcceptElements(IXshdVisitor visitor)
-        {
-            foreach (var element in Elements)
-            {
-                element.AcceptVisitor(visitor);
-            }
-        }
-    }
+		/// <summary>
+		/// Applies the visitor to all elements.
+		/// </summary>
+		public void AcceptElements(IXshdVisitor visitor)
+		{
+			foreach (var element in Elements)
+			{
+				element.AcceptVisitor(visitor);
+			}
+		}
+	}

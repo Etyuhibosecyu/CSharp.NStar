@@ -7,12 +7,16 @@ global using static CSharp.NStar.NStarType;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
+using Avalonia.Controls.PanAndZoom;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Mpir.NET;
 using NStar.BufferLib;
 using NStar.ParallelHS;
@@ -21,6 +25,7 @@ using NStar.SortedSets;
 using NStar.SumCollections;
 using NStar.TreeSets;
 using ReactiveUI;
+using System.IO;
 using System.Numerics;
 using System.Text;
 
@@ -55,7 +60,7 @@ public static class BuiltInMemberCollections
 	private static readonly ExtendedMethodParameter ExtendedParameterString2 = new(StringType, "string2", ParameterAttributes.None, []);
 	private static readonly ExtendedMethodParameter ExtendedParameterString3 = new(StringType, "string3", ParameterAttributes.None, []);
 
-	public static SortedSet<String> Keywords { get; } = new("_", "abstract", "break", "case", "Class", "const", "Constructor", "continue", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "private", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while");
+	public static SortedSet<String> Keywords { get; } = new("_", "abstract", "break", "case", "Class", "const", "Constructor", "continue", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "Megaclass", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "private", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while");
 
 	public static SortedSet<String> EscapedKeywords { get; } = new("abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue", "decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit", "extern", "false", "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit", "in", "int", "interface", "internal", "is", "lock", "long", "namespace", "new", "null", "object", "operator", "out", "override", "params", "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void", "volatile", "while");
 
@@ -68,7 +73,7 @@ public static class BuiltInMemberCollections
 	/// </summary>
 	public static TypeSortedList<TypeVariables> Variables { get; } = [];
 
-	public static SortedSet<String> Namespaces { get; } = new("System", "System.Collections", "System.GUI");
+	public static SortedSet<String> Namespaces { get; } = new("System", "System.Collections", "System.GUI", "System.IO");
 
 	public static G.HashSet<String> UserDefinedNamespaces { get; } = [];
 
@@ -79,7 +84,141 @@ public static class BuiltInMemberCollections
 	/// <summary>
 	/// Sorted by tuple, contains Namespace and Type.
 	/// </summary>
-	public static Mirror<(String Namespace, String Type), Type> ExtraTypes { get; } = new() { { ("System", nameof(DateTimeKind)), typeof(DateTimeKind) }, { ("System", nameof(DayOfWeek)), typeof(DayOfWeek) }, { ("System", nameof(EventArgs)), typeof(EventArgs) }, { ("System", nameof(EventHandler)), typeof(EventHandler<>) }, { ("System", "IFloatNumber"), typeof(IFloatingPointConstants<>) }, { ("System", "IIntegerNumber"), typeof(IBinaryInteger<>) }, { ("System", "INumber"), typeof(INumberBase<>) }, { ("System", nameof(ISignedNumber<>)), typeof(ISignedNumber<>) }, { ("System", nameof(IUnsignedNumber<>)), typeof(IUnsignedNumber<>) }, { ("System", nameof(Predicate<>)), typeof(Predicate<>) }, { ("System", nameof(ReadOnlySpan<>)), typeof(ReadOnlySpan<>) }, { ("System", nameof(RedStarLinq)), typeof(RedStarLinq) }, { ("System", nameof(RedStarLinqDictionaries)), typeof(RedStarLinqDictionaries) }, { ("System", nameof(RedStarLinqExtras)), typeof(RedStarLinqExtras) }, { ("System", nameof(RedStarLinqParallel)), typeof(RedStarLinqParallel) }, { ("System", nameof(RedStarLinqMath)), typeof(RedStarLinqMath) }, { ("System", nameof(RedStarLinqRemoveDoubles)), typeof(RedStarLinqRemoveDoubles) }, { ("System", nameof(Span<>)), typeof(Span<>) }, { ("System.Collections", nameof(BaseDictionary<,,>)), typeof(BaseDictionary<,,>) }, { ("System.Collections", nameof(BaseHashSet<,>)), typeof(BaseHashSet<,>) }, { ("System.Collections", nameof(BaseIndexable<,>)), typeof(BaseIndexable<,>) }, { ("System.Collections", nameof(BaseList<,>)), typeof(BaseList<,>) }, { ("System.Collections", nameof(BaseSet<,>)), typeof(BaseSet<,>) }, { ("System.Collections", nameof(BaseSortedSet<,>)), typeof(BaseSortedSet<,>) }, { ("System.Collections", nameof(BaseSumList<,>)), typeof(BaseSumList<int, SumList>) }, { ("System.Collections", nameof(BigSumList)), typeof(BigSumList) }, { ("System.Collections", nameof(Buffer)), typeof(Buffer<>) }, { ("System.Collections", nameof(Chain)), typeof(Chain) }, { ("System.Collections", nameof(Comparer<>)), typeof(Comparer<>) }, { ("System.Collections", nameof(Dictionary<,>)), typeof(Dictionary<,>) }, { ("System.Collections", nameof(EComparer<>)), typeof(EComparer<>) }, { ("System.Collections", nameof(Extents)), typeof(Extents) }, { ("System.Collections", nameof(FastDelHashSet<>)), typeof(FastDelHashSet<>) }, { ("System.Collections", nameof(Group<,>)), typeof(Group<,>) }, { ("System.Collections", nameof(G.LinkedList<>)), typeof(G.LinkedList<>) }, { ("System.Collections", nameof(G.LinkedListNode<>)), typeof(G.LinkedListNode<>) }, { ("System.Collections", nameof(LimitedQueue<>)), typeof(LimitedQueue<>) }, { ("System.Collections", nameof(ListEComparer<>)), typeof(ListEComparer<>) }, { ("System.Collections", nameof(ListHashSet<>)), typeof(ListHashSet<>) }, { ("System.Collections", nameof(Mirror<,>)), typeof(Mirror<,>) }, { ("System.Collections", nameof(NGroup<,>)), typeof(NGroup<,>) }, { ("System.Collections", nameof(NListEComparer<>)), typeof(NListEComparer<>) }, { ("System.Collections", nameof(ParallelHashSet<>)), typeof(ParallelHashSet<>) }, { ("System.Collections", nameof(Queue<>)), typeof(Queue<>) }, { ("System.Collections", nameof(Slice<>)), typeof(Slice<>) }, { ("System.Collections", nameof(SortedDictionary<,>)), typeof(SortedDictionary<,>) }, { ("System.Collections", nameof(SortedSet<>)), typeof(SortedSet<>) }, { ("System.Collections", nameof(Stack<>)), typeof(Stack<>) }, { ("System.Collections", nameof(SumList)), typeof(SumList) }, { ("System.Collections", nameof(SumSet<>)), typeof(SumSet<>) }, { ("System.Collections", nameof(TreeHashSet<>)), typeof(TreeHashSet<>) }, { ("System.Collections", nameof(TreeSet<>)), typeof(TreeSet<>) }, { ("System.GUI", nameof(AutoCompleteBox)), typeof(AutoCompleteBox) }, { ("System.GUI", nameof(AvaloniaObject)), typeof(AvaloniaObject) }, { ("System.GUI", nameof(Border)), typeof(Border) }, { ("System.GUI", nameof(Button)), typeof(Button) }, { ("System.GUI", nameof(Canvas)), typeof(Canvas) }, { ("System.GUI", nameof(CheckBox)), typeof(CheckBox) }, { ("System.GUI", nameof(Color)), typeof(Color) }, { ("System.GUI", nameof(ColumnDefinition)), typeof(ColumnDefinition) }, { ("System.GUI", nameof(ColumnDefinitions)), typeof(ColumnDefinitions) }, { ("System.GUI", nameof(ComboBox)), typeof(ComboBox) }, { ("System.GUI", nameof(Control)), typeof(Control) }, { ("System.GUI", nameof(Controls)), typeof(Controls) }, { ("System.GUI", nameof(Decorator)), typeof(Decorator) }, { ("System.GUI", nameof(DefinitionBase)), typeof(DefinitionBase) }, { ("System.GUI", nameof(DockPanel)), typeof(DockPanel) }, { ("System.GUI", nameof(Expander)), typeof(Expander) }, { ("System.GUI", nameof(Grid)), typeof(Grid) }, { ("System.GUI", nameof(GridLength)), typeof(GridLength) }, { ("System.GUI", nameof(GridSplitter)), typeof(GridSplitter) }, { ("System.GUI", nameof(GridUnitType)), typeof(GridUnitType) }, { ("System.GUI", nameof(GUIWindow)), typeof(GUIWindow) }, { ("System.GUI", nameof(HeaderedContentControl)), typeof(HeaderedContentControl) }, { ("System.GUI", nameof(IBrush)), typeof(IBrush) }, { ("System.GUI", nameof(Image)), typeof(Image) }, { ("System.GUI", nameof(IResourceDictionary)), typeof(IResourceDictionary) }, { ("System.GUI", nameof(ItemsControl)), typeof(ItemsControl) }, { ("System.GUI", nameof(KeyEventArgs)), typeof(KeyEventArgs) }, { ("System.GUI", nameof(Panel)), typeof(Panel) }, { ("System.GUI", nameof(PointerEventArgs)), typeof(PointerEventArgs) }, { ("System.GUI", nameof(PointerPressedEventArgs)), typeof(PointerPressedEventArgs) }, { ("System.GUI", nameof(PointerReleasedEventArgs)), typeof(PointerReleasedEventArgs) }, { ("System.GUI", nameof(RadioButton)), typeof(RadioButton) }, { ("System.GUI", nameof(RangeBase)), typeof(RangeBase) }, { ("System.GUI", nameof(RelativePanel)), typeof(RelativePanel) }, { ("System.GUI", nameof(RoutedEventArgs)), typeof(RoutedEventArgs) }, { ("System.GUI", nameof(RowDefinition)), typeof(RowDefinition) }, { ("System.GUI", nameof(RowDefinitions)), typeof(RowDefinitions) }, { ("System.GUI", nameof(ScrollViewer)), typeof(ScrollViewer) }, { ("System.GUI", nameof(SelectingItemsControl)), typeof(SelectingItemsControl) }, { ("System.GUI", nameof(Slider)), typeof(Slider) }, { ("System.GUI", nameof(SolidColorBrush)), typeof(SolidColorBrush) }, { ("System.GUI", nameof(SplitView)), typeof(SplitView) }, { ("System.GUI", nameof(StackPanel)), typeof(StackPanel) }, { ("System.GUI", nameof(TabControl)), typeof(TabControl) }, { ("System.GUI", nameof(TemplatedControl)), typeof(TemplatedControl) }, { ("System.GUI", nameof(TextBlock)), typeof(TextBlock) }, { ("System.GUI", nameof(TextBox)), typeof(TextBox) }, { ("System.GUI", nameof(Thumb)), typeof(Thumb) }, { ("System.GUI", nameof(ToggleButton)), typeof(ToggleButton) }, { ("System.GUI", nameof(ToolTip)), typeof(ToolTip) }, { ("System.GUI", nameof(UniformGrid)), typeof(UniformGrid) }, { ("System.GUI", nameof(Window)), typeof(Window) }, { ("System.GUI", nameof(WrapPanel)), typeof(WrapPanel) }, { ("System.Unsafe", "UnsafeString"), typeof(string) } };
+	public static Mirror<(String Namespace, String Type), Type> ExtraTypes { get; } = new()
+	{
+		{ ("Environment", nameof(Environment.SpecialFolder)), typeof(Environment.SpecialFolder) },
+		{ ("System", nameof(Convert)), typeof(Convert) },
+		{ ("System", nameof(DateTimeKind)), typeof(DateTimeKind) },
+		{ ("System", nameof(DayOfWeek)), typeof(DayOfWeek) },
+		{ ("System", nameof(Environment)), typeof(Environment) },
+		{ ("System", nameof(EventArgs)), typeof(EventArgs) },
+		{ ("System", nameof(EventHandler)), typeof(EventHandler<>) },
+		{ ("System", "IFloatNumber"), typeof(IFloatingPointConstants<>) },
+		{ ("System", "IIntegerNumber"), typeof(IBinaryInteger<>) },
+		{ ("System", "INumber"), typeof(INumberBase<>) },
+		{ ("System", nameof(ISignedNumber<>)), typeof(ISignedNumber<>) },
+		{ ("System", nameof(IUnsignedNumber<>)), typeof(IUnsignedNumber<>) },
+		{ ("System", nameof(Predicate<>)), typeof(Predicate<>) },
+		{ ("System", nameof(ReadOnlySpan<>)), typeof(ReadOnlySpan<>) },
+		{ ("System", nameof(RedStarLinq)), typeof(RedStarLinq) },
+		{ ("System", nameof(RedStarLinqDictionaries)), typeof(RedStarLinqDictionaries) },
+		{ ("System", nameof(RedStarLinqExtras)), typeof(RedStarLinqExtras) },
+		{ ("System", nameof(RedStarLinqParallel)), typeof(RedStarLinqParallel) },
+		{ ("System", nameof(RedStarLinqMath)), typeof(RedStarLinqMath) },
+		{ ("System", nameof(RedStarLinqRemoveDoubles)), typeof(RedStarLinqRemoveDoubles) },
+		{ ("System", nameof(Span<>)), typeof(Span<>) },
+		{ ("System.Collections", nameof(BaseDictionary<,,>)), typeof(BaseDictionary<,,>) },
+		{ ("System.Collections", nameof(BaseHashSet<,>)), typeof(BaseHashSet<,>) },
+		{ ("System.Collections", nameof(BaseIndexable<,>)), typeof(BaseIndexable<,>) },
+		{ ("System.Collections", nameof(BaseList<,>)), typeof(BaseList<,>) },
+		{ ("System.Collections", nameof(BaseSet<,>)), typeof(BaseSet<,>) },
+		{ ("System.Collections", nameof(BaseSortedSet<,>)), typeof(BaseSortedSet<,>) },
+		{ ("System.Collections", nameof(BaseSumList<,>)), typeof(BaseSumList<int, SumList>) },
+		{ ("System.Collections", nameof(BigSumList)), typeof(BigSumList) },
+		{ ("System.Collections", nameof(Buffer)), typeof(Buffer<>) },
+		{ ("System.Collections", nameof(Chain)), typeof(Chain) },
+		{ ("System.Collections", nameof(Comparer<>)), typeof(Comparer<>) },
+		{ ("System.Collections", nameof(Dictionary<,>)), typeof(Dictionary<,>) },
+		{ ("System.Collections", nameof(EComparer<>)), typeof(EComparer<>) },
+		{ ("System.Collections", nameof(Extents)), typeof(Extents) },
+		{ ("System.Collections", nameof(FastDelHashSet<>)), typeof(FastDelHashSet<>) },
+		{ ("System.Collections", nameof(Group<,>)), typeof(Group<,>) },
+		{ ("System.Collections", nameof(G.LinkedList<>)), typeof(G.LinkedList<>) },
+		{ ("System.Collections", nameof(G.LinkedListNode<>)), typeof(G.LinkedListNode<>) },
+		{ ("System.Collections", nameof(LimitedQueue<>)), typeof(LimitedQueue<>) },
+		{ ("System.Collections", nameof(ListEComparer<>)), typeof(ListEComparer<>) },
+		{ ("System.Collections", nameof(ListHashSet<>)), typeof(ListHashSet<>) },
+		{ ("System.Collections", nameof(Mirror<,>)), typeof(Mirror<,>) },
+		{ ("System.Collections", nameof(ParallelHashSet<>)), typeof(ParallelHashSet<>) },
+		{ ("System.Collections", nameof(Queue<>)), typeof(Queue<>) },
+		{ ("System.Collections", nameof(Slice<>)), typeof(Slice<>) },
+		{ ("System.Collections", nameof(SortedDictionary<,>)), typeof(SortedDictionary<,>) },
+		{ ("System.Collections", nameof(SortedSet<>)), typeof(SortedSet<>) },
+		{ ("System.Collections", nameof(Stack<>)), typeof(Stack<>) },
+		{ ("System.Collections", nameof(SumList)), typeof(SumList) },
+		{ ("System.Collections", nameof(SumSet<>)), typeof(SumSet<>) },
+		{ ("System.Collections", nameof(TreeHashSet<>)), typeof(TreeHashSet<>) },
+		{ ("System.Collections", nameof(TreeSet<>)), typeof(TreeSet<>) },
+		{ ("System.GUI", nameof(Animatable)), typeof(Animatable) },
+		{ ("System.GUI", nameof(AutoCompleteBox)), typeof(AutoCompleteBox) },
+		{ ("System.GUI", nameof(AvaloniaObject)), typeof(AvaloniaObject) },
+		{ ("System.GUI", nameof(Bitmap)), typeof(Bitmap) },
+		{ ("System.GUI", nameof(Border)), typeof(Border) },
+		{ ("System.GUI", nameof(Brush)), typeof(Brush) },
+		{ ("System.GUI", nameof(Button)), typeof(Button) },
+		{ ("System.GUI", nameof(Canvas)), typeof(Canvas) },
+		{ ("System.GUI", nameof(CheckBox)), typeof(CheckBox) },
+		{ ("System.GUI", nameof(Color)), typeof(Color) },
+		{ ("System.GUI", nameof(ColumnDefinition)), typeof(ColumnDefinition) },
+		{ ("System.GUI", nameof(ColumnDefinitions)), typeof(ColumnDefinitions) },
+		{ ("System.GUI", nameof(ComboBox)), typeof(ComboBox) },
+		{ ("System.GUI", nameof(Control)), typeof(Control) },
+		{ ("System.GUI", nameof(Controls)), typeof(Controls) },
+		{ ("System.GUI", nameof(Decorator)), typeof(Decorator) },
+		{ ("System.GUI", nameof(DefinitionBase)), typeof(DefinitionBase) },
+		{ ("System.GUI", nameof(DockPanel)), typeof(DockPanel) },
+		{ ("System.GUI", nameof(Expander)), typeof(Expander) },
+		{ ("System.GUI", nameof(Grid)), typeof(Grid) },
+		{ ("System.GUI", nameof(GridLength)), typeof(GridLength) },
+		{ ("System.GUI", nameof(GridSplitter)), typeof(GridSplitter) },
+		{ ("System.GUI", nameof(GridUnitType)), typeof(GridUnitType) },
+		{ ("System.GUI", nameof(GUIWindow)), typeof(GUIWindow) },
+		{ ("System.GUI", nameof(HeaderedContentControl)), typeof(HeaderedContentControl) },
+		{ ("System.GUI", nameof(HorizontalAlignment)), typeof(HorizontalAlignment) },
+		{ ("System.GUI", nameof(IBrush)), typeof(IBrush) },
+		{ ("System.GUI", nameof(IImage)), typeof(IImage) },
+		{ ("System.GUI", nameof(Image)), typeof(Image) },
+		{ ("System.GUI", nameof(ImageBrush)), typeof(ImageBrush) },
+		{ ("System.GUI", nameof(IResourceDictionary)), typeof(IResourceDictionary) },
+		{ ("System.GUI", nameof(ItemsControl)), typeof(ItemsControl) },
+		{ ("System.GUI", nameof(KeyEventArgs)), typeof(KeyEventArgs) },
+		{ ("System.GUI", nameof(Panel)), typeof(Panel) },
+		{ ("System.GUI", nameof(PointerEventArgs)), typeof(PointerEventArgs) },
+		{ ("System.GUI", nameof(PointerPressedEventArgs)), typeof(PointerPressedEventArgs) },
+		{ ("System.GUI", nameof(PointerReleasedEventArgs)), typeof(PointerReleasedEventArgs) },
+		{ ("System.GUI", nameof(RadioButton)), typeof(RadioButton) },
+		{ ("System.GUI", nameof(RangeBase)), typeof(RangeBase) },
+		{ ("System.GUI", nameof(RelativePanel)), typeof(RelativePanel) },
+		{ ("System.GUI", nameof(RoutedEventArgs)), typeof(RoutedEventArgs) },
+		{ ("System.GUI", nameof(RowDefinition)), typeof(RowDefinition) },
+		{ ("System.GUI", nameof(RowDefinitions)), typeof(RowDefinitions) },
+		{ ("System.GUI", nameof(ScrollViewer)), typeof(ScrollViewer) },
+		{ ("System.GUI", nameof(SelectingItemsControl)), typeof(SelectingItemsControl) },
+		{ ("System.GUI", nameof(Slider)), typeof(Slider) },
+		{ ("System.GUI", nameof(SolidColorBrush)), typeof(SolidColorBrush) },
+		{ ("System.GUI", nameof(SplitView)), typeof(SplitView) },
+		{ ("System.GUI", nameof(StackPanel)), typeof(StackPanel) },
+		{ ("System.GUI", nameof(TabControl)), typeof(TabControl) },
+		{ ("System.GUI", nameof(TemplatedControl)), typeof(TemplatedControl) },
+		{ ("System.GUI", nameof(TextBlock)), typeof(TextBlock) },
+		{ ("System.GUI", nameof(TextBox)), typeof(TextBox) },
+		{ ("System.GUI", nameof(Thumb)), typeof(Thumb) },
+		{ ("System.GUI", nameof(TileBrush)), typeof(TileBrush) },
+		{ ("System.GUI", nameof(ToggleButton)), typeof(ToggleButton) },
+		{ ("System.GUI", nameof(ToolTip)), typeof(ToolTip) },
+		{ ("System.GUI", nameof(UniformGrid)), typeof(UniformGrid) },
+		{ ("System.GUI", nameof(VerticalAlignment)), typeof(VerticalAlignment) },
+		{ ("System.GUI", nameof(Window)), typeof(Window) },
+		{ ("System.GUI", nameof(WrapPanel)), typeof(WrapPanel) },
+		{ ("System.GUI", nameof(ZoomBorder)), typeof(ZoomBorder) },
+		{ ("System.IO", nameof(Directory)), typeof(Directory) },
+		{ ("System.IO", nameof(DirectoryInfo)), typeof(DirectoryInfo) },
+		{ ("System.IO", nameof(DriveInfo)), typeof(DriveInfo) },
+		{ ("System.IO", nameof(DriveType)), typeof(DriveType) },
+		{ ("System.IO", nameof(File)), typeof(File) },
+		{ ("System.IO", nameof(FileAccess)), typeof(FileAccess) },
+		{ ("System.IO", nameof(FileAttributes)), typeof(FileAttributes) },
+		{ ("System.IO", nameof(FileMode)), typeof(FileMode) },
+		{ ("System.IO", nameof(FileOptions)), typeof(FileOptions) },
+		{ ("System.IO", nameof(FileShare)), typeof(FileShare) },
+		{ ("System.IO", nameof(FileStream)), typeof(FileStream) },
+		{ ("System.IO", nameof(FileSystemInfo)), typeof(FileSystemInfo) },
+		{ ("System.IO", nameof(MemoryStream)), typeof(MemoryStream) },
+		{ ("System.IO", nameof(Path)), typeof(Path) },
+		{ ("System.IO", nameof(Stream)), typeof(Stream) },
+		{ ("System.IO", nameof(UnixFileMode)), typeof(UnixFileMode) },
+		{ ("System.Unsafe", "UnsafeString"), typeof(string) }
+	};
 
 	/// <summary>
 	/// Sorted by Container and Type, also contains RestrictionPackage modifiers, RestrictionTypes, RestrictionNames and Attributes.
@@ -124,7 +263,115 @@ public static class BuiltInMemberCollections
 	/// <summary>
 	/// Sorted by Name, also contains ExtraTypes, ReturnType, Attributes, ParameterTypes, ParameterNames, ParameterExtraTypes, ParameterAttributes and ParameterDefaultValues.
 	/// </summary>
-	public static FunctionsList PublicFunctions { get; } = new() { { "Abs", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])]) }, { "Ceil", new(ExtraTypesT, "int", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, [])]) }, { "Chain", new(NoExtraTypes, "list", ["int"], FunctionAttributes.Multiconst, [new("int", "start", NoExtraTypes, ParameterAttributes.None, []), new("int", "end", NoExtraTypes, ParameterAttributes.None, [])]) }, { "Choose", new(NoExtraTypes, "object", NoExtraTypes, FunctionAttributes.None, [new("object", "variants", NoExtraTypes, ParameterAttributes.Params, [])]) }, { "Clamp", new(ExtraTypesT, "INumber", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, []), new("System.INumber", "min", ExtraTypesT, ParameterAttributes.Optional, "ExecuteString(\"return \" + ReinterpretCast[string](T) + \".MinValue;\")"), new("System.INumber", "max", ExtraTypesT, ParameterAttributes.Optional, "ExecuteString(\"return \" + ReinterpretCast[string](T) + \".MaxValue;\")")]) }, { "Exp", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])]) }, { "Fibonacci", new(NoExtraTypes, "real", NoExtraTypes, FunctionAttributes.Multiconst, [new("int", "n", NoExtraTypes, ParameterAttributes.None, [])]) }, { "Fill", new(ExtraTypesT, "list", ExtraTypesT, FunctionAttributes.Multiconst, [new("T", "element", NoExtraTypes, ParameterAttributes.None, []), new("int", "count", NoExtraTypes, ParameterAttributes.None, [])]) }, { "Floor", new(ExtraTypesT, "int", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])]) }, { "Frac", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, [])]) }, { "IntRandom", new(NoExtraTypes, "int", NoExtraTypes, FunctionAttributes.None, [new("int", "max", NoExtraTypes, ParameterAttributes.None, [])]) }, { "IntToReal", new(ExtraTypesT, "real", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.IIntegerNumber", "x", ExtraTypesT, ParameterAttributes.None, [])]) }, { "Log", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst, [new("real", "x", NoExtraTypes, ParameterAttributes.None, []), new("System.INumber", "y", ExtraTypesT, ParameterAttributes.None, [])]) }, { "Max", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.INumber", "source", ExtraTypesT, ParameterAttributes.Params, [])]) }, { "Mean", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.INumber", "source", ExtraTypesT, ParameterAttributes.Params, [])]) }, { "Min", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.INumber", "source", ExtraTypesT, ParameterAttributes.Params, [])]) }, { "Q", new(NoExtraTypes, "string", NoExtraTypes, FunctionAttributes.None, []) }, { "Random", new(NoExtraTypes, "real", NoExtraTypes, FunctionAttributes.None, [new("real", "max", NoExtraTypes, ParameterAttributes.None, [])]) }, { "RealRemainder", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, []), new("real", "y", ExtraTypesT, ParameterAttributes.None, [])]) }, { "RGB", new(NoExtraTypes, "int", NoExtraTypes, FunctionAttributes.Multiconst, [new("byte", "red", NoExtraTypes, ParameterAttributes.None, []), new("byte", "green", NoExtraTypes, ParameterAttributes.None, []), new("byte", "blue", NoExtraTypes, ParameterAttributes.None, [])]) }, { "Round", new(ExtraTypesT, "int", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, []), new("int", "digits_after_dot", NoExtraTypes, ParameterAttributes.Optional, "0")]) }, { "Sign", new(ExtraTypesT, "short int", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])]) }, { "Sqrt", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])]) }, { "Truncate", new(ExtraTypesT, "int", NoExtraTypes, FunctionAttributes.Multiconst, [new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, [])]) } };
+	public static FunctionsList PublicFunctions { get; } = new()
+	{
+		{
+			"Abs", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
+		},
+		{
+			"Ceil", new(ExtraTypesT, "int", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
+		},
+		{
+			"Chain", new(NoExtraTypes, "list", ["int"], FunctionAttributes.Multiconst,
+				[new("int", "start", NoExtraTypes, ParameterAttributes.None, []), new("int", "end", NoExtraTypes, ParameterAttributes.None, [])])
+		},
+		{
+			"Choose", new(NoExtraTypes, "object", NoExtraTypes, FunctionAttributes.None,
+				[new("object", "variants", NoExtraTypes, ParameterAttributes.Params, [])])
+		},
+		{
+			"Clamp", new(ExtraTypesT, "INumber", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, []),
+				new("System.INumber", "min", ExtraTypesT, ParameterAttributes.Optional, "ExecuteString(\"return \" + ReinterpretCast[string](T) + \".MinValue;\")"),
+				new("System.INumber", "max", ExtraTypesT, ParameterAttributes.Optional, "ExecuteString(\"return \" + ReinterpretCast[string](T) + \".MaxValue;\")")])
+		},
+		{
+			"Exp", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
+		},
+		{
+			"Fibonacci", new(NoExtraTypes, "real", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("int", "n", NoExtraTypes, ParameterAttributes.None, [])])
+		},
+		{
+			"Fill", new(ExtraTypesT, "list", ExtraTypesT, FunctionAttributes.Multiconst,
+				[new("T", "element", NoExtraTypes, ParameterAttributes.None, []), new("int", "count", NoExtraTypes, ParameterAttributes.None, [])])
+		},
+		{
+			"Floor", new(ExtraTypesT, "int", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
+		},
+		{
+			"Frac", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
+		},
+		{
+			"IntRandom", new(NoExtraTypes, "int", NoExtraTypes, FunctionAttributes.None,
+				[new("int", "max", NoExtraTypes, ParameterAttributes.None, [])])
+		},
+		{
+			"IntToReal", new(ExtraTypesT, "real", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.IIntegerNumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
+		},
+		{
+			"IsPrime", new(NoExtraTypes, "bool", NoExtraTypes, FunctionAttributes.None,
+				[new("int", "n", NoExtraTypes, ParameterAttributes.None, [])])
+		},
+		{
+			"Log", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("real", "x", NoExtraTypes, ParameterAttributes.None, []),
+				new("System.INumber", "y", ExtraTypesT, ParameterAttributes.None, [])])
+		},
+		{
+			"Max", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.INumber", "source", ExtraTypesT, ParameterAttributes.Params, [])])
+		},
+		{
+			"Mean", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.INumber", "source", ExtraTypesT, ParameterAttributes.Params, [])])
+		},
+		{
+			"Min", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.INumber", "source", ExtraTypesT, ParameterAttributes.Params, [])])
+		},
+		{
+			"Q", new(NoExtraTypes, "string", NoExtraTypes, FunctionAttributes.None, [])
+		},
+		{
+			"Random", new(NoExtraTypes, "real", NoExtraTypes, FunctionAttributes.None,
+				[new("real", "max", NoExtraTypes, ParameterAttributes.None, [])])
+		},
+		{
+			"RealRemainder", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, []),
+				new("real", "y", ExtraTypesT, ParameterAttributes.None, [])])
+		},
+		{
+			"RGB", new(NoExtraTypes, "int", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("byte", "red", NoExtraTypes, ParameterAttributes.None, []),
+				new("byte", "green", NoExtraTypes, ParameterAttributes.None, []),
+				new("byte", "blue", NoExtraTypes, ParameterAttributes.None, [])])
+		},
+		{
+			"Round", new(ExtraTypesT, "int", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, []),
+				new("int", "digits_after_dot", NoExtraTypes, ParameterAttributes.Optional, "0")])
+		},
+		{
+			"Sign", new(ExtraTypesT, "short int", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
+		},
+		{
+			"Sqrt", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
+		},
+		{
+			"Truncate", new(ExtraTypesT, "int", NoExtraTypes, FunctionAttributes.Multiconst,
+				[new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
+		}
+	};
 
 	/// <summary>
 	/// Sorted by Container, then by Name, also contains Restrictions, ReturnType, Attributes, ParameterTypes, ParameterNames, ParameterRestrictions, ParameterAttributes and ParameterDefaultValues.
@@ -159,7 +406,125 @@ public static class BuiltInMemberCollections
 	/// <summary>
 	/// Sorted by Operator, also contains ReturnTypes, ReturnNStarType.ExtraTypes, LeftOpdTypes and LeftOpdExtraTypes, RightOpdTypes and RightOpdExtraTypes.
 	/// </summary>
-	public static SortedDictionary<String, BinaryOperatorClasses> BinaryOperators { get; } = new() { { "+", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeInt, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } }, { ExtendedTypeString, new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (GetPrimitiveBlockStack("char"), NoBranches), (ExtendedTypeString, NoBranches)), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("char") }]), (ExtendedTypeString, NoBranches)), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeString, NoBranches), (GetPrimitiveBlockStack("char"), NoBranches)), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeString, NoBranches), (ExtendedTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("char") }])), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeString, NoBranches), (ExtendedTypeString, NoBranches)) } } } }, { "-", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)), ((ExtendedTypeInt, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } } } }, { "*", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } }, { ExtendedTypeString, new() { ((ExtendedTypeString, NoBranches), (ExtendedTypeInt, NoBranches), (ExtendedTypeString, NoBranches)), ((ExtendedTypeString, NoBranches), (ExtendedTypeString, NoBranches), (ExtendedTypeInt, NoBranches)) } } } }, { "/", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT)) } }, { new([new(BlockType.Interface, "IFloatNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT)) } } } }, { "pow", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)) } }, { new([new(BlockType.Interface, "IFloatNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT)) } } } }, { "==", new(new BlockStackComparer()) { { GetPrimitiveBlockStack("object"), new() { ((new([new(BlockType.Interface, "object", 1)]), NoBranches), (new([new(BlockType.Interface, "object", 1)]), NoBranches), (new([new(BlockType.Interface, "object", 1)]), NoBranches)) } } } }, { ">", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } } } }, { "<", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } } } }, { ">=", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } } } }, { "<=", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } } } }, { "!=", new(new BlockStackComparer()) { { GetPrimitiveBlockStack("object"), new() { ((new([new(BlockType.Interface, "object", 1)]), NoBranches), (new([new(BlockType.Interface, "object", 1)]), NoBranches), (new([new(BlockType.Interface, "object", 1)]), NoBranches)) } } } }, { ">>", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)) } } } }, { "<<", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)) } } } }, { "&", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT)) } } } }, { "|", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT)) } } } }, { "^", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT)) } } } }, { "&&", new(new BlockStackComparer()) { { ExtendedTypeBool, new() { ((ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches)) } } } }, { "||", new(new BlockStackComparer()) { { ExtendedTypeBool, new() { ((ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches)) } } } }, { "^^", new(new BlockStackComparer()) { { ExtendedTypeBool, new() { ((ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches)) } } } } };
+	public static SortedDictionary<String, BinaryOperatorClasses> BinaryOperators { get; } = new()
+	{
+		{
+			"+", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeInt, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } },
+				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } },
+				{ ExtendedTypeString, new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (GetPrimitiveBlockStack("char"), NoBranches), (ExtendedTypeString, NoBranches)), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("char") }]), (ExtendedTypeString, NoBranches)), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeString, NoBranches), (GetPrimitiveBlockStack("char"), NoBranches)), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeString, NoBranches), (ExtendedTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("char") }])), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeString, NoBranches), (ExtendedTypeString, NoBranches)) } }
+			}
+		},
+		{
+			"-", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)), ((ExtendedTypeInt, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } },
+				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } }
+			}
+		},
+		{
+			"*", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } }, { ExtendedTypeString, new() { ((ExtendedTypeString, NoBranches), (ExtendedTypeInt, NoBranches), (ExtendedTypeString, NoBranches)), ((ExtendedTypeString, NoBranches), (ExtendedTypeString, NoBranches), (ExtendedTypeInt, NoBranches)) } }
+			}
+		},
+		{
+			"/", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT)) } },
+				{ new([new(BlockType.Interface, "IFloatNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT)) } }
+			}
+		},
+		{
+			"pow", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)) } },
+				{ new([new(BlockType.Interface, "IFloatNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT)) } } } },
+		{
+			"==", new(new BlockStackComparer())
+			{
+				{ GetPrimitiveBlockStack("object"), new() { ((new([new(BlockType.Interface, "object", 1)]), NoBranches), (new([new(BlockType.Interface, "object", 1)]), NoBranches), (new([new(BlockType.Interface, "object", 1)]), NoBranches)) } }
+			}
+		},
+		{
+			">", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } },
+				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } }
+			}
+		},
+		{
+			"<", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } },
+				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } }
+			}
+		},
+		{
+			">=", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } },
+				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } } } },
+		{
+			"<=", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } },
+				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } }
+			}
+		},
+		{
+			"!=", new(new BlockStackComparer())
+			{
+				{ GetPrimitiveBlockStack("object"), new() { ((new([new(BlockType.Interface, "object", 1)]), NoBranches), (new([new(BlockType.Interface, "object", 1)]), NoBranches), (new([new(BlockType.Interface, "object", 1)]), NoBranches)) } }
+			}
+		},
+		{
+			">>", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)) } }
+			}
+		},
+		{
+			"<<", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)) } }
+			}
+		},
+		{
+			"&", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT)) } }
+			}
+		},
+		{
+			"|", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT)) } }
+			}
+		},
+		{
+			"^", new(new BlockStackComparer())
+			{
+				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT)) } }
+			}
+		},
+		{
+			"&&", new(new BlockStackComparer()) { { ExtendedTypeBool, new() { ((ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches)) } } }
+		},
+		{
+			"||", new(new BlockStackComparer())
+			{
+				{ ExtendedTypeBool, new() { ((ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches)) } }
+			}
+		},
+		{
+			"^^", new(new BlockStackComparer())
+			{
+				{ ExtendedTypeBool, new() { ((ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches)) } }
+			}
+		}
+	};
 
 	/// <summary>
 	/// Sorted by Container, also contains Name and Value.
@@ -186,12 +551,12 @@ public static class BuiltInMemberCollections
 	/// </summary>
 	public static List<NStarType> ImplicitConversionsFromAnything { get; } = [(GetPrimitiveBlockStack("object"), NoBranches), (GetPrimitiveBlockStack("null"), NoBranches), (ExtendedTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("[this]") }])];
 
-	public static G.SortedSet<String> NotImplementedNamespaces { get; } = ["System.Diagnostics", "System.Globalization", "System.IO", "System.Runtime", "System.Text", "System.Threading", "System.Windows", "System.Windows.Forms"];
+	public static G.SortedSet<String> NotImplementedNamespaces { get; } = ["System.Diagnostics", "System.Globalization", "System.Runtime", "System.Text", "System.Threading"];
 
 	/// <summary>
 	/// Sorted by Namespace, also contains UseInstead.
 	/// </summary>
-	public static SortedDictionary<String, String> OutdatedNamespaces { get; } = new() { { "System.Collections.Generic", "System.Collections" }, { "System.Linq", "Hawaytenn operators" } };
+	public static SortedDictionary<String, String> OutdatedNamespaces { get; } = new() { { "System.Collections.Generic", "System.Collections" }, { "System.Linq", "RedStarLinq" }, { "System.Windows", "System.GUI" }, { "System.Windows.Forms", "System.GUI" } };
 
 	public static G.SortedSet<String> ReservedNamespaces { get; } = ["Microsoft", "System.Activities", "System.AddIn", "System.CodeDom", "Concurrent", "ObjectModel", "Specialized", "System.ComponentModel", "System.Configuration", "System.Data", "System.Deployment", "System.Device", "System.Diagnostics.CodeAnalysis", "System.Diagnostics.Contracts", "System.Diagnostics.Design", "System.Diagnostics.Eventing", "System.Diagnostics.PerformanceData", "System.Diagnostics.SymbolStore", "System.Diagnostics.Tracing", "System.DirectoryServices", "System.Drawing", "System.Dynamic", "System.EnterpriseServices", "System.IdentityModel", "System.IO.Compression", "System.IO.IsolatedStorage", "System.IO.Log", "System.IO.MemoryMappedFiles", "System.IO.Packaging", "System.IO.Pipes", "System.IO.Ports", "System.Management", "System.Media", "System.Messaging", "System.Net", "System.Numerics", "System.Printing", "System.Reflection", "System.Resources", "System.Runtime.Caching", "System.Runtime.CompilerServices", "System.Runtime.ConstrainedExecution", "System.Runtime.DesignerServices", "System.Runtime.ExceptionServices", "System.Runtime.Hosting", "System.Runtime.InteropServices", "System.Runtime.Remoting", "System.Runtime.Serialization", "System.Runtime.Versioning", "System.Security", "System.ServiceModel", "System.ServiceProcess", "System.Speech", "System.StubHelpers", "System.Text.RegularExpressions", "System.Threading.Tasks", "System.Timers", "System.Transactions", "System.Web", "System.Windows.Annotations", "System.Windows.Automation", "System.Windows.Baml2006", "System.Windows.Controls", "System.Windows.Data", "System.Windows.Documents", "System.Windows.Forms.ComponentModel", "System.Windows.Forms.DataVisualization", "System.Windows.Forms.Design", "System.Windows.Forms.Interaction", "System.Windows.Forms.Layout", "System.Windows.Forms.PropertyGridInternal", "System.Windows.Forms.VisualStyles", "System.Windows.Ink", "System.Windows.Input", "System.Windows.Interop", "System.Windows.Markup", "System.Windows.Media", "System.Windows.Navigation", "System.Windows.Resources", "System.Windows.Shapes", "System.Windows.Threading", "System.Windows.Xps", "System.Workflow", "System.Xaml", "System.Xml", "Windows", "XamlGeneratedNamespace"];
 
@@ -280,7 +645,7 @@ public class MainViewModel : ViewModelBase
 {
 }
 
-public partial class GUIWindow : Window
+public class GUIWindow : Window
 {
 	public GUIWindow() => InitializeComponent();
 

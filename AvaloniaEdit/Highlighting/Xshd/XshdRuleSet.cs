@@ -36,14 +36,14 @@ public class XshdRuleSet : XshdElement
 	/// </summary>
 	public bool? IgnoreCase { get; set; }
 
-    private readonly NullSafeCollection<XshdElement> _elements = new NullSafeCollection<XshdElement>();
+	private readonly NullSafeCollection<XshdElement> _elements = new NullSafeCollection<XshdElement>();
 	
 	/// <summary>
 	/// Gets the collection of elements.
 	/// </summary>
 	public IList<XshdElement> Elements => _elements;
 
-    /// <summary>
+	/// <summary>
 	/// Applies the visitor to all elements.
 	/// </summary>
 	public void AcceptElements(IXshdVisitor visitor)

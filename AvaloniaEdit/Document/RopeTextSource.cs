@@ -28,7 +28,7 @@ namespace AvaloniaEdit.Document;
 /// </summary>
 public sealed class RopeTextSource : ITextSource
 {
-    private readonly Rope<char> _rope;
+	private readonly Rope<char> _rope;
 
 	/// <summary>
 	/// Creates a new RopeTextSource.
@@ -40,7 +40,7 @@ public sealed class RopeTextSource : ITextSource
 	/// </summary>
 	public RopeTextSource(Rope<char> rope, ITextSourceVersion version)
 	{
-	    _rope = rope?.Clone() ?? throw new ArgumentNullException(nameof(rope));
+		_rope = rope?.Clone() ?? throw new ArgumentNullException(nameof(rope));
 		Version = version;
 	}
 
@@ -56,7 +56,7 @@ public sealed class RopeTextSource : ITextSource
 	/// <inheritdoc/>
 	public string Text => _rope.ToString();
 
-    /// <inheritdoc/>
+	/// <inheritdoc/>
 	public int TextLength => _rope.Length;
 
 	/// <inheritdoc/>

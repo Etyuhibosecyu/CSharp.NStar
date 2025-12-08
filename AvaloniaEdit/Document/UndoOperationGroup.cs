@@ -28,7 +28,7 @@ namespace AvaloniaEdit.Document;
 /// </summary>
 internal sealed class UndoOperationGroup : IUndoableOperationWithContext
 {
-    private readonly IUndoableOperation[] _undolist;
+	private readonly IUndoableOperation[] _undolist;
 	
 	public UndoOperationGroup(Deque<IUndoableOperation> stack, int numops)
 	{
@@ -45,18 +45,18 @@ internal sealed class UndoOperationGroup : IUndoableOperationWithContext
 	
 	public void Undo()
 	{
-	    foreach (var t in _undolist)
-	    {
-	        t.Undo();
-	    }
+		foreach (var t in _undolist)
+		{
+			t.Undo();
+		}
 	}
 	
 	public void Undo(UndoStack stack)
 	{
-	    foreach (var t in _undolist)
-	    {
-	        stack.RunUndo(t);
-	    }
+		foreach (var t in _undolist)
+		{
+			stack.RunUndo(t);
+		}
 	}
 	
 	public void Redo()

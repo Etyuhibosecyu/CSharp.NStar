@@ -39,9 +39,9 @@ public sealed class HighlightingDefinitionTypeConverter : TypeConverter
 
 	/// <inheritdoc/>
 	public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
-        {
-            if (value is IHighlightingDefinition definition && destinationType == typeof(string))
-                return definition.Name;
-            return null;
-        }
+		{
+			if (value is IHighlightingDefinition definition && destinationType == typeof(string))
+				return definition.Name;
+			return null;
+		}
 }

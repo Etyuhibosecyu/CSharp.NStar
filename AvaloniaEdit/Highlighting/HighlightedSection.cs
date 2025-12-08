@@ -37,7 +37,7 @@ public class HighlightedSection : ISegment
 	
 	int ISegment.EndOffset => Offset + Length;
 
-    /// <summary>
+	/// <summary>
 	/// Gets the highlighting color associated with the highlighted section.
 	/// </summary>
 	public HighlightingColor Color { get; set; }

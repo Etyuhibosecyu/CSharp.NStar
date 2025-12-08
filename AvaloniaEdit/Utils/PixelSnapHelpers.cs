@@ -35,16 +35,16 @@ public static class PixelSnapHelpers
 	{
 		ArgumentNullException.ThrowIfNull(visual);
 		var source = TopLevel.GetTopLevel(visual);
-            if (source != null)
-            {
-                var scaling = source.RenderScaling;
-                return new Size(1 / scaling , 1 / scaling);
-            }
-            else
-            {
-                return new Size(1, 1);
-            }
-        }
+			if (source != null)
+			{
+				var scaling = source.RenderScaling;
+				return new Size(1 / scaling , 1 / scaling);
+			}
+			else
+			{
+				return new Size(1, 1);
+			}
+		}
 
 	/// <summary>
 	/// Aligns <paramref name="value"/> on the next middle of a pixel.

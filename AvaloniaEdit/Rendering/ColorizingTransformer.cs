@@ -73,7 +73,7 @@ public abstract class ColorizingTransformer : IVisualLineTransformer, ITextViewC
 			if (e.VisualColumn > visualEndColumn)
 				break;
 			if (e.VisualColumn < visualStartColumn &&
-			    e.VisualColumn + e.VisualLength > visualStartColumn)
+				e.VisualColumn + e.VisualLength > visualStartColumn)
 			{
 				if (e.CanSplit) {
 					e.Split(visualStartColumn, CurrentElements, i--);

@@ -93,7 +93,7 @@ class HtmlRichTextWriter : RichTextWriter
 	void WriteIndentation()
 	{
 		if (needIndentation) {
-			for (int i = 0; i < indentationLevel; i++) {
+			for (var i = 0; i < indentationLevel; i++) {
 				WriteChar('\t');
 			}
 			needIndentation = false;
@@ -111,7 +111,7 @@ class HtmlRichTextWriter : RichTextWriter
 
 	void WriteChar(char c)
 	{
-		bool isWhitespace = char.IsWhiteSpace(c);
+		var isWhitespace = char.IsWhiteSpace(c);
 		FlushSpace(isWhitespace);
 		switch (c) {
 			case ' ':
@@ -121,7 +121,7 @@ class HtmlRichTextWriter : RichTextWriter
 					hasSpace = true;
 				break;
 			case '\t':
-				for (int i = 0; i < options.TabSize; i++) {
+				for (var i = 0; i < options.TabSize; i++) {
 					htmlWriter.Write("&nbsp;");
 				}
 				break;
@@ -152,9 +152,9 @@ class HtmlRichTextWriter : RichTextWriter
 	/// <inheritdoc/>
 	public override void Write(string value)
 	{
-		int pos = 0;
+		var pos = 0;
 		do {
-			int endPos = value.IndexOfAny(specialChars, pos);
+			var endPos = value.IndexOfAny(specialChars, pos);
 			if (endPos < 0) {
 				WriteSimpleString(value.Substring(pos));
 				return; // reached end of string
@@ -234,7 +234,7 @@ class HtmlRichTextWriter : RichTextWriter
 		#if DOTNET4
 		string link = WebUtility.HtmlEncode(uri.ToString());
 		#else
-		string link = HttpUtility.HtmlEncode(uri.ToString());
+		var link = HttpUtility.HtmlEncode(uri.ToString());
 		#endif
 		htmlWriter.Write("<a href=\"" + link + "\">");
 		endTagStack.Push("</a>");

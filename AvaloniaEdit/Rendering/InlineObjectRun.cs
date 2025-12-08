@@ -26,7 +26,7 @@ using Avalonia.Media.TextFormatting;
 
 namespace AvaloniaEdit.Rendering;
 
-    /// <summary>
+	/// <summary>
 /// A inline UIElement in the document.
 /// </summary>
 public class InlineObjectElement : VisualLineElement
@@ -97,7 +97,7 @@ public class InlineObjectRun : DrawableTextRun
 	{
 		get
 		{
-			double baseline = TextBlock.GetBaselineOffset(Element);
+			var baseline = TextBlock.GetBaselineOffset(Element);
 			if (double.IsNaN(baseline))
 				baseline = DesiredSize.Height;
 			return baseline;

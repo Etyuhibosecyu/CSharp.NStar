@@ -13,7 +13,6 @@ global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 using Mpir.NET;
 using NStar.EasyEvalLib;
-using NStar.ExtraHS;
 using NStar.ParallelHS;
 using NStar.SortedSets;
 using NStar.TreeSets;
@@ -28,7 +27,7 @@ public static class TypeConverters
 	private static readonly List<String> CollectionTypesList = [nameof(Buffer), nameof(Dictionary<,>),
 		nameof(FastDelHashSet<>), "HashTable", nameof(ICollection), nameof(G.IEnumerable<>), nameof(IList),
 		nameof(IReadOnlyCollection<>), nameof(IReadOnlyList<>), nameof(LimitedQueue<>), nameof(G.LinkedList<>),
-		nameof(G.LinkedListNode<>), nameof(ListHashSet<>), nameof(Mirror<,>), nameof(NList<>),
+		nameof(G.LinkedListNode<>), nameof(ListHashSet<>), nameof(Mirror<,>),
 		nameof(Queue<>), nameof(ParallelHashSet<>), nameof(ReadOnlySpan<>), nameof(Slice<>),
 		nameof(SortedDictionary<,>), nameof(SortedSet<>), nameof(Span<>), nameof(Stack<>),
 		nameof(TreeHashSet<>), nameof(TreeSet<>)];
@@ -389,7 +388,10 @@ public static class TypeConverters
 				var toInsert = ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(')
 					.Repeat(DestinationDepth - SourceDepth);
 				if (srcExpr == null)
+				{
 					destExpr = null;
+					return true;
+				}
 				else if (!SourceLeafType.Equals(DestinationLeafType) && TypeIsPrimitive(SourceLeafType.MainType)
 					&& TypeIsPrimitive(DestinationLeafType.MainType) && SourceLeafType.MainType.Peek().Name != "string"
 					&& DestinationLeafType.MainType.Peek().Name != "string")
@@ -398,7 +400,6 @@ public static class TypeConverters
 					srcExpr.Insert(0, toInsert);
 					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth));
 					destExpr = srcExpr;
-					return true;
 				}
 				else
 				{
@@ -406,6 +407,9 @@ public static class TypeConverters
 					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth));
 					destExpr = srcExpr;
 				}
+				if (destinationType.MainType.ToShortString() is "System."
+					+ nameof(ReadOnlySpan<>) or "System." + nameof(Span<>))
+					srcExpr.Add('.').AddRange(nameof(srcExpr.AsSpan)).AddRange("()");
 				return true;
 			}
 			else if (SourceDepth <= DestinationDepth + 1
@@ -600,7 +604,7 @@ public static class TypeConverters
 				or "int" or "uint" or "long" or "ulong" or "double")
 			{
 				var result = ((String)"(").AddRange(destTypeConverter).Add('.').AddRange(nameof(int.TryParse)).Add('(');
-				var varName = RedStarLinq.NFill(32, _ =>
+				var varName = RedStarLinq.Fill(32, _ =>
 					(char)(random.Next(2) == 1 ? random.Next('A', 'Z' + 1) : random.Next('a', 'z' + 1)));
 				result.AddRange(source).AddRange(", out var ").AddRange(varName).AddRange(") ? ").AddRange(varName);
 				return result.AddRange(" : ").AddRange(destTypeBlockName == "bool" ? "false)" : "0)");
@@ -640,14 +644,11 @@ public static class TypeConverters
 	{
 		if (item is bool b)
 			return new BitList([b]);
-		else if (typeof(T).IsUnmanaged())
-			return typeof(NList<>).MakeGenericType(typeof(T)).GetConstructor([typeof(G.IEnumerable<T>)])
-				?.Invoke([(G.IEnumerable<T>)[item]]) ?? throw new InvalidOperationException();
 		else
 			return new List<T>(item);
 	}
 
-	public static NList<char> RandomVarName() => RedStarLinq.NFill(32, _ => (char)(random.Next(2) == 1
+	public static List<char> RandomVarName() => RedStarLinq.Fill(32, _ => (char)(random.Next(2) == 1
 		? random.Next('A', 'Z' + 1) : random.Next('a', 'z' + 1)));
 
 	private sealed class FullTypeEComparer : G.IEqualityComparer<NStarType>
@@ -678,8 +679,6 @@ public static class TypeConverters
 				Type outputType;
 				if (netType == typeof(bool))
 					outputType = typeof(BitList);
-				else if (netType.IsUnmanaged())
-					outputType = typeof(NList<>).MakeGenericType(netType);
 				else
 					outputType = typeof(List<>).MakeGenericType(netType);
 				for (var i = 1; i < levelsCount; i++)
@@ -757,8 +756,6 @@ public static class TypeConverters
 	{
 		if (netType == typeof(bool))
 			return typeof(BitList);
-		else if (netType.IsUnmanaged())
-			return typeof(NList<>).MakeGenericType(netType);
 		else
 			return typeof(List<>).MakeGenericType(netType);
 	}
@@ -895,11 +892,6 @@ public static class TypeConverters
 				return StringType;
 			else if (netType == typeof(BitList))
 				return GetListType(BoolType);
-			else if (netType == typeof(NList<>))
-				return GetListType(TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes));
-			else if (netType == typeof(NListHashSet<>))
-				return new(ListHashSetBlockStack, new([new("type", 0, []) { Extra
-				= TypeMappingBack(typeGenericArguments[0], genericArguments, extraTypes) }]));
 			else if (innerTypes.Length != 0)
 			{
 				netType = netType.MakeGenericType([.. innerTypes]);

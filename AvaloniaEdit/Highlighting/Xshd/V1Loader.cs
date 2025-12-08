@@ -233,8 +233,8 @@
 			
 //			span.BeginRegexType = XshdRegexType.IgnorePatternWhitespace;
 //			span.BeginRegex = ImportRegex(element["Begin"].InnerText,
-//			                              element["Begin"].GetBoolAttribute("singleword") ?? false,
-//			                              element["Begin"].GetBoolAttribute("startofline"));
+//										  element["Begin"].GetBoolAttribute("singleword") ?? false,
+//										  element["Begin"].GetBoolAttribute("startofline"));
 //			span.BeginColorReference = GetColorReference(element["Begin"]);
 			
 //			string endElementText = string.Empty;
@@ -242,8 +242,8 @@
 //				span.EndRegexType = XshdRegexType.IgnorePatternWhitespace;
 //				endElementText = element["End"].InnerText;
 //				span.EndRegex = ImportRegex(endElementText,
-//				                            element["End"].GetBoolAttribute("singleword") ?? false,
-//				                            null);
+//											element["End"].GetBoolAttribute("singleword") ?? false,
+//											null);
 //				span.EndColorReference = GetColorReference(element["End"]);
 //			}
 			
@@ -252,15 +252,15 @@
 //				if (endElementText.Length == 1 && endElementText[0] == escapeCharacter) {
 //					// ""-style escape
 //					ruleSet.Elements.Add(new XshdSpan {
-//					                     	BeginRegex = Regex.Escape(endElementText + endElementText),
-//					                     	EndRegex = ""
-//					                     });
+//										 	BeginRegex = Regex.Escape(endElementText + endElementText),
+//										 	EndRegex = ""
+//										 });
 //				} else {
 //					// \"-style escape
 //					ruleSet.Elements.Add(new XshdSpan {
-//					                     	BeginRegex = Regex.Escape(escapeCharacter.ToString()),
-//					                     	EndRegex = "."
-//					                     });
+//										 	BeginRegex = Regex.Escape(escapeCharacter.ToString()),
+//										 	EndRegex = "."
+//										 });
 //				}
 //				if (span.RuleSetReference.ReferencedElement != null) {
 //					ruleSet.Elements.Add(new XshdImport { RuleSetReference = span.RuleSetReference });

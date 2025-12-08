@@ -30,7 +30,7 @@ namespace AvaloniaEdit.Rendering;
 /// </summary>
 public class VisualLineText : VisualLineElement
 {
-    /// <summary>
+	/// <summary>
 	/// Gets the parent visual line.
 	/// </summary>
 	public VisualLine ParentVisualLine { get; }
@@ -63,8 +63,8 @@ public class VisualLineText : VisualLineElement
 
 		var textSlice = text.Text.AsMemory().Slice(text.Offset, text.Count);
 
-            return new TextCharacters(textSlice, TextRunProperties);
-        }
+			return new TextCharacters(textSlice, TextRunProperties);
+		}
 
 	/// <inheritdoc/>
 	public override bool IsWhitespace(int visualColumn)
@@ -88,7 +88,7 @@ public class VisualLineText : VisualLineElement
 	/// <inheritdoc/>
 	public override bool CanSplit => true;
 
-    /// <inheritdoc/>
+	/// <inheritdoc/>
 	public override void Split(int splitVisualColumn, IList<VisualLineElement> elements, int elementIndex)
 	{
 		if (splitVisualColumn <= VisualColumn || splitVisualColumn >= VisualColumn + VisualLength)
@@ -115,6 +115,6 @@ public class VisualLineText : VisualLineElement
 		var pos = TextUtilities.GetNextCaretPosition(ParentVisualLine.Document, textOffset + visualColumn - VisualColumn, direction, mode);
 		if (pos < textOffset || pos > textOffset + DocumentLength)
 			return -1;
-	    return VisualColumn + pos - textOffset;
+		return VisualColumn + pos - textOffset;
 	}
 }

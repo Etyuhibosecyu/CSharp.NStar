@@ -29,7 +29,7 @@ using LogicalDirection = AvaloniaEdit.Document.LogicalDirection;
 
 namespace AvaloniaEdit.Rendering;
 
-    // This class is internal because it does not need to be accessed by the user - it can be configured using TextEditorOptions.
+	// This class is internal because it does not need to be accessed by the user - it can be configured using TextEditorOptions.
 
 /// <summary>
 /// Element generator that displays · for spaces and » for tabs and a box for control characters.
@@ -99,9 +99,9 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 		return -1;
 	}
 
-        public override VisualLineElement ConstructElement(int offset)
-        {
-            var c = CurrentContext.Document.GetCharAt(offset);
+		public override VisualLineElement ConstructElement(int offset)
+		{
+			var c = CurrentContext.Document.GetCharAt(offset);
 
 		if (ShowSpaces && (c == ' '))
 		{
@@ -130,10 +130,10 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 			return new SpecialCharacterBoxElement(textLine);
 		}
 
-            return null;
-        }
+			return null;
+		}
 
-        private sealed class SpaceTextElement : FormattedTextElement
+		private sealed class SpaceTextElement : FormattedTextElement
 	{
 		public SpaceTextElement(TextLine textLine) : base(textLine, 1)
 		{
@@ -190,7 +190,7 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 			_element = element;
 		}
 
-            public override TextRunProperties Properties { get; }
+			public override TextRunProperties Properties { get; }
 
 		public override double Baseline => _element.Text.Baseline;
 
@@ -208,43 +208,43 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 		public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context) => new SpecialCharacterTextRun(this, TextRunProperties);
 	}
 
-        internal sealed class SpecialCharacterTextRun : FormattedTextRun
-        {
-            private static readonly ISolidColorBrush DarkGrayBrush;
+		internal sealed class SpecialCharacterTextRun : FormattedTextRun
+		{
+			private static readonly ISolidColorBrush DarkGrayBrush;
 
-            internal const double BoxMargin = 3;
+			internal const double BoxMargin = 3;
 
 		static SpecialCharacterTextRun() => DarkGrayBrush = new ImmutableSolidColorBrush(Color.FromArgb(200, 128, 128, 128));
 
 		public SpecialCharacterTextRun(FormattedTextElement element, TextRunProperties properties)
-                : base(element, properties)
-            {
-            }
+				: base(element, properties)
+			{
+			}
 
-            public override Size Size
-            {
-                get
-                {
-                    var s = base.Size;
-                    
-                    return s.WithWidth(s.Width + BoxMargin);
-                }
-            }
+			public override Size Size
+			{
+				get
+				{
+					var s = base.Size;
+					
+					return s.WithWidth(s.Width + BoxMargin);
+				}
+			}
 
-            public override void Draw(DrawingContext drawingContext, Point origin)
-            {
-            var (x, y) = origin;
-            
-            var newOrigin = new Point(x + (BoxMargin / 2), y);
-            
-                var (width, height) = Size;
-                
-                var r = new Rect(x, y, width, height);
-                
-                drawingContext.FillRectangle(DarkGrayBrush, r, 2.5f);
-                
-                base.Draw(drawingContext, newOrigin);
-            }
-        }
-    }
+			public override void Draw(DrawingContext drawingContext, Point origin)
+			{
+			var (x, y) = origin;
+			
+			var newOrigin = new Point(x + (BoxMargin / 2), y);
+			
+				var (width, height) = Size;
+				
+				var r = new Rect(x, y, width, height);
+				
+				drawingContext.FillRectangle(DarkGrayBrush, r, 2.5f);
+				
+				base.Draw(drawingContext, newOrigin);
+			}
+		}
+	}
 

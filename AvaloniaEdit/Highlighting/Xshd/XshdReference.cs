@@ -25,27 +25,27 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 /// </summary>
 public struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElement
 {
-    /// <summary>
+	/// <summary>
 	/// Gets the reference.
 	/// </summary>
 	public string ReferencedDefinition { get; }
 
-    /// <summary>
+	/// <summary>
 	/// Gets the reference.
 	/// </summary>
 	public string ReferencedElement { get; }
 
-    /// <summary>
+	/// <summary>
 	/// Gets the inline element.
 	/// </summary>
 	public T InlineElement { get; }
 
-    /// <summary>
+	/// <summary>
 	/// Creates a new XshdReference instance.
 	/// </summary>
 	public XshdReference(string referencedDefinition, string referencedElement)
 	{
-            ReferencedDefinition = referencedDefinition;
+			ReferencedDefinition = referencedDefinition;
 		ReferencedElement = referencedElement ?? throw new ArgumentNullException(nameof(referencedElement));
 		InlineElement = null;
 	}
@@ -55,7 +55,7 @@ public struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElem
 	/// </summary>
 	public XshdReference(T inlineElement)
 	{
-            ReferencedDefinition = null;
+			ReferencedDefinition = null;
 		ReferencedElement = null;
 		InlineElement = inlineElement ?? throw new ArgumentNullException(nameof(inlineElement));
 	}
@@ -72,9 +72,9 @@ public struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElem
 	/// <inheritdoc/>
 	public override bool Equals(object obj)
 	{
-	    if (obj is XshdReference<T>)
+		if (obj is XshdReference<T>)
 			return Equals((XshdReference<T>)obj); // use Equals method below
-	    return false;
+		return false;
 	}
 
 	/// <summary>

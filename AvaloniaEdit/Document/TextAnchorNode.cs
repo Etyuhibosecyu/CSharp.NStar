@@ -28,13 +28,13 @@ namespace AvaloniaEdit.Document;
 internal sealed class TextAnchorNode : WeakReference
 {
 	internal TextAnchorNode Left { get; set; }
-    internal TextAnchorNode Right { get; set; }
-        internal TextAnchorNode Parent { get; set; }
-        internal bool Color { get; set; }
-        internal int Length { get; set; }
-        internal int TotalLength { get; set; } // totalLength = length + left.totalLength + right.totalLength
+	internal TextAnchorNode Right { get; set; }
+		internal TextAnchorNode Parent { get; set; }
+		internal bool Color { get; set; }
+		internal int Length { get; set; }
+		internal int TotalLength { get; set; } // totalLength = length + left.totalLength + right.totalLength
 
-        public TextAnchorNode(TextAnchor anchor) : base(anchor)
+		public TextAnchorNode(TextAnchor anchor) : base(anchor)
 	{
 	}
 	

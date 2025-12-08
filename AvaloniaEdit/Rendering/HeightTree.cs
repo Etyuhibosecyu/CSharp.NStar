@@ -252,8 +252,8 @@ namespace AvaloniaEdit.Rendering;
 		if (node.IsDirectlyCollapsed)
 			totalHeight = 0;
 		if (totalCount != node.TotalCount
-		    || !totalHeight.IsClose(node.TotalHeight)
-		    || mode == UpdateAfterChildrenChangeRecursionMode.WholeBranch)
+			|| !totalHeight.IsClose(node.TotalHeight)
+			|| mode == UpdateAfterChildrenChangeRecursionMode.WholeBranch)
 		{
 			node.TotalCount = totalCount;
 			node.TotalHeight = totalHeight;
@@ -394,10 +394,10 @@ namespace AvaloniaEdit.Rendering;
 				if (cs.Start == node.DocumentLine || cs.End == node.DocumentLine)
 					continue;
 				if (node.Left == null
-				    || (node.Left.CollapsedSections != null && node.Left.CollapsedSections.Contains(cs)))
+					|| (node.Left.CollapsedSections != null && node.Left.CollapsedSections.Contains(cs)))
 				{
 					if (node.Right == null
-					    || (node.Right.CollapsedSections != null && node.Right.CollapsedSections.Contains(cs)))
+						|| (node.Right.CollapsedSections != null && node.Right.CollapsedSections.Contains(cs)))
 					{
 						// all children of node contain cs: -> merge!
 						node.Left?.RemoveDirectlyCollapsed(cs);
@@ -859,9 +859,9 @@ namespace AvaloniaEdit.Rendering;
 		}
 
 		if (parentNode.Color == Black
-		    && sibling.Color == Black
-		    && GetColor(sibling.Left) == Black
-		    && GetColor(sibling.Right) == Black)
+			&& sibling.Color == Black
+			&& GetColor(sibling.Left) == Black
+			&& GetColor(sibling.Right) == Black)
 		{
 			sibling.Color = Red;
 			FixTreeOnDelete(parentNode, parentNode.Parent);
@@ -869,9 +869,9 @@ namespace AvaloniaEdit.Rendering;
 		}
 
 		if (parentNode.Color == Red
-		    && sibling.Color == Black
-		    && GetColor(sibling.Left) == Black
-		    && GetColor(sibling.Right) == Black)
+			&& sibling.Color == Black
+			&& GetColor(sibling.Left) == Black
+			&& GetColor(sibling.Right) == Black)
 		{
 			sibling.Color = Red;
 			parentNode.Color = Black;
@@ -879,18 +879,18 @@ namespace AvaloniaEdit.Rendering;
 		}
 
 		if (node == parentNode.Left &&
-		    sibling.Color == Black &&
-		    GetColor(sibling.Left) == Red &&
-		    GetColor(sibling.Right) == Black)
+			sibling.Color == Black &&
+			GetColor(sibling.Left) == Red &&
+			GetColor(sibling.Right) == Black)
 		{
 			sibling.Color = Red;
 			sibling.Left.Color = Black;
 			RotateRight(sibling);
 		}
 		else if (node == parentNode.Right &&
-		         sibling.Color == Black &&
-		         GetColor(sibling.Right) == Red &&
-		         GetColor(sibling.Left) == Black)
+				 sibling.Color == Black &&
+				 GetColor(sibling.Right) == Red &&
+				 GetColor(sibling.Left) == Black)
 		{
 			sibling.Color = Red;
 			sibling.Right.Color = Black;

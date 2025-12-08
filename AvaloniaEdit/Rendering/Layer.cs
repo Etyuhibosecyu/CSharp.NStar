@@ -36,12 +36,12 @@ class Layer : Control
 		TextView = textView;
 		KnownLayer = knownLayer;
 		Focusable = false;
-	    IsHitTestVisible = false;
+		IsHitTestVisible = false;
 	}
 
-    public override void Render(DrawingContext context)
-    {
-        base.Render(context);
+	public override void Render(DrawingContext context)
+	{
+		base.Render(context);
 		TextView.RenderBackground(context, KnownLayer);
 	}
 }

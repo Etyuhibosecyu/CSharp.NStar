@@ -94,8 +94,8 @@ internal sealed class HeightTreeNode
 	/// The total height of this node and its child nodes, excluding directly collapsed nodes.
 	/// Invariant:
 	///   totalHeight = left.IsDirectlyCollapsed ? 0 : left.totalHeight
-	///               + lineNode.IsDirectlyCollapsed ? 0 : lineNode.Height
-	///               + right.IsDirectlyCollapsed ? 0 : right.totalHeight
+	///			   + lineNode.IsDirectlyCollapsed ? 0 : lineNode.Height
+	///			   + right.IsDirectlyCollapsed ? 0 : right.totalHeight
 	/// </summary>
 	internal double TotalHeight;
 

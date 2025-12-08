@@ -75,7 +75,7 @@ public enum ConstructorAttributes
 	Abstract = 32,
 }
 
-public enum BlockType
+public enum BlockType : byte
 {
 	Unnamed,
 	Primitive,
@@ -94,7 +94,7 @@ public enum BlockType
 	Other,
 }
 
-public enum TypeConstraints
+public enum TypeConstraints : byte
 {
 	None,
 	BaseClassOrInterface,
@@ -102,7 +102,7 @@ public enum TypeConstraints
 	NotAbstract,
 }
 
-public enum RawStringState
+public enum RawStringState : byte
 {
 	Normal,
 	ForwardSlash,

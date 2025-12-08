@@ -24,33 +24,33 @@ using Avalonia.Media;
 
 namespace AvaloniaEdit.Editing;
 
-    /// <summary>
-    /// Margin for use with the text area.
-    /// A vertical dotted line to separate the line numbers from the text view.
-    /// </summary>
-    public static class DottedLineMargin
-    {
-        private static readonly object Tag = new object();
+	/// <summary>
+	/// Margin for use with the text area.
+	/// A vertical dotted line to separate the line numbers from the text view.
+	/// </summary>
+	public static class DottedLineMargin
+	{
+		private static readonly object Tag = new object();
 
-        /// <summary>
-        /// Creates a vertical dotted line to separate the line numbers from the text view.
-        /// </summary>
-        public static Control Create()
-        {
-            var line = new Line
-            {
-                StartPoint = new Point(0, 0),
-                EndPoint = new Point(0, 1),
-                StrokeDashArray = new AvaloniaList<double> { 0, 2 },
-                Stretch = Stretch.Fill,
-                StrokeThickness = 1,
-                StrokeLineCap = PenLineCap.Round,
-                Margin = new Thickness(2, 0, 2, 0),
-                Tag = Tag
-            };
+		/// <summary>
+		/// Creates a vertical dotted line to separate the line numbers from the text view.
+		/// </summary>
+		public static Control Create()
+		{
+			var line = new Line
+			{
+				StartPoint = new Point(0, 0),
+				EndPoint = new Point(0, 1),
+				StrokeDashArray = new AvaloniaList<double> { 0, 2 },
+				Stretch = Stretch.Fill,
+				StrokeThickness = 1,
+				StrokeLineCap = PenLineCap.Round,
+				Margin = new Thickness(2, 0, 2, 0),
+				Tag = Tag
+			};
 
-            return line;
-        }
+			return line;
+		}
 
 	/// <summary>
 	/// Gets whether the specified UIElement is the result of a DottedLineMargin.Create call.

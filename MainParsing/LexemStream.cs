@@ -1,6 +1,7 @@
 ﻿global using NStar.Core;
 global using NStar.Dictionaries;
 global using NStar.Linq;
+global using NStar.MathLib;
 global using System;
 global using static CSharp.NStar.BuiltInMemberCollections;
 global using static CSharp.NStar.MemberChecks;
@@ -11,6 +12,7 @@ global using static NStar.Core.Extents;
 global using static System.Math;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
+using System.IO;
 
 namespace CSharp.NStar;
 
@@ -82,24 +84,35 @@ public class LexemStream
 		}
 		catch (Exception ex) when (ex is not OutOfMemoryException)
 		{
-			var pos2 = (pos >= lexems.Length) ? pos - 1 : pos;
-			GenerateMessage(0xF000, pos2);
+			var targetPos = (pos >= lexems.Length) ? pos - 1 : pos;
+			var errorMessage = GetWreckPosPrefix(0xF000, targetPos)
+				+ ": compilation failed because of internal compiler error\r\n";
+			(errors ??= []).Add(errorMessage + @" (see %TEMP%\CSharp.NStar.log for details)");
+			File.WriteAllLines((Environment.GetEnvironmentVariable("TEMP") ?? throw new InvalidOperationException())
+				+ @"\CSharp.NStar.log", [errorMessage, "The internal exception was:", ex.GetType().Name,
+					"The internal exception message was:", ex.Message,
+					"The underlying internal exception was:", ex.InnerException?.GetType().Name ?? "null",
+					"The underlying internal exception message was:", ex.InnerException?.Message ?? "null"]);
 			wreckOccurred = true;
 			return;
 		}
 	}
 
+	private String GetWreckPosPrefix(ushort code, Index pos) =>
+		"Technical wreck " + Convert.ToString(code, 16).ToUpper().PadLeft(4, '0')
+		+ "in line " + lexems[pos].LineN.ToString() + " at position " + lexems[pos].Pos.ToString();
+
 	private void PreParseIteration()
 	{
 		if (IsCurrentLexemKeyword("using"))
 			Using();
-		else if (IsCurrentLexemKeyword("Namespace"))
+		else if (IsCurrentLexemKeyword(nameof(Namespace)))
 			Namespace();
-		else if (IsCurrentLexemKeyword("Class"))
+		else if (IsLexemKeyword(lexems[pos], [nameof(Class), "Megaclass"]))
 			Class();
-		else if (IsCurrentLexemKeyword("Function"))
+		else if (IsCurrentLexemKeyword(nameof(Function)))
 			Function();
-		else if (IsCurrentLexemKeyword("Constructor"))
+		else if (IsCurrentLexemKeyword(nameof(Constructor)))
 			Constructor();
 		else if (IsCurrentLexemOther("{"))
 		{
@@ -234,11 +247,27 @@ public class LexemStream
 		var attributes = TypeAttributes.None;
 		String name;
 		BlockStack container = new(nestedBlocksChain.ToList());
+		var classKeywordPos = pos;
 		GetBlockStart();
 		var blockStart = prevPos;
 		attributes = (TypeAttributes)GetAccessMethod((int)attributes);
-		attributes |= (TypeAttributes)AddOneOfAttributes(new() { { "static", TypeAttributes.Static },
-			{ "sealed", TypeAttributes.Sealed }, { "abstract", TypeAttributes.Abstract } });
+		if (IsLexemKeyword(lexems[classKeywordPos], "Megaclass"))
+		{
+			attributes |= TypeAttributes.Static;
+			if (lexems[prevPos].String == "static")
+			{
+				GenerateMessage(0x8012, prevPos);
+				prevPos++;
+			}
+			else if (lexems[prevPos].String.ToString() is "abstract" or "sealed")
+			{
+				GenerateMessage(0x0012, prevPos);
+				prevPos++;
+			}
+		}
+		else
+			attributes |= (TypeAttributes)AddOneOfAttributes(new() { { "static", TypeAttributes.Static },
+				{ "sealed", TypeAttributes.Sealed }, { "abstract", TypeAttributes.Abstract } });
 		attributes |= (TypeAttributes)AddAttribute("partial", TypeAttributes.Partial);
 		while (prevPos < pos)
 		{
@@ -269,15 +298,15 @@ public class LexemStream
 				GenerateMessage(0x0009, pos);
 			pos++;
 			var pos3 = pos;
-			while (pos < lexems.Length && (lexems[pos].Type == LexemType.Identifier || IsCurrentLexemOperator(".")
-				|| IsLexemOther(lexems[pos], ["(", ")", "[", "]", ","])))
+			while (pos < lexems.Length && (lexems[pos].Type == LexemType.Identifier
+				|| IsLexemOperator(lexems[pos], [".", ","]) || IsLexemOther(lexems[pos], ["(", ")", "[", "]"])))
 				pos++;
 			registeredTypes.Add((container, name, pos3, pos));
 		}
 		GetFigureBracketAndSetBlock(BlockType.Class, name, attributes, () =>
 		{
 			UserDefinedTypes.Add((container, name), new([], attributes, NullType, []));
-			blocksToJump.Add((container, "Class", name, blockStart, prevPos));
+			blocksToJump.Add((container, nameof(Class), name, blockStart, prevPos));
 		});
 	}
 
@@ -362,15 +391,17 @@ public class LexemStream
 			UserDefinedFunctions.TryAdd(container, []);
 			var containerFunctions = UserDefinedFunctions[container];
 			if (!containerFunctions.TryGetValue(name, out var nameFunctions))
-			{
-				nameFunctions = [];
-				containerFunctions.Add(name, nameFunctions);
-			}
+				containerFunctions.Add(name, nameFunctions = []);
+			if (containerFunctions.Sum(x => x.Value.Length) == CodeStyleRules.MaxFunctionsInClass
+				&& CreateVar(blocksToJump.FindLastIndex(x => container.TryPeek(out var block)
+				&& RedStarLinq.Equals(x.Container, container.SkipLast(1)) && x.Name == block.Name), out var foundIndex) >= 0
+				&& lexems[blocksToJump[foundIndex].End - 2].String == nameof(Class))
+				GenerateMessage(0x8013, blocksToJump[foundIndex].End - 1, CodeStyleRules.MaxFunctionsInClass);
 			nameFunctions.Add(new(container.TryPeek(out var block) && block.BlockType is BlockType.Class
 				or BlockType.Struct or BlockType.Interface or BlockType.Delegate
 				? name : RandomVarName().ToNString(), [],
 				(new([new(BlockType.Primitive, "???", 1)]), NoBranches), attributes, []));
-			blocksToJump.Add((container, "Function", name, blockStart, pos));
+			blocksToJump.Add((container, nameof(Function), name, blockStart, pos));
 			if (!(UserDefinedFunctionIndexes.TryGetValue(container, out var containerIndexes)
 				&& actualFunctionIndexes.TryGetValue(container, out var dic)))
 			{
@@ -427,7 +458,7 @@ public class LexemStream
 			pos++;
 			CloseBracket(ref pos, ")", ref errors);
 			if (pos - start > 2)
-				parameterLists.Add((container, "Constructor", start + 1, pos - 1));
+				parameterLists.Add((container, nameof(Constructor), start + 1, pos - 1));
 			if (pos >= lexems.Length)
 			{
 				GenerateUnexpectedEndError();
@@ -438,7 +469,7 @@ public class LexemStream
 		{
 			UserDefinedConstructors.TryAdd(container, []);
 			UserDefinedConstructors[container].Add((attributes, [], [-1]));
-			blocksToJump.Add((container, "Constructor", "", blockStart, pos));
+			blocksToJump.Add((container, nameof(Constructor), "", blockStart, pos));
 			if (UserDefinedConstructorIndexes.TryGetValue(container, out var containerConstructorIndexes)
 				&& actualConstructorIndexes.TryGetValue(container, out var index))
 			{

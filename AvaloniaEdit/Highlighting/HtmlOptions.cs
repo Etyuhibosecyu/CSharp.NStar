@@ -54,7 +54,7 @@ public class HtmlOptions
 		ArgumentNullException.ThrowIfNull(writer);
 		ArgumentNullException.ThrowIfNull(color);
 		writer.Write(" style=\"");
-	    writer.Write(WebUtility.HtmlEncode(color.ToCss()));
+		writer.Write(WebUtility.HtmlEncode(color.ToCss()));
 		writer.Write('"');
 	}
 	

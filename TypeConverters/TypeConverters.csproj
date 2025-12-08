@@ -6,7 +6,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\.NStar\Sources\NStar.ExtraHS\NStar.ExtraHS.csproj" />
 		<ProjectReference Include="..\TypeChecks\TypeChecks.csproj" />
 	</ItemGroup>
 </Project>

@@ -1,4 +1,5 @@
 ﻿global using NStar.Core;
+global using NStar.Linq;
 global using static CSharp.NStar.BuiltInMemberCollections;
 global using String = NStar.Core.String;
 using Mpir.NET;
@@ -64,6 +65,279 @@ public class CodeSample(String newString)
 	private static LexemTree TripleLexemTree(char c) => new(c, DoubleLexemTreeList(c));
 
 	private static LexemTree TripleEqualLexemTree(char c) => new(c, DoubleEqualLexemTreeList(c).Append('='), true);
+
+	public (List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred) Disassemble()
+	{
+		while (IsNotEnd())
+		{
+			while (true)
+			{
+				var (flowControl, @return, value) = DisassembleIteration();
+				if (flowControl)
+					continue;
+				else if (!@return)
+					break;
+				else
+					return value;
+			}
+			if (success)
+				lexems.AddRange(lexemsBuffer);
+			lexemsBuffer = [];
+			success = false;
+		}
+		return (lexems, input, errors, wreckOccurred);
+	}
+
+	(bool flowControl, bool @return,
+		(List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred) value) DisassembleIteration()
+	{
+		if (wreckOccurred)
+		{
+			if (success)
+				lexems.AddRange(lexemsBuffer);
+			lexemsBuffer = [];
+			success = false;
+			return (false, true, (lexems, input, errors, true));
+		}
+		SkipSpacesAndComments();
+		if (wreckOccurred)
+			return (true, false, default);
+		if (!IsNotEnd() || input[pos] is '\r' or '\n')
+		{
+			var lineLength = pos - lineStart + input[lineStart..pos].Count('\t') * 3;
+			if (lineLength > CodeStyleRules.MaxCharactersInLine)
+				GenerateMessage(0x800F, lineStart, CodeStyleRules.MaxCharactersInLine, lineLength);
+		}
+		if (!IsNotEnd())
+		{
+			success = true;
+			return (false, false, default);
+		}
+		if (ValidateChar('\r') | ValidateChar('\n'))
+		{
+			SkipLineBreaks();
+			success = true;
+			return (false, false, default);
+		}
+		void AddLexem(String string_, LexemType lexemType, int offset) =>
+			lexemsBuffer.Add(new Lexem(string_, lexemType, lineN, pos - offset - lineStart));
+		void AddOperatorLexem(String string_) => AddLexem(string_, LexemType.Operator, string_.Length);
+		void AddOtherLexem(String string_) => AddLexem(string_, LexemType.Other, string_.Length);
+		String s;
+		if (CheckChar('\'') || CheckChar('\"') || CheckChar('@'))
+		{
+			s = GetString(out var s2);
+			if (s.Length != 0)
+			{
+				AddLexem(s, LexemType.String, s2.Length);
+				return (true, false, default);
+			}
+		}
+		else if ((s = GetRawString(out var s3)).Length != 0)
+		{
+			AddLexem(s, LexemType.String, s3.Length);
+			return (true, false, default);
+		}
+		else if (CheckDigit())
+		{
+			s = GetNumber(out var numberType);
+			if (s.Length != 0)
+			{
+				AddLexem(s, numberType, s.Length);
+				return (true, false, default);
+			}
+		}
+		else if (CheckLetter() || CheckChar('_'))
+		{
+			s = GetWord();
+			if (s.Length != 0)
+			{
+				if (Keywords.Contains(s))
+					AddLexem(s, LexemType.Keyword, s.Length);
+				else if (s.ToString() is "and" or "or" or "xor" or "is" or "typeof" or "sin" or "cos" or "tan"
+					or "asin" or "acos" or "atan" or "ln" or "Infty" or "Uncty" or "CombineWith" or "CloseOnReturnWith")
+					AddOperatorLexem(s);
+				else if (s.ToString() is "pow" or "tetra" or "penta" or "hexa")
+				{
+					ValidateEquality(ref s);
+					AddOperatorLexem(s);
+				}
+				else
+					AddLexem(s, LexemType.Identifier, s.Length);
+				return (true, false, default);
+			}
+		}
+		else if (";()[]{}".Contains(input[pos]))
+		{
+			AddOtherLexem((String)input[pos++]);
+			return (true, false, default);
+		}
+		var l = 0;
+		if (ValidateChar('-'))
+		{
+			var s3 = GetWord();
+			if (s3 == "Infty")
+			{
+				l += s3.Length + 1;
+				s = input.GetRange(pos - l, l);
+				AddOperatorLexem(s);
+				return (true, false, default);
+			}
+			else
+				pos -= s3.Length + 1;
+		}
+		pos += l;
+		s = new String(32, ValidateLexemTree(new LexemTree('\0', lexemTree), out var success_));
+		if (s.Length != 0 && success_)
+		{
+			AddOperatorLexem(s);
+			return (true, false, default);
+		}
+		s = GetUnformatted();
+		if (s.Length != 0)
+		{
+			GenerateMessage(0x0003, pos - s.Length);
+			return (true, false, default);
+		}
+		return (false, false, default);
+		String ValidateLexemTree(LexemTree lexemTree, out bool success)
+		{
+			success = false;
+			int start = pos, found = 0, lexemIndex = -1;
+			var c = input[pos++];
+			String result = [];
+			String Empty()
+			{
+				pos = start;
+				return [];
+			}
+			while ((lexemIndex = lexemTree.NextTree.FindIndex(lexemIndex + 1, x => x.Char == c)) != -1)
+			{
+				found++;
+				if (found > 1 && !lexemTree.AllowAll)
+					return Empty();
+				result.Add(c);
+				var result2 = ValidateLexemTree(lexemTree.NextTree[lexemIndex], out success);
+				if (!success)
+					return Empty();
+				result.AddRange(result2);
+			}
+			if (found == 0)
+			{
+				success = lexemTree.AllowNone;
+				return Empty();
+			}
+			return result;
+		}
+	}
+
+	private void SkipSpacesAndComments()
+	{
+		while (true)
+		{
+			SkipSpaces();
+			if (wreckOccurred || !(pos <= input.Length - 2 && input[pos] == '/'))
+				return;
+			var c = input[pos + 1];
+			if (c == '/')
+			{
+				pos += 2;
+				while (IsNotEnd() && input[pos] is not ('\r' or '\n'))
+					pos++;
+			}
+			else if (c == '*')
+			{
+				pos += 3;
+				while (IsNotEnd() && !(input[pos - 1] == '*' && input[pos] == '/'))
+					IncreasePosSmoothly();
+				if (IsNotEnd())
+					pos++;
+				else
+				{
+					GenerateMessage(0x9005, pos);
+					wreckOccurred = true;
+					return;
+				}
+			}
+			else if (c == '{')
+			{
+				pos += 2;
+				SkipNestedComments();
+			}
+			else
+				return;
+		}
+	}
+
+	private void SkipLineBreaks()
+	{
+		var start = pos;
+		lineN++;
+		lineStart = pos;
+		SkipSpaces();
+		if (!ValidateChar('\r') & !ValidateChar('\n'))
+			return;
+		if (start != 0 && "()[]{,.<>+-*/!%^&|".Contains(input[start - 1]))
+		{
+			GenerateMessage(0x8011, lineStart);
+			return;
+		}
+		lineN++;
+		lineStart = pos;
+		SkipSpaces();
+		if (IsNotEnd() && (")]},.<>+-!%^&|\r\n".Contains(input[pos])
+			|| input[pos] is '*' or '/' && !(pos + 1 < input.Length && input[pos + 1] is '*' or '/')))
+			GenerateMessage(0x8011, lineStart);
+	}
+
+	private void SkipSpaces()
+	{
+		var bStart = lineStart == pos;
+		var spaces = 0;
+		var redundantSpaces = false;
+		var tabs = 0;
+		var totalWhitespaces = 0;
+		while (IsNotEnd())
+		{
+			if (input[pos] is ' ' or (char)160)
+			{
+				if (bStart)
+				{
+					GenerateMessage(0x9016, pos);
+					wreckOccurred = true;
+					return;
+				}
+				if (spaces > 0 && !redundantSpaces)
+				{
+					GenerateMessage(0x800C, pos);
+					redundantSpaces = true;
+				}
+				spaces++;
+				totalWhitespaces++;
+			}
+			else if (input[pos] == '\t')
+			{
+				spaces = 0;
+				tabs++;
+				if (tabs > 5)
+				{
+					GenerateMessage(0x9014, pos);
+					wreckOccurred = true;
+					return;
+				}
+				totalWhitespaces++;
+			}
+			else
+				return;
+			if (totalWhitespaces > 8)
+			{
+				GenerateMessage(0x9015, pos);
+				wreckOccurred = true;
+				return;
+			}
+			pos++;
+		}
+	}
 
 	private bool IsNotEnd() => pos < input.Length;
 
@@ -557,53 +831,6 @@ public class CodeSample(String newString)
 		return result;
 	}
 
-	private String GetUnformatted()
-	{
-		var start = pos;
-		while (IsNotEnd() && !CheckLD() && !("_\"';()[]{} \t\r\n" + (char)160).Contains(input[pos]))
-			pos++;
-		return input[start..pos];
-	}
-
-	private void SkipSpacesAndComments()
-	{
-		while (true)
-		{
-			while (IsNotEnd() && input[pos] is ' ' or '\t' or (char)160)
-				pos++;
-			if (!(pos <= input.Length - 2 && input[pos] == '/'))
-				return;
-			var c = input[pos + 1];
-			if (c == '/')
-			{
-				pos += 2;
-				while (IsNotEnd() && input[pos] is not ('\r' or '\n'))
-					pos++;
-			}
-			else if (c == '*')
-			{
-				pos += 3;
-				while (IsNotEnd() && !(input[pos - 1] == '*' && input[pos] == '/'))
-					IncreasePosSmoothly();
-				if (IsNotEnd())
-					pos++;
-				else
-				{
-					GenerateMessage(0x9005, pos);
-					wreckOccurred = true;
-					return;
-				}
-			}
-			else if (c == '{')
-			{
-				pos += 2;
-				SkipNestedComments();
-			}
-			else
-				return;
-		}
-	}
-
 	private void SkipNestedComments()
 	{
 		int depth = 0, state = 0;
@@ -641,170 +868,18 @@ public class CodeSample(String newString)
 		wreckOccurred = true;
 	}
 
+	private String GetUnformatted()
+	{
+		var start = pos;
+		while (IsNotEnd() && !CheckLD() && !("_\"';()[]{} \t\r\n" + (char)160).Contains(input[pos]))
+			pos++;
+		return input[start..pos];
+	}
+
 	private void ValidateEquality(ref String s)
 	{
 		if (ValidateChar('='))
 			s.Add('=');
-	}
-
-	public (List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred) Disassemble()
-	{
-		while (IsNotEnd())
-		{
-			while (true)
-			{
-				var (flowControl, @return, value) = DisassembleIteration();
-				if (flowControl)
-					continue;
-				else if (!@return)
-					break;
-				else
-					return value;
-			}
-			if (success)
-				lexems.AddRange(lexemsBuffer);
-			lexemsBuffer = [];
-			success = false;
-		}
-		return (lexems, input, errors, wreckOccurred);
-	}
-
-	(bool flowControl, bool @return,
-		(List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred) value) DisassembleIteration()
-	{
-		if (wreckOccurred)
-		{
-			if (success)
-				lexems.AddRange(lexemsBuffer);
-			lexemsBuffer = [];
-			success = false;
-			return (false, true, (lexems, input, errors, true));
-		}
-		SkipSpacesAndComments();
-		if (wreckOccurred)
-			return (true, false, default);
-		if (!IsNotEnd())
-		{
-			success = true;
-			return (false, false, default);
-		}
-		if (ValidateChar('\r') | ValidateChar('\n'))
-		{
-			lineN++;
-			lineStart = pos;
-			success = true;
-			return (false, false, default);
-		}
-		void AddLexem(String string_, LexemType lexemType, int offset) =>
-			lexemsBuffer.Add(new Lexem(string_, lexemType, lineN, pos - offset - lineStart));
-		void AddOperatorLexem(String string_) => AddLexem(string_, LexemType.Operator, string_.Length);
-		void AddOtherLexem(String string_) => AddLexem(string_, LexemType.Other, string_.Length);
-		String s;
-		if (CheckChar('\'') || CheckChar('\"') || CheckChar('@'))
-		{
-			s = GetString(out var s2);
-			if (s.Length != 0)
-			{
-				AddLexem(s, LexemType.String, s2.Length);
-				return (true, false, default);
-			}
-		}
-		else if ((s = GetRawString(out var s3)).Length != 0)
-		{
-			AddLexem(s, LexemType.String, s3.Length);
-			return (true, false, default);
-		}
-		else if (CheckDigit())
-		{
-			s = GetNumber(out var numberType);
-			if (s.Length != 0)
-			{
-				AddLexem(s, numberType, s.Length);
-				return (true, false, default);
-			}
-		}
-		else if (CheckLetter() || CheckChar('_'))
-		{
-			s = GetWord();
-			if (s.Length != 0)
-			{
-				if (Keywords.Contains(s))
-					AddLexem(s, LexemType.Keyword, s.Length);
-				else if (s.ToString() is "and" or "or" or "xor" or "is" or "typeof" or "sin" or "cos" or "tan"
-					or "asin" or "acos" or "atan" or "ln" or "Infty" or "Uncty" or "CombineWith" or "CloseOnReturnWith")
-					AddOperatorLexem(s);
-				else if (s.ToString() is "pow" or "tetra" or "penta" or "hexa")
-				{
-					ValidateEquality(ref s);
-					AddOperatorLexem(s);
-				}
-				else
-					AddLexem(s, LexemType.Identifier, s.Length);
-				return (true, false, default);
-			}
-		}
-		else if (";()[]{}".Contains(input[pos]))
-		{
-			AddOtherLexem((String)input[pos++]);
-			return (true, false, default);
-		}
-		var l = 0;
-		if (ValidateChar('-'))
-		{
-			var s3 = GetWord();
-			if (s3 == "Infty")
-			{
-				l += s3.Length + 1;
-				s = input.GetRange(pos - l, l);
-				AddOperatorLexem(s);
-				return (true, false, default);
-			}
-			else
-				pos -= s3.Length + 1;
-		}
-		pos += l;
-		s = new String(32, ValidateLexemTree(new LexemTree('\0', lexemTree), out var success_));
-		if (s.Length != 0 && success_)
-		{
-			AddOperatorLexem(s);
-			return (true, false, default);
-		}
-		s = GetUnformatted();
-		if (s.Length != 0)
-		{
-			GenerateMessage(0x0003, pos - s.Length);
-			return (true, false, default);
-		}
-		return (false, false, default);
-		String ValidateLexemTree(LexemTree lexemTree, out bool success)
-		{
-			success = false;
-			int start = pos, found = 0, lexemIndex = -1;
-			var c = input[pos++];
-			String result = [];
-			String Empty()
-			{
-				pos = start;
-				return [];
-			}
-			while ((lexemIndex = lexemTree.NextTree.FindIndex(lexemIndex + 1, x => x.Char == c)) != -1)
-			{
-				found++;
-				if (found > 1 && !lexemTree.AllowAll)
-					return Empty();
-				result.Add(c);
-				var result2 = ValidateLexemTree(lexemTree.NextTree[lexemIndex], out success);
-				if (!success)
-					return Empty();
-				result.AddRange(result2);
-			}
-			if (found == 0)
-			{
-				success = lexemTree.AllowNone;
-				return Empty();
-			}
-			return result;
-		}
 	}
 
 	private void GenerateMessage(ushort code, int pos, params dynamic[] parameters) =>

@@ -26,7 +26,7 @@ namespace AvaloniaEdit.Utils;
 /// </summary>
 public struct StringSegment : IEquatable<StringSegment>
 {
-    /// <summary>
+	/// <summary>
 	/// Creates a new StringSegment.
 	/// </summary>
 	public StringSegment(string text, int offset, int count)
@@ -46,7 +46,7 @@ public struct StringSegment : IEquatable<StringSegment>
 	/// </summary>
 	public StringSegment(string text)
 	{
-	    Text = text ?? throw new ArgumentNullException(nameof(text));
+		Text = text ?? throw new ArgumentNullException(nameof(text));
 		Offset = 0;
 		Count = text.Length;
 	}
@@ -56,23 +56,23 @@ public struct StringSegment : IEquatable<StringSegment>
 	/// </summary>
 	public string Text { get; }
 
-    /// <summary>
+	/// <summary>
 	/// Gets the start offset of the segment with the text.
 	/// </summary>
 	public int Offset { get; }
 
-    /// <summary>
+	/// <summary>
 	/// Gets the length of the segment.
 	/// </summary>
 	public int Count { get; }
 
-    #region Equals and GetHashCode implementation
+	#region Equals and GetHashCode implementation
 	/// <inheritdoc/>
 	public override bool Equals(object obj)
 	{
-	    if (obj is StringSegment)
+		if (obj is StringSegment)
 			return Equals((StringSegment)obj); // use Equals method below
-	    return false;
+		return false;
 	}
 
 	/// <inheritdoc/>

@@ -1,13 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.9.34902.65
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11222.15
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaEdit", "AvaloniaEdit\AvaloniaEdit.csproj", "{B7C51C16-7171-2CEF-DEC9-E2667870E2B1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuiltInMemberCollections", "BuiltInMemberCollections\BuiltInMemberCollections.csproj", "{E1A27804-8080-4755-9D70-EB4866AE649C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuiltInTypeCollections", "BuiltInTypeCollections\BuiltInTypeCollections.csproj", "{CAC46C8D-A279-4F69-A521-D877478899E9}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeSample", "CodeSample\CodeSample.csproj", "{B68EEA0C-D77B-46AC-0A5C-88ACE4BA659B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeStyleRules", "CodeStyleRules\CodeStyleRules.csproj", "{EDDBA5CA-86D9-40DD-8142-226866B69ABE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSharp.NStar", "CSharp.NStar\CSharp.NStar.csproj", "{14D98B0C-51E6-454A-BA03-9265490C1EA9}"
 EndProject
@@ -19,11 +23,21 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonConverters", "JsonConve
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MainParsing", "MainParsing\MainParsing.csproj", "{C775FC4E-A552-4839-8B0F-C568A5D8DA31}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemberChecks", "MemberChecks\MemberChecks.csproj", "{B6B5ADF1-9AE9-4605-9701-879741BAB85F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemberConverters", "MemberConverters\MemberConverters.csproj", "{B3A3862E-5E93-40C5-882F-B2826D66D55F}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStarEntity", "NStarEntity\NStarEntity.csproj", "{8A55065B-4095-418B-A4D5-A26315315F5F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStarType", "NStarType\NStarType.csproj", "{EAEDD375-665E-424B-A698-790A95A1A0CB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStarUtilityFunctions", "NStarUtilityFunctions\NStarUtilityFunctions.csproj", "{374C2B05-D532-4365-81CE-B18045CD687E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuotesAndTreeBranch", "QuotesAndTreeBranch\QuotesAndTreeBranch.csproj", "{FE09F28C-176E-4EDA-A65C-7D6D4DA85642}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SemanticTree", "SemanticTree\SemanticTree.csproj", "{5539C599-1CC0-4799-B57C-DF6BEF67CFA7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypeChecks", "TypeChecks\TypeChecks.csproj", "{93291B80-1825-455F-B495-F6202F5D0D05}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypeConverters", "TypeConverters\TypeConverters.csproj", "{36526CE8-9512-41A1-A86F-51EF3E40A579}"
 EndProject
@@ -42,8 +56,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStar.Dictionaries", "..\.N
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStar.EasyEval", "..\.NStar\Sources\NStar.EasyEval\NStar.EasyEval.csproj", "{295F3E73-5488-4EBF-ADE5-4AD0B0B89678}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStar.ExtraHS", "..\.NStar\Sources\NStar.ExtraHS\NStar.ExtraHS.csproj", "{4A2D8B5B-B27C-115A-4DDB-AD6169395F0C}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStar.ExtraReplacing", "..\.NStar\Sources\NStar.ExtraReplacing\NStar.ExtraReplacing.csproj", "{4509AB95-1A79-4E8F-96F2-A479BF24D415}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStar.Linq", "..\.NStar\Sources\NStar.Linq\NStar.Linq.csproj", "{5B3B2DDC-C558-CB6B-D3A4-0822888560EC}"
@@ -61,18 +73,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStar.SumCollections", "..\.NStar\Sources\NStar.SumCollections\NStar.SumCollections.csproj", "{94BA0C70-206D-E61D-782B-E0B2502F4485}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStar.TreeSets", "..\.NStar\Sources\NStar.TreeSets\NStar.TreeSets.csproj", "{8A9CA20F-F351-42D7-AF5F-C13B0C273966}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuiltInTypeCollections", "BuiltInTypeCollections\BuiltInTypeCollections.csproj", "{CAC46C8D-A279-4F69-A521-D877478899E9}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStarType", "NStarType\NStarType.csproj", "{EAEDD375-665E-424B-A698-790A95A1A0CB}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TypeChecks", "TypeChecks\TypeChecks.csproj", "{93291B80-1825-455F-B495-F6202F5D0D05}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NStarUtilityFunctions", "NStarUtilityFunctions\NStarUtilityFunctions.csproj", "{374C2B05-D532-4365-81CE-B18045CD687E}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemberChecks", "MemberChecks\MemberChecks.csproj", "{B6B5ADF1-9AE9-4605-9701-879741BAB85F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemberConverters", "MemberConverters\MemberConverters.csproj", "{B3A3862E-5E93-40C5-882F-B2826D66D55F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -148,10 +148,6 @@ Global
 		{295F3E73-5488-4EBF-ADE5-4AD0B0B89678}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{295F3E73-5488-4EBF-ADE5-4AD0B0B89678}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{295F3E73-5488-4EBF-ADE5-4AD0B0B89678}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4A2D8B5B-B27C-115A-4DDB-AD6169395F0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4A2D8B5B-B27C-115A-4DDB-AD6169395F0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4A2D8B5B-B27C-115A-4DDB-AD6169395F0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4A2D8B5B-B27C-115A-4DDB-AD6169395F0C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4509AB95-1A79-4E8F-96F2-A479BF24D415}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4509AB95-1A79-4E8F-96F2-A479BF24D415}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4509AB95-1A79-4E8F-96F2-A479BF24D415}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -212,6 +208,10 @@ Global
 		{B3A3862E-5E93-40C5-882F-B2826D66D55F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B3A3862E-5E93-40C5-882F-B2826D66D55F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B3A3862E-5E93-40C5-882F-B2826D66D55F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EDDBA5CA-86D9-40DD-8142-226866B69ABE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDDBA5CA-86D9-40DD-8142-226866B69ABE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EDDBA5CA-86D9-40DD-8142-226866B69ABE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EDDBA5CA-86D9-40DD-8142-226866B69ABE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

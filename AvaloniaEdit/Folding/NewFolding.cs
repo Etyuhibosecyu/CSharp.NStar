@@ -74,5 +74,5 @@ public class NewFolding : ISegment
 	
 	int ISegment.Offset => StartOffset;
 
-    int ISegment.Length => EndOffset - StartOffset;
+	int ISegment.Length => EndOffset - StartOffset;
 }

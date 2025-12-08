@@ -50,7 +50,7 @@ namespace AvaloniaEdit.Document;
 /// </example>
 public sealed class TextAnchor : ITextAnchor
 {
-    internal TextAnchorNode Node { get; set; }
+	internal TextAnchorNode Node { get; set; }
 
 	internal TextAnchor(TextDocument document) => Document = document;
 
@@ -59,7 +59,7 @@ public sealed class TextAnchor : ITextAnchor
 	/// </summary>
 	public TextDocument Document { get; }
 
-    /// <inheritdoc/>
+	/// <inheritdoc/>
 	public AnchorMovementType MovementType { get; set; }
 	
 	/// <inheritdoc/>
@@ -90,10 +90,7 @@ public sealed class TextAnchor : ITextAnchor
 		get {
 			Document.DebugVerifyAccess();
 			
-			var n = Node;
-			if (n == null)
-				throw new InvalidOperationException();
-			
+			var n = Node ?? throw new InvalidOperationException();
 			var offset = n.Length;
 			if (n.Left != null)
 				offset += n.Left.TotalLength;
@@ -115,7 +112,7 @@ public sealed class TextAnchor : ITextAnchor
 	/// <exception cref="InvalidOperationException">Thrown when trying to get the Offset from a deleted anchor.</exception>
 	public int Line => Document.GetLineByOffset(Offset).LineNumber;
 
-    /// <summary>
+	/// <summary>
 	/// Gets the column number of this anchor.
 	/// </summary>
 	/// <exception cref="InvalidOperationException">Thrown when trying to get the Offset from a deleted anchor.</exception>

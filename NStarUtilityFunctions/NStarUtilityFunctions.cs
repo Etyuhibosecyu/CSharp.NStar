@@ -1,20 +1,9 @@
 ﻿global using NStar.Core;
-global using NStar.Linq;
-global using NStar.MathLib;
-global using NStar.MathLib.Extras;
 global using System;
-global using System.Diagnostics.CodeAnalysis;
-global using System.Reflection;
-global using static CSharp.NStar.BuiltInMemberCollections;
-global using static CSharp.NStar.NStarType;
-global using static CSharp.NStar.TypeChecks;
-global using static CSharp.NStar.TypeConverters;
-global using static NStar.Core.Extents;
+global using System.Diagnostics;
+global using System.Drawing;
+global using System.Numerics;
 global using static System.Math;
-global using G = System.Collections.Generic;
-global using String = NStar.Core.String;
-using System.Drawing;
-using System.Numerics;
 
 namespace CSharp.NStar;
 
@@ -22,6 +11,7 @@ public static class NStarUtilityFunctions
 {
 	private static int random_calls;
 	private static readonly double random_initializer = DateTime.Now.ToBinary() / 1E+9;
+	private static BitList? primes;
 
 	public static List<int> Chain(int start, int end) => new Chain(start, end - start + 1).ToList();
 
@@ -68,6 +58,33 @@ public static class NStarUtilityFunctions
 		var a = (int)Floor(RandomNumberBase(random_calls, random_initializer, max) + 1);
 		random_calls++;
 		return a;
+	}
+
+	public static bool IsPrime(int n)
+	{
+		if (n <= 1)
+			return false;
+		if (n is 2 or 3)
+			return true;
+		if ((n & 1) == 0 || n % 3 == 0)
+			return false;
+		if (primes != null)
+		{
+			Debug.Assert(primes.Length > n / 3 - 1);
+			return primes[n / 3 - 1];
+		}
+		primes = new(int.MaxValue / 3, true);
+		var sqrt = (int)Sqrt(int.MaxValue);
+		var increment = 4;
+		for (var i = 5; i < sqrt; i += increment = 6 - increment)
+		{
+			if (!primes[i / 3 - 1])
+				continue;
+			var innerIncrement = i % 3;
+			for (var j = i * i; j >= 0; j += i << (innerIncrement = 3 - innerIncrement))
+				primes[j / 3 - 1] = false;
+		}
+		return primes[n / 3 - 1];
 	}
 
 	public static double Log(double a, double x) => Math.Log(x, a);

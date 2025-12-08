@@ -1,5 +1,6 @@
 ﻿global using System;
 global using String = NStar.Core.String;
+using Mpir.NET;
 using System.Globalization;
 using static CSharp.NStar.SemanticTree;
 
@@ -14,6 +15,8 @@ public class CSharpNStarTests
 	private const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
 	private const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
 	private const string A1000000 = "\"" + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + "\"";
+	private const string NL16 = "\n;\n;\n;\n;\n;\n;\n;\n;\n;\n;\n;\n;\n;\n;\n;\n;";
+	private const string NL128 = NL16 + NL16 + NL16 + NL16 + NL16 + NL16 + NL16 + NL16;
 
 	[TestMethod]
 	[DataRow("""
@@ -51,7 +54,8 @@ Error 4007 in line 5 at position 102: the strings cannot be subtracted
 	[DataRow("""
 		return (("A", 77777, 3.14159) + 5, ("A", 77777, 3.14159) - 5, ("A", 77777, 3.14159) * 5, ("A", 77777, 3.14159) / 5, ("A", 77777, 3.14159) % 5);
 		
-		""", """(null, null, null, null, null)""", @"Error 4006 in line 1 at position 30: cannot apply the operator ""+"" to the types ""(string, int, real)"" and ""byte""
+		""", """(null, null, null, null, null)""", @"Warning 800F in line 1 at position 0: too long line (128 characters are supported, actually 143)
+Error 4006 in line 1 at position 30: cannot apply the operator ""+"" to the types ""(string, int, real)"" and ""byte""
 Error 4006 in line 1 at position 57: cannot apply the operator ""-"" to the types ""(string, int, real)"" and ""byte""
 Error 4006 in line 1 at position 84: cannot apply the operator ""*"" to the types ""(string, int, real)"" and ""byte""
 Error 4006 in line 1 at position 111: cannot apply the operator ""/"" to the types ""(string, int, real)"" and ""byte""
@@ -61,6 +65,7 @@ Error 4006 in line 1 at position 138: cannot apply the operator ""%"" to the typ
 		return (5 + ("A", 77777, 3.14159), 5 - ("A", 77777, 3.14159), 5 * ("A", 77777, 3.14159), 5 / ("A", 77777, 3.14159), 5 % ("A", 77777, 3.14159));
 				
 		""", """(null, null, null, 0, 0)""", """
+			Warning 800F in line 1 at position 0: too long line (128 characters are supported, actually 143)
 			Error 4006 in line 1 at position 10: cannot apply the operator "+" to the types "byte" and "(string, int, real)"
 			Error 4006 in line 1 at position 37: cannot apply the operator "-" to the types "byte" and "(string, int, real)"
 			Error 4006 in line 1 at position 64: cannot apply the operator "*" to the types "byte" and "(string, int, real)"
@@ -70,7 +75,7 @@ Error 4006 in line 1 at position 138: cannot apply the operator ""%"" to the typ
 			""")]
 	[DataRow("""
 		return (5 + null, 5 - null, 5 * null, 5 / null, 5 % null, null + 5, null - 5, null * 5, null / 5, null % 5);
-						
+		
 		""", """(5, 5, 0, 0, 0, 5, -5, 0, 0, 0)""", @"Error 4006 in line 1 at position 40: cannot apply the operator ""/"" to the types ""byte"" and ""null""
 Error 4006 in line 1 at position 50: cannot apply the operator ""%"" to the types ""byte"" and ""null""
 ")]
@@ -78,7 +83,7 @@ Error 4006 in line 1 at position 50: cannot apply the operator ""%"" to the type
 		var a = ("A", 77777, 3.14159);
 		var b = 5;
 		return (a + b, a - b, a * b, a / b, a % b, b + a, b - a, b * a, b / a, b % a);
-								
+		
 		""", """(null, null, null, null, null, null, null, null, 0, 0)""", @"Error 4006 in line 3 at position 10: cannot apply the operator ""+"" to the types ""(string, int, real)"" and ""byte""
 Error 4006 in line 3 at position 17: cannot apply the operator ""-"" to the types ""(string, int, real)"" and ""byte""
 Error 4006 in line 3 at position 24: cannot apply the operator ""*"" to the types ""(string, int, real)"" and ""byte""
@@ -104,7 +109,7 @@ Error 4003 in line 1 at position 98: cannot compute factorial of this constant
 		var a = 5;
 		var b = null;
 		return (a + b, a - b, a * b, a / b, a % b, b + a, b - a, b * a, b / a, b % a);
-								
+		
 		""", """(5, 5, 0, 0, 0, 5, -5, 0, 0, 0)""", @"Error 4006 in line 3 at position 31: cannot apply the operator ""/"" to the types ""byte"" and ""null""
 Error 4006 in line 3 at position 38: cannot apply the operator ""%"" to the types ""byte"" and ""null""
 ")]
@@ -335,7 +340,8 @@ int Function F2(int n)
 }
 var a = new MyClass();
 return (F1(10), F2(10, 10), F2(10.01), a.F1(10), a.F2(10, 10), a.F2(10.01), MyClass.G1(10), MyClass.G2(10, 10), MyClass.G2(10.01));
-", "null", @"Error 4022 in line 33 at position 11: the function ""F1"" must have 0 parameters
+", "null", @"Warning 800F in line 33 at position 0: too long line (128 characters are supported, actually 131)
+Error 4022 in line 33 at position 11: the function ""F1"" must have 0 parameters
 Error 4022 in line 33 at position 19: the function ""F2"" must have 1 parameters
 Error 4027 in line 33 at position 31: the conversion from the type ""real"" to the type ""int"" is possible only in the function return, not in the direct assignment and not in the call
 Error 4022 in line 33 at position 44: the function ""F1"" must have 0 parameters
@@ -368,10 +374,10 @@ return F(-5);
 	[DataRow(@"int Function F(int x)
 {
 	if (x < 0)
-	if (x % 2 == 0)
-		return 0;
-	else
-		return 1;
+		if (x % 2 == 0)
+			return 0;
+		else
+			return 1;
 	x++;
 }
 return F(-5);
@@ -380,10 +386,10 @@ return F(-5);
 	[DataRow(@"int Function F(int x)
 {
 	while (x < 0)
-	if (x % 2 == 0)
-		return 0;
-	else
-		return 1;
+		if (x % 2 == 0)
+			return 0;
+		else
+			return 1;
 	x++;
 }
 return F(-5);
@@ -392,10 +398,10 @@ return F(-5);
 	[DataRow(@"int Function F(int x)
 {
 	loop
-	if (x % 2 == 0)
-		return 0;
-	else
-		return 1;
+		if (x % 2 == 0)
+			return 0;
+		else
+			return 1;
 	x++;
 }
 return F(-5);
@@ -404,10 +410,10 @@ return F(-5);
 	[DataRow(@"int Function F(int x)
 {
 	if (x < 0)
-	if (x % 2 == 0)
-		return 0;
-	else
-		return 1;
+		if (x % 2 == 0)
+			return 0;
+		else
+			return 1;
 	else
 		return 2;
 	x++;
@@ -418,10 +424,10 @@ return F(-5);
 	[DataRow(@"int Function F(int x)
 {
 	if (x < 0)
-	if (x % 2 == 0)
-		return 0;
-	else
-		return 1;
+		if (x % 2 == 0)
+			return 0;
+		else
+			return 1;
 	else
 	{
 		x++;
@@ -438,10 +444,10 @@ return (F(-5), F(3), F(0));
 	[DataRow(@"int Function F(int x)
 {
 	if (x < 0)
-	if (x % 2 == 0)
-		return 0;
-	else
-		return 1;
+		if (x % 2 == 0)
+			return 0;
+		else
+			return 1;
 	else
 	{
 		x++;
@@ -460,13 +466,13 @@ return (F(-5), F(3), F(0));
 	[DataRow(@"int Function F(int x)
 {
 	if (x < 0)
-	if (x > -100)
-	if (x % 2 == 0)
-		return 0;
-	else
-		return 1;
-	else
-		return 2;
+		if (x > -100)
+			if (x % 2 == 0)
+				return 0;
+			else
+				return 1;
+		else
+			return 2;
 	x++;
 }
 return F(-5);
@@ -480,8 +486,8 @@ return F(-5);
 		else
 			return x - y;
 	else
-		if (y > 0)
-			return x * y;
+	if (y > 0)
+		return x * y;
 }
 ", "null", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
 ")]
@@ -489,21 +495,23 @@ return F(-5);
 {
 	for (int i in Chain(1, list.Length))
 		if (list[i] > 0)
-				return list[i];
+			return list[i];
 }
 ", "null", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
 ")]
 	[DataRow(@"int Function ComplexFunction(int x, list() int list)
 {
 	if (x > 0)
+	{
 		for (int i in Chain(1, list.Length))
 			if (list[i] > x)
 				return list[i];
+	}
 	else
 		while (x < 10)
 			x++;
-		if (x % 2 == 0)
-			return x;
+	if (x % 2 == 0)
+		return x;
 }
 ", "null", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
 ")]
@@ -562,6 +570,34 @@ return F(5);
 MyClass.F();
 return MyClass.F(5);
 ", "25", "Ошибок нет")]
+	[DataRow(@"static abstract Class MyClass
+{
+	null Function F()
+	{
+	}
+	int Function F(int x)
+	{
+		return x * x;
+	}
+}
+MyClass.F();
+return MyClass.F(5);
+", "25", @"Error 0005 in line 1 at position 7: incorrect word or order of words in construction declaration
+")]
+	[DataRow(@"static sealed Class MyClass
+{
+	null Function F()
+	{
+	}
+	int Function F(int x)
+	{
+		return x * x;
+	}
+}
+MyClass.F();
+return MyClass.F(5);
+", "25", @"Error 0005 in line 1 at position 7: incorrect word or order of words in construction declaration
+")]
 	[DataRow(@"static Class MyClass
 {
 	int Function F(int x)
@@ -742,7 +778,7 @@ return MyClass.F(5);
 {
 	null Function F()
 	{
-			return null;
+		return null;
 	}
 	int Function F(int x)
 	{
@@ -791,7 +827,8 @@ Error 2007 in line 1 at position 8: unrecognized construction
 ")]
 	[DataRow(@"list(3) int a = (((1, 2, 3), (4, 5, 6), (7, 8, 9)), ((10, 11, 12), (13, 14, 15), (16, 17, 18)), ((19, 20, 21), (22, 23, 24), (25, 26, 27)));
 return a[1, 2, 3];
-", "6", "Ошибок нет")]
+", "6", @"Warning 800F in line 1 at position 0: too long line (128 characters are supported, actually 140)
+")]
 	[DataRow(@"list() (string, int, real) a = Fill((""A"", 77777, 3.14159), 3);
 list() (list() (string, int, real), list() (string, int, real),
 	list() (string, int, real)) b = ((a, a, a), (a, a, a), (a, a, a));
@@ -875,15 +912,15 @@ return F()();
 ", "100", "Ошибок нет")]
 	[DataRow(@"Class MyClass /{Class - с большой буквы
 {
-   unsigned int Function F1(unsigned int n) /{Слово Function обязательно
-   {
-	  return n * 2;
-   }
- 
-   null Function F2()
-   {
-	  return null; //Просто ""return;"" не катит
-   }
+	unsigned int Function F1(unsigned int n) /{Слово Function обязательно
+	{
+		return n * 2;
+	}
+
+	null Function F2()
+	{
+		return null; //Просто ""return;"" не катит
+	}
 }
 ", "null", @"Wreck 9006 in line 13 at position 0: unclosed 2 nested comments in the end of code
 ")]
@@ -1910,8 +1947,8 @@ return (a1, a2, a3, a4);
 	}
 }
 
- Person person = new Person(""Alice"", 30);
- return (person.GetName(), person.GetAge());
+Person person = new Person(""Alice"", 30);
+return (person.GetName(), person.GetAge());
 ", @"(""Alice"", 30)", "Ошибок нет")]
 	[DataRow(@"Class Person
 {
@@ -1929,8 +1966,8 @@ return (a1, a2, a3, a4);
 	}
 }
 
- Person person = new Person(""Alice"", 30);
- return (person.GetName(), person.GetAge());
+Person person = new Person(""Alice"", 30);
+return (person.GetName(), person.GetAge());
 ", @"(""Alice"", null)", @"Error 402B in line 13 at position 9: incompatibility between the type of the returning value ""int"" and the function return type ""string"" - use an addition of zero-length string for this
 ")]
 	[DataRow(@"Class Animal
@@ -2292,11 +2329,6 @@ return a;
 }
 return Fill(F(3.14159) >= 10, 100);
 ", "(false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false)", "Ошибок нет")]
-	[DataRow(@"string s = """";
-repeat (1000000)
-	s += 'A';
-return s;
-", A1000000, "Ошибок нет")]
 	[DataRow(@"using System;
 list() int list = (2, 2, 3, 1, 1, 2, 1);
 return RedStarLinqExtras.FrequencyTable(list);
@@ -2657,40 +2689,6 @@ return (MyClass.a, MyClass.b, MyClass.c);
 ", "(null, 3.14159, \"A\")", @"Error 203D in line 3 at position 12: the constant must have a value
 Error 4033 in line 7 at position 16: the type ""MyClass"" does not contain member ""a""
 ")]
-	[DataRow(@"static Class MyClass
-{
-	const string A1000000 = A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000;
-	private const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
-	private const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
-	private const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
-	private const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
-	private const string A10 = ""AAAAAAAAAA"";
-}
-return MyClass.A1000000;
-", A1000000, "Ошибок нет")]
-	[DataRow(@"static Class MyClass
-{
-	const string A1000000 = MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000;
-	private const string A100000 = MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000;
-	private const string A10000 = MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000;
-	private const string A1000 = MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100;
-	private const string A100 = MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10;
-	private const string A10 = ""AAAAAAAAAA"";
-}
-return MyClass.A1000000;
-", A1000000, "Ошибок нет")]
-	[DataRow(@"static Class MyClass
-{
-	private const string A1000000 = A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000;
-	private const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
-	private const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
-	private const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
-	private const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
-	private const string A10 = ""AAAAAAAAAA"";
-}
-return MyClass.A1000000;
-", "null", @"Error 4030 in line 10 at position 15: the property ""MyClass.A1000000"" is inaccessible from here
-")]
 	[DataRow(@"const int a = 5;
 const real b = 3.14159;
 const string c = ""A"";
@@ -2721,31 +2719,6 @@ const string c = ""A"";
 return (a = 8, b *= 2, c);
 ", "(null, null, \"A\")", @"Error 4052 in line 4 at position 10: cannot assign a value to the constant
 Error 4052 in line 4 at position 17: cannot assign a value to the constant
-")]
-	[DataRow(@"const string A1000000 = A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000;
-const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
-const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
-const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
-const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
-const string A10 = ""AAAAAAAAAA"";
-return A1000000;
-", A1000000, "Ошибок нет")]
-	[DataRow(@"static Class MyClass
-{
-	private const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
-	private string A10 = ""AAAAAAAAAA"";
-}
-return MyClass.A100;
-", "null", @"Error 4050 in line 3 at position 29: this expression must be constant but it isn't
-Error 4050 in line 3 at position 35: this expression must be constant but it isn't
-Error 4050 in line 3 at position 41: this expression must be constant but it isn't
-Error 4050 in line 3 at position 47: this expression must be constant but it isn't
-Error 4050 in line 3 at position 53: this expression must be constant but it isn't
-Error 4050 in line 3 at position 59: this expression must be constant but it isn't
-Error 4050 in line 3 at position 65: this expression must be constant but it isn't
-Error 4050 in line 3 at position 71: this expression must be constant but it isn't
-Error 4050 in line 3 at position 77: this expression must be constant but it isn't
-Error 4050 in line 3 at position 83: this expression must be constant but it isn't
 ")]
 	[DataRow(@"const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
 string A10 = ""AAAAAAAAAA"";
@@ -2884,9 +2857,11 @@ return c[1, 2, 3];
 list(bool + 1) (string, int, real) a = Fill((""A"", 77777, 3.14159), 3);
 list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real),
 	list(bool + 1) (string, int, real)) b = ((a, a, a), (a, a, a), (a, a, a));
-list(bool + 1) (list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real), list(bool + 1) (string, int, real)),
+list(bool + 1) (list(bool + 1) (list(bool + 1) (string, int, real),
+	list(bool + 1) (string, int, real), list(bool + 1) (string, int, real)),
 	list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real), list(bool + 1) (string, int, real)),
-	list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real), list(bool + 1) (string, int, real))) c
+	list(bool + 1) (list(bool + 1) (string, int, real),
+	list(bool + 1) (string, int, real), list(bool + 1) (string, int, real))) c
 	= ((b, b, b), (b, b, b), (b, b, b));
 return c[1, 2, 3];
 ", """((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)), (("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159)))""", "Ошибок нет")]
@@ -2958,9 +2933,11 @@ Error 4057 in line 2 at position 5: this expression must be constant and implici
 list(bool + 1) (string, int, real) a = Fill((""A"", 77777, 3.14159), 3);
 list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real),
 	list(bool + 1) (string, int, real)) b = ((a, a, a), (a, a, a), (a, a, a));
-list(bool + 1) (list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real), list(bool + 1) (string, int, real)),
+list(bool + 1) (list(bool + 1) (list(bool + 1) (string, int, real),
+	list(bool + 1) (string, int, real), list(bool + 1) (string, int, real)),
 	list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real), list(bool + 1) (string, int, real)),
-	list(bool + 1) (list(bool + 1) (string, int, real), list(bool + 1) (string, int, real), list(bool + 1) (string, int, real))) c
+	list(bool + 1) (list(bool + 1) (string, int, real),
+	list(bool + 1) (string, int, real), list(bool + 1) (string, int, real))) c
 	= ((b, b, b), (b, b, b), (b, b, b));
 return c[1, 2, 3];
 ", "null", @"Error 4057 in line 2 at position 5: this expression must be constant and implicitly convertible to the ""int"" type
@@ -5037,7 +5014,7 @@ return p;
 ")]
 	[DataRow(@"Class Config
 {
-   int Timeout { get, init };
+	int Timeout { get, init };
 }
 var c = new Config[100]();
 c.Timeout = 200;
@@ -5046,14 +5023,14 @@ return c;
 ")]
 	[DataRow(@"Class Config
 {
-   int Timeout { get, init };
+	int Timeout { get, init };
 }
 var c = new Config[100]();
 return c;
 ", "new Config(100)", "Ошибок нет")]
 	[DataRow(@"Class Config
 {
-   int Timeout { get, init };
+	int Timeout { get, init };
 }
 var c = new Config[""100""]();
 return c;
@@ -5061,7 +5038,7 @@ return c;
 ")]
 	[DataRow(@"Class Secret
 {
-   string Code { get, private init };
+	string Code { get, private init };
 }
 var s = new Secret[""AAA""]();
 return s;
@@ -5199,7 +5176,7 @@ return p;
 ")]
 	[DataRow(@"Class Config
 {
-   int Timeout { get, init };
+	int Timeout { get, init };
 }
 Config[100] c = new();
 c.Timeout = 200;
@@ -5208,14 +5185,14 @@ return c;
 ")]
 	[DataRow(@"Class Config
 {
-   int Timeout { get, init };
+	int Timeout { get, init };
 }
 Config[100] c = new();
 return c;
 ", "new Config(100)", "Ошибок нет")]
 	[DataRow(@"Class Config
 {
-   int Timeout { get, init };
+	int Timeout { get, init };
 }
 Config[""100""] c = new();
 return c;
@@ -5223,7 +5200,7 @@ return c;
 ")]
 	[DataRow(@"Class Secret
 {
-   string Code { get, private init };
+	string Code { get, private init };
 }
 Secret[""AAA""] s = new();
 return s;
@@ -5906,14 +5883,14 @@ long long b = 1000;
 long long c = a + b;
 long long d = a * b;
 long long e = a - b;
-long long f = a / b;  // целочисленное деление
+long long f = a / b; // целочисленное деление
 long long g = a % b; // остаток
 bool isGreater = a > b;
 bool isEqual = a == b;
 long long abs = Abs(a);
 long long pow_ = a pow 3;
-int sign = a.Sign;  // -1, 0, 1
-int sign2 = (-a).Sign;  // -1, 0, 1
+int sign = a.Sign; // -1, 0, 1
+int sign2 = (-a).Sign; // -1, 0, 1
 int x = a % 2147483648;
 string s = """" + a;
 return (a, b, c, d, e, f, g, isGreater, isEqual, abs, pow_, sign, sign2, x, s);
@@ -5964,10 +5941,10 @@ complex bad = nan + inf;
 int i = c1 % 2147483648;
 real r = c1;
 complex pow_ = c1 ** 2;
-complex badPolar = complex.FromPolarCoordinates(-1.0, Math.PI);  // Модуль < 0 — неявно обрабатывается, но может быть неочевидно
+complex badPolar = complex.FromPolarCoordinates(-1.0, Math.PI); // Модуль < 0 — неявно обрабатывается, но может быть неочевидно
 complex c4 = new complex(0.1 + 0.2, 0);
 complex c5 = new complex(0.3, 0);
-bool almostEqual = c4 == c5;  // Может быть false из-за погрешностей FP!
+bool almostEqual = c4 == c5; // Может быть false из-за погрешностей FP!
 return (c1, c2, zero, divByZero, nan, inf, bad, i, r, pow_, badPolar, almostEqual);
 ", @"(3+4I, 5+0I, 0+0I, Uncty+UnctyI, Uncty+0I, Infty+0I, Uncty+0I, 0, null, 0+0I, -1+0I, false)",
 		@"Error 2012 in line 10 at position 19: expected: identifier or basic expression or expression in round brackets
@@ -6025,6 +6002,347 @@ object obj2 = ""AAA"";
 object obj3 = 123;
 return (obj1, obj2, obj3, typeof(obj1), typeof(obj2), typeof(obj3));
 ", @"((), ""AAA"", 123, System.Collections.Buffer[int], string, int)", "Ошибок нет")]
+	[DataRow(@"using System;
+using System.IO;
+() byte list = File.ReadAllBytes(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+	@""Visual Studio 2022\Projects\Добавить эту строку в .csproj всех проектов.txt""));
+File.WriteAllBytes(@""D:\aaa.txt"", list);
+File.Delete(@""D:\aaa.txt"");
+", "null", "Ошибок нет")]
+	[DataRow(@"return  Q();
+", @"""return  Q();\r\n""", @"Warning 800C in line 1 at position 7: redundant space(s)
+")]
+	[DataRow(@"						return Q();
+", "null", @"Wreck 9014 in line 1 at position 5: too many sequential tabs (only 5 are supported)
+")]
+	[DataRow("return   " + "   " + "   " + @"Q();
+", "null", @"Warning 800C in line 1 at position 7: redundant space(s)
+Wreck 9015 in line 1 at position 14: too many sequential whitespaces
+")]
+	[DataRow("return \t \t \t \t " + @"Q();
+", "null", @"Wreck 9015 in line 1 at position 14: too many sequential whitespaces
+")]
+	[DataRow(@" return Q();
+", @"null", @"Wreck 9016 in line 1 at position 0: spaces instead of tabs at the line start
+")]
+	[DataRow("\t" + @" return Q();
+", @"null", @"Wreck 9016 in line 1 at position 1: spaces instead of tabs at the line start
+")]
+	[DataRow(@"int Function ComplexFunction(int x, list() int list)
+{
+	if (x > 0)
+		for (int i in Chain(1, list.Length))
+			if (list[i] > x)
+				return list[i];
+	else
+		while (x < 10)
+			x++;
+		if (x % 2 == 0)
+			return x;
+}
+", "null", @"Warning 800D in line 5 at position 3: missing indent(s) detected
+Warning 800D in line 5 at position 3: missing indent(s) detected
+Warning 800D in line 8 at position 2: missing indent(s) detected
+Warning 800D in line 8 at position 2: missing indent(s) detected
+Warning 800E in line 3 at position 1: redundant indent(s) detected
+Warning 800E in line 3 at position 1: redundant indent(s) detected
+Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
+")]
+	[DataRow(@"int Function F(int x)
+{
+	if (x < 0)
+	if (x % 2 == 0)
+		return 0;
+	else
+		return 1;
+	x++;
+}
+return F(-5);
+", "0", @"Warning 800D in line 3 at position 1: missing indent(s) detected
+Warning 800D in line 4 at position 1: missing indent(s) detected
+Warning 800D in line 4 at position 1: missing indent(s) detected
+Warning 800D in line 4 at position 1: missing indent(s) detected
+Warning 800D in line 4 at position 1: missing indent(s) detected
+Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
+")]
+	[DataRow(@"Class MyClass
+{
+	null Function F()
+	{
+			return null;
+	}
+	int Function F(int x)
+	{
+		return x * x;
+	}
+}
+new MyClass().F();
+return new MyClass().F(5);
+", "25", @"Warning 800E in line 5 at position 3: redundant indent(s) detected
+")]
+	[DataRow(@"Class MyClass
+{
+	null Function F()
+	{" + NL128 + @"
+	}
+	int Function F(int x)
+	{
+		return x * x;
+	}
+}
+new MyClass().F();
+return new MyClass().F(5);
+", "25", "Ошибок нет")]
+	[DataRow(@"Class MyClass
+{
+	null Function F()
+	{
+" + NL128 + @"
+	}
+	int Function F(int x)
+	{
+		return x * x;
+	}
+}
+new MyClass().F();
+return new MyClass().F(5);
+", "25", @"Warning 8010 in line 3 at position 1: too long function (128 lines are supported, actually 129)
+")]
+	[DataRow(@"Class MyClass
+{
+	null Function F()
+	{
+
+	}
+	int Function F(int x)
+	{
+		return x * x;
+	}
+}
+new MyClass().F();
+return new MyClass().F(5);
+", "25", @"Warning 8011 in line 6 at position 0: redundant empty line(s) detected
+")]
+	[DataRow(@"Class MyClass
+{
+	null Function F()
+	{
+		;
+
+
+		;
+	}
+	int Function F(int x)
+	{
+		return x * x;
+	}
+}
+new MyClass().F();
+return new MyClass().F(5);
+", "25", @"Warning 8011 in line 7 at position 0: redundant empty line(s) detected
+")]
+	[DataRow(@"Class MyClass
+{
+	null Function F()
+	{
+		;
+
+		;
+	}
+	int Function F(int x)
+	{
+		return x * x;
+	}
+}
+new MyClass().F();
+return new MyClass().F(5);
+", "25", "Ошибок нет")]
+	[DataRow(@"Class MyClass
+{
+	null Function F()
+	{
+	}
+
+
+	int Function F(int x)
+	{
+		return x * x;
+	}
+}
+new MyClass().F();
+return new MyClass().F(5);
+", "25", @"Warning 8011 in line 7 at position 0: redundant empty line(s) detected
+")]
+	[DataRow(@"static Megaclass MyClass
+{
+	null Function F1() { }
+
+	null Function F2() { }
+
+	null Function F3() { }
+
+	null Function F4() { }
+
+	null Function F5() { }
+
+	null Function F6() { }
+
+	null Function F7() { }
+
+	null Function F8() { }
+}
+", "null", @"Warning 8012 in line 1 at position 0: the megaclasses are static implicitly; the word ""static"" is not necessary
+")]
+	[DataRow(@"abstract Megaclass MyClass
+{
+	null Function F1() { }
+
+	null Function F2() { }
+
+	null Function F3() { }
+
+	null Function F4() { }
+
+	null Function F5() { }
+
+	null Function F6() { }
+
+	null Function F7() { }
+
+	null Function F8() { }
+}
+", "null", @"Error 0012 in line 1 at position 0: the megaclass cannot be abstract or sealed
+")]
+	[DataRow(@"sealed Megaclass MyClass
+{
+	null Function F1() { }
+
+	null Function F2() { }
+
+	null Function F3() { }
+
+	null Function F4() { }
+
+	null Function F5() { }
+
+	null Function F6() { }
+
+	null Function F7() { }
+
+	null Function F8() { }
+}
+", "null", @"Error 0012 in line 1 at position 0: the megaclass cannot be abstract or sealed
+")]
+	[DataRow(@"sealed Class MyClass : [int, int]
+{
+	null Function F1() { }
+
+	null Function F2() { }
+
+	null Function F3() { }
+
+	null Function F4() { }
+
+	null Function F5() { }
+
+	null Function F6() { }
+
+	null Function F7() { }
+
+	null Function F8() { }
+
+	null Function F9() { }
+
+	null Function F10() { }
+
+	null Function F11() { }
+
+	null Function F12() { }
+
+	null Function F13() { }
+
+	null Function F14() { }
+
+	null Function F15() { }
+
+	null Function F16() { }
+}
+", "null", "Ошибок нет")]
+	[DataRow(@"sealed Class MyClass : [int, int]
+{
+	null Function F1() { }
+
+	null Function F2() { }
+
+	null Function F3() { }
+
+	null Function F4() { }
+
+	null Function F5() { }
+
+	null Function F6() { }
+
+	null Function F7() { }
+
+	null Function F8() { }
+
+	null Function F9() { }
+
+	null Function F10() { }
+
+	null Function F11() { }
+
+	null Function F12() { }
+
+	null Function F13() { }
+
+	null Function F14() { }
+
+	null Function F15() { }
+
+	null Function F16() { }
+
+	null Function F17() { }
+}
+", "null", @"Warning 8013 in line 1 at position 13: an attempt to create a god class detected (more than 16 functions); split it or replace the word ""Class"" with ""Megaclass"" (note that megaclasses are static)
+")]
+	[DataRow(@"Megaclass MyClass
+{
+	null Function F1() { }
+
+	null Function F2() { }
+
+	null Function F3() { }
+
+	null Function F4() { }
+
+	null Function F5() { }
+
+	null Function F6() { }
+
+	null Function F7() { }
+
+	null Function F8() { }
+
+	null Function F9() { }
+
+	null Function F10() { }
+
+	null Function F11() { }
+
+	null Function F12() { }
+
+	null Function F13() { }
+
+	null Function F14() { }
+
+	null Function F15() { }
+
+	null Function F16() { }
+
+	null Function F17() { }
+}
+", "null", "Ошибок нет")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());
@@ -6038,6 +6356,76 @@ return x*1;
 ", "0", "Ошибок нет")]
 	[DataRow(@"return куегкт;
 ", "null", @"Error 4001 in line 1 at position 7: the identifier ""куегкт"" is not defined in this location
+")]
+	[DataRow(@"string s = """";
+repeat (1000000)
+	s += 'A';
+return s;
+", A1000000, "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const string A1000000 = A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000;
+	private const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
+	private const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
+	private const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
+	private const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+	private const string A10 = ""AAAAAAAAAA"";
+}
+return MyClass.A1000000;
+", A1000000, "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	const string A1000000 = MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000
+		+ MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000 + MyClass.A100000;
+	private const string A100000 = MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000
+		+ MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000 + MyClass.A10000;
+	private const string A10000 = MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000
+		+ MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000 + MyClass.A1000;
+	private const string A1000 = MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100
+		+ MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100 + MyClass.A100;
+	private const string A100 = MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10
+		+ MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10 + MyClass.A10;
+	private const string A10 = ""AAAAAAAAAA"";
+}
+return MyClass.A1000000;
+", A1000000, "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	private const string A1000000 = A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000;
+	private const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
+	private const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
+	private const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
+	private const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+	private const string A10 = ""AAAAAAAAAA"";
+}
+return MyClass.A1000000;
+", "null", @"Warning 800F in line 3 at position 0: too long line (128 characters are supported, actually 134)
+Error 4030 in line 10 at position 15: the property ""MyClass.A1000000"" is inaccessible from here
+")]
+	[DataRow(@"const string A1000000 = A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000 + A100000;
+const string A100000 = A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000 + A10000;
+const string A10000 = A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000 + A1000;
+const string A1000 = A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100 + A100;
+const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+const string A10 = ""AAAAAAAAAA"";
+return A1000000;
+", A1000000, "Ошибок нет")]
+	[DataRow(@"static Class MyClass
+{
+	private const string A100 = A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10 + A10;
+	private string A10 = ""AAAAAAAAAA"";
+}
+return MyClass.A100;
+", "null", @"Error 4050 in line 3 at position 29: this expression must be constant but it isn't
+Error 4050 in line 3 at position 35: this expression must be constant but it isn't
+Error 4050 in line 3 at position 41: this expression must be constant but it isn't
+Error 4050 in line 3 at position 47: this expression must be constant but it isn't
+Error 4050 in line 3 at position 53: this expression must be constant but it isn't
+Error 4050 in line 3 at position 59: this expression must be constant but it isn't
+Error 4050 in line 3 at position 65: this expression must be constant but it isn't
+Error 4050 in line 3 at position 71: this expression must be constant but it isn't
+Error 4050 in line 3 at position 77: this expression must be constant but it isn't
+Error 4050 in line 3 at position 83: this expression must be constant but it isn't
 ")]
 	[DataRow("""
 real Function D(real[3] abc)
@@ -6092,5 +6480,29 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 			+ TargetResult.Replace("\"", "\"\"") + "\"") + (TargetErrors == null
 			|| errors == TargetErrors ? "" : " and produced errors @\"" + errors.Replace("\"", "\"\"")
 			+ "\" instead of @\"" + TargetErrors.Replace("\"", "\"\"") + "\"") + "!");
+	}
+}
+
+[TestClass]
+public class UtilityFunctionTests
+{
+	private readonly Random random = new(1234567890);
+
+	[TestMethod]
+	public void TestIsPrime()
+	{
+		for (var i = 0; i <= 10; i++)
+		{
+			var a = NStarUtilityFunctions.IsPrime(i);
+			var b = ((MpzT)i).IsProbablyPrimeRabinMiller(100);
+			Assert.AreEqual(b, a);
+		}
+		for (var i = 0; i < 10000; i++)
+		{
+			var n = random.Next();
+			var a = NStarUtilityFunctions.IsPrime(n);
+			var b = ((MpzT)n).IsProbablyPrimeRabinMiller(100);
+			Assert.AreEqual(b, a);
+		}
 	}
 }

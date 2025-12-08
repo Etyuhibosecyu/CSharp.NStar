@@ -78,14 +78,14 @@ public enum OffsetChangeMappingType
 /// Describes a series of offset changes.
 /// </summary>
 [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix",
-                 Justification="It's a mapping old offsets -> new offsets")]
+				 Justification="It's a mapping old offsets -> new offsets")]
 public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 {
 	/// <summary>
 	/// Immutable OffsetChangeMap that is empty.
 	/// </summary>
 	[SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes",
-	                 Justification="The Empty instance is immutable")]
+					 Justification="The Empty instance is immutable")]
 	public static readonly OffsetChangeMap Empty = new OffsetChangeMap(new OffsetChangeMapEntry[0], true);
 
 	/// <summary>
@@ -116,8 +116,8 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 	public int GetNewOffset(int offset, AnchorMovementType movementType = AnchorMovementType.Default)
 	{
 		var items = Items;
-		int count = items.Count;
-		for (int i = 0; i < count; i++) {
+		var count = items.Count;
+		for (var i = 0; i < count; i++) {
 			offset = items[i].GetNewOffset(offset, movementType);
 		}
 		return offset;
@@ -128,7 +128,7 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 	/// </summary>
 	public bool IsValidForDocumentChange(int offset, int removalLength, int insertionLength)
 	{
-		int endOffset = offset + removalLength;
+		var endOffset = offset + removalLength;
 		foreach (var entry in this) {
 			// check that ChangeMapEntry is in valid range for this document change
 			if (entry.Offset < offset || entry.Offset + entry.RemovalLength > endOffset)
@@ -147,7 +147,7 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 		if (this == Empty)
 			return this;
 		OffsetChangeMap newMap = new OffsetChangeMap(Count);
-		for (int i = Count - 1; i >= 0; i--) {
+		for (var i = Count - 1; i >= 0; i--) {
 			var entry = this[i];
 			// swap InsertionLength and RemovalLength
 			newMap.Add(new OffsetChangeMapEntry(entry.Offset, entry.InsertionLength, entry.RemovalLength));
@@ -183,16 +183,16 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 		base.SetItem(index, item);
 	}
 
-    private void CheckFrozen()
+	private void CheckFrozen()
 	{
 		if (IsFrozen)
 			throw new InvalidOperationException("This instance is frozen and cannot be modified.");
 	}
 
-        /// <summary>
-        /// Gets if this instance is frozen. Frozen instances are immutable and thus thread-safe.
-        /// </summary>
-        public bool IsFrozen { get; private set; }
+		/// <summary>
+		/// Gets if this instance is frozen. Frozen instances are immutable and thus thread-safe.
+		/// </summary>
+		public bool IsFrozen { get; private set; }
 
 	/// <summary>
 	/// Freezes this instance.
@@ -206,46 +206,46 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 /// </summary>
 public struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
 {
-    // MSB: DefaultAnchorMovementIsBeforeInsertion
-    private readonly uint _insertionLengthWithMovementFlag;
+	// MSB: DefaultAnchorMovementIsBeforeInsertion
+	private readonly uint _insertionLengthWithMovementFlag;
 	
 	// MSB: RemovalNeverCausesAnchorDeletion; other 31 bits: RemovalLength
-    private readonly uint _removalLengthWithDeletionFlag;
+	private readonly uint _removalLengthWithDeletionFlag;
 	
 	/// <summary>
 	/// The offset at which the change occurs.
 	/// </summary>
 	public int Offset { get; }
 
-    /// <summary>
+	/// <summary>
 	/// The number of characters inserted.
 	/// Returns 0 if this entry represents a removal.
 	/// </summary>
 	public int InsertionLength => (int)(_insertionLengthWithMovementFlag & 0x7fffffff);
 
-    /// <summary>
+	/// <summary>
 	/// The number of characters removed.
 	/// Returns 0 if this entry represents an insertion.
 	/// </summary>
 	public int RemovalLength => (int)(_removalLengthWithDeletionFlag & 0x7fffffff);
 
-    /// <summary>
+	/// <summary>
 	/// Gets whether the removal should not cause any anchor deletions.
 	/// </summary>
 	public bool RemovalNeverCausesAnchorDeletion => (_removalLengthWithDeletionFlag & 0x80000000) != 0;
 
-    /// <summary>
+	/// <summary>
 	/// Gets whether default anchor movement causes the anchor to stay in front of the caret.
 	/// </summary>
 	public bool DefaultAnchorMovementIsBeforeInsertion => (_insertionLengthWithMovementFlag & 0x80000000) != 0;
 
-    /// <summary>
+	/// <summary>
 	/// Gets the new offset where the specified offset moves after this document change.
 	/// </summary>
 	public int GetNewOffset(int oldOffset, AnchorMovementType movementType = AnchorMovementType.Default)
 	{
-		int insertionLength = InsertionLength;
-		int removalLength = RemovalLength;
+		var insertionLength = InsertionLength;
+		var removalLength = RemovalLength;
 		if (!(removalLength == 0 && oldOffset == Offset)) {
 			// we're getting trouble (both if statements in here would apply)
 			// if there's no removal and we insert at the offset
@@ -263,9 +263,9 @@ public struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
 		// b) there was no removal and we insert at the caret position
 		if (movementType == AnchorMovementType.AfterInsertion)
 			return Offset + insertionLength;
-	    if (movementType == AnchorMovementType.BeforeInsertion)
-	        return Offset;
-	    return DefaultAnchorMovementIsBeforeInsertion ? Offset : Offset + insertionLength;
+		if (movementType == AnchorMovementType.BeforeInsertion)
+			return Offset;
+		return DefaultAnchorMovementIsBeforeInsertion ? Offset : Offset + insertionLength;
 	}
 	
 	/// <summary>

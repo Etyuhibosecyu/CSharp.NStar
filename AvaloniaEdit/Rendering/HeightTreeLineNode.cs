@@ -21,42 +21,42 @@ using System.Diagnostics;
 
 namespace AvaloniaEdit.Rendering;
 
-    internal struct HeightTreeLineNode
-    {
-        internal HeightTreeLineNode(double height)
-        {
-            CollapsedSections = null;
-            Height = height;
-        }
+	internal struct HeightTreeLineNode
+	{
+		internal HeightTreeLineNode(double height)
+		{
+			CollapsedSections = null;
+			Height = height;
+		}
 
-        internal double Height;
-        internal List<CollapsedLineSection> CollapsedSections;
+		internal double Height;
+		internal List<CollapsedLineSection> CollapsedSections;
 
-        internal bool IsDirectlyCollapsed {
-            get { return CollapsedSections != null; }
-        }
+		internal bool IsDirectlyCollapsed {
+			get { return CollapsedSections != null; }
+		}
 
-        internal void AddDirectlyCollapsed(CollapsedLineSection section)
-        {
-            if (CollapsedSections == null)
-                CollapsedSections = new List<CollapsedLineSection>();
-            CollapsedSections.Add(section);
-        }
+		internal void AddDirectlyCollapsed(CollapsedLineSection section)
+		{
+			if (CollapsedSections == null)
+				CollapsedSections = new List<CollapsedLineSection>();
+			CollapsedSections.Add(section);
+		}
 
-        internal void RemoveDirectlyCollapsed(CollapsedLineSection section)
-        {
-            Debug.Assert(CollapsedSections.Contains(section));
-            CollapsedSections.Remove(section);
-            if (CollapsedSections.Count == 0)
-                CollapsedSections = null;
-        }
+		internal void RemoveDirectlyCollapsed(CollapsedLineSection section)
+		{
+			Debug.Assert(CollapsedSections.Contains(section));
+			CollapsedSections.Remove(section);
+			if (CollapsedSections.Count == 0)
+				CollapsedSections = null;
+		}
 
-        /// <summary>
-        /// Returns 0 if the line is directly collapsed, otherwise, returns <see cref="Height"/>.
-        /// </summary>
-        internal double TotalHeight {
-            get {
-                return IsDirectlyCollapsed ? 0 : Height;
-            }
-        }
-    }
+		/// <summary>
+		/// Returns 0 if the line is directly collapsed, otherwise, returns <see cref="Height"/>.
+		/// </summary>
+		internal double TotalHeight {
+			get {
+				return IsDirectlyCollapsed ? 0 : Height;
+			}
+		}
+	}

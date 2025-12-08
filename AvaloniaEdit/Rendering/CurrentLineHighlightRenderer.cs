@@ -23,77 +23,77 @@ using Avalonia.Media.Immutable;
 
 namespace AvaloniaEdit.Rendering;
 
-    internal sealed class CurrentLineHighlightRenderer : IBackgroundRenderer
-    {
-        #region Fields
+	internal sealed class CurrentLineHighlightRenderer : IBackgroundRenderer
+	{
+		#region Fields
 
-        private int _line;
-        private readonly TextView _textView;
+		private int _line;
+		private readonly TextView _textView;
 
-        public static readonly Color DefaultBackground = Color.FromArgb(22, 20, 220, 224);
-        public static readonly Color DefaultBorder = Color.FromArgb(52, 0, 255, 110);
+		public static readonly Color DefaultBackground = Color.FromArgb(22, 20, 220, 224);
+		public static readonly Color DefaultBorder = Color.FromArgb(52, 0, 255, 110);
 
-        #endregion
+		#endregion
 
-        #region Properties
+		#region Properties
 
-        public void SetDefaultColors()
-        {
-            BorderPen = new ImmutablePen(new ImmutableSolidColorBrush(DefaultBorder), 1);
-            BackgroundBrush = new ImmutableSolidColorBrush(DefaultBackground);
-        }
+		public void SetDefaultColors()
+		{
+			BorderPen = new ImmutablePen(new ImmutableSolidColorBrush(DefaultBorder), 1);
+			BackgroundBrush = new ImmutableSolidColorBrush(DefaultBackground);
+		}
 
-        public int Line {
-            get { return _line; }
-            set {
-                if (_line != value) {
-                    _line = value;
-                    _textView.InvalidateLayer(Layer);
-                }
-            }
-        }
+		public int Line {
+			get { return _line; }
+			set {
+				if (_line != value) {
+					_line = value;
+					_textView.InvalidateLayer(Layer);
+				}
+			}
+		}
 
-        public KnownLayer Layer => KnownLayer.Background;
+		public KnownLayer Layer => KnownLayer.Background;
 
-        public IBrush BackgroundBrush {
-            get; set;
-        }
+		public IBrush BackgroundBrush {
+			get; set;
+		}
 
-        public IPen BorderPen {
-            get; set;
-        }
+		public IPen BorderPen {
+			get; set;
+		}
 
-        #endregion
+		#endregion
 
-        public CurrentLineHighlightRenderer(TextView textView)
-        {
-            BorderPen = new ImmutablePen(new ImmutableSolidColorBrush(DefaultBorder), 1);
+		public CurrentLineHighlightRenderer(TextView textView)
+		{
+			BorderPen = new ImmutablePen(new ImmutableSolidColorBrush(DefaultBorder), 1);
 
-            BackgroundBrush = new ImmutableSolidColorBrush(DefaultBackground);
+			BackgroundBrush = new ImmutableSolidColorBrush(DefaultBackground);
 
-            _textView = textView ?? throw new ArgumentNullException(nameof(textView));
-            _textView.BackgroundRenderers.Add(this);
+			_textView = textView ?? throw new ArgumentNullException(nameof(textView));
+			_textView.BackgroundRenderers.Add(this);
 
-            _line = 0;
-        }
+			_line = 0;
+		}
 
-        public void Draw(TextView textView, DrawingContext drawingContext)
-        {
-            if (!_textView.Options.HighlightCurrentLine)
-                return;
+		public void Draw(TextView textView, DrawingContext drawingContext)
+		{
+			if (!_textView.Options.HighlightCurrentLine)
+				return;
 
-            var builder = new BackgroundGeometryBuilder();
+			var builder = new BackgroundGeometryBuilder();
 
-            var visualLine = _textView.GetVisualLine(_line);
-            if (visualLine == null) return;
+			var visualLine = _textView.GetVisualLine(_line);
+			if (visualLine == null) return;
 
-            var linePosY = visualLine.VisualTop - _textView.ScrollOffset.Y;
+			var linePosY = visualLine.VisualTop - _textView.ScrollOffset.Y;
 
-            builder.AddRectangle(textView, new Rect(0, linePosY, textView.Bounds.Width, visualLine.Height));
+			builder.AddRectangle(textView, new Rect(0, linePosY, textView.Bounds.Width, visualLine.Height));
 
-            var geometry = builder.CreateGeometry();
-            if (geometry != null) {
-                drawingContext.DrawGeometry(BackgroundBrush, BorderPen, geometry);
-            }
-        }
-    }
+			var geometry = builder.CreateGeometry();
+			if (geometry != null) {
+				drawingContext.DrawGeometry(BackgroundBrush, BorderPen, geometry);
+			}
+		}
+	}

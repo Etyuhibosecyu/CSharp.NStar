@@ -33,7 +33,7 @@ public sealed class SaveXshdVisitor : IXshdVisitor
 	/// </summary>
 	public const string Namespace = V2Loader.Namespace;
 
-    private readonly XmlWriter _writer;
+	private readonly XmlWriter _writer;
 
 	/// <summary>
 	/// Creates a new SaveXshdVisitor instance.
@@ -71,14 +71,14 @@ public sealed class SaveXshdVisitor : IXshdVisitor
 		return null;
 	}
 
-    private void WriteBoolAttribute(string attributeName, bool? value)
+	private void WriteBoolAttribute(string attributeName, bool? value)
 	{
 		if (value != null) {
 			_writer.WriteAttributeString(attributeName, value.Value ? "true" : "false");
 		}
 	}
 
-    private void WriteRuleSetReference(XshdReference<XshdRuleSet> ruleSetReference)
+	private void WriteRuleSetReference(XshdReference<XshdRuleSet> ruleSetReference)
 	{
 		if (ruleSetReference.ReferencedElement != null) {
 			if (ruleSetReference.ReferencedDefinition != null)
@@ -88,7 +88,7 @@ public sealed class SaveXshdVisitor : IXshdVisitor
 		}
 	}
 
-    private void WriteColorReference(XshdReference<XshdColor> color)
+	private void WriteColorReference(XshdReference<XshdColor> color)
 	{
 		if (color.InlineElement != null) {
 			WriteColorAttributes(color.InlineElement);
@@ -129,7 +129,7 @@ public sealed class SaveXshdVisitor : IXshdVisitor
 	{
 		_writer.WriteStartElement("Keywords", Namespace);
 		WriteColorReference(keywords.ColorReference);
-		foreach (string word in keywords.Words) {
+		foreach (var word in keywords.Words) {
 			_writer.WriteElementString("Word", Namespace, word);
 		}
 		_writer.WriteEndElement();
@@ -153,13 +153,13 @@ public sealed class SaveXshdVisitor : IXshdVisitor
 		if (span.EndRegexType == XshdRegexType.IgnorePatternWhitespace)
 			WriteBeginEndElement("End", span.EndRegex, span.EndColorReference);
 
-	    span.RuleSetReference.InlineElement?.AcceptVisitor(this);
+		span.RuleSetReference.InlineElement?.AcceptVisitor(this);
 
-	    _writer.WriteEndElement();
+		_writer.WriteEndElement();
 		return null;
 	}
 
-    private void WriteBeginEndElement(string elementName, string regex, XshdReference<XshdColor> colorReference)
+	private void WriteBeginEndElement(string elementName, string regex, XshdReference<XshdColor> colorReference)
 	{
 		if (regex != null) {
 			_writer.WriteStartElement(elementName, Namespace);

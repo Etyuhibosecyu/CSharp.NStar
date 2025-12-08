@@ -1079,7 +1079,7 @@ public struct NStarEntity
 	private readonly NStarEntity ToTupleType(BranchCollection typeParts)
 	{
 		var count = 0;
-		NList<int> numbers = [];
+		List<int> numbers = [];
 		for (var i = 0; i < typeParts.Length; i++)
 		{
 			if (i >= 1 && typeParts[i].Name != "type" && int.TryParse(typeParts[i].Name.ToString(), out var number))

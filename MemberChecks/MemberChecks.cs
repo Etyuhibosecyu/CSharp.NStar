@@ -240,6 +240,7 @@ public static class MemberChecks
 		functions = [];
 		if (validity < 0)
 			return false;
+		var noArrayFunction = false;
 		foreach (var method in methods)
 		{
 			if (Attribute.IsDefined(method, typeof(ObsoleteAttribute)))
@@ -255,6 +256,15 @@ public static class MemberChecks
 				for (var j = 0; j < functionParameterTypes.Length; j++)
 					functionParameterTypes[j] = ReplaceExtraNetType(functionParameterTypes[j], patterns[i]);
 			}
+			var goodIndex = parameters.FindIndex(x => (x.ParameterType.Name.Contains(nameof(List<>))
+				|| x.ParameterType.Name.Contains(nameof(G.IEnumerable<>)))
+				&& !Attribute.IsDefined(x, typeof(ParamArrayAttribute)));
+			var badIndex = parameters.FindIndex(x => x.ParameterType.IsSZArray
+				&& !Attribute.IsDefined(x, typeof(ParamArrayAttribute)) || x.ParameterType.Name.Contains("Span"));
+			if (goodIndex >= 0 && badIndex < 0)
+				noArrayFunction = true;
+			else if (noArrayFunction && badIndex >= 0)
+				continue;
 			functions.Add(new(name, [], TypeMappingBack(returnNetType, netType.GetGenericArguments(), container.ExtraTypes),
 				(method.IsAbstract ? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
 				new(functionParameterTypes.ToList((x, index) => new ExtendedMethodParameter(TypeMappingBack(x,
@@ -565,6 +575,7 @@ public static class MemberChecks
 		constructors = [];
 		if (validity < 0)
 			return false;
+		var noArrayConstructor = false;
 		foreach (var method in methods)
 		{
 			var genericArguments = netType.GetGenericArguments();
@@ -576,6 +587,15 @@ public static class MemberChecks
 				for (var j = 0; j < constructorParameterTypes.Length; j++)
 					constructorParameterTypes[j] = ReplaceExtraNetType(constructorParameterTypes[j], patterns[i]);
 			}
+			var goodIndex = parameters.FindIndex(x => (x.ParameterType.Name.Contains(nameof(List<>))
+				|| x.ParameterType.Name.Contains(nameof(G.IEnumerable<>)))
+				&& !Attribute.IsDefined(x, typeof(ParamArrayAttribute)));
+			var badIndex = parameters.FindIndex(x => x.ParameterType.IsSZArray
+				&& !Attribute.IsDefined(x, typeof(ParamArrayAttribute)) || x.ParameterType.Name.Contains("Span"));
+			if (goodIndex >= 0 && badIndex < 0)
+				noArrayConstructor = true;
+			else if (noArrayConstructor && badIndex >= 0)
+				continue;
 			constructors.Add(new((method.IsAbstract ? ConstructorAttributes.Abstract : 0)
 				| (method.IsStatic ? ConstructorAttributes.Static : 0),
 				new(constructorParameterTypes.ToList((x, index) => new ExtendedMethodParameter(TypeMappingBack(x,

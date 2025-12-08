@@ -28,9 +28,9 @@ namespace AvaloniaEdit.Utils;
 /// </summary>
 public sealed class RopeTextReader : TextReader
 {
-    private readonly Stack<RopeNode<char>> _stack = new Stack<RopeNode<char>>();
-    private RopeNode<char> _currentNode;
-    private int _indexInsideNode;
+	private readonly Stack<RopeNode<char>> _stack = new Stack<RopeNode<char>>();
+	private RopeNode<char> _currentNode;
+	private int _indexInsideNode;
 	
 	/// <summary>
 	/// Creates a new RopeTextReader.
@@ -53,7 +53,7 @@ public sealed class RopeTextReader : TextReader
 		}
 	}
 
-    private void GoToLeftMostLeaf()
+	private void GoToLeftMostLeaf()
 	{
 		while (_currentNode.Contents == null) {
 			if (_currentNode.Height == 0) {
@@ -81,13 +81,13 @@ public sealed class RopeTextReader : TextReader
 	{
 		if (_currentNode == null)
 			return -1;
-		char result = _currentNode.Contents[_indexInsideNode++];
+		var result = _currentNode.Contents[_indexInsideNode++];
 		if (_indexInsideNode >= _currentNode.Length)
 			GoToNextNode();
 		return result;
 	}
 
-    private void GoToNextNode()
+	private void GoToNextNode()
 	{
 		if (_stack.Count == 0) {
 			_currentNode = null;
@@ -103,7 +103,7 @@ public sealed class RopeTextReader : TextReader
 	{
 		if (_currentNode == null)
 			return 0;
-		int amountInCurrentNode = _currentNode.Length - _indexInsideNode;
+		var amountInCurrentNode = _currentNode.Length - _indexInsideNode;
 		if (count < amountInCurrentNode) {
 			Array.Copy(_currentNode.Contents, _indexInsideNode, buffer, index, count);
 			_indexInsideNode += count;

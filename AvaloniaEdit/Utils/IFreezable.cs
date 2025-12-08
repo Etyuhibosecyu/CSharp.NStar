@@ -23,7 +23,7 @@ using System.Linq;
 
 namespace AvaloniaEdit.Utils;
 
-    internal interface IFreezable
+	internal interface IFreezable
 {
 	/// <summary>
 	/// Gets if this instance is frozen. Frozen instances are immutable and thus thread-safe.
@@ -34,9 +34,9 @@ namespace AvaloniaEdit.Utils;
 	/// Freezes this instance.
 	/// </summary>
 	void Freeze();
-}    
+}	
 
-    internal static class FreezableHelper
+	internal static class FreezableHelper
 {
 	public static void ThrowIfFrozen(IFreezable freezable)
 	{
@@ -69,7 +69,7 @@ namespace AvaloniaEdit.Utils;
 	public static void Freeze(object item)
 	{
 		var f = item as IFreezable;
-	    f?.Freeze();
+		f?.Freeze();
 	}
 	
 	public static T FreezeAndReturn<T>(T item) where T : IFreezable
@@ -92,14 +92,14 @@ namespace AvaloniaEdit.Utils;
 	}
 }
 
-    internal abstract class AbstractFreezable : IFreezable
+	internal abstract class AbstractFreezable : IFreezable
 {
-    /// <summary>
+	/// <summary>
 	/// Gets if this instance is frozen. Frozen instances are immutable and thus thread-safe.
 	/// </summary>
 	public bool IsFrozen { get; private set; }
 
-    /// <summary>
+	/// <summary>
 	/// Freezes this instance.
 	/// </summary>
 	public void Freeze()

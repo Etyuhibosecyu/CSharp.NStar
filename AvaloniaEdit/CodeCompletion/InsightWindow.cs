@@ -23,67 +23,67 @@ using AvaloniaEdit.Editing;
 
 namespace AvaloniaEdit.CodeCompletion;
 
-    /// <summary>
-    /// A popup-like window that is attached to a text segment.
-    /// </summary>
-    public class InsightWindow : CompletionWindowBase
-    {
-        /// <summary>
-        /// Creates a new InsightWindow.
-        /// </summary>
-        public InsightWindow(TextArea textArea) : base(textArea)
-        {
-            CloseAutomatically = true;
-            AttachEvents();
-            Initialize();
-        }
+	/// <summary>
+	/// A popup-like window that is attached to a text segment.
+	/// </summary>
+	public class InsightWindow : CompletionWindowBase
+	{
+		/// <summary>
+		/// Creates a new InsightWindow.
+		/// </summary>
+		public InsightWindow(TextArea textArea) : base(textArea)
+		{
+			CloseAutomatically = true;
+			AttachEvents();
+			Initialize();
+		}
 
-        private void Initialize()
-        {
-            var caret = this.TextArea.Caret.CalculateCaretRectangle();
-            var topLevel = TopLevel.GetTopLevel(this.TextArea.TextView) as WindowBase;
-            if (topLevel?.Presenter != null)
-            {
-                var presenter = topLevel.Presenter;
-                var pointOnScreen = presenter.PointToScreen(caret.Position - this.TextArea.TextView.ScrollOffset);
-                var screen = topLevel.Screens.ScreenFromPoint(pointOnScreen);
+		private void Initialize()
+		{
+			var caret = this.TextArea.Caret.CalculateCaretRectangle();
+			var topLevel = TopLevel.GetTopLevel(this.TextArea.TextView) as WindowBase;
+			if (topLevel?.Presenter != null)
+			{
+				var presenter = topLevel.Presenter;
+				var pointOnScreen = presenter.PointToScreen(caret.Position - this.TextArea.TextView.ScrollOffset);
+				var screen = topLevel.Screens.ScreenFromPoint(pointOnScreen);
 
-                if (screen != null)
-                {
-                    var scaledWorkingArea = screen.WorkingArea.ToRect(topLevel.RenderScaling);
-                    MaxHeight = scaledWorkingArea.Height;
-                    MaxWidth = Math.Min(scaledWorkingArea.Width, Math.Max(1000, scaledWorkingArea.Width * 0.6));
-                }
-            }
-        }
+				if (screen != null)
+				{
+					var scaledWorkingArea = screen.WorkingArea.ToRect(topLevel.RenderScaling);
+					MaxHeight = scaledWorkingArea.Height;
+					MaxWidth = Math.Min(scaledWorkingArea.Width, Math.Max(1000, scaledWorkingArea.Width * 0.6));
+				}
+			}
+		}
 
-        /// <summary>
-        /// Gets/Sets whether the insight window should close automatically.
-        /// The default value is true.
-        /// </summary>
-        public bool CloseAutomatically { get; set; }
+		/// <summary>
+		/// Gets/Sets whether the insight window should close automatically.
+		/// The default value is true.
+		/// </summary>
+		public bool CloseAutomatically { get; set; }
 
-        /// <inheritdoc/>
-        protected override bool CloseOnFocusLost => CloseAutomatically;
+		/// <inheritdoc/>
+		protected override bool CloseOnFocusLost => CloseAutomatically;
 
 	private void AttachEvents() => TextArea.Caret.PositionChanged += CaretPositionChanged;
 
 	/// <inheritdoc/>
 	protected override void DetachEvents()
-        {
-            TextArea.Caret.PositionChanged -= CaretPositionChanged;
-            base.DetachEvents();
-        }
+		{
+			TextArea.Caret.PositionChanged -= CaretPositionChanged;
+			base.DetachEvents();
+		}
 
-        private void CaretPositionChanged(object sender, EventArgs e)
-        {
-            if (CloseAutomatically)
-            {
-                var offset = TextArea.Caret.Offset;
-                if (offset < StartOffset || offset > EndOffset)
-                {
-                    Hide();
-                }
-            }
-        }
-    }
+		private void CaretPositionChanged(object sender, EventArgs e)
+		{
+			if (CloseAutomatically)
+			{
+				var offset = TextArea.Caret.Offset;
+				if (offset < StartOffset || offset > EndOffset)
+				{
+					Hide();
+				}
+			}
+		}
+	}

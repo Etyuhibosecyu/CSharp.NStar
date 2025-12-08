@@ -21,14 +21,14 @@ using Avalonia.Media.TextFormatting;
 
 namespace AvaloniaEdit.Rendering;
 
-    internal sealed class TextViewCachedElements
-    {
-        private Dictionary<string, TextLine> _nonPrintableCharacterTexts;
+	internal sealed class TextViewCachedElements
+	{
+		private Dictionary<string, TextLine> _nonPrintableCharacterTexts;
 
-        public TextLine GetTextForNonPrintableCharacter(string text, TextRunProperties properties)
-        {
-            if (_nonPrintableCharacterTexts == null)
-                _nonPrintableCharacterTexts = new Dictionary<string, TextLine>();
+		public TextLine GetTextForNonPrintableCharacter(string text, TextRunProperties properties)
+		{
+			if (_nonPrintableCharacterTexts == null)
+				_nonPrintableCharacterTexts = new Dictionary<string, TextLine>();
 
 		if (!_nonPrintableCharacterTexts.TryGetValue(text, out var textLine))
 		{
@@ -36,5 +36,5 @@ namespace AvaloniaEdit.Rendering;
 			_nonPrintableCharacterTexts[text] = textLine;
 		}
 		return textLine;
-        }
-    }
+		}
+	}

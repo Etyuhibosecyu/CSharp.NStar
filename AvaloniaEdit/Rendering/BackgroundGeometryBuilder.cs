@@ -101,7 +101,7 @@ public sealed class BackgroundGeometryBuilder
 	private void AddRectangle(Size pixelSize, Rect r)
 	{
 		if (AlignToWholePixels) {
-			double halfBorder = 0.5 * BorderThickness;
+			var halfBorder = 0.5 * BorderThickness;
 			AddRectangle(PixelSnapHelpers.Round(r.Left - halfBorder, pixelSize.Width) + halfBorder,
 						 PixelSnapHelpers.Round(r.Top - halfBorder, pixelSize.Height) + halfBorder,
 						 PixelSnapHelpers.Round(r.Right + halfBorder, pixelSize.Width) - halfBorder,
@@ -126,8 +126,8 @@ public sealed class BackgroundGeometryBuilder
 
 	private static IEnumerable<Rect> GetRectsForSegmentImpl(TextView textView, ISegment segment, bool extendToFullWidthAtLineEnd)
 	{
-		int segmentStart = segment.Offset;
-		int segmentEnd = segment.Offset + segment.Length;
+		var segmentStart = segment.Offset;
+		var segmentEnd = segment.Offset + segment.Length;
 
 		segmentStart = segmentStart.CoerceValue(0, textView.Document.TextLength);
 		segmentEnd = segmentEnd.CoerceValue(0, textView.Document.TextLength);
@@ -145,10 +145,10 @@ public sealed class BackgroundGeometryBuilder
 		}
 
 		foreach (var vl in textView.VisualLines) {
-			int vlStartOffset = vl.FirstDocumentLine.Offset;
+			var vlStartOffset = vl.FirstDocumentLine.Offset;
 			if (vlStartOffset > segmentEnd)
 				break;
-			int vlEndOffset = vl.LastDocumentLine.Offset + vl.LastDocumentLine.Length;
+			var vlEndOffset = vl.LastDocumentLine.Offset + vl.LastDocumentLine.Length;
 			if (vlEndOffset < segmentStart)
 				continue;
 
@@ -185,12 +185,12 @@ public sealed class BackgroundGeometryBuilder
 		var lastTextLine = visualLine.TextLines.Last();
 		var scrollOffset = textView.ScrollOffset;
 
-		for (int i = 0; i < visualLine.TextLines.Count; i++) {
+		for (var i = 0; i < visualLine.TextLines.Count; i++) {
 			var line = visualLine.TextLines[i];
-			double y = visualLine.GetTextLineVisualYPosition(line, VisualYPosition.LineTop);
-                double lineHeight = Math.Max(line.Height, textView.DefaultLineHeight);
-			int visualStartCol = visualLine.GetTextLineVisualStartColumn(line);
-			int visualEndCol = visualStartCol + line.Length;
+			var y = visualLine.GetTextLineVisualYPosition(line, VisualYPosition.LineTop);
+				var lineHeight = Math.Max(line.Height, textView.DefaultLineHeight);
+			var visualStartCol = visualLine.GetTextLineVisualStartColumn(line);
+			var visualEndCol = visualStartCol + line.Length;
 			if (line == lastTextLine)
 				visualEndCol -= 1; // 1 position for the TextEndOfParagraph
 			else
@@ -200,14 +200,14 @@ public sealed class BackgroundGeometryBuilder
 				break;
 			if (lastTextLine != line && segmentStartVc > visualEndCol)
 				continue;
-			int segmentStartVcInLine = Math.Max(segmentStartVc, visualStartCol);
-			int segmentEndVcInLine = Math.Min(segmentEndVc, visualEndCol);
+			var segmentStartVcInLine = Math.Max(segmentStartVc, visualStartCol);
+			var segmentEndVcInLine = Math.Min(segmentEndVc, visualEndCol);
 			y -= scrollOffset.Y;
 			Rect lastRect = default;
 			if (segmentStartVcInLine == segmentEndVcInLine) {
 				// GetTextBounds crashes for length=0, so we'll handle this case with GetDistanceFromCharacterHit
 				// We need to return a rectangle to ensure empty lines are still visible
-				double pos = visualLine.GetTextLineVisualXPosition(line, segmentStartVcInLine);
+				var pos = visualLine.GetTextLineVisualXPosition(line, segmentStartVcInLine);
 				pos -= scrollOffset.X;
 				// The following special cases are necessary to get rid of empty rectangles at the end of a TextLine if "Show Spaces" is active.
 				// If not excluded once, the same rectangle is calculated (and added) twice (since the offset could be mapped to two visual positions; end/start of line), if there is no trailing whitespace.
@@ -221,8 +221,8 @@ public sealed class BackgroundGeometryBuilder
 			} else {
 				if (segmentStartVcInLine <= visualEndCol) {
 					foreach (var b in line.GetTextBounds(segmentStartVcInLine, segmentEndVcInLine - segmentStartVcInLine)) {
-						double left = b.Rectangle.Left - scrollOffset.X;
-						double right = b.Rectangle.Right - scrollOffset.X;
+						var left = b.Rectangle.Left - scrollOffset.X;
+						var right = b.Rectangle.Right - scrollOffset.X;
 						if (lastRect != default)
 							yield return lastRect;
 						// left>right is possible in RTL languages
@@ -294,8 +294,10 @@ public sealed class BackgroundGeometryBuilder
 			CloseFigure();
 		}
 		if (_figure == null) {
-			_figure = new PathFigure();
-			_figure.StartPoint = new Point(left, top + _cornerRadius);
+			_figure = new PathFigure
+			{
+				StartPoint = new Point(left, top + _cornerRadius)
+			};
 			if (Math.Abs(left - right) > _cornerRadius) {
 				_figure.Segments.Add(MakeArc(left + _cornerRadius, top, SweepDirection.Clockwise));
 				_figure.Segments.Add(MakeLineSegment(right - _cornerRadius, top));
@@ -306,7 +308,7 @@ public sealed class BackgroundGeometryBuilder
 			//figure.Segments.Add(MakeArc(left, bottom - cornerRadius, SweepDirection.Clockwise));
 		} else {
 			if (!_lastRight.IsClose(right)) {
-				double cr = right < _lastRight ? -_cornerRadius : _cornerRadius;
+				var cr = right < _lastRight ? -_cornerRadius : _cornerRadius;
 				var dir1 = right < _lastRight ? SweepDirection.Clockwise : SweepDirection.CounterClockwise;
 				var dir2 = right < _lastRight ? SweepDirection.CounterClockwise : SweepDirection.Clockwise;
 				_figure.Segments.Insert(_insertionIndex++, MakeArc(_lastRight + cr, _lastBottom, dir1));
@@ -316,7 +318,7 @@ public sealed class BackgroundGeometryBuilder
 			_figure.Segments.Insert(_insertionIndex++, MakeLineSegment(right, bottom - _cornerRadius));
 			_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft, _lastTop + _cornerRadius));
 			if (!_lastLeft.IsClose(left)) {
-				double cr = left < _lastLeft ? _cornerRadius : -_cornerRadius;
+				var cr = left < _lastLeft ? _cornerRadius : -_cornerRadius;
 				var dir1 = left < _lastLeft ? SweepDirection.CounterClockwise : SweepDirection.Clockwise;
 				var dir2 = left < _lastLeft ? SweepDirection.Clockwise : SweepDirection.CounterClockwise;
 				_figure.Segments.Insert(_insertionIndex, MakeArc(_lastLeft, _lastBottom - _cornerRadius, dir1));

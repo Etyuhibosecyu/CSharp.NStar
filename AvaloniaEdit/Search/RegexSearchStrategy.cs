@@ -24,22 +24,22 @@ using AvaloniaEdit.Document;
 
 namespace AvaloniaEdit.Search;
 
-    internal class RegexSearchStrategy : ISearchStrategy
+	internal class RegexSearchStrategy : ISearchStrategy
 {
-    private readonly Regex _searchPattern;
-    private readonly bool _matchWholeWords;
+	private readonly Regex _searchPattern;
+	private readonly bool _matchWholeWords;
 	
 	public RegexSearchStrategy(Regex searchPattern, bool matchWholeWords)
 	{
-	    _searchPattern = searchPattern ?? throw new ArgumentNullException(nameof(searchPattern));
+		_searchPattern = searchPattern ?? throw new ArgumentNullException(nameof(searchPattern));
 		_matchWholeWords = matchWholeWords;
 	}
 	
 	public IEnumerable<ISearchResult> FindAll(ITextSource document, int offset, int length)
 	{
-		int endOffset = offset + length;
+		var endOffset = offset + length;
 		foreach (Match result in _searchPattern.Matches(document.Text)) {
-			int resultEndOffset = result.Length + result.Index;
+			var resultEndOffset = result.Length + result.Index;
 			if (offset > result.Index || endOffset < resultEndOffset)
 				continue;
 			if (_matchWholeWords && (!IsWordBorder(document, result.Index) || !IsWordBorder(document, resultEndOffset)))
@@ -58,7 +58,7 @@ namespace AvaloniaEdit.Search;
 			strategy._searchPattern.RightToLeft == _searchPattern.RightToLeft;
 }
 
-    internal class SearchResult : TextSegment, ISearchResult
+	internal class SearchResult : TextSegment, ISearchResult
 {
 	public Match Data { get; set; }
 

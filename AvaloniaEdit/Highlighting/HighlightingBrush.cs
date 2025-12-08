@@ -39,9 +39,9 @@ public abstract class HighlightingBrush
 	/// <param name="context">The construction context. context can be null!</param>
 	public virtual Color? GetColor(ITextRunConstructionContext context)
 	{
-	    if (GetBrush(context) is ISolidColorBrush scb)
-                return scb.Color;
-	    return null;
+		if (GetBrush(context) is ISolidColorBrush scb)
+				return scb.Color;
+		return null;
 	}
 }
 
@@ -50,7 +50,7 @@ public abstract class HighlightingBrush
 /// </summary>
 public sealed class SimpleHighlightingBrush : HighlightingBrush
 {
-    private readonly ISolidColorBrush _brush;
+	private readonly ISolidColorBrush _brush;
 
 	internal SimpleHighlightingBrush(ISolidColorBrush brush) => _brush = brush;
 

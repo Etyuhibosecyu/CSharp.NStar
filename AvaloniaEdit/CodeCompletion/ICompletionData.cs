@@ -32,10 +32,10 @@ namespace AvaloniaEdit.CodeCompletion;
 /// </remarks>
 public interface ICompletionData
 {
-        /// <summary>
-        /// Gets the image.
-        /// </summary>
-        IImage Image { get; }
+		/// <summary>
+		/// Gets the image.
+		/// </summary>
+		IImage Image { get; }
 	
 	/// <summary>
 	/// Gets the text. This property is used to filter the list of visible elements.

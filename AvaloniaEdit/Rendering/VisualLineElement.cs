@@ -62,7 +62,7 @@ public abstract class VisualLineElement
 	/// Gets the visual column where this element starts.
 	/// </summary>
 	[SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods",
-	                                                 Justification = "This property holds the start visual column, use GetVisualColumn to get inner visual columns.")]
+													 Justification = "This property holds the start visual column, use GetVisualColumn to get inner visual columns.")]
 	public int VisualColumn { get; internal set; }
 	
 	/// <summary>
@@ -164,9 +164,9 @@ public abstract class VisualLineElement
 	/// </summary>
 	public virtual int GetVisualColumn(int relativeTextOffset)
 	{
-	    if (relativeTextOffset >= RelativeTextOffset + DocumentLength)
+		if (relativeTextOffset >= RelativeTextOffset + DocumentLength)
 			return VisualColumn + VisualLength;
-	    return VisualColumn;
+		return VisualColumn;
 	}
 	
 	/// <summary>
@@ -175,9 +175,9 @@ public abstract class VisualLineElement
 	/// <returns>A text offset relative to the visual line start.</returns>
 	public virtual int GetRelativeOffset(int visualColumn)
 	{
-	    if (visualColumn >= VisualColumn + VisualLength)
+		if (visualColumn >= VisualColumn + VisualLength)
 			return RelativeTextOffset + DocumentLength;
-	    return RelativeTextOffset;
+		return RelativeTextOffset;
 	}
 	
 	/// <summary>
@@ -197,16 +197,16 @@ public abstract class VisualLineElement
 		var stop2 = VisualColumn + VisualLength;
 		if (direction == LogicalDirection.Backward)
 		{
-		    if (visualColumn > stop2 && mode != CaretPositioningMode.WordStart && mode != CaretPositioningMode.WordStartOrSymbol)
+			if (visualColumn > stop2 && mode != CaretPositioningMode.WordStart && mode != CaretPositioningMode.WordStartOrSymbol)
 				return stop2;
-		    if (visualColumn > stop1)
-		        return stop1;
+			if (visualColumn > stop1)
+				return stop1;
 		} else
 		{
-		    if (visualColumn < stop1)
+			if (visualColumn < stop1)
 				return stop1;
-		    if (visualColumn < stop2 && mode != CaretPositioningMode.WordStart && mode != CaretPositioningMode.WordStartOrSymbol)
-		        return stop2;
+			if (visualColumn < stop2 && mode != CaretPositioningMode.WordStart && mode != CaretPositioningMode.WordStartOrSymbol)
+				return stop2;
 		}
 		return -1;
 	}
@@ -225,7 +225,7 @@ public abstract class VisualLineElement
 	/// </summary>
 	public virtual bool HandlesLineBorders => false;
 
-    /// <summary>
+	/// <summary>
 	/// Queries the cursor over the visual line element.
 	/// </summary>
 	protected internal virtual void OnQueryCursor(PointerEventArgs e)

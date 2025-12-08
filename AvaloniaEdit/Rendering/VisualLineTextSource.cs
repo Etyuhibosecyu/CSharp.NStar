@@ -29,11 +29,9 @@ namespace AvaloniaEdit.Rendering;
 /// <summary>
 /// WPF TextSource implementation that creates TextRuns for a VisualLine.
 /// </summary>
-internal sealed class VisualLineTextSource : ITextSource, ITextRunConstructionContext
+internal sealed class VisualLineTextSource(VisualLine visualLine) : ITextSource, ITextRunConstructionContext
 {
-	public VisualLineTextSource(VisualLine visualLine) => VisualLine = visualLine;
-
-	public VisualLine VisualLine { get; private set; }
+	public VisualLine VisualLine { get; private set; } = visualLine;
 	public TextView TextView { get; set; }
 	public TextDocument Document { get; set; }
 	public TextRunProperties GlobalTextRunProperties { get; set; }
@@ -44,10 +42,8 @@ internal sealed class VisualLineTextSource : ITextSource, ITextRunConstructionCo
 			foreach (var element in VisualLine.Elements) {
 				if (textSourceCharacterIndex >= element.VisualColumn
 					&& textSourceCharacterIndex < element.VisualColumn + element.VisualLength) {
-					int relativeOffset = textSourceCharacterIndex - element.VisualColumn;
-					var run = element.CreateTextRun(textSourceCharacterIndex, this);
-					if (run == null)
-						throw new ArgumentNullException(element.GetType().Name + ".CreateTextRun");
+					var relativeOffset = textSourceCharacterIndex - element.VisualColumn;
+					var run = element.CreateTextRun(textSourceCharacterIndex, this) ?? throw new ArgumentNullException(element.GetType().Name + ".CreateTextRun");
 					if (run.Length == 0)
 						throw new ArgumentException("The returned TextRun must not have length 0.", element.GetType().Name + ".Length");
 					if (relativeOffset + run.Length > element.VisualLength)
@@ -70,36 +66,37 @@ internal sealed class VisualLineTextSource : ITextSource, ITextRunConstructionCo
 		}
 	}
 
-        private TextRun CreateTextRunForNewLine()
-        {
-            string newlineText = "";
-            var lastDocumentLine = VisualLine.LastDocumentLine;
-            if (lastDocumentLine.DelimiterLength == 2)
-            {
-                newlineText = TextView.Options.EndOfLineCRLFGlyph;
-            }
-            else if (lastDocumentLine.DelimiterLength == 1)
-            {
-                char newlineChar = Document.GetCharAt(lastDocumentLine.Offset + lastDocumentLine.Length);
-                if (newlineChar == '\r')
-                    newlineText = TextView.Options.EndOfLineCRGlyph;
-                else if (newlineChar == '\n')
-                    newlineText = TextView.Options.EndOfLineLFGlyph;
-                else
-                    newlineText = "?";
-            }
+		private TextRun CreateTextRunForNewLine()
+		{
+			var newlineText = "";
+			var lastDocumentLine = VisualLine.LastDocumentLine;
+			if (lastDocumentLine.DelimiterLength == 2)
+			{
+				newlineText = TextView.Options.EndOfLineCRLFGlyph;
+			}
+			else if (lastDocumentLine.DelimiterLength == 1)
+			{
+				var newlineChar = Document.GetCharAt(lastDocumentLine.Offset + lastDocumentLine.Length);
+				if (newlineChar == '\r')
+					newlineText = TextView.Options.EndOfLineCRGlyph;
+				else if (newlineChar == '\n')
+					newlineText = TextView.Options.EndOfLineLFGlyph;
+				else
+					newlineText = "?";
+			}
 
-            var p = new VisualLineElementTextRunProperties(GlobalTextRunProperties);
-            p.SetForegroundBrush(TextView.NonPrintableCharacterBrush);
-            p.SetFontRenderingEmSize(GlobalTextRunProperties.FontRenderingEmSize - 2);
-            var textElement = new FormattedTextElement(TextView.CachedElements.GetTextForNonPrintableCharacter(newlineText, p), 0);
+			var p = new VisualLineElementTextRunProperties(GlobalTextRunProperties);
+			p.SetForegroundBrush(TextView.NonPrintableCharacterBrush);
+			p.SetFontRenderingEmSize(GlobalTextRunProperties.FontRenderingEmSize - 2);
+		var textElement = new FormattedTextElement(TextView.CachedElements.GetTextForNonPrintableCharacter(newlineText, p), 0)
+		{
+			RelativeTextOffset = lastDocumentLine.Offset + lastDocumentLine.Length
+		};
 
-            textElement.RelativeTextOffset = lastDocumentLine.Offset + lastDocumentLine.Length;
+		return new FormattedTextRun(textElement, GlobalTextRunProperties);
+		}
 
-            return new FormattedTextRun(textElement, GlobalTextRunProperties);
-        }
-
-        public ReadOnlyMemory<char> GetPrecedingText(int textSourceCharacterIndexLimit)
+		public ReadOnlyMemory<char> GetPrecedingText(int textSourceCharacterIndexLimit)
 	{
 		try {
 			foreach (var element in VisualLine.Elements) {
@@ -108,7 +105,7 @@ internal sealed class VisualLineTextSource : ITextSource, ITextRunConstructionCo
 					var span = element.GetPrecedingText(textSourceCharacterIndexLimit, this);
 					if (span.IsEmpty)
 						break;
-					int relativeOffset = textSourceCharacterIndexLimit - element.VisualColumn;
+					var relativeOffset = textSourceCharacterIndexLimit - element.VisualColumn;
 					if (span.Length > relativeOffset)
 						throw new ArgumentException("The returned TextSpan is too long.", element.GetType().Name + ".GetPrecedingText");
 					return span;

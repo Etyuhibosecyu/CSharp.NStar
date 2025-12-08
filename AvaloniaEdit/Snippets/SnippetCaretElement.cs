@@ -20,19 +20,19 @@ using AvaloniaEdit.Document;
 
 namespace AvaloniaEdit.Snippets;
 
-    /// <summary>
-    /// Sets the caret position after interactive mode has finished.
-    /// </summary>
-    public class SnippetCaretElement : SnippetElement
-    {
-        private readonly bool _setCaretOnlyIfTextIsSelected;
+	/// <summary>
+	/// Sets the caret position after interactive mode has finished.
+	/// </summary>
+	public class SnippetCaretElement : SnippetElement
+	{
+		private readonly bool _setCaretOnlyIfTextIsSelected;
 
-        /// <summary>
-        /// Creates a new SnippetCaretElement.
-        /// </summary>
-        public SnippetCaretElement()
-        {
-        }
+		/// <summary>
+		/// Creates a new SnippetCaretElement.
+		/// </summary>
+		public SnippetCaretElement()
+		{
+		}
 
 	/// <summary>
 	/// Creates a new SnippetCaretElement.
@@ -45,22 +45,22 @@ namespace AvaloniaEdit.Snippets;
 
 	/// <inheritdoc/>
 	public override void Insert(InsertionContext context)
-        {
-            if (!_setCaretOnlyIfTextIsSelected || !string.IsNullOrEmpty(context.SelectedText))
-                SetCaret(context);
-        }
+		{
+			if (!_setCaretOnlyIfTextIsSelected || !string.IsNullOrEmpty(context.SelectedText))
+				SetCaret(context);
+		}
 
-        internal static void SetCaret(InsertionContext context)
-        {
-            var pos = context.Document.CreateAnchor(context.InsertionPosition);
-            pos.MovementType = AnchorMovementType.BeforeInsertion;
-            pos.SurviveDeletion = true;
-            context.Deactivated += (sender, e) =>
-            {
-                if (e.Reason == DeactivateReason.ReturnPressed || e.Reason == DeactivateReason.NoActiveElements)
-                {
-                    context.TextArea.Caret.Offset = pos.Offset;
-                }
-            };
-        }
-    }
+		internal static void SetCaret(InsertionContext context)
+		{
+			var pos = context.Document.CreateAnchor(context.InsertionPosition);
+			pos.MovementType = AnchorMovementType.BeforeInsertion;
+			pos.SurviveDeletion = true;
+			context.Deactivated += (sender, e) =>
+			{
+				if (e.Reason == DeactivateReason.ReturnPressed || e.Reason == DeactivateReason.NoActiveElements)
+				{
+					context.TextArea.Caret.Offset = pos.Offset;
+				}
+			};
+		}
+	}

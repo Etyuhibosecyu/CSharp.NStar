@@ -513,7 +513,7 @@ public class CompletionList : TemplatedControl
 		foreach (var letter in theFirstLetterOfEachWord)
 		{
 			if (i > query.Length - 1)
-				return true;    // return true here for CamelCase partial match ("CQ" matches "CodeQualityAnalysis")
+				return true;	// return true here for CamelCase partial match ("CQ" matches "CodeQualityAnalysis")
 			if (char.ToUpperInvariant(query[i]) != char.ToUpperInvariant(letter))
 				return false;
 			i++;

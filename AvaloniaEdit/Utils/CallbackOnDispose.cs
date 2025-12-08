@@ -30,13 +30,13 @@ namespace AvaloniaEdit.Utils;
 /// </remarks>
 internal sealed class CallbackOnDispose : IDisposable
 {
-    private Action _action;
+	private Action _action;
 
 	public CallbackOnDispose(Action action) => _action = action ?? throw new ArgumentNullException(nameof(action));
 
 	public void Dispose()
 	{
 		var a = Interlocked.Exchange(ref _action, null);
-	    a?.Invoke();
+		a?.Invoke();
 	}
 }

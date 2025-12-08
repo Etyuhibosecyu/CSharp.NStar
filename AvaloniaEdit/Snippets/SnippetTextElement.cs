@@ -23,18 +23,18 @@ namespace AvaloniaEdit.Snippets;
 /// </summary>
 public class SnippetTextElement : SnippetElement
 {
-    /// <summary>
+	/// <summary>
 	/// The text to be inserted.
 	/// </summary>
 	public string Text { get; set; }
 
-    /// <inheritdoc/>
+	/// <inheritdoc/>
 	public override void Insert(InsertionContext context)
 	{
-	    if (Text != null)
-	    {
-	        context.InsertText(Text);
-	    }
+		if (Text != null)
+		{
+			context.InsertText(Text);
+		}
 	}
 	
 	///// <inheritdoc/>

@@ -21,61 +21,61 @@ using Avalonia;
 
 namespace AvaloniaEdit.Rendering;
 
-    /// <summary>
-    /// The control that contains the text.
-    /// 
-    /// This control is used to allow other UIElements to be placed inside the TextView but
-    /// behind the text.
-    /// The text rendering process (VisualLine creation) is controlled by the TextView, this
-    /// class simply displays the created Visual Lines.
-    /// </summary>
-    /// <remarks>
-    /// This class does not contain any input handling and is invisible to hit testing. Input
-    /// is handled by the TextView.
-    /// This allows UIElements that are displayed behind the text, but still can react to mouse input.
-    /// </remarks>
-    internal sealed class TextLayer : Layer
-    {
-        /// <summary>
-        /// the index of the text layer in the layers collection
-        /// </summary>
-        internal int Index;
+	/// <summary>
+	/// The control that contains the text.
+	/// 
+	/// This control is used to allow other UIElements to be placed inside the TextView but
+	/// behind the text.
+	/// The text rendering process (VisualLine creation) is controlled by the TextView, this
+	/// class simply displays the created Visual Lines.
+	/// </summary>
+	/// <remarks>
+	/// This class does not contain any input handling and is invisible to hit testing. Input
+	/// is handled by the TextView.
+	/// This allows UIElements that are displayed behind the text, but still can react to mouse input.
+	/// </remarks>
+	internal sealed class TextLayer : Layer
+	{
+		/// <summary>
+		/// the index of the text layer in the layers collection
+		/// </summary>
+		internal int Index;
 
-        public TextLayer(TextView textView) : base(textView, KnownLayer.Text)
-        {
-        }
+		public TextLayer(TextView textView) : base(textView, KnownLayer.Text)
+		{
+		}
 
-        private readonly List<VisualLineDrawingVisual> _visuals = new List<VisualLineDrawingVisual>();
+		private readonly List<VisualLineDrawingVisual> _visuals = new List<VisualLineDrawingVisual>();
 
-        internal void SetVisualLines(ICollection<VisualLine> visualLines)
-        {
-            foreach (var v in _visuals)
-            {
-                if (v.VisualLine.IsDisposed)
-                {
-                    VisualChildren.Remove(v);
-                }
-            }
+		internal void SetVisualLines(ICollection<VisualLine> visualLines)
+		{
+			foreach (var v in _visuals)
+			{
+				if (v.VisualLine.IsDisposed)
+				{
+					VisualChildren.Remove(v);
+				}
+			}
 
-            _visuals.Clear();
-            foreach (var newLine in visualLines)
-            {
-                var visual = newLine.Render();
-                if (!visual.IsAdded)
-                {
-                    VisualChildren.Add(visual);
-                    visual.IsAdded = true;
-                }
+			_visuals.Clear();
+			foreach (var newLine in visualLines)
+			{
+				var visual = newLine.Render();
+				if (!visual.IsAdded)
+				{
+					VisualChildren.Add(visual);
+					visual.IsAdded = true;
+				}
 
-                _visuals.Add(visual);
-            }
+				_visuals.Add(visual);
+			}
 
-            InvalidateArrange();
-        }
+			InvalidateArrange();
+		}
 
-        protected override void ArrangeCore(Rect finalRect)
-        {
-            base.ArrangeCore(finalRect);
-            TextView.ArrangeTextLayer(_visuals);
-        }
-    }
+		protected override void ArrangeCore(Rect finalRect)
+		{
+			base.ArrangeCore(finalRect);
+			TextView.ArrangeTextLayer(_visuals);
+		}
+	}

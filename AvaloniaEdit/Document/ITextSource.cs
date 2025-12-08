@@ -237,18 +237,18 @@ public class StringTextSource : ITextSource
 	/// </summary>
 	public StringTextSource(string text, ITextSourceVersion version)
 	{
-            Text = text ?? throw new ArgumentNullException(nameof(text));
+			Text = text ?? throw new ArgumentNullException(nameof(text));
 		Version = version;
 	}
 
-        /// <inheritdoc/>
-        public ITextSourceVersion Version { get; }
+		/// <inheritdoc/>
+		public ITextSourceVersion Version { get; }
 
-        /// <inheritdoc/>
-        public int TextLength => Text.Length;
+		/// <inheritdoc/>
+		public int TextLength => Text.Length;
 
-    /// <inheritdoc/>
-        public string Text { get; }
+	/// <inheritdoc/>
+		public string Text { get; }
 
 	/// <inheritdoc/>
 	public ITextSource CreateSnapshot() => this; // StringTextSource is immutable

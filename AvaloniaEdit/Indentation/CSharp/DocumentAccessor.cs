@@ -43,16 +43,16 @@ public interface IDocumentAccessor
 /// </summary>
 public sealed class TextDocumentAccessor : IDocumentAccessor
 {
-    private readonly TextDocument _doc;
-    private readonly int _minLine;
-    private readonly int _maxLine;
+	private readonly TextDocument _doc;
+	private readonly int _minLine;
+	private readonly int _maxLine;
 	
 	/// <summary>
 	/// Creates a new TextDocumentAccessor.
 	/// </summary>
 	public TextDocumentAccessor(TextDocument document)
 	{
-            _doc = document ?? throw new ArgumentNullException(nameof(document));
+			_doc = document ?? throw new ArgumentNullException(nameof(document));
 		_minLine = 1;
 		_maxLine = _doc.LineCount;
 	}
@@ -62,27 +62,27 @@ public sealed class TextDocumentAccessor : IDocumentAccessor
 	/// </summary>
 	public TextDocumentAccessor(TextDocument document, int minLine, int maxLine)
 	{
-            _doc = document ?? throw new ArgumentNullException(nameof(document));
+			_doc = document ?? throw new ArgumentNullException(nameof(document));
 		_minLine = minLine;
 		_maxLine = maxLine;
 	}
 
-    private int _num;
-    private string _text;
-    private DocumentLine _line;
+	private int _num;
+	private string _text;
+	private DocumentLine _line;
 	
 	/// <inheritdoc/>
 	public bool IsReadOnly => _num < _minLine;
 
-    /// <inheritdoc/>
+	/// <inheritdoc/>
 	public int LineNumber => _num;
 
-    private bool _lineDirty;
+	private bool _lineDirty;
 	
 	/// <inheritdoc/>
 	public string Text {
 		get => _text;
-	    set {
+		set {
 			if (_num < _minLine) return;
 			_text = value;
 			_lineDirty = true;

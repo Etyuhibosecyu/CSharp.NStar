@@ -25,7 +25,7 @@ using Avalonia.Media.TextFormatting;
 
 namespace AvaloniaEdit.Utils;
 
-    /// <summary>
+	/// <summary>
 /// Creates TextFormatter instances that with the correct TextFormattingMode, if running on .NET 4.0.
 /// </summary>
 static class TextFormatterFactory

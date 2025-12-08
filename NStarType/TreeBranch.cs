@@ -12,8 +12,9 @@ namespace CSharp.NStar;
 [DebuggerDisplay("{ToString()}")]
 public sealed class TreeBranch
 {
+	public static int LastTreePos { get; private set; }
 	public String Name { get; set; }
-	public int Pos { get; set; }
+	public int Pos { get => LastTreePos = field; set; }
 	public int EndPos { get; set; }
 	public List<TreeBranch> Elements { get; set; }
 	public BlockStack Container { get; set; }

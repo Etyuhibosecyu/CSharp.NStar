@@ -144,7 +144,7 @@ public static class CharRope
 			} else if (index >= node.Left.Length) {
 				node.Right.WriteTo(index - node.Left.Length, output, count);
 			} else {
-				int amountInLeft = node.Left.Length - index;
+				var amountInLeft = node.Left.Length - index;
 				node.Left.WriteTo(index, output, amountInLeft);
 				node.Right.WriteTo(0, output, count - amountInLeft);
 			}
@@ -167,12 +167,12 @@ public static class CharRope
 		
 		while (length > 0) {
 			var entry = rope.FindNodeUsingCache(startIndex).PeekOrDefault();
-			char[] contents = entry.Node.Contents;
-			int startWithinNode = startIndex - entry.NodeStartIndex;
-			int nodeLength = Math.Min(entry.Node.Length, startWithinNode + length);
-			for (int i = startIndex - entry.NodeStartIndex; i < nodeLength; i++) {
-				char element = contents[i];
-				foreach (char needle in anyOf) {
+			var contents = entry.Node.Contents;
+			var startWithinNode = startIndex - entry.NodeStartIndex;
+			var nodeLength = Math.Min(entry.Node.Length, startWithinNode + length);
+			for (var i = startIndex - entry.NodeStartIndex; i < nodeLength; i++) {
+				var element = contents[i];
+				foreach (var needle in anyOf) {
 					if (element == needle)
 						return entry.NodeStartIndex + i;
 				}
@@ -191,7 +191,7 @@ public static class CharRope
 		ArgumentNullException.ThrowIfNull(rope);
 		ArgumentNullException.ThrowIfNull(searchText);
 		rope.VerifyRange(startIndex, length);
-		int pos = rope.ToString(startIndex, length).IndexOf(searchText, comparisonType);
+		var pos = rope.ToString(startIndex, length).IndexOf(searchText, comparisonType);
 		if (pos < 0)
 			return -1;
 		else
@@ -206,7 +206,7 @@ public static class CharRope
 		ArgumentNullException.ThrowIfNull(rope);
 		ArgumentNullException.ThrowIfNull(searchText);
 		rope.VerifyRange(startIndex, length);
-		int pos = rope.ToString(startIndex, length).LastIndexOf(searchText, comparisonType);
+		var pos = rope.ToString(startIndex, length).LastIndexOf(searchText, comparisonType);
 		if (pos < 0)
 			return -1;
 		else

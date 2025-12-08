@@ -27,14 +27,14 @@ namespace AvaloniaEdit.Utils;
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
 internal sealed class Deque<T> : ICollection<T>
 {
-    private T[] _arr = Empty<T>.Array;
-    private int _head;
-    private int _tail;
+	private T[] _arr = Empty<T>.Array;
+	private int _head;
+	private int _tail;
 
-    /// <inheritdoc/>
+	/// <inheritdoc/>
 	public int Count { get; private set; }
 
-    /// <inheritdoc/>
+	/// <inheritdoc/>
 	public void Clear()
 	{
 		_arr = Empty<T>.Array;
@@ -117,7 +117,7 @@ internal sealed class Deque<T> : ICollection<T>
 		return val;
 	}
 
-    private void SetCapacity(int capacity)
+	private void SetCapacity(int capacity)
 	{
 		T[] newArr = new T[capacity];
 		CopyTo(newArr, 0);
@@ -130,12 +130,12 @@ internal sealed class Deque<T> : ICollection<T>
 	public IEnumerator<T> GetEnumerator()
 	{
 		if (_head < _tail) {
-			for (int i = _head; i < _tail; i++)
+			for (var i = _head; i < _tail; i++)
 				yield return _arr[i];
 		} else {
-			for (int i = _head; i < _arr.Length; i++)
+			for (var i = _head; i < _arr.Length; i++)
 				yield return _arr[i];
-			for (int i = 0; i < _tail; i++)
+			for (var i = 0; i < _tail; i++)
 				yield return _arr[i];
 		}
 	}
@@ -163,7 +163,7 @@ internal sealed class Deque<T> : ICollection<T>
 		if (_head < _tail) {
 			Array.Copy(_arr, _head, array, arrayIndex, _tail - _head);
 		} else {
-			int num1 = _arr.Length - _head;
+			var num1 = _arr.Length - _head;
 			Array.Copy(_arr, _head, array, arrayIndex, num1);
 			Array.Copy(_arr, 0, array, arrayIndex + num1, _tail);
 		}
