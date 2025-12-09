@@ -42,6 +42,7 @@ public sealed partial class SemanticTree
 	private readonly ListHashSet<String> nestedPrepassClasses = [];
 	private readonly Dictionary<NStarType, String> parsedTypes = [];
 	private readonly Dictionary<(NStarType, TreeBranch), (bool flowControl, String value)> parsedUserConstructors = [];
+	private readonly Dictionary<String, ListHashSet<String>> functionReferences = [];
 
 	private static readonly string AlphanumericCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.";
 	private static readonly ImmutableArray<string> ExprTypes = [nameof(Expr), nameof(List), nameof(Lambda), nameof(SwitchExpr),
@@ -1347,6 +1348,7 @@ public sealed partial class SemanticTree
 					GenerateMessage(ref errors, 0x4051, branch.Pos);
 					return "default!";
 				}
+				DetectSpaghettiOutOfRecursion(ref errors);
 				if (functionContainer.Length == 0)
 					HypernamePublicExtendedMethod(branch, branchName, subbranchValues, ref extra,
 						ref errors, prevIndex, functions, "user");
@@ -1368,6 +1370,7 @@ public sealed partial class SemanticTree
 					GenerateMessage(ref errors, 0x4051, branch.Pos);
 					return "default!";
 				}
+				DetectSpaghettiOutOfRecursion(ref errors);
 				if (branchName.ToString() is "ExecuteString" or "Q" && !(branch.Length >= 2 && branch[1].Name == nameof(Call)))
 				{
 					var otherPos = branch.FirstPos;
@@ -1545,6 +1548,7 @@ public sealed partial class SemanticTree
 					GenerateMessage(ref errors, 0x4051, branch.Pos);
 					return "default!";
 				}
+				DetectSpaghettiOutOfRecursion(ref errors);
 				if (HypernameExtendedMethod(branch, branchName, subbranchValues, ref extra, ref errors, prevIndex,
 					ContainerNStarType, functions, "userMethod") != null)
 					return "_";
@@ -1559,6 +1563,7 @@ public sealed partial class SemanticTree
 					GenerateMessage(ref errors, 0x4051, branch.Pos);
 					return "default!";
 				}
+				DetectSpaghettiOutOfRecursion(ref errors);
 				if (HypernameMethod(branch, branchName, subbranchValues, ref extra, ref errors, prevIndex,
 					ContainerNStarType, functions) != null)
 					return "_";
@@ -1595,6 +1600,18 @@ public sealed partial class SemanticTree
 			};
 			this.constantsDepth = constantsDepth;
 			return "_";
+		}
+		void DetectSpaghettiOutOfRecursion(ref List<String>? errors)
+		{
+			var pureBranchName = branchName.Replace(" (function", "");
+			var containerFunction = GetFunctionName(branch);
+			if (containerFunction.Length != 0)
+			{
+				functionReferences.TryAdd(pureBranchName, []);
+				functionReferences[pureBranchName].TryAdd(containerFunction);
+			}
+			if (IsSpaghettiOutOfRecursion(pureBranchName))
+				GenerateMessage(ref errors, 0x801D, branch.Pos);
 		}
 	}
 
@@ -4662,6 +4679,8 @@ public sealed partial class SemanticTree
 				return "dynamic";
 			}
 			var noReturn = TypeEqualsToPrimitive(ReturnNStarType, "null");
+			if (noReturn && type.ExtraTypes.Length == 1)
+				return result.AddRange("Action");
 			result.AddRange(noReturn ? "Action<" : "Func<");
 			for (var i = 1; i < type.ExtraTypes.Length; i++)
 			{
@@ -5402,26 +5421,6 @@ public sealed partial class SemanticTree
 		return false;
 	}
 
-	private static bool IsDeclaration(TreeBranch branch, [MaybeNullWhen(false)] out TreeBranch declarationBranch,
-		out int declarationIndex)
-	{
-		var parent = branch.Parent;
-		while (parent != null)
-		{
-			if (parent.Name == nameof(Declaration))
-			{
-				var prevIndex = parent.Elements.FindIndex(x => ReferenceEquals(branch, x));
-				declarationBranch = parent;
-				declarationIndex = Max(prevIndex + 1, 2);
-				return true;
-			}
-			parent = parent.Parent;
-		}
-		declarationBranch = null;
-		declarationIndex = -1;
-		return false;
-	}
-
 	private static bool IsConstructor(TreeBranch branch, [MaybeNullWhen(false)] out TreeBranch constructorBranch,
 		[MaybeNullWhen(false)] out ConstructorOverloads overloads)
 	{
@@ -5449,6 +5448,36 @@ public sealed partial class SemanticTree
 		constructorBranch = null;
 		overloads = null;
 		return false;
+	}
+
+	private bool IsSpaghettiOutOfRecursion(String functionName) =>
+		IsSpaghettiOutOfRecursion(functionName, functionName, [], false);
+
+	private bool IsSpaghettiOutOfRecursion(String functionName, String targetName,
+		ListHashSet<String> blackList, bool includesDirect)
+	{
+		if (blackList.Contains(functionName) || !functionReferences.TryGetValue(functionName, out var references))
+			return false;
+		if ((includesDirect |= references.Contains(functionName))
+			&& functionName != targetName && references.Contains(targetName))
+			return true;
+		foreach (var x in references.Copy().ExceptWith(blackList))
+			if (IsSpaghettiOutOfRecursion(x, targetName, blackList.Add(functionName), includesDirect))
+				return true;
+		return false;
+	}
+
+	private static String GetFunctionName(TreeBranch branch)
+	{
+		var parent = branch.Parent;
+		while (parent != null)
+		{
+			if (parent.Name == "Function" && parent.Length >= 3
+				&& UserDefinedNonDerivedFunctionExists(parent.Container, parent[0].Name, out _, out _))
+				return parent[0].Name;
+			parent = parent.Parent;
+		}
+		return [];
 	}
 
 	private void GenerateMessage(ref List<String>? errors, ushort code, Index pos, params dynamic[] parameters)

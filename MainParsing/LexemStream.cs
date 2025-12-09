@@ -219,13 +219,15 @@ public class LexemStream
 		while (pos < lexems.Length - 1 && lexems[pos].Type == LexemType.Identifier
 			&& lexems[pos + 1].Type == LexemType.Operator && lexems[pos + 1].String == ".")
 		{
+			ValidateOpenName();
 			names.Add(lexems[pos].String);
 			pos += 2;
 		}
 		if (IsEnd()) return;
 		if (lexems[pos].Type == LexemType.Identifier)
 		{
-			name = String.Join(".", [.. names, lexems[pos].String]);
+			ValidateOpenName();
+			name = String.Join(".", names.Add(lexems[pos].String));
 			pos++;
 		}
 		else
@@ -279,6 +281,12 @@ public class LexemStream
 		if (IsEnd()) return;
 		if (lexems[pos].Type == LexemType.Identifier)
 		{
+			ValidateOpenName();
+			if (container.Length >= 2 && container.Peek().BlockType is BlockType.Class or BlockType.Struct
+				or BlockType.Interface or BlockType.Delegate
+				&& container.SkipLast(1)[^1].BlockType is BlockType.Class or BlockType.Struct
+				or BlockType.Interface or BlockType.Delegate)
+				GenerateMessage(0x801C, pos);
 			var s = lexems[pos].String;
 			if (PrimitiveTypes.ContainsKey(s) || ExtraTypes.ContainsKey(("", s)))
 				ChangeNameAndGenerateError(0x0006, out name, s);
@@ -358,6 +366,7 @@ public class LexemStream
 		if (IsEnd()) return;
 		if (lexems[pos].Type == LexemType.Identifier)
 		{
+			ValidateOpenName();
 			var s = lexems[pos].String;
 			if (PublicFunctions.ContainsKey(s))
 				ChangeNameAndGenerateError(0x000B, out name, s);
@@ -534,6 +543,18 @@ public class LexemStream
 			return true;
 		}
 		return false;
+	}
+
+	private protected void ValidateOpenName()
+	{
+		if (CodeStyleRules.TestEnvironment)
+			return;
+		if (lexems[pos].String.Length == 1)
+			GenerateMessage(0x8018, pos, false);
+		else if (lexems[pos].String.ToHashSet().ExceptWith("0123456789_").Length == 1)
+			GenerateMessage(0x801A, pos, false);
+		if (char.IsLower(lexems[pos].String[0]))
+			GenerateMessage(0x801B, pos, false);
 	}
 
 	private void GenerateMessage(ushort code, Index pos, params dynamic[] parameters)

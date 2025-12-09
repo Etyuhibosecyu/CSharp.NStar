@@ -756,6 +756,8 @@ public partial class MainParsing : LexemStream
 		if (_TBStack[_Stackpos] != null && _ExtraStack[_Stackpos - 1] is List<object> paramCollection
 			&& paramCollection[0] is ParameterAttributes attributes)
 			_TBStack[_Stackpos]!.Extra = attributes;
+		if (extra is NStarType NStarType)
+			ValidateLocalName(NStarType);
 		if (!AddExtraAndIdentifier())
 		{
 			_ErLStack[_Stackpos].AddRange(errors ?? []);
@@ -1000,6 +1002,18 @@ public partial class MainParsing : LexemStream
 	{
 		if (IsCurrentLexemKeyword(nameof(Function)))
 			return _SuccessStack[_Stackpos] = false;
+		if (extra is NStarType NStarType)
+		{
+			CreateObjectList(out var l);
+			if (NStarType.MainType.Equals(RecursiveBlockStack))
+				ValidateTypeName();
+			else if (((PropertyAttributes)l![0] & (PropertyAttributes.Private | PropertyAttributes.Protected)) == 0
+				|| ((PropertyAttributes)l![0] & (PropertyAttributes.Const)) == PropertyAttributes.Const)
+				ValidateOpenName();
+			else
+				ValidateLocalName(NStarType);
+		}
+		_ErLStack[_Stackpos].AddRange(errors ?? []);
 		if (!AddExtraAndIdentifier())
 			return EndWithError(0x2001, pos, false);
 		if (IsCurrentLexemOther("{"))
@@ -1124,10 +1138,10 @@ public partial class MainParsing : LexemStream
 			paramCollection.Add((success ? (NStarType?)extra : null) ?? NullType);
 		if (lexems[pos].Type == LexemType.Identifier)
 		{
-			pos++;
-			_TBStack[_Stackpos]?.Add(new(lexems[pos - 1].String, pos - 1, pos, container));
+			_TBStack[_Stackpos]?.Add(new(lexems[pos].String, pos, pos + 1, container));
 			if (_ExtraStack[_Stackpos - 1] is List<object> paramCollection2)
-				paramCollection2.Add(lexems[pos - 1].String);
+				paramCollection2.Add(lexems[pos].String);
+			pos++;
 			return true;
 		}
 		return false;
@@ -1602,7 +1616,7 @@ public partial class MainParsing : LexemStream
 
 	private bool For2()
 	{
-		if (!success)
+		if (!success || treeBranch == null || treeBranch.Name != "type" || treeBranch.Extra is not NStarType NStarType)
 			return EndWithEmpty(true);
 		if (pos >= end)
 		{
@@ -1611,9 +1625,10 @@ public partial class MainParsing : LexemStream
 		}
 		else if (lexems[pos].Type == LexemType.Identifier)
 		{
-			pos++;
+			ValidateLocalName(NStarType);
 			_TBStack[_Stackpos]?[^1]?.Add(new("Declaration", [treeBranch ?? TreeBranch.DoNotAdd(),
-				new(lexems[pos - 1].String, pos - 1, pos, container)], container));
+				new(lexems[pos].String, pos, pos + 1, container)], container));
+			pos++;
 		}
 		else
 		{
@@ -2311,9 +2326,10 @@ public partial class MainParsing : LexemStream
 			return _SuccessStack[_Stackpos] = false;
 		if (lexems[pos].Type != LexemType.Identifier)
 			return EndWithError(0x2001, pos, true);
-		pos++;
+		ValidateOpenName();
 		_ErLStack[_Stackpos].AddRange(errors ?? []);
-		AppendBranch("Declaration", new(lexems[pos - 1].String, pos - 1, pos, container) { Extra = NStarType });
+		AppendBranch("Declaration", new(lexems[pos].String, pos, pos + 1, container) { Extra = NStarType });
+		pos++;
 		if (!IsCurrentLexemOperator("="))
 		{
 			GenerateMessage(0x203D, pos, true);
@@ -2333,9 +2349,10 @@ public partial class MainParsing : LexemStream
 				return _SuccessStack[_Stackpos] = false;
 			if (lexems[pos].Type == LexemType.Identifier)
 			{
-				pos++;
 				_ErLStack[_Stackpos].AddRange(errors ?? []);
-				AppendBranch("Declaration", new(lexems[pos - 1].String, pos - 1, pos, container) { Extra = NStarType });
+				ValidateLocalName(NStarType);
+				AppendBranch("Declaration", new(lexems[pos].String, pos, pos + 1, container) { Extra = NStarType });
+				pos++;
 				return HypernameDeclaration();
 			}
 			if (IsCurrentLexemOperator("."))
@@ -2369,13 +2386,13 @@ public partial class MainParsing : LexemStream
 			return _SuccessStack[_Stackpos] = false;
 		if (lexems[pos].Type == LexemType.Identifier)
 		{
-			pos++;
-			var newBranch = UserDefinedConstantExists(container, lexems[pos - 1].String, out var constant, out _, out _)
+			var newBranch = UserDefinedConstantExists(container, lexems[pos].String, out var constant, out _, out _)
 				&& constant.HasValue && constant.Value.DefaultValue != null
 				? constant.Value.DefaultValue.Name == "Expr" && constant.Value.DefaultValue.Length == 1
 				? new TreeBranch("Expr", constant.Value.DefaultValue, container) : constant.Value.DefaultValue
-				: new(lexems[pos - 1].String, pos - 1, pos, container);
-			AppendBranch(nameof(Hypername), !@ref ? newBranch : new(lexems[pos - 2].String, newBranch, container));
+				: new(lexems[pos].String, pos, pos + 1, container);
+			AppendBranch(nameof(Hypername), !@ref ? newBranch : new(lexems[pos - 1].String, newBranch, container));
+			pos++;
 			return HypernameBracketsAndDot();
 		}
 		if (_TaskStack[_Stackpos - 1].ToString() is not "HypernameClosing" and not "HypernameNotCallClosing")
@@ -3815,6 +3832,46 @@ public partial class MainParsing : LexemStream
 		else
 			pos++;
 		return null;
+	}
+
+	private void ValidateLocalName(NStarType NStarType)
+	{
+		var bTypeContext = NStarType.MainType.Equals(RecursiveBlockStack);
+		if (bTypeContext)
+			ValidateTypeName();
+		else
+			ValidateLocalNonTypeName(NStarType);
+	}
+
+	private void ValidateTypeName()
+	{
+		if (CodeStyleRules.TestEnvironment)
+			return;
+		if (lexems[pos].String.Length == 1 && lexems[pos].String[0] != 'T')
+			GenerateMessage(0x8016, pos, false);
+		if (lexems[pos].String[0] != 'T' || lexems[pos].String.Length != 1
+			&& (lexems[pos].String.ToHashSet().ExceptWith("0123456789_").Length == 1
+			? lexems[pos].String.GetSlice(1).ToHashSet().ExceptWith("0123456789").Length != 0
+			: !char.IsUpper(lexems[pos].String[1])))
+			GenerateMessage(0x8019, pos, false);
+	}
+
+	private void ValidateLocalNonTypeName(NStarType NStarType)
+	{
+		if (CodeStyleRules.TestEnvironment)
+			return;
+		var bNumberContext = NStarType.MainType.Length == 1
+			&& NStarType.MainType.Peek().Name.ToString() is "byte" or "short int" or "unsigned short int"
+			or "int" or "unsigned int" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
+			or "real" or "long real" or "complex" or "long complex"
+			&& NStarType.ExtraTypes.Length == 0;
+		var bStringContext = TypeEqualsToPrimitive(NStarType, "string");
+		if (lexems[pos].String.Length == 1
+			&& !(bNumberContext ? "ijknxyz" : bStringContext ? "sxyz" : "xyz").Contains(lexems[pos].String[0]))
+			GenerateMessage((ushort)(bNumberContext ? 0x8014 : bStringContext ? 0x8015 : 0x8017), pos, false);
+		else if (lexems[pos].String.Length != 1
+			&& lexems[pos].String.ToHashSet().ExceptWith("0123456789_").Length == 1)
+			GenerateMessage(0x801A, pos, false);
 	}
 
 	private void GenerateMessage(ushort code, Index pos, bool savePrevious, params dynamic[] parameters)

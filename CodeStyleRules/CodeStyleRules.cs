@@ -8,6 +8,7 @@ public static class CodeStyleRules
 	public static RuleStrictness CharactersInLineStrictness { get; set; } = RuleStrictness.Lite;
 	public static RuleStrictness LinesInFunctionStrictness { get; set; } = RuleStrictness.Lite;
 	public static RuleStrictness FunctionsInClassStrictness { get; set; } = RuleStrictness.Normal;
+	public static bool TestEnvironment { get; set; } = false;
 	public static int MaxCharactersInLine => _charactersInLine[CharactersInLineStrictness];
 	public static int MaxLinesInFunction => _linesInFunction[LinesInFunctionStrictness];
 	public static int MaxFunctionsInClass => _functionsInClass[FunctionsInClassStrictness];

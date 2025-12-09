@@ -246,6 +246,20 @@ public static class Messages
 			0x8012 => "the megaclasses are static implicitly; the word \"static\" is not necessary",
 			0x8013 => "an attempt to create a god class detected (more than " + parameters[0]
 				+ " functions); split it or replace the word \"Class\" with \"Megaclass\" (note that megaclasses are static)",
+			0x8014 => "the name of the local number variable consists of one letter which is not i, j, k, n, x, y or z",
+			0x8015 => "the name of the local string variable consists of one letter which is not s, x, y or z",
+			0x8016 => "the name of the local type variable consists of one letter which is not T",
+			0x8017 => "the name of the local non-number, non-string and non-type variable consists of one letter"
+				+ " which is not x, y or z",
+			0x8018 => "the name of the construction which is not type or local variable consists of one letter",
+			0x8019 => "the name of the type is neither one capital letter \"T\", nor letter \"T\" and digits,"
+				+ " nor letter \"T\" and an identifier that starts with another capital letter",
+			0x801A => "the name of the non-type construction consists only of one letter and non-letters,"
+				+ " the repetitions of one letter or the repetitions of one letter and non-letters",
+			0x801B => "the name of the namespace, type, function, extent, constant, lambda, list of lambdas,"
+				+ " dictionary of lambdas or non-private and non-protected property starts with lower case letter",
+			0x801C => "type inside the type inside the type detected",
+			0x801D => "complicated, spaghetti-like recursional dependencies detected",
 			0x9000 => "unexpected end of code reached; expected: single quote",
 			0x9001 => "there must be a single character or a single escape-sequence in the single quotes",
 			0x9002 => "unexpected end of code reached; expected: double quote",

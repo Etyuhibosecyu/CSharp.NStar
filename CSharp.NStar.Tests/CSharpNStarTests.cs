@@ -6343,6 +6343,30 @@ return new MyClass().F(5);
 	null Function F17() { }
 }
 ", "null", "Ошибок нет")]
+	[DataRow(@"abstract Class MyClass
+{
+	Megaclass MyClass2
+	{
+		sealed Class MyClass3 : System.Collections.Buffer[real]
+		{
+		}
+	}
+}
+", "null", @"Warning 801C in line 5 at position 15: type inside the type inside the type detected
+")]
+	[DataRow(@"null Function F1()
+{
+	if (IntRandom(1) == 0)
+		F1();
+	var lambda = F2;
+}
+
+null Function F2()
+{
+	F1();
+}
+", "null", @"Warning 801D in line 10 at position 1: complicated, spaghetti-like recursional dependencies detected
+")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());
@@ -6471,6 +6495,79 @@ return (DecomposeSquareTrinomial((3, 9, -30)), DecomposeSquareTrinomial((1, 16, 
 	public void Test(string Key, string TargetResult, string TargetErrors)
 	{
 		CultureInfo.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+		CodeStyleRules.TestEnvironment = true;
+		TestInternal(Key, TargetResult, TargetErrors);
+	}
+
+	[TestMethod]
+	[DataRow(@"Namespace a
+{
+	Class b
+	{
+		int x;
+		private real j;
+		const typename T = () int;
+		const typename T5 = () string;
+		typename T47;
+		typename T__;
+		typename t;
+		typename Type;
+		const typename Type2 = null;
+		const typename T5PHP = bool;
+		typename T1M;
+		protected string s8;
+		internal string s;
+		internal long int N;
+		private const int n = 5;
+
+		null Function c(string i)
+		{
+			() int s;
+			string s2;
+		}
+	}
+}
+", "null", @"Warning 8018 in line 1 at position 10: the name of the construction which is not type or local variable consists of one letter
+Warning 801B in line 1 at position 10: the name of the namespace, type, function, extent, constant, lambda, list of lambdas, dictionary of lambdas or non-private and non-protected property starts with lower case letter
+Warning 8018 in line 3 at position 7: the name of the construction which is not type or local variable consists of one letter
+Warning 801B in line 3 at position 7: the name of the namespace, type, function, extent, constant, lambda, list of lambdas, dictionary of lambdas or non-private and non-protected property starts with lower case letter
+Warning 8018 in line 21 at position 16: the name of the construction which is not type or local variable consists of one letter
+Warning 801B in line 21 at position 16: the name of the namespace, type, function, extent, constant, lambda, list of lambdas, dictionary of lambdas or non-private and non-protected property starts with lower case letter
+Warning 8018 in line 5 at position 6: the name of the construction which is not type or local variable consists of one letter
+Warning 801B in line 5 at position 6: the name of the namespace, type, function, extent, constant, lambda, list of lambdas, dictionary of lambdas or non-private and non-protected property starts with lower case letter
+Warning 8018 in line 5 at position 6: the name of the construction which is not type or local variable consists of one letter
+Warning 801B in line 5 at position 6: the name of the namespace, type, function, extent, constant, lambda, list of lambdas, dictionary of lambdas or non-private and non-protected property starts with lower case letter
+Warning 8019 in line 10 at position 11: the name of the type is neither one capital letter ""T"", nor letter ""T"" and digits, nor letter ""T"" and an identifier that starts with another capital letter
+Warning 8016 in line 11 at position 11: the name of the local type variable consists of one letter which is not T
+Warning 8019 in line 11 at position 11: the name of the type is neither one capital letter ""T"", nor letter ""T"" and digits, nor letter ""T"" and an identifier that starts with another capital letter
+Warning 8019 in line 12 at position 11: the name of the type is neither one capital letter ""T"", nor letter ""T"" and digits, nor letter ""T"" and an identifier that starts with another capital letter
+Warning 8019 in line 13 at position 17: the name of the type is neither one capital letter ""T"", nor letter ""T"" and digits, nor letter ""T"" and an identifier that starts with another capital letter
+Warning 8019 in line 14 at position 17: the name of the type is neither one capital letter ""T"", nor letter ""T"" and digits, nor letter ""T"" and an identifier that starts with another capital letter
+Warning 8019 in line 15 at position 11: the name of the type is neither one capital letter ""T"", nor letter ""T"" and digits, nor letter ""T"" and an identifier that starts with another capital letter
+Warning 801A in line 16 at position 19: the name of the non-type construction consists only of one letter and non-letters, the repetitions of one letter or the repetitions of one letter and non-letters
+Warning 8018 in line 17 at position 18: the name of the construction which is not type or local variable consists of one letter
+Warning 801B in line 17 at position 18: the name of the namespace, type, function, extent, constant, lambda, list of lambdas, dictionary of lambdas or non-private and non-protected property starts with lower case letter
+Warning 8018 in line 17 at position 18: the name of the construction which is not type or local variable consists of one letter
+Warning 801B in line 17 at position 18: the name of the namespace, type, function, extent, constant, lambda, list of lambdas, dictionary of lambdas or non-private and non-protected property starts with lower case letter
+Warning 8018 in line 18 at position 20: the name of the construction which is not type or local variable consists of one letter
+Warning 8018 in line 18 at position 20: the name of the construction which is not type or local variable consists of one letter
+Warning 8018 in line 19 at position 20: the name of the construction which is not type or local variable consists of one letter
+Warning 801B in line 19 at position 20: the name of the namespace, type, function, extent, constant, lambda, list of lambdas, dictionary of lambdas or non-private and non-protected property starts with lower case letter
+Warning 8015 in line 21 at position 25: the name of the local string variable consists of one letter which is not s, x, y or z
+Warning 8017 in line 23 at position 10: the name of the local non-number, non-string and non-type variable consists of one letter which is not x, y or z
+Warning 801A in line 24 at position 10: the name of the non-type construction consists only of one letter and non-letters, the repetitions of one letter or the repetitions of one letter and non-letters
+Warning 8006 in line 17 at position 2: at present time the word ""internal"" does nothing because C#.NStar does not have multiple assemblies
+Warning 8006 in line 18 at position 2: at present time the word ""internal"" does nothing because C#.NStar does not have multiple assemblies
+")]
+	public void TestNaming(string Key, string TargetResult, string TargetErrors)
+	{
+		CultureInfo.CurrentCulture = CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+		CodeStyleRules.TestEnvironment = false;
+		TestInternal(Key, TargetResult, TargetErrors);
+	}
+
+	private static void TestInternal(string Key, string TargetResult, string TargetErrors)
+	{
 		String result;
 		if ((result = ExecuteProgram(Key, out var errors)) == TargetResult
 			&& (TargetErrors == null || errors == TargetErrors))
