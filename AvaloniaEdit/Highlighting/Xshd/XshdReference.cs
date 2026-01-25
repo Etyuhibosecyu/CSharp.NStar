@@ -91,7 +91,7 @@ public struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElem
 		// combine the hash codes of all members here (e.g. with XOR operator ^)
 		GetHashCode(ReferencedDefinition) ^ GetHashCode(ReferencedElement) ^ GetHashCode(InlineElement);
 
-	static int GetHashCode(object o) => o != null ? o.GetHashCode() : 0;
+	private static int GetHashCode(object o) => o != null ? o.GetHashCode() : 0;
 
 	/// <summary>
 	/// Equality operator.

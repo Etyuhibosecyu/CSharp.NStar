@@ -28,7 +28,7 @@ namespace AvaloniaEdit.Utils;
 /// </summary>
 public sealed class RopeTextReader : TextReader
 {
-	private readonly Stack<RopeNode<char>> _stack = new Stack<RopeNode<char>>();
+	private readonly Stack<RopeNode<char>> _stack = new();
 	private RopeNode<char> _currentNode;
 	private int _indexInsideNode;
 	

@@ -26,11 +26,14 @@ using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Editing;
 
-	/// <summary>
-	/// Base class for selections.
-	/// </summary>
-	public abstract class Selection
-	{
+/// <summary>
+/// Base class for selections.
+/// </summary>
+/// <remarks>
+/// Constructor for Selection.
+/// </remarks>
+public abstract class Selection(TextArea textArea)
+{
 		/// <summary>
 		/// Creates a new simple selection that selects the text from startOffset to endOffset.
 		/// </summary>
@@ -61,12 +64,7 @@ namespace AvaloniaEdit.Editing;
 		return Create(textArea, segment.Offset, segment.EndOffset);
 		}
 
-		internal TextArea TextArea { get; }
-
-	/// <summary>
-	/// Constructor for Selection.
-	/// </summary>
-	protected Selection(TextArea textArea) => TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
+	internal TextArea TextArea { get; } = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
 	/// <summary>
 	/// Gets the start position of the selection.
@@ -252,7 +250,7 @@ namespace AvaloniaEdit.Editing;
 		/// </summary>
 		public virtual DataObject CreateDataObject(TextArea textArea)
 		{
-			DataObject data = new DataObject();
+			DataObject data = new();
 
 			// Ensure we use the appropriate newline sequence for the OS
 			var text = TextUtilities.NormalizeNewLines(GetText(), Environment.NewLine);

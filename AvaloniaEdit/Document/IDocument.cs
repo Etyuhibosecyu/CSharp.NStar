@@ -312,5 +312,5 @@ namespace AvaloniaEdit.Document;
 	/// <summary>
 	/// Creates TextChangeEventArgs for the reverse change.
 	/// </summary>
-	public virtual TextChangeEventArgs Invert() => new TextChangeEventArgs(Offset, InsertedText, RemovedText);
+	public virtual TextChangeEventArgs Invert() => new(Offset, InsertedText, RemovedText);
 }

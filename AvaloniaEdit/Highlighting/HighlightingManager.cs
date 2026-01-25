@@ -36,23 +36,20 @@ namespace AvaloniaEdit.Highlighting;
 	{
 		private sealed class DelayLoadedHighlightingDefinition : IHighlightingDefinition
 		{
-			private readonly object _lockObj = new object();
-			private readonly string _name;
-			private Func<IHighlightingDefinition> _lazyLoadingFunction;
+			private readonly object _lockObj = new();
+		private Func<IHighlightingDefinition> _lazyLoadingFunction;
 			private IHighlightingDefinition _definition;
 			private Exception _storedException;
 
 			public DelayLoadedHighlightingDefinition(string name, Func<IHighlightingDefinition> lazyLoadingFunction)
 			{
-				_name = name;
+				Name = name;
 				_lazyLoadingFunction = lazyLoadingFunction;
 			}
 
-			public string Name => _name ?? GetDefinition().Name;
+			public string Name => field ?? GetDefinition().Name;
 
-			[SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
-															 Justification = "The exception will be rethrown")]
-			private IHighlightingDefinition GetDefinition()
+		private IHighlightingDefinition GetDefinition()
 			{
 				Func<IHighlightingDefinition> func;
 				lock (_lockObj)
@@ -105,10 +102,10 @@ namespace AvaloniaEdit.Highlighting;
 		public IDictionary<string, string> Properties => GetDefinition().Properties;
 		}
 
-		private readonly object _lockObj = new object();
-		private readonly Dictionary<string, IHighlightingDefinition> _highlightingsByName = new Dictionary<string, IHighlightingDefinition>();
-		private readonly Dictionary<string, IHighlightingDefinition> _highlightingsByExtension = new Dictionary<string, IHighlightingDefinition>(StringComparer.OrdinalIgnoreCase);
-		private readonly List<IHighlightingDefinition> _allHighlightings = new List<IHighlightingDefinition>();
+		private readonly object _lockObj = new();
+		private readonly Dictionary<string, IHighlightingDefinition> _highlightingsByName = [];
+		private readonly Dictionary<string, IHighlightingDefinition> _highlightingsByExtension = new(StringComparer.OrdinalIgnoreCase);
+		private readonly List<IHighlightingDefinition> _allHighlightings = [];
 
 		/// <summary>
 		/// Gets a highlighting definition by name.
@@ -214,9 +211,7 @@ namespace AvaloniaEdit.Highlighting;
 				}
 			}
 
-			[SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode",
-															 Justification = "LoadHighlighting is used only in release builds")]
-			private Func<IHighlightingDefinition> LoadHighlighting(string resourceName)
+		private Func<IHighlightingDefinition> LoadHighlighting(string resourceName)
 			{
 				IHighlightingDefinition Func()
 				{

@@ -33,7 +33,7 @@ namespace AvaloniaEdit;
 		/// </summary>
 		public TextLocation Location
 		{
-			get => new TextLocation(Line, Column);
+			get => new(Line, Column);
 			set
 			{
 				Line = value.Line;
@@ -124,9 +124,8 @@ namespace AvaloniaEdit;
 			return false;
 		}
 
-		/// <inheritdoc/>
-		[SuppressMessage("ReSharper", "NonReadonlyMemberInGetHashCode")]
-		public override int GetHashCode()
+	/// <inheritdoc/>
+	public override int GetHashCode()
 		{
 			var hashCode = IsAtEndOfLine ? 115817 : 0;
 			unchecked
@@ -156,7 +155,7 @@ namespace AvaloniaEdit;
 		/// </summary>
 		public static bool operator !=(TextViewPosition left, TextViewPosition right)
 		{
-			return !(left.Equals(right)); // use operator == and negate result
+			return !left.Equals(right); // use operator == and negate result
 		}
 		#endregion
 

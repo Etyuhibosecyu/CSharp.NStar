@@ -24,15 +24,13 @@ namespace AvaloniaEdit.Rendering;
 /// <summary>
 /// EventArgs for the <see cref="TextView.VisualLineConstructionStarting"/> event.
 /// </summary>
-public class VisualLineConstructionStartEventArgs : EventArgs
+/// <remarks>
+/// Creates a new VisualLineConstructionStartEventArgs instance.
+/// </remarks>
+public class VisualLineConstructionStartEventArgs(DocumentLine firstLineInView) : EventArgs
 {
 	/// <summary>
 	/// Gets/Sets the first line that is visible in the TextView.
 	/// </summary>
-	public DocumentLine FirstLineInView { get; }
-
-	/// <summary>
-	/// Creates a new VisualLineConstructionStartEventArgs instance.
-	/// </summary>
-	public VisualLineConstructionStartEventArgs(DocumentLine firstLineInView) => FirstLineInView = firstLineInView ?? throw new ArgumentNullException(nameof(firstLineInView));
+	public DocumentLine FirstLineInView { get; } = firstLineInView ?? throw new ArgumentNullException(nameof(firstLineInView));
 }

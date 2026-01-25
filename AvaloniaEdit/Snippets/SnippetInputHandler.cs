@@ -23,12 +23,9 @@ using Avalonia.Input;
 
 namespace AvaloniaEdit.Snippets;
 
-	internal sealed class SnippetInputHandler : TextAreaStackedInputHandler
+	internal sealed class SnippetInputHandler(InsertionContext context) : TextAreaStackedInputHandler(context.TextArea)
 	{
-		private readonly InsertionContext _context;
-
-	public SnippetInputHandler(InsertionContext context)
-		: base(context.TextArea) => _context = context;
+		private readonly InsertionContext _context = context;
 
 	public override void Attach()
 		{
@@ -73,8 +70,7 @@ namespace AvaloniaEdit.Snippets;
 			}
 		}
 
-		[SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
-		private IActiveElement FindNextEditableElement(int offset, bool backwards)
+	private IActiveElement FindNextEditableElement(int offset, bool backwards)
 		{
 			var elements = _context.ActiveElements.Where(e => e.IsEditable && e.Segment != null);
 			if (backwards)

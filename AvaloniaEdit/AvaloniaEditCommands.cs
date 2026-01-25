@@ -41,17 +41,15 @@ namespace AvaloniaEdit;
 		/// </summary>
 		public static RoutedCommand DeleteLine { get; } = new RoutedCommand(nameof(DeleteLine), new KeyGesture(Key.D, KeyModifiers.Control));
 
-		/// <summary>
-		/// Removes leading whitespace from the selected lines (or the whole document if the selection is empty).
-		/// </summary>
-		[SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Whitespace")]
-		public static RoutedCommand RemoveLeadingWhitespace { get; } = new RoutedCommand(nameof(RemoveLeadingWhitespace));
+	/// <summary>
+	/// Removes leading whitespace from the selected lines (or the whole document if the selection is empty).
+	/// </summary>
+	public static RoutedCommand RemoveLeadingWhitespace { get; } = new RoutedCommand(nameof(RemoveLeadingWhitespace));
 
-		/// <summary>
-		/// Removes trailing whitespace from the selected lines (or the whole document if the selection is empty).
-		/// </summary>
-		[SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Whitespace")]
-		public static RoutedCommand RemoveTrailingWhitespace { get; } = new RoutedCommand(nameof(RemoveTrailingWhitespace));
+	/// <summary>
+	/// Removes trailing whitespace from the selected lines (or the whole document if the selection is empty).
+	/// </summary>
+	public static RoutedCommand RemoveTrailingWhitespace { get; } = new RoutedCommand(nameof(RemoveTrailingWhitespace));
 
 		/// <summary>
 		/// Converts the selected text to upper case.
@@ -98,7 +96,6 @@ namespace AvaloniaEdit;
 		/// </summary>
 		public static RoutedCommand IndentSelection { get; } = new RoutedCommand(nameof(IndentSelection), new KeyGesture(Key.I, KeyModifiers.Control));
 	}
-
 
 	public static class ApplicationCommands
 	{

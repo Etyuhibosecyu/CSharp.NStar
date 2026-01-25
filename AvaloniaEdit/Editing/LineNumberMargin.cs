@@ -146,8 +146,7 @@ namespace AvaloniaEdit.Editing;
 
 	private void OnDocumentLineCountChanged(object sender, EventArgs e) => OnDocumentLineCountChanged();
 
-	void TextViewVisualLinesChanged(object sender, EventArgs e) => InvalidateMeasure();
-
+	private void TextViewVisualLinesChanged(object sender, EventArgs e) => InvalidateMeasure();
 
 	/// <summary>
 	/// Maximum length of a line number, in characters

@@ -28,25 +28,23 @@ namespace AvaloniaEdit.Rendering;
 /// <summary>
 /// VisualLineElement that represents a piece of text.
 /// </summary>
-public class VisualLineText : VisualLineElement
+/// <remarks>
+/// Creates a visual line text element with the specified length.
+/// It uses the <see cref="ITextRunConstructionContext.VisualLine"/> and its
+/// <see cref="VisualLineElement.RelativeTextOffset"/> to find the actual text string.
+/// </remarks>
+public class VisualLineText(VisualLine parentVisualLine, int length) : VisualLineElement(length, length)
 {
 	/// <summary>
 	/// Gets the parent visual line.
 	/// </summary>
-	public VisualLine ParentVisualLine { get; }
-
-	/// <summary>
-	/// Creates a visual line text element with the specified length.
-	/// It uses the <see cref="ITextRunConstructionContext.VisualLine"/> and its
-	/// <see cref="VisualLineElement.RelativeTextOffset"/> to find the actual text string.
-	/// </summary>
-	public VisualLineText(VisualLine parentVisualLine, int length) : base(length, length) => ParentVisualLine = parentVisualLine ?? throw new ArgumentNullException(nameof(parentVisualLine));
+	public VisualLine ParentVisualLine { get; } = parentVisualLine ?? throw new ArgumentNullException(nameof(parentVisualLine));
 
 	/// <summary>
 	/// Override this method to control the type of new VisualLineText instances when
 	/// the visual line is split due to syntax highlighting.
 	/// </summary>
-	protected virtual VisualLineText CreateInstance(int length) => new VisualLineText(ParentVisualLine, length);
+	protected virtual VisualLineText CreateInstance(int length) => new(ParentVisualLine, length);
 
 	/// <inheritdoc/>
 	public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)

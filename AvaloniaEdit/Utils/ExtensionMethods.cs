@@ -85,7 +85,7 @@ namespace AvaloniaEdit.Utils;
 	/// <summary>
 	/// Creates typeface from the framework element.
 	/// </summary>
-	public static Typeface CreateTypeface(this Control fe) => new Typeface(fe.GetValue(TextElement.FontFamilyProperty),
+	public static Typeface CreateTypeface(this Control fe) => new(fe.GetValue(TextElement.FontFamilyProperty),
 			fe.GetValue(TextElement.FontStyleProperty),
 			fe.GetValue(TextElement.FontWeightProperty),
 			fe.GetValue(TextElement.FontStretchProperty));
@@ -178,13 +178,13 @@ namespace AvaloniaEdit.Utils;
 	#endregion
 
 	#region System.Drawing <-> Avalonia conversions
-	public static System.Drawing.Point ToSystemDrawing(this Point p) => new System.Drawing.Point((int)p.X, (int)p.Y);
+	public static System.Drawing.Point ToSystemDrawing(this Point p) => new((int)p.X, (int)p.Y);
 
-	public static Point ToAvalonia(this System.Drawing.Point p) => new Point(p.X, p.Y);
+	public static Point ToAvalonia(this System.Drawing.Point p) => new(p.X, p.Y);
 
-	public static Size ToAvalonia(this System.Drawing.Size s) => new Size(s.Width, s.Height);
+	public static Size ToAvalonia(this System.Drawing.Size s) => new(s.Width, s.Height);
 
-	public static Rect ToAvalonia(this System.Drawing.Rectangle rect) => new Rect(rect.Location.ToAvalonia(), rect.Size.ToAvalonia());
+	public static Rect ToAvalonia(this System.Drawing.Rectangle rect) => new(rect.Location.ToAvalonia(), rect.Size.ToAvalonia());
 	#endregion
 
 	#region Snap to device pixels
@@ -205,7 +205,7 @@ namespace AvaloniaEdit.Utils;
 			var devicePoint = p.Transform(m.Value);
 
 			// Snap the coordinate to the midpoint between device pixels.
-			devicePoint = new Point(((int)devicePoint.X) + 0.5, ((int)devicePoint.Y) + 0.5);
+			devicePoint = new Point((int)devicePoint.X + 0.5, (int)devicePoint.Y + 0.5);
 
 			// Translate the point back to control coordinates.
 			var inv = m.Value.Invert();

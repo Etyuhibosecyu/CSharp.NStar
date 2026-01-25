@@ -61,8 +61,8 @@ namespace AvaloniaEdit.Editing;
 			return handler;
 		}
 
-		static readonly List<RoutedCommandBinding> CommandBindings = new List<RoutedCommandBinding>();
-		static readonly List<KeyBinding> KeyBindings = new List<KeyBinding>();
+	private static readonly List<RoutedCommandBinding> CommandBindings = [];
+	private static readonly List<KeyBinding> KeyBindings = [];
 
 	private static void AddBinding(
 		RoutedCommand command,
@@ -196,7 +196,7 @@ namespace AvaloniaEdit.Editing;
 																																  args.Handled = true;
 																																  // First, convert the selection into a rectangle selection
 																																  // (this is required so that virtual space gets enabled for the caret movement)
-																																  if (textArea.Options.EnableRectangularSelection && !(textArea.Selection is RectangleSelection))
+																																  if (textArea.Options.EnableRectangularSelection && textArea.Selection is not RectangleSelection)
 																																  {
 																																	  textArea.Selection = textArea.Selection.IsEmpty
 																																		  ? new RectangleSelection(textArea, textArea.Caret.Position, textArea.Caret.Position)

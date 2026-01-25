@@ -152,19 +152,19 @@ namespace AvaloniaEdit.Editing;
 			set => Position = new TextViewPosition(_position.Line, _position.Column, value);
 		}
 
-		private bool _isInVirtualSpace;
-
-		/// <summary>
-		/// Gets whether the caret is in virtual space.
-		/// </summary>
-		public bool IsInVirtualSpace
+	/// <summary>
+	/// Gets whether the caret is in virtual space.
+	/// </summary>
+	public bool IsInVirtualSpace
 		{
 			get
 			{
 				ValidateVisualColumn();
-				return _isInVirtualSpace;
+				return field;
 			}
-		}
+
+		private set;
+	}
 
 		private int _storedCaretOffset;
 
@@ -374,7 +374,7 @@ namespace AvaloniaEdit.Editing;
 				}
 				Position = new TextViewPosition(_textView.Document.GetLocation(newOffset), newVisualColumn);
 			}
-			_isInVirtualSpace = (_position.VisualColumn > visualLine.VisualLength);
+			IsInVirtualSpace = _position.VisualColumn > visualLine.VisualLength;
 		}
 
 		private Rect CalcCaretRectangle(VisualLine visualLine)
@@ -395,7 +395,7 @@ namespace AvaloniaEdit.Editing;
 							lineBottom - lineTop);
 		}
 
-	Rect CalcCaretOverstrikeRectangle(VisualLine visualLine)
+	private Rect CalcCaretOverstrikeRectangle(VisualLine visualLine)
 	{
 		if (!_visualColumnValid) {
 			RevalidateVisualColumn(visualLine);

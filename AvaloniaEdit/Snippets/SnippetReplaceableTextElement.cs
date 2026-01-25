@@ -63,20 +63,13 @@ namespace AvaloniaEdit.Snippets;
 		event EventHandler TextChanged;
 	}
 
-	internal sealed class ReplaceableActiveElement : IReplaceableActiveElement
+	internal sealed class ReplaceableActiveElement(InsertionContext context, int startOffset, int endOffset) : IReplaceableActiveElement
 	{
-		private readonly InsertionContext _context;
-		private readonly int _startOffset;
-		private readonly int _endOffset;
+		private readonly InsertionContext _context = context;
+		private readonly int _startOffset = startOffset;
+		private readonly int _endOffset = endOffset;
 		private TextAnchor _start;
 		private TextAnchor _end;
-
-		public ReplaceableActiveElement(InsertionContext context, int startOffset, int endOffset)
-		{
-			_context = context;
-			_startOffset = startOffset;
-			_endOffset = endOffset;
-		}
 
 	private void AnchorDeleted(object sender, EventArgs e) => _context.Deactivate(new SnippetEventArgs(DeactivateReason.Deleted));
 
@@ -143,7 +136,7 @@ namespace AvaloniaEdit.Snippets;
 
 		public event EventHandler TextChanged;
 
-		void OnDocumentTextChanged(object sender, EventArgs e)
+	private void OnDocumentTextChanged(object sender, EventArgs e)
 		{
 			var newText = GetText();
 			if (Text != newText)

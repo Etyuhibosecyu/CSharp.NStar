@@ -3,6 +3,7 @@ global using NStar.Dictionaries;
 global using NStar.Linq;
 global using NStar.MathLib;
 global using System;
+global using System.Collections.Immutable;
 global using static CSharp.NStar.BuiltInMemberCollections;
 global using static CSharp.NStar.MemberChecks;
 global using static CSharp.NStar.NStarType;
@@ -25,7 +26,7 @@ public class LexemStream
 	private protected bool wreckOccurred;
 	private protected int pos;
 	private int prevPos;
-	private readonly BlockStack nestedBlocksChain = new();
+	private readonly Stack<Block> nestedBlocksChain = new();
 	private int globalUnnamedIndex = 1;
 	private protected readonly BlocksToJump blocksToJump = [];
 	private protected readonly LexemGroup registeredTypes = [];
@@ -35,7 +36,7 @@ public class LexemStream
 	private int unknownIndex = 1;
 	private int figureBk;
 
-	private protected static readonly ListHashSet<String> StopLexemsList = ["\r\n", ";", "{", "}"];
+	private protected static readonly ImmutableArray<string> StopLexemsList = ["\r\n", ";", "{", "}"];
 
 	private protected LexemStream(List<Lexem> lexems, String input, List<String>? errors,
 		bool wreckOccurred, BlockStack? rootContainer = null)
@@ -238,7 +239,7 @@ public class LexemStream
 		GetFigureBracketAndSetBlock(BlockType.Namespace, name, 0, () =>
 		{
 			UserDefinedNamespaces.Add((container.Length != 0
-				? ((String)container.ToShortString()).Add('.') : "").AddRange(name));
+				? ((String)container.ToString()).Add('.') : "").AddRange(name));
 			blocksToJump.Add((container, "Namespace", name, blockStart, pos));
 		});
 	}
@@ -261,7 +262,7 @@ public class LexemStream
 				GenerateMessage(0x8012, prevPos);
 				prevPos++;
 			}
-			else if (lexems[prevPos].String.ToString() is "abstract" or "sealed")
+			else if (lexems[prevPos].String.AsSpan() is "abstract" or "sealed")
 			{
 				GenerateMessage(0x0012, prevPos);
 				prevPos++;
@@ -508,26 +509,26 @@ public class LexemStream
 	{
 		while (pos < ((end == -1) ? lexems.Length : end))
 		{
-			if (lexems[pos].Type == LexemType.Other)
+			if (lexems[pos].Type != LexemType.Other)
 			{
-				var s = lexems[pos].String;
-				if (s == bracket)
-				{
-					pos++;
-					return true;
-				}
-				else if (new List<String> { "(", "[", "{" }.Contains(s))
-				{
-					pos++;
-					CloseBracket(ref pos, (s == "(") ? ")" : (s == "[") ? "]" : "}", ref errors);
-				}
-				else if (new List<String> { ")", "]", "}" }.Contains(s) || bracket != "}" && (s == ";" || s == "\r\n"))
-				{
-					GenerateMessage(0x9011, pos, bracket);
-					return false;
-				}
-				else
-					pos++;
+				pos++;
+				continue;
+			}
+			var s = lexems[pos].String;
+			if (s == bracket)
+			{
+				pos++;
+				return true;
+			}
+			else if (s.Length == 1 && s[0] is '(' or '[' or '{')
+			{
+				pos++;
+				CloseBracket(ref pos, (s == "(") ? ")" : (s == "[") ? "]" : "}", ref errors);
+			}
+			else if (s.Length == 1 && s[0] is ')' or ']' or '}' || bracket != "}" && (s == ";" || s == "\r\n"))
+			{
+				GenerateMessage(0x9011, pos, bracket);
+				return false;
 			}
 			else
 				pos++;
@@ -580,7 +581,7 @@ public class LexemStream
 		while (prevPos > 0)
 		{
 			prevPos--;
-			if (lexems[prevPos].Type == LexemType.Other && StopLexemsList.Contains(lexems[prevPos].String))
+			if (lexems[prevPos].Type == LexemType.Other && StopLexemsList.Contains(lexems[prevPos].String.ToString()))
 			{
 				prevPos++;
 				break;
@@ -690,14 +691,14 @@ public class LexemStream
 
 	public static bool IsLexemOther(Lexem lexem, String @string) => lexem.Type == LexemType.Other && lexem.String == @string;
 
-	public static bool IsLexemKeyword(Lexem lexem, ListHashSet<String> strings) =>
-		lexem.Type == LexemType.Keyword && strings.Contains(lexem.String);
+	public static bool IsLexemKeyword(Lexem lexem, G.IEnumerable<string> strings) =>
+		lexem.Type == LexemType.Keyword && strings.Contains(lexem.String.ToString());
 
-	public static bool IsLexemOperator(Lexem lexem, ListHashSet<String> strings) =>
-		lexem.Type == LexemType.Operator && strings.Contains(lexem.String);
+	public static bool IsLexemOperator(Lexem lexem, G.IEnumerable<string> strings) =>
+		lexem.Type == LexemType.Operator && strings.Contains(lexem.String.ToString());
 
-	public static bool IsLexemOther(Lexem lexem, ListHashSet<String> strings) =>
-		lexem.Type == LexemType.Other && strings.Contains(lexem.String);
+	public static bool IsLexemOther(Lexem lexem, G.IEnumerable<string> strings) =>
+		lexem.Type == LexemType.Other && strings.Contains(lexem.String.ToString());
 
 	public bool IsLexemKeywordNoEnd(String @string) => pos < lexems.Length && IsLexemKeyword(lexems[pos], @string);
 

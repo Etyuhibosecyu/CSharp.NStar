@@ -169,7 +169,7 @@ namespace AvaloniaEdit.Indentation.CSharp;
 			if (line.Length == 0)
 			{
 				// Special treatment for empty lines:
-				if (_blockComment || (_inString && _verbatim))
+				if (_blockComment || _inString && _verbatim)
 					return;
 				indent.Append(_block.InnerIndent);
 				indent.Append(Repeat(set.IndentString, _block.OneLineBlock));
@@ -184,7 +184,7 @@ namespace AvaloniaEdit.Indentation.CSharp;
 
 			var oldBlock = _block;
 			var startInComment = _blockComment;
-			var startInString = (_inString && _verbatim);
+			var startInString = _inString && _verbatim;
 
 			#region Parse char by char
 			_lineComment = false;
@@ -257,7 +257,7 @@ namespace AvaloniaEdit.Indentation.CSharp;
 						}
 						break;
 					case '\\':
-						if ((_inString && !_verbatim) || _inChar)
+						if (_inString && !_verbatim || _inChar)
 							_escape = true; // skip next character
 						break;
 				}
@@ -472,7 +472,7 @@ namespace AvaloniaEdit.Indentation.CSharp;
 			if (startInComment)
 				indent.Append(' ');
 
-			if (indent.Length != (doc.Text.Length - line.Length) ||
+			if (indent.Length != doc.Text.Length - line.Length ||
 				!doc.Text.StartsWith(indent.ToString(), StringComparison.Ordinal) ||
 				char.IsWhiteSpace(doc.Text[indent.Length]))
 			{

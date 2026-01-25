@@ -2,23 +2,17 @@
 
 namespace AvaloniaEdit.Document;
 
-	public class DocumentChangedEventArgs : EventArgs
+/// <summary>
+/// Provides data for the <see cref="ITextEditorComponent.DocumentChanged"/> event.
+/// </summary>
+public class DocumentChangedEventArgs(TextDocument oldDocument, TextDocument newDocument) : EventArgs
 	{
-		/// <summary>
-		/// Gets the old TextDocument.
-		/// </summary>
-		public TextDocument OldDocument { get; private set; }
-		/// <summary>
-		/// Gets the new TextDocument.
-		/// </summary>
-		public TextDocument NewDocument { get; private set; }
-
-		/// <summary>
-		/// Provides data for the <see cref="ITextEditorComponent.DocumentChanged"/> event.
-		/// </summary>
-		public DocumentChangedEventArgs(TextDocument oldDocument, TextDocument newDocument)
-		{
-			OldDocument = oldDocument;
-			NewDocument = newDocument;
-		}
-	}
+	/// <summary>
+	/// Gets the old TextDocument.
+	/// </summary>
+	public TextDocument OldDocument { get; private set; } = oldDocument;
+	/// <summary>
+	/// Gets the new TextDocument.
+	/// </summary>
+	public TextDocument NewDocument { get; private set; } = newDocument;
+}

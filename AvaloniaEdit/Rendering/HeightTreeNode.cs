@@ -112,22 +112,17 @@ internal sealed class HeightTreeNode
 	/// </summary>
 	internal List<CollapsedLineSection> CollapsedSections;
 
-	internal bool IsDirectlyCollapsed {
-		get {
-			return CollapsedSections != null;
-		}
-	}
+	internal bool IsDirectlyCollapsed => CollapsedSections != null;
 
 	internal void AddDirectlyCollapsed(CollapsedLineSection section)
 	{
 		if (CollapsedSections == null) {
-			CollapsedSections = new List<CollapsedLineSection>();
+			CollapsedSections = [];
 			TotalHeight = 0;
 		}
 		Debug.Assert(!CollapsedSections.Contains(section));
 		CollapsedSections.Add(section);
 	}
-
 
 	internal void RemoveDirectlyCollapsed(CollapsedLineSection section)
 	{
@@ -151,7 +146,7 @@ internal sealed class HeightTreeNode
 			+ " TotalHeight=" + TotalHeight
 			+ "]";
 
-	static string GetCollapsedSections(List<CollapsedLineSection> list)
+	private static string GetCollapsedSections(List<CollapsedLineSection> list)
 	{
 		if (list == null)
 			return "{}";

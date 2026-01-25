@@ -31,15 +31,15 @@ namespace AvaloniaEdit.Highlighting;
 /// <summary>
 /// RichTextWriter implementation that produces HTML.
 /// </summary>
-class HtmlRichTextWriter : RichTextWriter
+internal class HtmlRichTextWriter : RichTextWriter
 {
-	readonly TextWriter htmlWriter;
-	readonly HtmlOptions options;
-	Stack<string> endTagStack = new Stack<string>();
-	bool spaceNeedsEscaping = true;
-	bool hasSpace;
-	bool needIndentation = true;
-	int indentationLevel;
+	private readonly TextWriter htmlWriter;
+	private readonly HtmlOptions options;
+	private Stack<string> endTagStack = new();
+	private bool spaceNeedsEscaping = true;
+	private bool hasSpace;
+	private bool needIndentation = true;
+	private int indentationLevel;
 
 	/// <summary>
 	/// Creates a new HtmlRichTextWriter instance.
@@ -58,9 +58,7 @@ class HtmlRichTextWriter : RichTextWriter
 	}
 
 	/// <inheritdoc/>
-	public override Encoding Encoding {
-		get { return htmlWriter.Encoding; }
-	}
+	public override Encoding Encoding => htmlWriter.Encoding;
 
 	/// <inheritdoc/>
 	public override void Flush()
@@ -78,7 +76,7 @@ class HtmlRichTextWriter : RichTextWriter
 		base.Dispose(disposing);
 	}
 
-	void FlushSpace(bool nextIsWhitespace)
+	private void FlushSpace(bool nextIsWhitespace)
 	{
 		if (hasSpace) {
 			if (spaceNeedsEscaping || nextIsWhitespace)
@@ -90,7 +88,7 @@ class HtmlRichTextWriter : RichTextWriter
 		}
 	}
 
-	void WriteIndentation()
+	private void WriteIndentation()
 	{
 		if (needIndentation) {
 			for (var i = 0; i < indentationLevel; i++) {
@@ -107,9 +105,9 @@ class HtmlRichTextWriter : RichTextWriter
 		WriteChar(value);
 	}
 
-	static readonly char[] specialChars = { ' ', '\t', '\r', '\n' };
+	private static readonly char[] specialChars = { ' ', '\t', '\r', '\n' };
 
-	void WriteChar(char c)
+	private void WriteChar(char c)
 	{
 		var isWhitespace = char.IsWhiteSpace(c);
 		FlushSpace(isWhitespace);
@@ -156,23 +154,23 @@ class HtmlRichTextWriter : RichTextWriter
 		do {
 			var endPos = value.IndexOfAny(specialChars, pos);
 			if (endPos < 0) {
-				WriteSimpleString(value.Substring(pos));
+				WriteSimpleString(value[pos..]);
 				return; // reached end of string
 			}
 			if (endPos > pos)
-				WriteSimpleString(value.Substring(pos, endPos - pos));
+				WriteSimpleString(value[pos..endPos]);
 			WriteChar(value[pos]);
 			pos = endPos + 1;
 		} while (pos < value.Length);
 	}
 
-	void WriteIndentationAndSpace()
+	private void WriteIndentationAndSpace()
 	{
 		WriteIndentation();
 		FlushSpace(false);
 	}
 
-	void WriteSimpleString(string value)
+	private void WriteSimpleString(string value)
 	{
 		if (value.Length == 0)
 			return;

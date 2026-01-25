@@ -38,9 +38,9 @@ namespace AvaloniaEdit.Highlighting;
 		/// storedSpanStacks[0] = state at beginning of document
 		/// storedSpanStacks[i] = state after line i
 		/// </summary>
-		private readonly CompressingTreeList<SpanStack> _storedSpanStacks = new CompressingTreeList<SpanStack>(ReferenceEquals);
+		private readonly CompressingTreeList<SpanStack> _storedSpanStacks = new(ReferenceEquals);
 
-		private readonly CompressingTreeList<bool> _isValid = new CompressingTreeList<bool>((a, b) => a == b);
+		private readonly CompressingTreeList<bool> _isValid = new((a, b) => a == b);
 		private readonly IHighlightingDefinition _definition;
 		private readonly HighlightingEngine _engine;
 		private readonly WeakLineTracker _weakLineTracker;
@@ -115,27 +115,25 @@ namespace AvaloniaEdit.Highlighting;
 		{
 		}
 
-		private SpanStack _initialSpanStack = SpanStack.Empty;
-
-		/// <summary>
-		/// Gets/sets the the initial span stack of the document. Default value is <see cref="SpanStack.Empty" />.
-		/// </summary>
-		public SpanStack InitialSpanStack
+	/// <summary>
+	/// Gets/sets the the initial span stack of the document. Default value is <see cref="SpanStack.Empty" />.
+	/// </summary>
+	public SpanStack InitialSpanStack
 		{
-			get => _initialSpanStack;
+			get;
 			set
 			{
-				_initialSpanStack = value ?? SpanStack.Empty;
+				field = value ?? SpanStack.Empty;
 				InvalidateHighlighting();
 			}
-		}
+		} = SpanStack.Empty;
 
-		/// <summary>
-		/// Invalidates all stored highlighting info.
-		/// When the document changes, the highlighting is invalidated automatically, this method
-		/// needs to be called only when there are changes to the highlighting rule set.
-		/// </summary>
-		public void InvalidateHighlighting()
+	/// <summary>
+	/// Invalidates all stored highlighting info.
+	/// When the document changes, the highlighting is invalidated automatically, this method
+	/// needs to be called only when there are changes to the highlighting rule set.
+	/// </summary>
+	public void InvalidateHighlighting()
 		{
 			InvalidateSpanStacks();
 			OnHighlightStateChanged(1, Document.LineCount); // force a redraw with the new highlighting
@@ -148,7 +146,7 @@ namespace AvaloniaEdit.Highlighting;
 		{
 			CheckIsHighlighting();
 			_storedSpanStacks.Clear();
-			_storedSpanStacks.Add(_initialSpanStack);
+			_storedSpanStacks.Add(InitialSpanStack);
 			_storedSpanStacks.InsertRange(1, Document.LineCount, null);
 			_isValid.Clear();
 			_isValid.Add(true);

@@ -1,4 +1,6 @@
-﻿namespace CSharp.NStar;
+﻿using System.Collections.Immutable;
+
+namespace CSharp.NStar;
 
 public readonly record struct NStarType(BlockStack MainType, BranchCollection ExtraTypes)
 {
@@ -23,6 +25,7 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 	public static readonly NStarType RangeType = GetPrimitiveType("range");
 	public static readonly NStarType UnsafeStringType = new(new([new(BlockType.Namespace, "System", 1),
 		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "UnsafeString", 1)]), NoBranches);
+	public static readonly NStarType BitListType = GetListType(BoolType);
 	public static readonly BlockStack EmptyBlockStack = new();
 	public static readonly BlockStack ListBlockStack = new([new(BlockType.Primitive, "list", 1)]);
 	public static readonly BlockStack TupleBlockStack = new([new(BlockType.Primitive, "tuple", 1)]);
@@ -39,7 +42,17 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(Dictionary<,>), 1)]);
 	public static readonly BlockStack ListHashSetBlockStack = new([new(BlockType.Namespace, "System", 1),
 		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(ListHashSet<>), 1)]);
-	public static readonly NStarType BitListType = GetListType(BoolType);
+	public static readonly BlockStack TaskBlockStack = new([new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Threading", 1), new(BlockType.Struct, "Task", 1)]);
+	public static readonly BlockStack EmptyTaskBlockStack = new([new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Struct, "EmptyTask", 1)]);
+	public static readonly BlockStack UnsafeTaskBlockStack = new([new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "UnsafeTask", 1)]);
+	public static readonly BlockStack UnsafeEmptyTaskBlockStack = new([new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "UnsafeEmptyTask", 1)]);
+	public static readonly ImmutableArray<BlockStack> TaskBlockStacks = [
+		TaskBlockStack, EmptyTaskBlockStack, UnsafeTaskBlockStack, UnsafeEmptyTaskBlockStack
+	];
 
 	public static NStarType GetListType(NStarType InnerType)
 	{
@@ -69,6 +82,9 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 	public static NStarType GetPrimitiveType(String primitive) => (new([new(BlockType.Primitive, primitive, 1)]), NoBranches);
 
 	public static (BlockStack Container, String Type) SplitType(BlockStack blockStack) =>
+		(new(blockStack.ToList().SkipLast(1)), blockStack.TryPeek(out var block) ? block.Name : []);
+
+	public static (BlockStack Container, String Type) SplitType(Stack<Block> blockStack) =>
 		(new(blockStack.ToList().SkipLast(1)), blockStack.TryPeek(out var block) ? block.Name : []);
 
 	public override readonly string ToString()
@@ -125,7 +141,7 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 	public static bool TypeEqualsToPrimitive(NStarType type, String primitive, bool noExtra = true) =>
 		TypeIsPrimitive(type.MainType) && type.MainType.Peek().Name == primitive && (!noExtra || type.ExtraTypes.Length == 0);
 
-	public static bool TypeIsPrimitive(BlockStack type) => type is null || type.Length == 1
+	public static bool TypeIsPrimitive(BlockStack type) => type.Length == 1
 		&& type.Peek().BlockType == BlockType.Primitive;
 
 	public static implicit operator NStarType((BlockStack MainType, BranchCollection ExtraTypes) value) =>

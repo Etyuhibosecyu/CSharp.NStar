@@ -27,7 +27,7 @@ namespace AvaloniaEdit.CodeCompletion;
 	/// </summary>
 	public class OverloadInsightWindow : InsightWindow
 	{
-		private readonly OverloadViewer _overloadViewer = new OverloadViewer();
+		private readonly OverloadViewer _overloadViewer = new();
 
 		/// <summary>
 		/// Creates a new OverloadInsightWindow.

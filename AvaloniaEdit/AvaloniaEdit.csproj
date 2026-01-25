@@ -13,7 +13,7 @@
 	<ItemGroup>
 		<EmbeddedResource Include="**\*.xshd;**\*.resx;" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)" />
 		<AvaloniaResource Include="**\*.xaml;Assets\*;" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)" />
-		<PackageReference Include="Avalonia" Version="11.3.9" />
+		<PackageReference Include="Avalonia" Version="11.3.10" />
 		<PackageReference Include="System.Collections.Immutable" Version="1.6.0" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
 		<Compile Update="SR.Designer.cs">
 			<DesignTime>True</DesignTime>

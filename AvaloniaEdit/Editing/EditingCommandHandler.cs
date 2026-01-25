@@ -46,8 +46,8 @@ namespace AvaloniaEdit.Editing;
 			return handler;
 		}
 
-		private static readonly List<RoutedCommandBinding> CommandBindings = new List<RoutedCommandBinding>();
-		private static readonly List<KeyBinding> KeyBindings = new List<KeyBinding>();
+		private static readonly List<RoutedCommandBinding> CommandBindings = [];
+		private static readonly List<KeyBinding> KeyBindings = [];
 
 		private static void AddBinding(RoutedCommand command, KeyModifiers modifiers, Key key,
 			EventHandler<ExecutedRoutedEventArgs> handler)
@@ -483,7 +483,7 @@ namespace AvaloniaEdit.Editing;
 			{
 				textArea.Document.BeginUpdate();
 
-				string text = null;
+				string text;
 				try
 				{
 					text = await TopLevel.GetTopLevel(textArea)?.Clipboard?.GetTextAsync();
@@ -499,7 +499,6 @@ namespace AvaloniaEdit.Editing;
 					textArea.Document.EndUpdate();
 					return;
 				}
-
 
 				text = GetTextToPaste(text, textArea);
 
@@ -548,7 +547,7 @@ namespace AvaloniaEdit.Editing;
 				var newLine = TextUtilities.GetNewLineFromDocument(textArea.Document, textArea.Caret.Line);
 				text = TextUtilities.NormalizeNewLines(text, newLine);
 				text = textArea.Options.ConvertTabsToSpaces
-					? text.Replace("\t", new String(' ', textArea.Options.IndentationSize))
+					? text.Replace("\t", new string(' ', textArea.Options.IndentationSize))
 					: text;
 				return text;
 			}

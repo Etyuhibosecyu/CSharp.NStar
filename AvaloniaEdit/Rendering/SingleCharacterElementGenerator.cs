@@ -29,7 +29,7 @@ using LogicalDirection = AvaloniaEdit.Document.LogicalDirection;
 
 namespace AvaloniaEdit.Rendering;
 
-	// This class is internal because it does not need to be accessed by the user - it can be configured using TextEditorOptions.
+// This class is internal because it does not need to be accessed by the user - it can be configured using TextEditorOptions.
 
 /// <summary>
 /// Element generator that displays · for spaces and » for tabs and a box for control characters.
@@ -38,7 +38,6 @@ namespace AvaloniaEdit.Rendering;
 /// This element generator is present in every TextView by default; the enabled features can be configured using the
 /// <see cref="TextEditorOptions"/>.
 /// </remarks>
-[SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Whitespace")]
 internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerator, IBuiltinElementGenerator
 {
 	/// <summary>
@@ -103,7 +102,7 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 		{
 			var c = CurrentContext.Document.GetCharAt(offset);
 
-		if (ShowSpaces && (c == ' '))
+		if (ShowSpaces && c == ' ')
 		{
 			var properties = new VisualLineElementTextRunProperties(CurrentContext.GlobalTextRunProperties);
 			properties.SetForegroundBrush(CurrentContext.TextView.NonPrintableCharacterBrush);
@@ -112,7 +111,7 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 			return new SpaceTextElement(textLine);
 		}
 		
-		if (ShowTabs && (c == '\t'))
+		if (ShowTabs && c == '\t')
 		{
 			var properties = new VisualLineElementTextRunProperties(CurrentContext.GlobalTextRunProperties);
 			properties.SetForegroundBrush(CurrentContext.TextView.NonPrintableCharacterBrush);
@@ -133,15 +132,11 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 			return null;
 		}
 
-		private sealed class SpaceTextElement : FormattedTextElement
+		private sealed class SpaceTextElement(TextLine textLine) : FormattedTextElement(textLine, 1)
 	{
-		public SpaceTextElement(TextLine textLine) : base(textLine, 1)
-		{
-		}
-
 		public override int GetNextCaretPosition(int visualColumn, LogicalDirection direction, CaretPositioningMode mode)
 		{
-			if (mode == CaretPositioningMode.Normal || mode == CaretPositioningMode.EveryCodepoint)
+			if (mode is CaretPositioningMode.Normal or CaretPositioningMode.EveryCodepoint)
 				return base.GetNextCaretPosition(visualColumn, direction, mode);
 			else
 				return -1;
@@ -150,11 +145,9 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 		public override bool IsWhitespace(int visualColumn) => true;
 	}
 
-	private sealed class TabTextElement : VisualLineElement
+	private sealed class TabTextElement(TextLine text) : VisualLineElement(2, 1)
 	{
-		internal readonly TextLine Text;
-
-		public TabTextElement(TextLine text) : base(2, 1) => Text = text;
+		internal readonly TextLine Text = text;
 
 		public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)
 		{
@@ -170,7 +163,7 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 
 		public override int GetNextCaretPosition(int visualColumn, LogicalDirection direction, CaretPositioningMode mode)
 		{
-			if (mode == CaretPositioningMode.Normal || mode == CaretPositioningMode.EveryCodepoint)
+			if (mode is CaretPositioningMode.Normal or CaretPositioningMode.EveryCodepoint)
 				return base.GetNextCaretPosition(visualColumn, direction, mode);
 			else
 				return -1;
@@ -199,16 +192,12 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 		public override void Draw(DrawingContext drawingContext, Point origin) => _element.Text.Draw(drawingContext, origin);
 	}
 
-	private sealed class SpecialCharacterBoxElement : FormattedTextElement
+	private sealed class SpecialCharacterBoxElement(TextLine text) : FormattedTextElement(text, 1)
 	{
-		public SpecialCharacterBoxElement(TextLine text) : base(text, 1)
-		{
-		}
-
 		public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context) => new SpecialCharacterTextRun(this, TextRunProperties);
 	}
 
-		internal sealed class SpecialCharacterTextRun : FormattedTextRun
+		internal sealed class SpecialCharacterTextRun(FormattedTextElement element, TextRunProperties properties) : FormattedTextRun(element, properties)
 		{
 			private static readonly ISolidColorBrush DarkGrayBrush;
 
@@ -216,12 +205,7 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 
 		static SpecialCharacterTextRun() => DarkGrayBrush = new ImmutableSolidColorBrush(Color.FromArgb(200, 128, 128, 128));
 
-		public SpecialCharacterTextRun(FormattedTextElement element, TextRunProperties properties)
-				: base(element, properties)
-			{
-			}
-
-			public override Size Size
+		public override Size Size
 			{
 				get
 				{
@@ -235,7 +219,7 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 			{
 			var (x, y) = origin;
 			
-			var newOrigin = new Point(x + (BoxMargin / 2), y);
+			var newOrigin = new Point(x + BoxMargin / 2, y);
 			
 				var (width, height) = Size;
 				

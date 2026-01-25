@@ -26,23 +26,20 @@ using Avalonia.Media.TextFormatting;
 
 namespace AvaloniaEdit.Rendering;
 
-	/// <summary>
+/// <summary>
 /// A inline UIElement in the document.
 /// </summary>
-public class InlineObjectElement : VisualLineElement
+/// <remarks>
+/// Creates a new InlineObjectElement.
+/// </remarks>
+/// <param name="documentLength">The length of the element in the document. Must be non-negative.</param>
+/// <param name="element">The element to display.</param>
+public class InlineObjectElement(int documentLength, Control element) : VisualLineElement(1, documentLength)
 {
 	/// <summary>
 	/// Gets the inline element that is displayed.
 	/// </summary>
-	public Control Element { get; }
-
-	/// <summary>
-	/// Creates a new InlineObjectElement.
-	/// </summary>
-	/// <param name="documentLength">The length of the element in the document. Must be non-negative.</param>
-	/// <param name="element">The element to display.</param>
-	public InlineObjectElement(int documentLength, Control element)
-		: base(1, documentLength) => Element = element ?? throw new ArgumentNullException(nameof(element));
+	public Control Element { get; } = element ?? throw new ArgumentNullException(nameof(element));
 
 	/// <inheritdoc/>
 	public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)

@@ -64,11 +64,10 @@ public interface ITextSource
 	/// <remarks>This is the same as Text.Length, but is more efficient because
 	///  it doesn't require creating a String object.</remarks>
 	int TextLength { get; }
-	
+
 	/// <summary>
 	/// Gets the whole text as string.
 	/// </summary>
-	[SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
 	string Text { get; }
 	
 	/// <summary>
@@ -225,7 +224,7 @@ public class StringTextSource : ITextSource
 	/// <summary>
 	/// Gets a text source containing the empty string.
 	/// </summary>
-	public static readonly StringTextSource Empty = new StringTextSource(string.Empty);
+	public static readonly StringTextSource Empty = new(string.Empty);
 
 	/// <summary>
 	/// Creates a new StringTextSource with the given text.
@@ -266,7 +265,7 @@ public class StringTextSource : ITextSource
 	public void WriteTextTo(TextWriter writer) => writer.Write(Text);
 
 	/// <inheritdoc/>
-	public void WriteTextTo(TextWriter writer, int offset, int length) => writer.Write(Text.Substring(offset, length));
+	public void WriteTextTo(TextWriter writer, int offset, int length) => writer.Write(Text.AsSpan(offset, length));
 
 	/// <inheritdoc/>
 	public char GetCharAt(int offset) => Text[offset];

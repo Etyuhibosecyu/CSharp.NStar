@@ -60,19 +60,17 @@ namespace AvaloniaEdit.Editing;
 		void Detach();
 	}
 
-	/// <summary>
-	/// Stacked input handler.
-	/// Uses OnEvent-methods instead of registering event handlers to ensure that the events are handled in the correct order.
-	/// </summary>
-	public abstract class TextAreaStackedInputHandler : ITextAreaInputHandler
+/// <summary>
+/// Stacked input handler.
+/// Uses OnEvent-methods instead of registering event handlers to ensure that the events are handled in the correct order.
+/// </summary>
+/// <remarks>
+/// Creates a new TextAreaInputHandler.
+/// </remarks>
+public abstract class TextAreaStackedInputHandler(TextArea textArea) : ITextAreaInputHandler
 	{
-		/// <inheritdoc/>
-		public TextArea TextArea { get; }
-
-	/// <summary>
-	/// Creates a new TextAreaInputHandler.
-	/// </summary>
-	protected TextAreaStackedInputHandler(TextArea textArea) => TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
+	/// <inheritdoc/>
+	public TextArea TextArea { get; } = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
 	/// <inheritdoc/>
 	public virtual void Attach()
@@ -116,7 +114,7 @@ namespace AvaloniaEdit.Editing;
 		{
 			TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
 			_commandBindings = new ObserveAddRemoveCollection<RoutedCommandBinding>(CommandBinding_Added, CommandBinding_Removed);
-			_keyBindings = new List<KeyBinding>();
+			_keyBindings = [];
 			_nestedInputHandlers = new ObserveAddRemoveCollection<ITextAreaInputHandler>(NestedInputHandler_Added, NestedInputHandler_Removed);
 		}
 

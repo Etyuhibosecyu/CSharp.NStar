@@ -66,7 +66,7 @@ namespace AvaloniaEdit.Folding;
 			catch (XmlException)
 			{
 				firstErrorOffset = 0;
-				return Enumerable.Empty<NewFolding>();
+				return [];
 			}
 		}
 
@@ -147,7 +147,7 @@ namespace AvaloniaEdit.Folding;
 					var startOffset = GetOffset(document, reader) - 4;
 					var endOffset = startOffset + comment.Length + 7;
 
-					var foldText = String.Concat("<!--", comment.Substring(0, firstNewLine).TrimEnd('\r'), "-->");
+					var foldText = string.Concat("<!--", comment[..firstNewLine].TrimEnd('\r'), "-->");
 					foldMarkers.Add(new NewFolding(startOffset, endOffset) { Name = foldText });
 				}
 			}
@@ -170,11 +170,11 @@ namespace AvaloniaEdit.Folding;
 
 			if (ShowAttributesWhenFolded && reader.HasAttributes)
 			{
-				newFoldStart.Name = String.Concat("<", reader.Name, " ", GetAttributeFoldText(reader), ">");
+				newFoldStart.Name = string.Concat("<", reader.Name, " ", GetAttributeFoldText(reader), ">");
 			}
 			else
 			{
-				newFoldStart.Name = String.Concat("<", reader.Name, ">");
+				newFoldStart.Name = string.Concat("<", reader.Name, ">");
 			}
 
 			return newFoldStart;
@@ -214,7 +214,7 @@ namespace AvaloniaEdit.Folding;
 				reader.MoveToAttribute(i);
 
 				text.Append(reader.Name);
-				text.Append("=");
+				text.Append('=');
 				text.Append('"');
 				text.Append(XmlEncodeAttributeValue(reader.Value, '"'));
 				text.Append('"');
@@ -223,7 +223,7 @@ namespace AvaloniaEdit.Folding;
 				// last attribute.
 				if (i < reader.AttributeCount - 1)
 				{
-					text.Append(" ");
+					text.Append(' ');
 				}
 			}
 

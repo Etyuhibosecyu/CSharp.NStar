@@ -22,45 +22,39 @@ using System.ComponentModel;
 
 namespace AvaloniaEdit.Document;
 
-	/// <summary>
-	/// A line/column position.
-	/// Text editor lines/columns are counted started from one.
-	/// </summary>
-	/// <remarks>
-	/// The document provides the methods <see cref="IDocument.GetLocation"/> and
-	/// <see cref="IDocument.GetOffset(TextLocation)"/> to convert between offsets and TextLocations.
-	/// </remarks>
-	[TypeConverter(typeof(TextLocationConverter))]
-	public struct TextLocation : IComparable<TextLocation>, IEquatable<TextLocation>
+/// <summary>
+/// A line/column position.
+/// Text editor lines/columns are counted started from one.
+/// </summary>
+/// <remarks>
+/// The document provides the methods <see cref="IDocument.GetLocation"/> and
+/// <see cref="IDocument.GetOffset(TextLocation)"/> to convert between offsets and TextLocations.
+/// </remarks>
+/// <remarks>
+/// Creates a TextLocation instance.
+/// </remarks>
+[TypeConverter(typeof(TextLocationConverter))]
+	public struct TextLocation(int line, int column) : IComparable<TextLocation>, IEquatable<TextLocation>
 	{
 		/// <summary>
 		/// Represents no text location (0, 0).
 		/// </summary>
-		public static readonly TextLocation Empty = new TextLocation(0, 0);
+		public static readonly TextLocation Empty = new(0, 0);
 
-		/// <summary>
-		/// Creates a TextLocation instance.
-		/// </summary>
-		public TextLocation(int line, int column)
-		{
-			Line = line;
-			Column = column;
-		}
+	/// <summary>
+	/// Gets the line number.
+	/// </summary>
+	public int Line { get; } = line;
 
-		/// <summary>
-		/// Gets the line number.
-		/// </summary>
-		public int Line { get; }
+	/// <summary>
+	/// Gets the column number.
+	/// </summary>
+	public int Column { get; } = column;
 
-		/// <summary>
-		/// Gets the column number.
-		/// </summary>
-		public int Column { get; }
-
-		/// <summary>
-		/// Gets whether the TextLocation instance is empty.
-		/// </summary>
-		public bool IsEmpty => Column <= 0 && Line <= 0;
+	/// <summary>
+	/// Gets whether the TextLocation instance is empty.
+	/// </summary>
+	public bool IsEmpty => Column <= 0 && Line <= 0;
 
 	/// <summary>
 	/// Gets a string representation for debugging purposes.
@@ -77,7 +71,7 @@ namespace AvaloniaEdit.Document;
 	/// </summary>
 	public override bool Equals(object obj)
 		{
-			if (!(obj is TextLocation)) return false;
+			if (obj is not TextLocation) return false;
 			return (TextLocation)obj == this;
 		}
 

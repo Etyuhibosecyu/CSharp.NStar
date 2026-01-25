@@ -33,7 +33,7 @@ namespace AvaloniaEdit.Editing;
 		private bool _isVisible;
 		private Rect _caretRectangle;
 
-		private readonly DispatcherTimer _caretBlinkTimer = new DispatcherTimer();
+		private readonly DispatcherTimer _caretBlinkTimer = new();
 		private bool _blink;
 
 		public CaretLayer(TextArea textArea) : base(textArea.TextView, KnownLayer.Caret)

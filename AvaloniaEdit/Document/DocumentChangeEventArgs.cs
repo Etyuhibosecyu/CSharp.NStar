@@ -46,7 +46,7 @@ namespace AvaloniaEdit.Document;
 			}
 		}
 
-	internal OffsetChangeMapEntry CreateSingleChangeMapEntry() => new OffsetChangeMapEntry(Offset, RemovalLength, InsertionLength);
+	internal OffsetChangeMapEntry CreateSingleChangeMapEntry() => new(Offset, RemovalLength, InsertionLength);
 
 	/// <summary>
 	/// Gets the OffsetChangeMap, or null if the default offset map (=single replacement) is being used.

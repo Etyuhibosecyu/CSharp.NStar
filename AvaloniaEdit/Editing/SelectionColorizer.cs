@@ -21,11 +21,9 @@ using AvaloniaEdit.Rendering;
 
 namespace AvaloniaEdit.Editing;
 
-	internal sealed class SelectionColorizer : ColorizingTransformer
+	internal sealed class SelectionColorizer(TextArea textArea) : ColorizingTransformer
 	{
-		private readonly TextArea _textArea;
-
-	public SelectionColorizer(TextArea textArea) => _textArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
+		private readonly TextArea _textArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
 	protected override void Colorize(ITextRunConstructionContext context)
 		{
@@ -58,10 +56,7 @@ namespace AvaloniaEdit.Editing;
 
 				ChangeVisualElements(
 					startColumn, endColumn,
-					element =>
-					{
-						element.TextRunProperties.SetForegroundBrush(_textArea.SelectionForeground);
-					});
+					element => element.TextRunProperties.SetForegroundBrush(_textArea.SelectionForeground));
 			}
 		}
 	}

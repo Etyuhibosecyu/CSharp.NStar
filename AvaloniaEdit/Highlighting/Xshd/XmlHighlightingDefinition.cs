@@ -57,13 +57,11 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 
 		#region RegisterNamedElements
 
-		private sealed class RegisterNamedElementsVisitor : IXshdVisitor
+		private sealed class RegisterNamedElementsVisitor(XmlHighlightingDefinition def) : IXshdVisitor
 		{
-			private readonly XmlHighlightingDefinition _def;
+			private readonly XmlHighlightingDefinition _def = def;
 			internal readonly Dictionary<XshdRuleSet, HighlightingRuleSet> RuleSets
-				= new Dictionary<XshdRuleSet, HighlightingRuleSet>();
-
-		public RegisterNamedElementsVisitor(XmlHighlightingDefinition def) => _def = def;
+				= [];
 
 		public object VisitRuleSet(XshdRuleSet ruleSet)
 			{
@@ -120,8 +118,8 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 			private readonly Dictionary<XshdRuleSet, HighlightingRuleSet> _ruleSetDict;
 			private readonly Dictionary<HighlightingRuleSet, XshdRuleSet> _reverseRuleSetDict;
 			private readonly IHighlightingDefinitionReferenceResolver _resolver;
-			private readonly HashSet<XshdRuleSet> _processingStartedRuleSets = new HashSet<XshdRuleSet>();
-			private readonly HashSet<XshdRuleSet> _processedRuleSets = new HashSet<XshdRuleSet>();
+			private readonly HashSet<XshdRuleSet> _processingStartedRuleSets = [];
+			private readonly HashSet<XshdRuleSet> _processedRuleSets = [];
 			private bool _ignoreCase;
 
 			public TranslateElementVisitor(XmlHighlightingDefinition def, Dictionary<XshdRuleSet, HighlightingRuleSet> ruleSetDict, IHighlightingDefinitionReferenceResolver resolver)
@@ -131,7 +129,7 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 				_def = def;
 				_ruleSetDict = ruleSetDict;
 				_resolver = resolver;
-				_reverseRuleSetDict = new Dictionary<HighlightingRuleSet, XshdRuleSet>();
+				_reverseRuleSetDict = [];
 				foreach (var pair in ruleSetDict)
 				{
 					_reverseRuleSetDict.Add(pair.Value, pair.Key);
@@ -372,9 +370,9 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 			return new HighlightingDefinitionInvalidException(message);
 		}
 
-		private readonly Dictionary<string, HighlightingRuleSet> _ruleSetDict = new Dictionary<string, HighlightingRuleSet>();
-		private readonly Dictionary<string, HighlightingColor> _colorDict = new Dictionary<string, HighlightingColor>();
-		private readonly Dictionary<string, string> _propDict = new Dictionary<string, string>();
+		private readonly Dictionary<string, HighlightingRuleSet> _ruleSetDict = [];
+		private readonly Dictionary<string, HighlightingColor> _colorDict = [];
+		private readonly Dictionary<string, string> _propDict = [];
 
 		public HighlightingRuleSet MainRuleSet { get; }
 

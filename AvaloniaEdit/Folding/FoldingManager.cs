@@ -33,7 +33,7 @@ namespace AvaloniaEdit.Folding;
 	public class FoldingManager
 	{
 		internal TextDocument Document { get; }
-		internal List<TextView> TextViews { get; } = new List<TextView>();
+		internal List<TextView> TextViews { get; } = [];
 
 		private readonly TextSegmentCollection<FoldingSection> _foldings;
 		private bool _isFirstUpdate = true;
@@ -45,7 +45,7 @@ namespace AvaloniaEdit.Folding;
 		public FoldingManager(TextDocument document)
 		{
 			Document = document ?? throw new ArgumentNullException(nameof(document));
-			_foldings = new TextSegmentCollection<FoldingSection>();
+			_foldings = [];
 			Dispatcher.UIThread.VerifyAccess();
 			TextDocumentWeakEventManager.Changed.AddHandler(document, OnDocumentChanged);
 		}

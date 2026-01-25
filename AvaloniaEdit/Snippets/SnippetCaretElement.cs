@@ -57,7 +57,7 @@ namespace AvaloniaEdit.Snippets;
 			pos.SurviveDeletion = true;
 			context.Deactivated += (sender, e) =>
 			{
-				if (e.Reason == DeactivateReason.ReturnPressed || e.Reason == DeactivateReason.NoActiveElements)
+				if (e.Reason is DeactivateReason.ReturnPressed or DeactivateReason.NoActiveElements)
 				{
 					context.TextArea.Caret.Offset = pos.Offset;
 				}

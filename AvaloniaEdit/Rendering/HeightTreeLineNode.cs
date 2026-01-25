@@ -32,14 +32,11 @@ namespace AvaloniaEdit.Rendering;
 		internal double Height;
 		internal List<CollapsedLineSection> CollapsedSections;
 
-		internal bool IsDirectlyCollapsed {
-			get { return CollapsedSections != null; }
-		}
+	internal bool IsDirectlyCollapsed => CollapsedSections != null;
 
-		internal void AddDirectlyCollapsed(CollapsedLineSection section)
+	internal void AddDirectlyCollapsed(CollapsedLineSection section)
 		{
-			if (CollapsedSections == null)
-				CollapsedSections = new List<CollapsedLineSection>();
+			CollapsedSections ??= [];
 			CollapsedSections.Add(section);
 		}
 
@@ -51,12 +48,8 @@ namespace AvaloniaEdit.Rendering;
 				CollapsedSections = null;
 		}
 
-		/// <summary>
-		/// Returns 0 if the line is directly collapsed, otherwise, returns <see cref="Height"/>.
-		/// </summary>
-		internal double TotalHeight {
-			get {
-				return IsDirectlyCollapsed ? 0 : Height;
-			}
-		}
-	}
+	/// <summary>
+	/// Returns 0 if the line is directly collapsed, otherwise, returns <see cref="Height"/>.
+	/// </summary>
+	internal double TotalHeight => IsDirectlyCollapsed ? 0 : Height;
+}

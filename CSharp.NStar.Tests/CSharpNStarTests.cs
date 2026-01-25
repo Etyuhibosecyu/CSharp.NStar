@@ -6367,6 +6367,23 @@ null Function F2()
 }
 ", "null", @"Warning 801D in line 10 at position 1: complicated, spaghetti-like recursional dependencies detected
 ")]
+	[DataRow(@"Class MyClass : [string, int]
+{
+	Constructor(int capacity)
+	{
+		F();
+	}
+
+	null Function F()
+	{
+		if (IntRandom(1) == 0)
+			F();
+		if (IntRandom(1) == 0)
+			new MyClass(5);
+	}
+}
+", "null", @"Warning 801D in line 13 at position 7: complicated, spaghetti-like recursional dependencies detected
+")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());

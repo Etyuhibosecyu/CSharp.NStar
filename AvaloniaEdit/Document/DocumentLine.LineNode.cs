@@ -18,10 +18,10 @@
 
 namespace AvaloniaEdit.Document;
 
-	// A tree node in the document line tree.
-	// For the purpose of the invariants, "children", "descendents", "siblings" etc. include the DocumentLine object,
-	// it is treated as a third child node between left and right.
-	partial class DocumentLine
+// A tree node in the document line tree.
+// For the purpose of the invariants, "children", "descendents", "siblings" etc. include the DocumentLine object,
+// it is treated as a third child node between left and right.
+public partial class DocumentLine
 	{
 		internal DocumentLine Left { get; set; }
 		internal DocumentLine Right { get; set; }
@@ -45,7 +45,7 @@ namespace AvaloniaEdit.Document;
 		internal void ResetLine()
 		{
 			_totalLength = _delimiterLength = 0;
-			_isDeleted = Color = false;
+			IsDeleted = Color = false;
 			Left = Right = Parent = null;
 		}
 

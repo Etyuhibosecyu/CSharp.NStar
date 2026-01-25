@@ -77,23 +77,19 @@ public enum OffsetChangeMappingType
 /// <summary>
 /// Describes a series of offset changes.
 /// </summary>
-[SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix",
-				 Justification="It's a mapping old offsets -> new offsets")]
 public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 {
 	/// <summary>
 	/// Immutable OffsetChangeMap that is empty.
 	/// </summary>
-	[SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes",
-					 Justification="The Empty instance is immutable")]
-	public static readonly OffsetChangeMap Empty = new OffsetChangeMap(new OffsetChangeMapEntry[0], true);
+	public static readonly OffsetChangeMap Empty = new(Array.Empty<OffsetChangeMapEntry>(), true);
 
 	/// <summary>
 	/// Creates a new OffsetChangeMap with a single element.
 	/// </summary>
 	/// <param name="entry">The entry.</param>
 	/// <returns>Returns a frozen OffsetChangeMap with a single entry.</returns>
-	public static OffsetChangeMap FromSingleElement(OffsetChangeMapEntry entry) => new OffsetChangeMap(new[] { entry }, true);
+	public static OffsetChangeMap FromSingleElement(OffsetChangeMapEntry entry) => new(new[] { entry }, true);
 
 	/// <summary>
 	/// Creates a new OffsetChangeMap instance.

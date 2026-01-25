@@ -30,8 +30,8 @@ public class XshdKeywords : XshdElement
 	/// The color.
 	/// </summary>
 	public XshdReference<XshdColor> ColorReference { get; set; }
-	
-	readonly NullSafeCollection<string> _words = new NullSafeCollection<string>();
+
+	private readonly NullSafeCollection<string> _words = [];
 	
 	/// <summary>
 	/// Gets the list of key words.

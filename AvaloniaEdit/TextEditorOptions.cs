@@ -77,7 +77,7 @@ namespace AvaloniaEdit;
 
 	#region AccepsTab
 
-	bool _acceptsTab = true;
+	private bool _acceptsTab = true;
 		[DefaultValue(true)]
 		public virtual bool AcceptsTab
 		{
@@ -398,11 +398,10 @@ namespace AvaloniaEdit;
 			}
 		}
 
-		/// <summary>
-		/// Gets the text used for indentation.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
-		public string IndentationString => GetIndentationString(1);
+	/// <summary>
+	/// Gets the text used for indentation.
+	/// </summary>
+	public string IndentationString => GetIndentationString(1);
 
 		/// <summary>
 		/// Gets text required to indent from the specified <paramref name="column"/> to the next indentation level.
@@ -414,7 +413,7 @@ namespace AvaloniaEdit;
 			var indentationSize = IndentationSize;
 			if (ConvertTabsToSpaces)
 			{
-				return new string(' ', indentationSize - ((column - 1) % indentationSize));
+				return new string(' ', indentationSize - (column - 1) % indentationSize);
 			}
 			else
 			{
@@ -505,45 +504,41 @@ namespace AvaloniaEdit;
 			}
 		}
 
-		private bool _enableRectangularSelection = true;
-
-		/// <summary>
-		/// Enables rectangular selection (press ALT and select a rectangle)
-		/// </summary>
-		[DefaultValue(true)]
+	/// <summary>
+	/// Enables rectangular selection (press ALT and select a rectangle)
+	/// </summary>
+	[DefaultValue(true)]
 		public bool EnableRectangularSelection
 		{
-			get { return _enableRectangularSelection; }
-			set
+			get;
+		set
 			{
-				if (_enableRectangularSelection != value)
+				if (field != value)
 				{
-					_enableRectangularSelection = value;
+					field = value;
 					OnPropertyChanged(nameof(EnableRectangularSelection));
 				}
 			}
-		}
+		} = true;
 
-		private bool _enableTextDragDrop = true;
-
-		/// <summary>
-		/// Enable dragging text within the text area.
-		/// </summary>
-		[DefaultValue(true)]
+	/// <summary>
+	/// Enable dragging text within the text area.
+	/// </summary>
+	[DefaultValue(true)]
 		public bool EnableTextDragDrop
 		{
-			get { return _enableTextDragDrop; }
-			set
+			get;
+		set
 			{
-				if (_enableTextDragDrop != value)
+				if (field != value)
 				{
-					_enableTextDragDrop = value;
+					field = value;
 					OnPropertyChanged(nameof(EnableTextDragDrop));
 				}
 			}
-		}
+		} = true;
 
-		private bool _enableVirtualSpace;
+	private bool _enableVirtualSpace;
 
 		/// <summary>
 		/// Gets/Sets whether the user can set the caret behind the line ending
@@ -641,104 +636,95 @@ namespace AvaloniaEdit;
 			}
 		}
 
-		private bool _hideCursorWhileTyping = true;
-
-		/// <summary>
-		/// Gets/Sets if mouse cursor should be hidden while user is typing.
-		/// </summary>
-		[DefaultValue(true)]
+	/// <summary>
+	/// Gets/Sets if mouse cursor should be hidden while user is typing.
+	/// </summary>
+	[DefaultValue(true)]
 		public bool HideCursorWhileTyping
 		{
-			get { return _hideCursorWhileTyping; }
-			set
+			get;
+		set
 			{
-				if (_hideCursorWhileTyping != value)
+				if (field != value)
 				{
-					_hideCursorWhileTyping = value;
+					field = value;
 					OnPropertyChanged(nameof(HideCursorWhileTyping));
 				}
 			}
-		}
+		} = true;
 
-		private bool _allowToggleOverstrikeMode;
-
-		/// <summary>
-		/// Gets/Sets if the user is allowed to enable/disable overstrike mode.
-		/// </summary>
-		[DefaultValue(false)]
+	/// <summary>
+	/// Gets/Sets if the user is allowed to enable/disable overstrike mode.
+	/// </summary>
+	[DefaultValue(false)]
 		public bool AllowToggleOverstrikeMode
 		{
-			get { return _allowToggleOverstrikeMode; }
-			set
+			get;
+		set
 			{
-				if (_allowToggleOverstrikeMode != value)
+				if (field != value)
 				{
-					_allowToggleOverstrikeMode = value;
+					field = value;
 					OnPropertyChanged(nameof(AllowToggleOverstrikeMode));
 				}
 			}
 		}
 
-		private bool _extendSelectionOnMouseUp = true;
-
-		/// <summary>
-		/// Gets/Sets if the mouse up event should extend the editor selection to the mouse position.
-		/// </summary>
-		[DefaultValue(true)]
+	/// <summary>
+	/// Gets/Sets if the mouse up event should extend the editor selection to the mouse position.
+	/// </summary>
+	[DefaultValue(true)]
 		public bool ExtendSelectionOnMouseUp
 		{
-			get { return _extendSelectionOnMouseUp; }
-			set
+			get;
+		set
 			{
-				if (_extendSelectionOnMouseUp != value)
+				if (field != value)
 				{
-					_extendSelectionOnMouseUp = value;
+					field = value;
 					OnPropertyChanged(nameof(ExtendSelectionOnMouseUp));
 				}
 			}
-		}
+		} = true;
 
-		private CompletionAcceptAction _completionAcceptAction = CompletionAcceptAction.PointerPressed;
-
-		/// <summary>
-		/// Gets/Sets the pointer action used to request the insertion of a completion item.
-		/// </summary>
-		[DefaultValue(CompletionAcceptAction.PointerPressed)]
+	/// <summary>
+	/// Gets/Sets the pointer action used to request the insertion of a completion item.
+	/// </summary>
+	[DefaultValue(CompletionAcceptAction.PointerPressed)]
 		public CompletionAcceptAction CompletionAcceptAction
 		{
-			get { return _completionAcceptAction; }
-			set
+			get;
+		set
 			{
-				if (_completionAcceptAction != value)
+				if (field != value)
 				{
-					_completionAcceptAction = value;
+					field = value;
 					OnPropertyChanged(nameof(CompletionAcceptAction));
 				}
 			}
-		}
+		} = CompletionAcceptAction.PointerPressed;
 
-		// The default LineHeightFactor matches the line height in the Visual Studio text editor.
-		private const double DefaultLineHeightFactor = 1.16;
-		private double _lineHeightFactor = DefaultLineHeightFactor;
+	// The default LineHeightFactor matches the line height in the Visual Studio text editor.
+	private const double DefaultLineHeightFactor = 1.16;
 
-		/// <summary>
-		/// Gets/Sets a factor to increase or decrease the height of a text line.
-		/// (Does not affect the font size.)
-		/// </summary>
-		[DefaultValue(DefaultLineHeightFactor)]
+	/// <summary>
+	/// Gets/Sets a factor to increase or decrease the height of a text line.
+	/// (Does not affect the font size.)
+	/// </summary>
+	[DefaultValue(DefaultLineHeightFactor)]
 		public double LineHeightFactor
 		{
-			get { return _lineHeightFactor; }
-			set
+			get;
+		set
 			{
 				if (value <= 0 || double.IsNaN(value) || double.IsInfinity(value))
 					throw new ArgumentOutOfRangeException(nameof(value), value, "value must be a positive number");
 				
-				if (_lineHeightFactor != value)
+				if (field != value)
 				{
-					_lineHeightFactor = value;
+					field = value;
 					OnPropertyChanged(nameof(LineHeightFactor));
 				}
 			}
-		}
-	}
+		} = DefaultLineHeightFactor;
+}

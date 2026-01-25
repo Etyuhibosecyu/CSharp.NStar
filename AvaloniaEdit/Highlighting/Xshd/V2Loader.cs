@@ -110,7 +110,7 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 			}
 		}
 
-		private static XshdElement ParseProperty(XmlReader reader)
+		private static XshdProperty ParseProperty(XmlReader reader)
 		{
 			var property = new XshdProperty();
 			SetPosition(property, reader);
@@ -217,9 +217,9 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 			return span;
 		}
 
-	private static Exception Error(XmlReader reader, string message) => Error(reader as IXmlLineInfo, message);
+	private static HighlightingDefinitionInvalidException Error(XmlReader reader, string message) => Error(reader as IXmlLineInfo, message);
 
-	private static Exception Error(IXmlLineInfo lineInfo, string message)
+	private static HighlightingDefinitionInvalidException Error(IXmlLineInfo lineInfo, string message)
 		{
 			if (lineInfo != null)
 				return new HighlightingDefinitionInvalidException(HighlightingLoader.FormatExceptionMessage(message, lineInfo.LineNumber, lineInfo.LinePosition));
@@ -248,7 +248,7 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 				var pos = ruleSet.LastIndexOf('/');
 				if (pos >= 0)
 				{
-					return new XshdReference<XshdRuleSet>(ruleSet.Substring(0, pos), ruleSet.Substring(pos + 1));
+					return new XshdReference<XshdRuleSet>(ruleSet[..pos], ruleSet[(pos + 1)..]);
 				}
 				else
 				{
@@ -267,7 +267,7 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 			{
 				if (name.Length == 0)
 					throw Error(reader, "The empty string is not a valid name.");
-				if (name.IndexOf('/') >= 0)
+				if (name.Contains('/'))
 					throw Error(reader, "Element names must not contain a slash.");
 			}
 		}
@@ -294,7 +294,7 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 				var pos = color.LastIndexOf('/');
 				if (pos >= 0)
 				{
-					return new XshdReference<XshdColor>(color.Substring(0, pos), color.Substring(pos + 1));
+					return new XshdReference<XshdColor>(color[..pos], color[(pos + 1)..]);
 				}
 				else
 				{
@@ -322,14 +322,14 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 			return color;
 		}
 
-		private static HighlightingBrush ParseColor(string color)
+		private static SimpleHighlightingBrush ParseColor(string color)
 		{
 			if (string.IsNullOrEmpty(color))
 				return null;
 			return FixedColorHighlightingBrush(Color.Parse(color));
 		}
 
-		private static HighlightingBrush FixedColorHighlightingBrush(Color? color)
+		private static SimpleHighlightingBrush FixedColorHighlightingBrush(Color? color)
 		{
 			if (color == null)
 				return null;
@@ -349,14 +349,14 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 		{
 			if (string.IsNullOrEmpty(fontWeight))
 				return null;
-			return (FontWeight)Enum.Parse(typeof(FontWeight), fontWeight, ignoreCase: true);
+			return Enum.Parse<FontWeight>(fontWeight, ignoreCase: true);
 		}
 
 		private static FontStyle? ParseFontStyle(string fontStyle)
 		{
 			if (string.IsNullOrEmpty(fontStyle))
 				return null;
-			return (FontStyle)Enum.Parse(typeof(FontStyle), fontStyle, ignoreCase: true);
+			return Enum.Parse<FontStyle>(fontStyle, ignoreCase: true);
 		}
 		#endregion
 	}

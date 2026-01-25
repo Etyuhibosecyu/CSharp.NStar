@@ -34,18 +34,13 @@ namespace AvaloniaEdit.Rendering;
 	/// is handled by the TextView.
 	/// This allows UIElements that are displayed behind the text, but still can react to mouse input.
 	/// </remarks>
-	internal sealed class TextLayer : Layer
+	internal sealed class TextLayer(TextView textView) : Layer(textView, KnownLayer.Text)
 	{
 		/// <summary>
 		/// the index of the text layer in the layers collection
 		/// </summary>
 		internal int Index;
-
-		public TextLayer(TextView textView) : base(textView, KnownLayer.Text)
-		{
-		}
-
-		private readonly List<VisualLineDrawingVisual> _visuals = new List<VisualLineDrawingVisual>();
+	private readonly List<VisualLineDrawingVisual> _visuals = [];
 
 		internal void SetVisualLines(ICollection<VisualLine> visualLines)
 		{

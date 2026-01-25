@@ -30,8 +30,8 @@ namespace AvaloniaEdit.Highlighting;
 	/// </summary>
 	public sealed class RichTextModel
 	{
-		private readonly List<int> _stateChangeOffsets = new List<int>();
-		private readonly List<HighlightingColor> _stateChanges = new List<HighlightingColor>();
+		private readonly List<int> _stateChangeOffsets = [];
+		private readonly List<HighlightingColor> _stateChanges = [];
 
 		private int GetIndexForOffset(int offset)
 		{

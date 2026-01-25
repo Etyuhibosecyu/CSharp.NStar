@@ -103,31 +103,29 @@ public class CompletionList : TemplatedControl
 	/// </summary>
 	public CompletionAcceptAction CompletionAcceptAction
 	{
-		get => _completionAcceptAction;
+		get;
 		set
 		{
-			if (_completionAcceptAction == value)
+			if (field == value)
 				return;
 
-			RemovePointerHandler(_completionAcceptAction);
-			_completionAcceptAction = value;
+			RemovePointerHandler(field);
+			field = value;
 			AddPointerHandler(value);
 		}
 	}
 
-	private CompletionAcceptAction _completionAcceptAction;
-
 	/// <summary>
 	/// Gets or sets the array of keys that are supposed to request insertion of the completion.
 	/// </summary>
-	public Key[] CompletionAcceptKeys { get; set; } = new[] { Key.Enter, Key.Tab };
+	public Key[] CompletionAcceptKeys { get; set; } = [Key.Enter, Key.Tab];
 
 	/// <summary>
 	/// Gets the scroll viewer used in this list box.
 	/// </summary>
 	public ScrollViewer ScrollViewer => _listBox?.ScrollViewer;
 
-	private readonly List<ICompletionData> _completionData = new List<ICompletionData>();
+	private readonly List<ICompletionData> _completionData = [];
 
 	/// <summary>
 	/// Gets the list to which completion data can be added.
@@ -309,10 +307,7 @@ public class CompletionList : TemplatedControl
 
 	private List<ICompletionData> _currentList;
 
-	public List<ICompletionData> CurrentList
-	{
-		get => ListBox.Items.Cast<ICompletionData>().ToList();
-	}
+	public List<ICompletionData> CurrentList => ListBox.Items.Cast<ICompletionData>().ToList();
 
 	/// <summary>
 	/// Selects the best match, and filter the items if turned on using <see cref="IsFiltering" />.
@@ -376,7 +371,7 @@ public class CompletionList : TemplatedControl
 		_currentList = listBoxItems;
 		//_listBox.Items = null; Makes no sense? Tooltip disappeared because of this
 		_listBox.ItemsSource = listBoxItems;
-		Dispatcher.UIThread.Post(() => { SelectIndexCentered(bestIndex); }, DispatcherPriority.Loaded);
+		Dispatcher.UIThread.Post(() => SelectIndexCentered(bestIndex), DispatcherPriority.Loaded);
 	}
 
 	/// <summary>
@@ -487,9 +482,9 @@ public class CompletionList : TemplatedControl
 		// search by substring, if filtering (i.e. new behavior) turned on
 		if (IsFiltering)
 		{
-			if (itemText.IndexOf(query, StringComparison.CurrentCulture) >= 0)
+			if (itemText.Contains(query, StringComparison.CurrentCulture))
 				return 3;
-			if (itemText.IndexOf(query, StringComparison.CurrentCultureIgnoreCase) >= 0)
+			if (itemText.Contains(query, StringComparison.CurrentCultureIgnoreCase))
 				return 2;
 		}
 

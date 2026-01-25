@@ -266,7 +266,10 @@ public static class MemberChecks
 			else if (noArrayFunction && badIndex >= 0)
 				continue;
 			functions.Add(new(name, [], TypeMappingBack(returnNetType, netType.GetGenericArguments(), container.ExtraTypes),
-				(method.IsAbstract ? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0),
+				(method.IsAbstract ? FunctionAttributes.Abstract : 0) | (method.IsStatic ? FunctionAttributes.Static : 0)
+				| (method.ReturnType.FullName != null
+				&& (method.ReturnType.FullName.StartsWith("System.Threading.Tasks.Task")
+				|| method.ReturnType.FullName.StartsWith("System.Threading.Tasks.ValueTask")) ? FunctionAttributes.Async : 0),
 				new(functionParameterTypes.ToList((x, index) => new ExtendedMethodParameter(TypeMappingBack(x,
 				netType.GetGenericArguments(), container.ExtraTypes), parameters[index].Name ?? "x",
 				(parameters[index].IsOptional ? ParameterAttributes.Optional : 0)
@@ -458,7 +461,7 @@ public static class MemberChecks
 		[MaybeNullWhen(false)] out UserDefinedMethodOverloads functions,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer, out bool derived)
 	{
-		var mainType = container.MainType ?? [];
+		var mainType = container.MainType;
 		if (!(CheckContainer(mainType, UserDefinedFunctions.ContainsKey, out matchingContainer)
 			&& UserDefinedFunctions[matchingContainer].TryGetValue(name, out functions)))
 		{

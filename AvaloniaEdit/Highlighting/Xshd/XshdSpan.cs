@@ -30,8 +30,6 @@ public enum XshdRegexType
 	/// <summary>
 	/// Ignore pattern whitespace / allow regex comments. Used when the regex was specified as text element.
 	/// </summary>
-	[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
-													 Justification = "Using the same case as the RegexOption")]
 	IgnorePatternWhitespace
 }
 

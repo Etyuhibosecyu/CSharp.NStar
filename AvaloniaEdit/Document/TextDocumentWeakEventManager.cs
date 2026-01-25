@@ -26,55 +26,50 @@ namespace AvaloniaEdit.Document;
 	/// </summary>
 	public static class TextDocumentWeakEventManager
 	{
-		/// <summary>
-		/// Weak event manager for the <see cref="TextDocument.UpdateStarted"/> event.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
-		public sealed class UpdateStarted : WeakEventManagerBase<UpdateStarted, TextDocument, EventHandler, EventArgs>
+	/// <summary>
+	/// Weak event manager for the <see cref="TextDocument.UpdateStarted"/> event.
+	/// </summary>
+	public sealed class UpdateStarted : WeakEventManagerBase<UpdateStarted, TextDocument, EventHandler, EventArgs>
 		{
 			protected override void StartListening(TextDocument source) => source.UpdateStarted += DeliverEvent;
 
 			protected override void StopListening(TextDocument source) => source.UpdateStarted -= DeliverEvent;
 		}
 
-		/// <summary>
-		/// Weak event manager for the <see cref="TextDocument.UpdateFinished"/> event.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
-		public sealed class UpdateFinished : WeakEventManagerBase<UpdateFinished, TextDocument, EventHandler, EventArgs>
+	/// <summary>
+	/// Weak event manager for the <see cref="TextDocument.UpdateFinished"/> event.
+	/// </summary>
+	public sealed class UpdateFinished : WeakEventManagerBase<UpdateFinished, TextDocument, EventHandler, EventArgs>
 		{
 			protected override void StartListening(TextDocument source) => source.UpdateFinished += DeliverEvent;
 
 			protected override void StopListening(TextDocument source) => source.UpdateFinished -= DeliverEvent;
 		}
 
-		/// <summary>
-		/// Weak event manager for the <see cref="TextDocument.Changing"/> event.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
-		public sealed class Changing : WeakEventManagerBase<Changing, TextDocument, EventHandler<DocumentChangeEventArgs>, DocumentChangeEventArgs>
+	/// <summary>
+	/// Weak event manager for the <see cref="TextDocument.Changing"/> event.
+	/// </summary>
+	public sealed class Changing : WeakEventManagerBase<Changing, TextDocument, EventHandler<DocumentChangeEventArgs>, DocumentChangeEventArgs>
 		{
 			protected override void StartListening(TextDocument source) => source.Changing += DeliverEvent;
 
 			protected override void StopListening(TextDocument source) => source.Changing -= DeliverEvent;
 		}
 
-		/// <summary>
-		/// Weak event manager for the <see cref="TextDocument.Changed"/> event.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
-		public sealed class Changed : WeakEventManagerBase<Changed, TextDocument, EventHandler<DocumentChangeEventArgs>, DocumentChangeEventArgs>
+	/// <summary>
+	/// Weak event manager for the <see cref="TextDocument.Changed"/> event.
+	/// </summary>
+	public sealed class Changed : WeakEventManagerBase<Changed, TextDocument, EventHandler<DocumentChangeEventArgs>, DocumentChangeEventArgs>
 		{
 			protected override void StartListening(TextDocument source) => source.Changed += DeliverEvent;
 
 			protected override void StopListening(TextDocument source) => source.Changed -= DeliverEvent;
 		}
 
-		/// <summary>
-		/// Weak event manager for the <see cref="TextDocument.LineCountChanged"/> event.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
-		public sealed class LineCountChanged : WeakEventManagerBase<LineCountChanged, TextDocument, EventHandler, EventArgs>
+	/// <summary>
+	/// Weak event manager for the <see cref="TextDocument.LineCountChanged"/> event.
+	/// </summary>
+	public sealed class LineCountChanged : WeakEventManagerBase<LineCountChanged, TextDocument, EventHandler, EventArgs>
 		{
 			protected override void StartListening(TextDocument source) => source.LineCountChanged += DeliverEvent;
 
@@ -82,22 +77,20 @@ namespace AvaloniaEdit.Document;
 
 		}
 
-		/// <summary>
-		/// Weak event manager for the <see cref="TextDocument.TextLengthChanged"/> event.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
-		public sealed class TextLengthChanged : WeakEventManagerBase<TextLengthChanged, TextDocument, EventHandler, EventArgs>
+	/// <summary>
+	/// Weak event manager for the <see cref="TextDocument.TextLengthChanged"/> event.
+	/// </summary>
+	public sealed class TextLengthChanged : WeakEventManagerBase<TextLengthChanged, TextDocument, EventHandler, EventArgs>
 		{
 			protected override void StartListening(TextDocument source) => source.TextLengthChanged += DeliverEvent;
 
 			protected override void StopListening(TextDocument source) => source.TextLengthChanged -= DeliverEvent;
 		}
 
-		/// <summary>
-		/// Weak event manager for the <see cref="TextDocument.TextChanged"/> event.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
-		public sealed class TextChanged : WeakEventManagerBase<TextChanged, TextDocument, EventHandler, EventArgs>
+	/// <summary>
+	/// Weak event manager for the <see cref="TextDocument.TextChanged"/> event.
+	/// </summary>
+	public sealed class TextChanged : WeakEventManagerBase<TextChanged, TextDocument, EventHandler, EventArgs>
 		{
 			protected override void StartListening(TextDocument source) => source.TextChanged += DeliverEvent;
 

@@ -70,7 +70,7 @@ namespace AvaloniaEdit.Search;
 				switch (ch)
 				{
 					case '?':
-						builder.Append(".");
+						builder.Append('.');
 						break;
 					case '*':
 						builder.Append(".*");

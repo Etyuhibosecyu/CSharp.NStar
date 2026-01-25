@@ -32,13 +32,12 @@ namespace AvaloniaEdit.Highlighting;
 	/// </summary>
 	public class HighlightingEngine
 	{
-		private readonly HighlightingRuleSet _mainRuleSet;
-		private SpanStack _spanStack = SpanStack.Empty;
+	private SpanStack _spanStack = SpanStack.Empty;
 
 	/// <summary>
 	/// Creates a new HighlightingEngine instance.
 	/// </summary>
-	public HighlightingEngine(HighlightingRuleSet mainRuleSet) => _mainRuleSet = mainRuleSet ?? throw new ArgumentNullException(nameof(mainRuleSet));
+	public HighlightingEngine(HighlightingRuleSet mainRuleSet) => CurrentRuleSet = mainRuleSet ?? throw new ArgumentNullException(nameof(mainRuleSet));
 
 	/// <summary>
 	/// Gets/sets the current span stack.
@@ -123,7 +122,7 @@ namespace AvaloniaEdit.Highlighting;
 			{
 				for (var i = 0; i < matches.Length; i++)
 				{
-					if (matches[i] == null || (matches[i].Success && matches[i].Index < _position))
+					if (matches[i] == null || matches[i].Success && matches[i].Index < _position)
 						matches[i] = currentRuleSet.Spans[i].StartExpression.Match(_lineText, _position);
 				}
 				if (!_spanStack.IsEmpty)
@@ -206,7 +205,7 @@ namespace AvaloniaEdit.Highlighting;
 				{
 					for (var i = 0; i < matches.Length; i++)
 					{
-						if (matches[i] == null || (matches[i].Success && matches[i].Index < _position))
+						if (matches[i] == null || matches[i].Success && matches[i].Index < _position)
 							matches[i] = rules[i].Regex.Match(_lineText, _position, until - _position);
 					}
 					var firstMatch = Minimum(matches, null);
@@ -231,14 +230,14 @@ namespace AvaloniaEdit.Highlighting;
 			_position = until;
 		}
 
-		private static readonly HighlightingRuleSet EmptyRuleSet = new HighlightingRuleSet { Name = "EmptyRuleSet" };
+		private static readonly HighlightingRuleSet EmptyRuleSet = new() { Name = "EmptyRuleSet" };
 
 		private HighlightingRuleSet CurrentRuleSet
 		{
 			get
 			{
 				if (_spanStack.IsEmpty)
-					return _mainRuleSet;
+					return field;
 				return _spanStack.Peek().RuleSet ?? EmptyRuleSet;
 			}
 		}
@@ -301,7 +300,7 @@ namespace AvaloniaEdit.Highlighting;
 			var s = _highlightedSectionStack.Pop();
 			if (s != null)
 			{
-				s.Length = (_position + _lineStartOffset) - s.Offset;
+				s.Length = _position + _lineStartOffset - s.Offset;
 				if (s.Length == 0)
 					_highlightedLine.Sections.Remove(s);
 				else

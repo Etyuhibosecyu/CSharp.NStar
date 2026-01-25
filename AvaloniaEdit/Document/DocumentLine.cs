@@ -46,9 +46,7 @@ namespace AvaloniaEdit.Document;
 		private readonly TextDocument _document;
 #endif
 
-		private bool _isDeleted;
-
-		internal DocumentLine(TextDocument document)
+	internal DocumentLine(TextDocument document)
 		{
 #if DEBUG
 			Debug.Assert(document != null);
@@ -101,9 +99,9 @@ namespace AvaloniaEdit.Document;
 			get
 			{
 				DebugVerifyAccess();
-				return _isDeleted;
+				return field;
 			}
-			internal set => _isDeleted = value;
+			internal set;
 		}
 
 		/// <summary>
@@ -197,7 +195,7 @@ namespace AvaloniaEdit.Document;
 			}
 			internal set
 			{
-				Debug.Assert(value >= 0 && value <= 2);
+				Debug.Assert(value is >= 0 and <= 2);
 				_delimiterLength = (byte)value;
 			}
 		}

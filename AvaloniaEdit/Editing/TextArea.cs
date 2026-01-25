@@ -54,7 +54,7 @@ namespace AvaloniaEdit.Editing;
 
 		private ILogicalScrollable _logicalScrollable;
 
-		private readonly TextAreaTextInputMethodClient _imClient = new TextAreaTextInputMethodClient();
+		private readonly TextAreaTextInputMethodClient _imClient = new();
 
 		#region Constructor
 		static TextArea()
@@ -173,8 +173,7 @@ namespace AvaloniaEdit.Editing;
 		/// <remarks><inheritdoc cref="ITextAreaInputHandler"/></remarks>
 		public TextAreaDefaultInputHandler DefaultInputHandler { get; }
 
-		private ITextAreaInputHandler _activeInputHandler;
-		private bool _isChangingInputHandler;
+	private bool _isChangingInputHandler;
 
 		/// <summary>
 		/// Gets/Sets the active input handler.
@@ -183,14 +182,14 @@ namespace AvaloniaEdit.Editing;
 		/// <remarks><inheritdoc cref="ITextAreaInputHandler"/></remarks>
 		public ITextAreaInputHandler ActiveInputHandler
 		{
-			get => _activeInputHandler;
+			get;
 			set
 			{
 				if (value != null && value.TextArea != this)
 					throw new ArgumentException("The input handler was created for a different text area than this one.");
 				if (_isChangingInputHandler)
 					throw new InvalidOperationException("Cannot set ActiveInputHandler recursively");
-				if (_activeInputHandler != value)
+				if (field != value)
 				{
 					_isChangingInputHandler = true;
 					try
@@ -199,8 +198,8 @@ namespace AvaloniaEdit.Editing;
 						PopStackedInputHandler(StackedInputHandlers.LastOrDefault());
 						Debug.Assert(StackedInputHandlers.IsEmpty);
 
-						_activeInputHandler?.Detach();
-						_activeInputHandler = value;
+						field?.Detach();
+						field = value;
 						value?.Attach();
 					}
 					finally
@@ -221,7 +220,7 @@ namespace AvaloniaEdit.Editing;
 		/// Gets the list of currently active stacked input handlers.
 		/// </summary>
 		/// <remarks><inheritdoc cref="ITextAreaInputHandler"/></remarks>
-		public ImmutableStack<TextAreaStackedInputHandler> StackedInputHandlers { get; private set; } = ImmutableStack<TextAreaStackedInputHandler>.Empty;
+		public ImmutableStack<TextAreaStackedInputHandler> StackedInputHandlers { get; private set; } = [];
 
 		/// <summary>
 		/// Pushes an input handler onto the list of stacked input handlers.
@@ -274,13 +273,10 @@ namespace AvaloniaEdit.Editing;
 		/// <inheritdoc/>
 		public event EventHandler<DocumentChangedEventArgs> DocumentChanged;
 
-		/// <summary>
-		/// Gets if the the document displayed by the text editor is readonly
-		/// </summary>
-		public bool IsReadOnly
-		{
-			get => ReadOnlySectionProvider == ReadOnlySectionDocument.Instance;
-		}
+	/// <summary>
+	/// Gets if the the document displayed by the text editor is readonly
+	/// </summary>
+	public bool IsReadOnly => ReadOnlySectionProvider == ReadOnlySectionDocument.Instance;
 
 	private static void OnDocumentChanged(AvaloniaPropertyChangedEventArgs e) => (e.Sender as TextArea)?.OnDocumentChanged((TextDocument)e.OldValue, (TextDocument)e.NewValue);
 
@@ -371,24 +367,15 @@ namespace AvaloniaEdit.Editing;
 
 	private void OnUpdateFinished(object sender, EventArgs e) => Caret.OnDocumentUpdateFinished();
 
-	private sealed class RestoreCaretAndSelectionUndoAction : IUndoableOperation
+	private sealed class RestoreCaretAndSelectionUndoAction(TextArea textArea) : IUndoableOperation
 		{
 			// keep textarea in weak reference because the IUndoableOperation is stored with the document
-			private readonly WeakReference _textAreaReference;
+			private readonly WeakReference _textAreaReference = new(textArea);
 
-			private readonly TextViewPosition _caretPosition;
-			private readonly Selection _selection;
+			private readonly TextViewPosition _caretPosition = textArea.Caret.NonValidatedPosition;
+			private readonly Selection _selection = textArea.Selection;
 
-			public RestoreCaretAndSelectionUndoAction(TextArea textArea)
-			{
-				_textAreaReference = new WeakReference(textArea);
-				// Just save the old caret position, no need to validate here.
-				// If we restore it, we'll validate it anyways.
-				_caretPosition = textArea.Caret.NonValidatedPosition;
-				_selection = textArea.Selection;
-			}
-
-			public void Undo()
+		public void Undo()
 			{
 				var textArea = (TextArea)_textAreaReference.Target;
 				if (textArea != null)
@@ -440,7 +427,7 @@ namespace AvaloniaEdit.Editing;
 					{
 						var oldSegment = _selection.SurroundingSegment;
 						var newSegment = value.SurroundingSegment;
-						if (!Selection.EnableVirtualSpace && (_selection is SimpleSelection && value is SimpleSelection && oldSegment != null && newSegment != null))
+						if (!Selection.EnableVirtualSpace && _selection is SimpleSelection && value is SimpleSelection && oldSegment != null && newSegment != null)
 						{
 							// perf optimization:
 							// When a simple selection changes, don't redraw the whole selection, but only the changed parts.
@@ -665,10 +652,7 @@ namespace AvaloniaEdit.Editing;
 
 			ScrollToLine(Caret.Line, 2);
 
-			Dispatcher.UIThread.InvokeAsync(() =>
-			{
-				(this as ILogicalScrollable).RaiseScrollInvalidated(EventArgs.Empty);
-			});
+			Dispatcher.UIThread.InvokeAsync(() => (this as ILogicalScrollable).RaiseScrollInvalidated(EventArgs.Empty));
 		}
 
 		public static readonly DirectProperty<TextArea, ObservableCollection<Control>> LeftMarginsProperty
@@ -678,7 +662,7 @@ namespace AvaloniaEdit.Editing;
 		/// <summary>
 		/// Gets the collection of margins displayed to the left of the text view.
 		/// </summary>
-		public ObservableCollection<Control> LeftMargins { get; } = new ObservableCollection<Control>();
+		public ObservableCollection<Control> LeftMargins { get; } = [];
 
 		private void LeftMargins_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
 		{
@@ -698,21 +682,19 @@ namespace AvaloniaEdit.Editing;
 			}
 		}
 
-		private IReadOnlySectionProvider _readOnlySectionProvider = NoReadOnlySections.Instance;
-
-		/// <summary>
-		/// Gets/Sets an object that provides read-only sections for the text area.
-		/// </summary>
-		public IReadOnlySectionProvider ReadOnlySectionProvider
+	/// <summary>
+	/// Gets/Sets an object that provides read-only sections for the text area.
+	/// </summary>
+	public IReadOnlySectionProvider ReadOnlySectionProvider
 		{
-			get => _readOnlySectionProvider;
-			set => _readOnlySectionProvider = value ?? throw new ArgumentNullException(nameof(value));
-		}
+			get;
+			set => field = value ?? throw new ArgumentNullException(nameof(value));
+		} = NoReadOnlySections.Instance;
 
-		/// <summary>
-		/// The <see cref="RightClickMovesCaret"/> property.
-		/// </summary>
-		public static readonly StyledProperty<bool> RightClickMovesCaretProperty =
+	/// <summary>
+	/// The <see cref="RightClickMovesCaret"/> property.
+	/// </summary>
+	public static readonly StyledProperty<bool> RightClickMovesCaretProperty =
 			AvaloniaProperty.Register<TextArea, bool>(nameof(RightClickMovesCaret), false);
 
 		/// <summary>
@@ -844,7 +826,7 @@ namespace AvaloniaEdit.Editing;
 			OnTextEntering(e);
 			if (!e.Handled)
 			{
-				if (e.Text == "\n" || e.Text == "\r" || e.Text == "\r\n")
+				if (e.Text is "\n" or "\r" or "\r\n")
 					ReplaceSelectionWithNewLine();
 				else
 				{
@@ -1068,7 +1050,6 @@ namespace AvaloniaEdit.Editing;
 	/// </summary>
 	public event EventHandler<TextEventArgs> TextCopied;
 
-
 		event EventHandler ILogicalScrollable.ScrollInvalidated
 		{
 			add { if (_logicalScrollable != null) _logicalScrollable.ScrollInvalidated += value; }
@@ -1077,7 +1058,7 @@ namespace AvaloniaEdit.Editing;
 
 	internal void OnTextCopied(TextEventArgs e) => TextCopied?.Invoke(this, e);
 
-	public IList<RoutedCommandBinding> CommandBindings { get; } = new List<RoutedCommandBinding>();
+	public IList<RoutedCommandBinding> CommandBindings { get; } = [];
 
 		bool ILogicalScrollable.IsLogicalScrollEnabled => _logicalScrollable?.IsLogicalScrollEnabled ?? default(bool);
 
@@ -1239,18 +1220,16 @@ namespace AvaloniaEdit.Editing;
 		}
 	}
 
-	/// <summary>
-	/// EventArgs with text.
-	/// </summary>
-	public class TextEventArgs : EventArgs
+/// <summary>
+/// EventArgs with text.
+/// </summary>
+/// <remarks>
+/// Creates a new TextEventArgs instance.
+/// </remarks>
+public class TextEventArgs(string text) : EventArgs
 	{
-		/// <summary>
-		/// Gets the text.
-		/// </summary>
-		public string Text { get; }
-
 	/// <summary>
-	/// Creates a new TextEventArgs instance.
+	/// Gets the text.
 	/// </summary>
-	public TextEventArgs(string text) => Text = text ?? throw new ArgumentNullException(nameof(text));
+	public string Text { get; } = text ?? throw new ArgumentNullException(nameof(text));
 }

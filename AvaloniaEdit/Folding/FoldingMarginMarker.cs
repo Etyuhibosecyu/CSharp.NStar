@@ -30,16 +30,14 @@ namespace AvaloniaEdit.Folding;
 		internal VisualLine VisualLine;
 		internal FoldingSection FoldingSection;
 
-		private bool _isExpanded;
-
-		public bool IsExpanded
+	public bool IsExpanded
 		{
-			get => _isExpanded;
+			get;
 			set
 			{
-				if (_isExpanded != value)
+				if (field != value)
 				{
-					_isExpanded = value;
+					field = value;
 					InvalidateVisual();
 				}
 				FoldingSection?.IsFolded = !value;
@@ -98,14 +96,13 @@ namespace AvaloniaEdit.Folding;
 			drawingContext.DrawLine(activePen,
 									new Point(rect.X + space, middleY),
 									new Point(rect.Right - space, middleY));
-			if (!_isExpanded)
+			if (!IsExpanded)
 			{
 				drawingContext.DrawLine(activePen,
 										new Point(middleX, rect.Y + space),
 										new Point(middleX, rect.Bottom - space));
 			}
 		}
-
 
 		protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
 		{

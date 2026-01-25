@@ -30,7 +30,7 @@ namespace AvaloniaEdit.Editing;
 	/// </summary>
 	public static class DottedLineMargin
 	{
-		private static readonly object Tag = new object();
+		private static readonly object Tag = new();
 
 		/// <summary>
 		/// Creates a vertical dotted line to separate the line numbers from the text view.
@@ -41,7 +41,7 @@ namespace AvaloniaEdit.Editing;
 			{
 				StartPoint = new Point(0, 0),
 				EndPoint = new Point(0, 1),
-				StrokeDashArray = new AvaloniaList<double> { 0, 2 },
+				StrokeDashArray = [0, 2],
 				Stretch = Stretch.Fill,
 				StrokeThickness = 1,
 				StrokeLineCap = PenLineCap.Round,

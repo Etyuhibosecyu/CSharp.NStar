@@ -23,17 +23,15 @@ namespace AvaloniaEdit.Snippets;
 /// <summary>
 /// Provides information about the event that occured during use of snippets.
 /// </summary>
-public class SnippetEventArgs : EventArgs
+/// <remarks>
+/// Creates a new SnippetEventArgs object, with a DeactivateReason.
+/// </remarks>
+public class SnippetEventArgs(DeactivateReason reason) : EventArgs
 {
 	/// <summary>
 	/// Gets the reason for deactivation.
 	/// </summary>
-	public DeactivateReason Reason { get; }
-
-	/// <summary>
-	/// Creates a new SnippetEventArgs object, with a DeactivateReason.
-	/// </summary>
-	public SnippetEventArgs(DeactivateReason reason) => Reason = reason;
+	public DeactivateReason Reason { get; } = reason;
 }
 
 /// <summary>

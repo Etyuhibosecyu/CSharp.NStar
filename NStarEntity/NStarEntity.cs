@@ -453,7 +453,7 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return false;
-		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
 		return basicType switch
 		{
 			"null" => false,
@@ -478,7 +478,7 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
 #pragma warning disable IDE0078 // Используйте сопоставление шаблонов
 		return basicType switch
 		{
@@ -505,7 +505,7 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
 		return basicType switch
 		{
 			"null" => 0,
@@ -531,7 +531,7 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
 		return basicType switch
 		{
 			"null" => 0,
@@ -557,7 +557,7 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return '\0';
-		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
 		return basicType switch
 		{
 			"null" => '\0',
@@ -583,7 +583,7 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
 		return basicType switch
 		{
 			"null" => 0,
@@ -609,7 +609,7 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
 		return basicType switch
 		{
 			"null" => 0,
@@ -635,7 +635,7 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
 		return basicType switch
 		{
 			"null" => 0,
@@ -664,7 +664,7 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
 		return basicType switch
 		{
 			"null" => 0,
@@ -691,7 +691,7 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
 		return basicType switch
 		{
 			"null" => 0,
@@ -717,7 +717,7 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
 		return basicType switch
 		{
 			"null" => 0,
@@ -743,7 +743,7 @@ public struct NStarEntity
 	{
 		if (!TypeIsPrimitive(InnerType.MainType))
 			return 0;
-		var basicType = InnerType.MainType?.Peek().Name.ToString() ?? "null";
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
 		return basicType switch
 		{
 			"null" => 0,
@@ -770,7 +770,7 @@ public struct NStarEntity
 	{
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
-			var basicType = InnerType.MainType?.Peek().Name ?? "null";
+			var basicType = InnerType.MainType.Peek().Name ?? "null";
 			if (basicType == "null")
 				return addCasting ? "default!" : "null";
 			else if (basicType == "bool")
@@ -1131,7 +1131,7 @@ public struct NStarEntity
 				return "unsigned short int";
 			else if (right.ToUnsignedLongInt() >= 4294967296)
 				return "unsigned int";
-			else if (new List<String> { "short int", "int", "long int" }.Contains(rightType))
+			else if (rightType.AsSpan() is "short int" or "int" or "long int")
 				return "long long";
 			else
 				return "unsigned long int";
@@ -1149,7 +1149,7 @@ public struct NStarEntity
 		}
 		else if (leftType == (t = "long char") || rightType == t)
 		{
-			if (rightType.ToString() is "short int" or "int")
+			if (rightType.AsSpan() is "short int" or "int")
 				return "long int";
 			else
 				return "long char";
@@ -1160,7 +1160,7 @@ public struct NStarEntity
 				return "byte";
 			else if (right.ToUnsignedInt() >= 65536)
 				return "unsigned short int";
-			else if (rightType.ToString() is "short int" or "int")
+			else if (rightType.AsSpan() is "short int" or "int")
 				return "long int";
 			else
 				return "unsigned int";
@@ -1211,7 +1211,7 @@ public struct NStarEntity
 				return "unsigned short int";
 			else if (right.ToUnsignedLongInt() <= 4294967296)
 				return "unsigned int";
-			else if (new List<String> { "short int", "int", "long int" }.Contains(rightType))
+			else if (rightType.AsSpan() is "short int" or "int" or "long int")
 				return "long long";
 			else
 				return "unsigned long int";
@@ -1229,7 +1229,7 @@ public struct NStarEntity
 		}
 		else if (leftType == (t = "long char") || rightType == t)
 		{
-			if (rightType.ToString() is "short int" or "int")
+			if (rightType.AsSpan() is "short int" or "int")
 				return "long int";
 			else
 				return "long char";
@@ -1240,7 +1240,7 @@ public struct NStarEntity
 				return "byte";
 			else if (right.ToUnsignedInt() <= 65536)
 				return "unsigned short int";
-			else if (rightType.ToString() is "short int" or "int")
+			else if (rightType.AsSpan() is "short int" or "int")
 				return "long int";
 			else
 				return "unsigned int";
@@ -1281,8 +1281,8 @@ public struct NStarEntity
 		}
 		else if (leftType == (t = "unsigned long long") || rightType == t)
 		{
-			if (new List<String> { "short int", "int", "long int", "real" }.Contains(leftType)
-				|| new List<String> { "short int", "int", "long int", "real" }.Contains(rightType))
+			if (leftType.AsSpan() is "short int" or "int" or "long int" or "real"
+				|| rightType.AsSpan() is "short int" or "int" or "long int" or "real")
 				return "long real";
 			else
 				return null;
@@ -1316,7 +1316,7 @@ public struct NStarEntity
 		}
 		else if (leftType == (t = "short char") || rightType == t)
 			return "short char";
-		else if (leftType.ToString() is "byte" or "bool")
+		else if (leftType.AsSpan() is "byte" or "bool")
 			return "byte";
 		else
 			return "null";
@@ -1334,7 +1334,7 @@ public struct NStarEntity
 				return 0;
 			else if (s == "bool")
 				return Bool.GetHashCode();
-			else if (s.ToString() is "byte" or "short int" or "unsigned short int" or "int" or "unsigned int" or "real")
+			else if (s.AsSpan() is "byte" or "short int" or "unsigned short int" or "int" or "unsigned int" or "real")
 				return Number.GetHashCode();
 			else if (s == "char")
 				return ((char)Number).GetHashCode();

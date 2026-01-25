@@ -35,7 +35,7 @@ public interface IUndoableOperation
 	void Redo();
 }
 
-interface IUndoableOperationWithContext : IUndoableOperation
+internal interface IUndoableOperationWithContext : IUndoableOperation
 {
 	void Undo(UndoStack stack);
 	void Redo(UndoStack stack);

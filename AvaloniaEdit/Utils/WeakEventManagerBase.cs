@@ -20,20 +20,20 @@ namespace AvaloniaEdit.Utils;
 		where TEventManager : WeakEventManagerBase<TEventManager, TEventSource, TEventHandler, TEventArgs>, new()
 	{
 		// ReSharper disable once StaticMemberInGenericType
-		private static readonly object StaticSource = new object();
+		private static readonly object StaticSource = new();
 
 		/// <summary>
 		/// Mapping between the target of the delegate (for example a Button) and the handler (EventHandler).
 		/// Windows Phone needs this, otherwise the event handler gets garbage collected.
 		/// </summary>
-		private readonly ConditionalWeakTable<object, List<Delegate>> _targetToEventHandler = new ConditionalWeakTable<object, List<Delegate>>();
+		private readonly ConditionalWeakTable<object, List<Delegate>> _targetToEventHandler = [];
 
 		/// <summary>
 		/// Mapping from the source of the event to the list of handlers. This is a CWT to ensure it does not leak the source of the event.
 		/// </summary>
-		private readonly ConditionalWeakTable<object, WeakHandlerList> _sourceToWeakHandlers = new ConditionalWeakTable<object, WeakHandlerList>();
+		private readonly ConditionalWeakTable<object, WeakHandlerList> _sourceToWeakHandlers = [];
 
-		private static readonly Lazy<TEventManager> CurrentLazy = new Lazy<TEventManager>(() => new TEventManager());
+		private static readonly Lazy<TEventManager> CurrentLazy = new(() => new TEventManager());
 
 		private static TEventManager Current => CurrentLazy.Value;
 
@@ -120,7 +120,7 @@ namespace AvaloniaEdit.Utils;
 			}
 			else
 			{
-				delegates = new List<Delegate> { @delegate };
+				delegates = [@delegate];
 
 				_targetToEventHandler.Add(key, delegates);
 			}
@@ -213,10 +213,10 @@ namespace AvaloniaEdit.Utils;
 			}
 		}
 
-		internal class WeakHandler
-		{
-			private readonly WeakReference _source;
-			private readonly WeakReference _originalHandler;
+		internal class WeakHandler(object source, TEventHandler originalHandler)
+	{
+			private readonly WeakReference _source = new(source);
+			private readonly WeakReference _originalHandler = new(originalHandler);
 
 			public bool IsActive => _source != null && _source.IsAlive && _originalHandler != null && _originalHandler.IsAlive;
 
@@ -230,12 +230,6 @@ namespace AvaloniaEdit.Utils;
 					}
 					return (TEventHandler)_originalHandler.Target;
 				}
-			}
-
-			public WeakHandler(object source, TEventHandler originalHandler)
-			{
-				_source = new WeakReference(source);
-				_originalHandler = new WeakReference(originalHandler);
 			}
 
 		public bool Matches(object o, TEventHandler handler) => _source != null &&
@@ -252,7 +246,7 @@ namespace AvaloniaEdit.Utils;
 			private int _deliveries;
 			private readonly List<WeakHandler> _handlers;
 
-		public WeakHandlerList() => _handlers = new List<WeakHandler>();
+		public WeakHandlerList() => _handlers = [];
 
 		public void AddWeakHandler(TEventSource source, TEventHandler handler)
 			{
@@ -326,10 +320,10 @@ namespace AvaloniaEdit.Utils;
 		}
 	}
 
-	internal sealed class Disposable : IDisposable
+	internal sealed class Disposable(Action dispose) : IDisposable
 	{
-		private volatile Action _dispose;
-	public Disposable(Action dispose) => _dispose = dispose;
+		private volatile Action _dispose = dispose;
+
 	public bool IsDisposed => _dispose == null;
 	public void Dispose() => Interlocked.Exchange(ref _dispose, null)?.Invoke();
 }

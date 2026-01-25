@@ -22,23 +22,16 @@ using Avalonia.Utilities;
 
 namespace AvaloniaEdit.Rendering;
 
-internal sealed class SimpleTextSource : ITextSource
+internal sealed class SimpleTextSource(string text, TextRunProperties properties) : ITextSource
 {
-	private readonly string _text;
-	private readonly TextRunProperties _properties;
-
-	public SimpleTextSource(string text, TextRunProperties properties)
-	{
-		_text = text;
-		_properties = properties;
-	}
+	private readonly string _text = text;
+	private readonly TextRunProperties _properties = properties;
 
 	public TextRun GetTextRun(int textSourceCharacterIndex)
 	{
 		if (textSourceCharacterIndex < _text.Length)
 			return new TextCharacters(
-				_text.AsMemory().Slice(textSourceCharacterIndex,
-					_text.Length - textSourceCharacterIndex), _properties);
+				_text.AsMemory()[textSourceCharacterIndex.._text.Length], _properties);
 		
 		return new TextEndOfParagraph(1);
 	}

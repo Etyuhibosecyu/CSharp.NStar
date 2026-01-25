@@ -25,10 +25,10 @@ using Avalonia.Media.TextFormatting;
 
 namespace AvaloniaEdit.Utils;
 
-	/// <summary>
+/// <summary>
 /// Creates TextFormatter instances that with the correct TextFormattingMode, if running on .NET 4.0.
 /// </summary>
-static class TextFormatterFactory
+internal static class TextFormatterFactory
 {
 	/// <summary>
 	/// Creates a <see cref="TextFormatter"/> using the formatting mode used by the specified owner object.
@@ -50,10 +50,8 @@ static class TextFormatterFactory
 		ArgumentNullException.ThrowIfNull(text);
 		if (typeface == default)
 			typeface = element.CreateTypeface();
-		if (emSize == null)
-			emSize = TextElement.GetFontSize(element);
-		if (foreground == null)
-			foreground = TextElement.GetForeground(element);
+		emSize ??= TextElement.GetFontSize(element);
+		foreground ??= TextElement.GetForeground(element);
 		
 		return new FormattedText(
 			text,

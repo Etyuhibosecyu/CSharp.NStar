@@ -72,21 +72,15 @@ namespace AvaloniaEdit.Rendering;
 		this._weakLineTracker = null;
 	}
 
-	public bool IsDisposed {
-		get {
-			return _root == null;
-		}
-	}
-
-	private double _defaultLineHeight;
+	public bool IsDisposed => _root == null;
 
 	public double DefaultLineHeight {
-		get { return _defaultLineHeight; }
+		get;
 		set {
-			var oldValue = _defaultLineHeight;
+			var oldValue = field;
 			if (oldValue == value)
 				return;
-			_defaultLineHeight = value;
+			field = value;
 			// update the stored value in all nodes:
 			foreach (var node in AllNodes) {
 				if (node.LineNode.Height == oldValue) {
@@ -122,7 +116,7 @@ namespace AvaloniaEdit.Rendering;
 		var nodes = new HeightTreeNode[_document.LineCount];
 		var lineNumber = 0;
 		foreach (var ls in _document.Lines) {
-			nodes[lineNumber++] = new HeightTreeNode(ls, _defaultLineHeight);
+			nodes[lineNumber++] = new HeightTreeNode(ls, DefaultLineHeight);
 		}
 		Debug.Assert(nodes.Length > 0);
 		// now build the corresponding balanced tree
@@ -199,7 +193,7 @@ namespace AvaloniaEdit.Rendering;
 
 	private HeightTreeNode InsertAfter(HeightTreeNode node, DocumentLine newLine)
 	{
-		var newNode = new HeightTreeNode(newLine, _defaultLineHeight);
+		var newNode = new HeightTreeNode(newLine, DefaultLineHeight);
 		if (node.Right == null) {
 			if (node.LineNode.CollapsedSections != null) {
 				// we are inserting directly after node - so copy all collapsedSections
@@ -362,9 +356,7 @@ namespace AvaloniaEdit.Rendering;
 	private void BeginRemoval()
 	{
 		Debug.Assert(!_inRemoval);
-		if (_nodesToCheckForMerging == null) {
-			_nodesToCheckForMerging = new List<HeightTreeNode>();
-		}
+		_nodesToCheckForMerging ??= [];
 		_inRemoval = true;
 	}
 
@@ -394,10 +386,10 @@ namespace AvaloniaEdit.Rendering;
 				if (cs.Start == node.DocumentLine || cs.End == node.DocumentLine)
 					continue;
 				if (node.Left == null
-					|| (node.Left.CollapsedSections != null && node.Left.CollapsedSections.Contains(cs)))
+					|| node.Left.CollapsedSections != null && node.Left.CollapsedSections.Contains(cs))
 				{
 					if (node.Right == null
-						|| (node.Right.CollapsedSections != null && node.Right.CollapsedSections.Contains(cs)))
+						|| node.Right.CollapsedSections != null && node.Right.CollapsedSections.Contains(cs))
 					{
 						// all children of node contain cs: -> merge!
 						node.Left?.RemoveDirectlyCollapsed(cs);
@@ -537,17 +529,9 @@ namespace AvaloniaEdit.Rendering;
 	#endregion
 
 	#region LineCount & TotalHeight
-	public int LineCount {
-		get {
-			return _root.TotalCount;
-		}
-	}
+	public int LineCount => _root.TotalCount;
 
-	public double TotalHeight {
-		get {
-			return _root.TotalHeight;
-		}
-	}
+	public double TotalHeight => _root.TotalHeight;
 	#endregion
 
 	#region GetAllCollapsedSections
@@ -648,8 +632,8 @@ namespace AvaloniaEdit.Rendering;
 	/// </summary>
 	private static void CheckAllContainedIn(IEnumerable<CollapsedLineSection> list1, ICollection<CollapsedLineSection> list2)
 	{
-		if (list1 == null) list1 = new List<CollapsedLineSection>();
-		if (list2 == null) list2 = new List<CollapsedLineSection>();
+		list1 ??= new List<CollapsedLineSection>();
+		list2 ??= [];
 		foreach (var cs in list1) {
 			Debug.Assert(list2.Contains(cs));
 		}
@@ -685,7 +669,6 @@ namespace AvaloniaEdit.Rendering;
 		CheckNodeProperties(node.Right, node, node.Color, blackCount, ref expectedBlackCount);
 	}
 
-	[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
 	public string GetTreeAsString()
 	{
 		var b = new StringBuilder();

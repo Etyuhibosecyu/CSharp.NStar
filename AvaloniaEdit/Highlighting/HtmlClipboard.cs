@@ -83,8 +83,7 @@ namespace AvaloniaEdit.Highlighting;
 		ArgumentNullException.ThrowIfNull(options);
 		if (highlighter != null && highlighter.Document != document)
 				throw new ArgumentException("Highlighter does not belong to the specified document.");
-			if (segment == null)
-				segment = new SimpleSegment(0, document.TextLength);
+			segment ??= new SimpleSegment(0, document.TextLength);
 
 			var html = new StringBuilder();
 			var segmentEndOffset = segment.EndOffset;

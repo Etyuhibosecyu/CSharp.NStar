@@ -53,7 +53,7 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 			}
 		}
 
-	static Exception WrapException(Exception ex, int lineNumber, int linePosition) => new HighlightingDefinitionInvalidException(FormatExceptionMessage(ex.Message, lineNumber, linePosition), ex);
+	private static HighlightingDefinitionInvalidException WrapException(XmlException ex, int lineNumber, int linePosition) => new(FormatExceptionMessage(ex.Message, lineNumber, linePosition), ex);
 
 	internal static string FormatExceptionMessage(string message, int lineNumber, int linePosition)
 		{

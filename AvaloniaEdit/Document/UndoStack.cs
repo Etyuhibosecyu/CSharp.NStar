@@ -40,11 +40,9 @@ namespace AvaloniaEdit.Document;
 		/// during Undo events
 		internal int State { get; set; } = StateListen;
 
-		private readonly Deque<IUndoableOperation> _undostack = new Deque<IUndoableOperation>();
-		private readonly Deque<IUndoableOperation> _redostack = new Deque<IUndoableOperation>();
-		private int _sizeLimit = int.MaxValue;
-
-		private int _undoGroupDepth;
+		private readonly Deque<IUndoableOperation> _undostack = new();
+		private readonly Deque<IUndoableOperation> _redostack = new();
+	private int _undoGroupDepth;
 		private int _actionCountInUndoGroup;
 		private int _optionalActionCount;
 		private bool _allowContinue;
@@ -66,7 +64,7 @@ namespace AvaloniaEdit.Document;
 
 		private void RecalcIsOriginalFile()
 		{
-			var newIsOriginalFile = (_elementsOnUndoUntilOriginalFile == 0);
+			var newIsOriginalFile = _elementsOnUndoUntilOriginalFile == 0;
 			if (newIsOriginalFile != IsOriginalFile)
 			{
 				IsOriginalFile = newIsOriginalFile;
@@ -130,27 +128,27 @@ namespace AvaloniaEdit.Document;
 		/// Elements within undo groups do not count towards the size limit.</remarks>
 		public int SizeLimit
 		{
-			get => _sizeLimit;
+			get;
 			set
 			{
 				if (value < 0)
 					ThrowUtil.CheckNotNegative(value, "value");
-				if (_sizeLimit != value)
+				if (field != value)
 				{
-					_sizeLimit = value;
+					field = value;
 					NotifyPropertyChanged("SizeLimit");
 					if (_undoGroupDepth == 0)
 						EnforceSizeLimit();
 				}
 			}
-		}
+		} = int.MaxValue;
 
-		private void EnforceSizeLimit()
+	private void EnforceSizeLimit()
 		{
 			Debug.Assert(_undoGroupDepth == 0);
-			while (_undostack.Count > _sizeLimit)
+			while (_undostack.Count > SizeLimit)
 				_undostack.PopFront();
-			while (_redostack.Count > _sizeLimit)
+			while (_redostack.Count > SizeLimit)
 				_redostack.PopFront();
 		}
 
@@ -263,8 +261,7 @@ namespace AvaloniaEdit.Document;
 
 		internal void RegisterAffectedDocument(TextDocument document)
 		{
-			if (_affectedDocuments == null)
-				_affectedDocuments = new List<TextDocument>();
+			_affectedDocuments ??= [];
 			if (!_affectedDocuments.Contains(document))
 			{
 				_affectedDocuments.Add(document);
@@ -387,7 +384,7 @@ namespace AvaloniaEdit.Document;
 		{
 		ArgumentNullException.ThrowIfNull(operation);
 
-		if (State == StateListen && _sizeLimit > 0)
+		if (State == StateListen && SizeLimit > 0)
 			{
 				var wasEmpty = _undostack.Count == 0;
 

@@ -13,12 +13,9 @@ namespace AvaloniaEdit.Utils;
 	/// </summary>
 	internal static class BusyManager
 	{
-		[SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-		[SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible",
-			Justification = "Should always be used with 'var'")]
-		public struct BusyLock : IDisposable
+	public struct BusyLock : IDisposable
 		{
-			public static readonly BusyLock Failed = new BusyLock(null);
+			public static readonly BusyLock Failed = new(null);
 
 			private readonly List<object> _objectList;
 
@@ -33,7 +30,7 @@ namespace AvaloniaEdit.Utils;
 	
 		public static BusyLock Enter(object obj)
 		{
-			var activeObjects = _activeObjects ?? (_activeObjects = new List<object>());
+			var activeObjects = _activeObjects ??= [];
 			if (activeObjects.Any(t => t == obj))
 			{
 				return BusyLock.Failed;

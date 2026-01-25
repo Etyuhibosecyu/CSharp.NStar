@@ -26,33 +26,30 @@ namespace AvaloniaEdit.Rendering;
 	/// </summary>
 	public static class TextViewWeakEventManager
 	{
-		/// <summary>
-		/// Weak event manager for the <see cref="TextView.DocumentChanged"/> event.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
-		public sealed class DocumentChanged : WeakEventManagerBase<DocumentChanged, TextView, EventHandler, EventArgs>
+	/// <summary>
+	/// Weak event manager for the <see cref="TextView.DocumentChanged"/> event.
+	/// </summary>
+	public sealed class DocumentChanged : WeakEventManagerBase<DocumentChanged, TextView, EventHandler, EventArgs>
 		{
 			protected override void StartListening(TextView source) => source.DocumentChanged += DeliverEvent;
 
 			protected override void StopListening(TextView source) => source.DocumentChanged -= DeliverEvent;
 		}
 
-		/// <summary>
-		/// Weak event manager for the <see cref="TextView.VisualLinesChanged"/> event.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
-		public sealed class VisualLinesChanged : WeakEventManagerBase<VisualLinesChanged, TextView, EventHandler, EventArgs>
+	/// <summary>
+	/// Weak event manager for the <see cref="TextView.VisualLinesChanged"/> event.
+	/// </summary>
+	public sealed class VisualLinesChanged : WeakEventManagerBase<VisualLinesChanged, TextView, EventHandler, EventArgs>
 		{
 			protected override void StartListening(TextView source) => source.VisualLinesChanged += DeliverEvent;
 
 			protected override void StopListening(TextView source) => source.VisualLinesChanged -= DeliverEvent;
 		}
 
-		/// <summary>
-		/// Weak event manager for the <see cref="TextView.ScrollOffsetChanged"/> event.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
-		public sealed class ScrollOffsetChanged : WeakEventManagerBase<ScrollOffsetChanged, TextView, EventHandler, EventArgs>
+	/// <summary>
+	/// Weak event manager for the <see cref="TextView.ScrollOffsetChanged"/> event.
+	/// </summary>
+	public sealed class ScrollOffsetChanged : WeakEventManagerBase<ScrollOffsetChanged, TextView, EventHandler, EventArgs>
 		{
 			protected override void StartListening(TextView source) => source.ScrollOffsetChanged += DeliverEvent;
 

@@ -25,7 +25,7 @@ namespace AvaloniaEdit.Document;
 /// It describes a section of text with a text anchor at the end of the section.
 /// A weak reference is used to refer to the TextAnchor. (to save memory, we derive from WeakReference instead of referencing it)
 /// </summary>
-internal sealed class TextAnchorNode : WeakReference
+internal sealed class TextAnchorNode(TextAnchor anchor) : WeakReference(anchor)
 {
 	internal TextAnchorNode Left { get; set; }
 	internal TextAnchorNode Right { get; set; }
@@ -34,10 +34,6 @@ internal sealed class TextAnchorNode : WeakReference
 		internal int Length { get; set; }
 		internal int TotalLength { get; set; } // totalLength = length + left.totalLength + right.totalLength
 
-		public TextAnchorNode(TextAnchor anchor) : base(anchor)
-	{
-	}
-	
 	internal TextAnchorNode LeftMost {
 		get {
 			var node = this;

@@ -81,7 +81,7 @@ namespace AvaloniaEdit;
 
 		protected TextEditor(TextArea textArea, TextDocument document)
 		{
-			this.textArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
+		TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
 			textArea.TextView.Services.AddService(this);
 
@@ -229,8 +229,8 @@ namespace AvaloniaEdit;
 	/// </summary>
 	public string Watermark
 		{
-			get => textArea.Watermark;
-			set => textArea.Watermark = value;
+			get => TextArea.Watermark;
+			set => TextArea.Watermark = value;
 		}
 
 		/// <summary>
@@ -272,9 +272,7 @@ namespace AvaloniaEdit;
 	#endregion
 
 	#region TextArea / ScrollViewer properties
-	private readonly TextArea textArea;
-		private SearchPanel searchPanel;
-		private bool wasSearchPanelOpened;
+	private bool wasSearchPanelOpened;
 
 		protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
 		{
@@ -282,16 +280,16 @@ namespace AvaloniaEdit;
 			ScrollViewer = (ScrollViewer)e.NameScope.Find("PART_ScrollViewer");
 			ScrollViewer.Content = TextArea;
 
-			searchPanel = SearchPanel.Install(this);
+			SearchPanel = SearchPanel.Install(this);
 		}
 
 		protected override void OnAttachedToLogicalTree(LogicalTreeAttachmentEventArgs e)
 		{
 			base.OnAttachedToLogicalTree(e);
 
-			if (searchPanel != null && wasSearchPanelOpened)
+			if (SearchPanel != null && wasSearchPanelOpened)
 			{
-				searchPanel.Open();
+				SearchPanel.Open();
 			}
 		}
 
@@ -299,29 +297,29 @@ namespace AvaloniaEdit;
 		{
 			base.OnDetachedFromLogicalTree(e);
 
-			if (searchPanel != null)
+			if (SearchPanel != null)
 			{
-				wasSearchPanelOpened = searchPanel.IsOpened;
-				if (searchPanel.IsOpened)
-					searchPanel.Close();
+				wasSearchPanelOpened = SearchPanel.IsOpened;
+				if (SearchPanel.IsOpened)
+					SearchPanel.Close();
 			}
 		}
 
-		/// <summary>
-		/// Gets the text area.
-		/// </summary>
-		public TextArea TextArea => textArea;
+	/// <summary>
+	/// Gets the text area.
+	/// </summary>
+	public TextArea TextArea { get; }
 
-		/// <summary>
-		/// Gets the search panel.
-		/// </summary>
-		public SearchPanel SearchPanel => searchPanel;
+	/// <summary>
+	/// Gets the search panel.
+	/// </summary>
+	public SearchPanel SearchPanel { get; private set; }
 
-		/// <summary>
-		/// Gets the scroll viewer used by the text editor.
-		/// This property can return null if the template has not been applied / does not contain a scroll viewer.
-		/// </summary>
-		internal ScrollViewer ScrollViewer { get; private set; }
+	/// <summary>
+	/// Gets the scroll viewer used by the text editor.
+	/// This property can return null if the template has not been applied / does not contain a scroll viewer.
+	/// </summary>
+	internal ScrollViewer ScrollViewer { get; private set; }
 
 		#endregion
 
@@ -331,7 +329,6 @@ namespace AvaloniaEdit;
 		/// </summary>
 		public static readonly StyledProperty<IHighlightingDefinition> SyntaxHighlightingProperty =
 			AvaloniaProperty.Register<TextEditor, IHighlightingDefinition>("SyntaxHighlighting");
-
 
 		/// <summary>
 		/// Gets/sets the syntax highlighting definition used to colorize the text.
@@ -350,7 +347,7 @@ namespace AvaloniaEdit;
 		{
 			if (_colorizer != null)
 			{
-				textArea.TextView.LineTransformers.Remove(_colorizer);
+				TextArea.TextView.LineTransformers.Remove(_colorizer);
 				_colorizer = null;
 			}
 
@@ -359,7 +356,7 @@ namespace AvaloniaEdit;
 				_colorizer = CreateColorizer(newValue);
 				if (_colorizer != null)
 				{
-					textArea.TextView.LineTransformers.Insert(0, _colorizer);
+					TextArea.TextView.LineTransformers.Insert(0, _colorizer);
 				}
 			}
 		}
@@ -818,74 +815,50 @@ namespace AvaloniaEdit;
 			return false;
 		}
 
-		/// <summary>
-		/// Gets if the most recent undone command can be redone.
-		/// </summary>
-		public bool CanRedo
-		{
-		   get { return ApplicationCommands.Redo.CanExecute(null, TextArea); }
-		}
+	/// <summary>
+	/// Gets if the most recent undone command can be redone.
+	/// </summary>
+	public bool CanRedo => ApplicationCommands.Redo.CanExecute(null, TextArea);
 
-		/// <summary>
-		/// Gets if the most recent command can be undone.
-		/// </summary>
-		public bool CanUndo
-		{
-			get { return ApplicationCommands.Undo.CanExecute(null, TextArea); }
-		}
+	/// <summary>
+	/// Gets if the most recent command can be undone.
+	/// </summary>
+	public bool CanUndo => ApplicationCommands.Undo.CanExecute(null, TextArea);
 
-		/// <summary>
-		/// Gets if text in editor can be copied
-		/// </summary>
-		public bool CanCopy
-		{
-			get { return ApplicationCommands.Copy.CanExecute(null, TextArea); }
-		}
+	/// <summary>
+	/// Gets if text in editor can be copied
+	/// </summary>
+	public bool CanCopy => ApplicationCommands.Copy.CanExecute(null, TextArea);
 
-		/// <summary>
-		/// Gets if text in editor can be cut
-		/// </summary>
-		public bool CanCut
-		{
-			get { return ApplicationCommands.Cut.CanExecute(null, TextArea); }
-		}
+	/// <summary>
+	/// Gets if text in editor can be cut
+	/// </summary>
+	public bool CanCut => ApplicationCommands.Cut.CanExecute(null, TextArea);
 
-		/// <summary>
-		/// Gets if text in editor can be pasted
-		/// </summary>
-		public bool CanPaste
-		{
-			get { return ApplicationCommands.Paste.CanExecute(null, TextArea); }
-		}
+	/// <summary>
+	/// Gets if text in editor can be pasted
+	/// </summary>
+	public bool CanPaste => ApplicationCommands.Paste.CanExecute(null, TextArea);
 
-		/// <summary>
-		/// Gets if selected text in editor can be deleted
-		/// </summary>
-		public bool CanDelete
-		{
-			get { return ApplicationCommands.Delete.CanExecute(null, TextArea); }
-		}
+	/// <summary>
+	/// Gets if selected text in editor can be deleted
+	/// </summary>
+	public bool CanDelete => ApplicationCommands.Delete.CanExecute(null, TextArea);
 
-		/// <summary>
-		/// Gets if text the editor can select all
-		/// </summary>
-		public bool CanSelectAll
-		{
-			get { return ApplicationCommands.SelectAll.CanExecute(null, TextArea); }
-		}
+	/// <summary>
+	/// Gets if text the editor can select all
+	/// </summary>
+	public bool CanSelectAll => ApplicationCommands.SelectAll.CanExecute(null, TextArea);
 
-		/// <summary>
-		/// Gets if text editor can activate the search panel
-		/// </summary>
-		public bool CanSearch
-		{
-			get { return searchPanel != null; }
-		}
+	/// <summary>
+	/// Gets if text editor can activate the search panel
+	/// </summary>
+	public bool CanSearch => SearchPanel != null;
 
-		/// <summary>
-		/// Gets the vertical size of the document.
-		/// </summary>
-		public double ExtentHeight => ScrollViewer?.Extent.Height ?? 0;
+	/// <summary>
+	/// Gets the vertical size of the document.
+	/// </summary>
+	public double ExtentHeight => ScrollViewer?.Extent.Height ?? 0;
 
 		/// <summary>
 		/// Gets the horizontal size of the current document region.
@@ -924,8 +897,8 @@ namespace AvaloniaEdit;
 			{
 				// We'll get the text from the whole surrounding segment.
 				// This is done to ensure that SelectedText.Length == SelectionLength.
-				if (textArea.Document != null && !textArea.Selection.IsEmpty)
-					return textArea.Document.GetText(textArea.Selection.SurroundingSegment);
+				if (TextArea.Document != null && !TextArea.Selection.IsEmpty)
+					return TextArea.Document.GetText(TextArea.Selection.SurroundingSegment);
 				return string.Empty;
 			}
 			set
@@ -950,11 +923,11 @@ namespace AvaloniaEdit;
 		{
 			get
 			{
-				return textArea.Caret.Offset;
+				return TextArea.Caret.Offset;
 			}
 			set
 			{
-				textArea.Caret.Offset = value;
+				TextArea.Caret.Offset = value;
 			}
 		}
 
@@ -965,10 +938,10 @@ namespace AvaloniaEdit;
 		{
 			get
 			{
-				if (textArea.Selection.IsEmpty)
-					return textArea.Caret.Offset;
+				if (TextArea.Selection.IsEmpty)
+					return TextArea.Caret.Offset;
 				else
-					return textArea.Selection.SurroundingSegment.Offset;
+					return TextArea.Selection.SurroundingSegment.Offset;
 			}
 			set => Select(value, SelectionLength);
 		}
@@ -980,8 +953,8 @@ namespace AvaloniaEdit;
 		{
 			get
 			{
-				if (!textArea.Selection.IsEmpty)
-					return textArea.Selection.SurroundingSegment.Length;
+				if (!TextArea.Selection.IsEmpty)
+					return TextArea.Selection.SurroundingSegment.Length;
 				else
 					return 0;
 			}
@@ -1117,7 +1090,6 @@ namespace AvaloniaEdit;
 		public static readonly RoutedEvent<PointerEventArgs> PointerHoverEvent =
 			TextView.PointerHoverEvent;
 
-
 		/// <summary>
 		/// The PreviewPointerHoverStopped event.
 		/// </summary>
@@ -1129,7 +1101,6 @@ namespace AvaloniaEdit;
 		/// </summary>
 		public static readonly RoutedEvent<PointerEventArgs> PointerHoverStoppedEvent =
 			TextView.PointerHoverStoppedEvent;
-
 
 		/// <summary>
 		/// Occurs when the pointer has hovered over a fixed location for some time.
@@ -1247,7 +1218,7 @@ namespace AvaloniaEdit;
 		public void ScrollTo(int line, int column, VisualYPosition yPositionMode,
 			double referencedVerticalViewPortOffset, double minimumScrollFraction)
 		{
-			var textView = textArea.TextView;
+			var textView = TextArea.TextView;
 			var document = textView.Document;
 			if (ScrollViewer != null && document != null)
 			{
@@ -1275,7 +1246,7 @@ namespace AvaloniaEdit;
 					}
 				}
 
-				var p = textArea.TextView.GetVisualPosition(
+				var p = TextArea.TextView.GetVisualPosition(
 					new TextViewPosition(line, Math.Max(1, column)),
 					yPositionMode);
 

@@ -1,20 +1,13 @@
 ﻿global using NStar.Core;
-global using NStar.Linq;
 global using NStar.MathLib;
-global using NStar.MathLib.Extras;
 global using System;
-global using System.Diagnostics.CodeAnalysis;
-global using System.Reflection;
-global using static CSharp.NStar.BuiltInMemberCollections;
 global using static CSharp.NStar.NStarType;
 global using static CSharp.NStar.NStarUtilityFunctions;
-global using static CSharp.NStar.TypeChecks;
 global using static CSharp.NStar.TypeConverters;
-global using static NStar.Core.Extents;
 global using static System.Math;
-global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 using Avalonia.Controls;
+using System.IO;
 
 namespace CSharp.NStar;
 
@@ -47,24 +40,31 @@ public static class MemberConverters
 			"Min3" => [],
 			"Random" => nameof(RandomNumber),
 			nameof(RandomNumber) => [],
+			nameof(File.ReadAllBytes) => nameof(File.ReadAllBytesAsync),
+			nameof(File.ReadAllLines) => nameof(File.ReadAllLinesAsync),
+			nameof(File.ReadAllText) => nameof(File.ReadAllTextAsync),
+			nameof(File.ReadLines) => nameof(File.ReadLinesAsync),
 			nameof(Round) => "(int)" + nameof(Round),
 			nameof(ToString) => [],
 			"ToUnsafeString" => nameof(ToString),
 			nameof(Truncate) => "(int)" + nameof(Truncate),
+			nameof(File.WriteAllBytes) => nameof(File.WriteAllBytesAsync),
+			nameof(File.WriteAllLines) => nameof(File.WriteAllLinesAsync),
+			nameof(File.WriteAllText) => nameof(File.WriteAllTextAsync),
 			_ => function.Copy(),
 		};
 		if (parameters == null)
 			return result;
 		result.Add('(');
-		if (function.ToString() is nameof(parameters.RemoveAt)
+		if (function.AsSpan() is nameof(parameters.RemoveAt)
 			or nameof(parameters.RemoveEnd) or nameof(parameters.Reverse) && parameters.Length >= 1
-			|| function.ToString() is nameof(parameters.GetRange) or nameof(parameters.Remove) && parameters.Length == 2)
+			|| function.AsSpan() is nameof(parameters.GetRange) or nameof(parameters.Remove) && parameters.Length == 2)
 			parameters[0].Insert(0, '(').AddRange(") - 1");
-		if (function.ToString() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf)
+		if (function.AsSpan() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf)
 			or nameof(Grid.SetColumn) or nameof(Grid.SetRow) && parameters.Length >= 2)
 			parameters[1].Insert(0, '(').AddRange(") - 1");
 		result.AddRange(String.Join(", ", parameters)).Add(')');
-		if (function.ToString() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf))
+		if (function.AsSpan() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf))
 			result.Insert(0, '(').AddRange(") + 1");
 		return result;
 	}

@@ -44,9 +44,9 @@ public class CodeSample(String newString)
 	private List<Lexem> lexemsBuffer = [];
 	private bool success;
 	private readonly String input = newString.Length == 0 ? "return null;" : newString;
-	private int pos = 0, lineStart = 0;
+	private int pos, lineStart;
 	private int lineN = 1;
-	private bool wreckOccurred = false;
+	private bool wreckOccurred;
 	private readonly List<String> errors = [];
 	private readonly List<LexemTree> lexemTree = [DoubleEqualLexemTree('^'), DoubleEqualLexemTree('|'),
 		DoubleEqualLexemTree('&'), TripleEqualLexemTree('>'), DoubleEqualLexemTree('<'), DoubleEqualLexemTree('!'),
@@ -88,7 +88,7 @@ public class CodeSample(String newString)
 		return (lexems, input, errors, wreckOccurred);
 	}
 
-	(bool flowControl, bool @return,
+	private (bool flowControl, bool @return,
 		(List<Lexem> Lexems, String String, List<String> ErrorsList, bool WreckOccurred) value) DisassembleIteration()
 	{
 		if (wreckOccurred)
@@ -154,10 +154,10 @@ public class CodeSample(String newString)
 			{
 				if (Keywords.Contains(s))
 					AddLexem(s, LexemType.Keyword, s.Length);
-				else if (s.ToString() is "and" or "or" or "xor" or "is" or "typeof" or "sin" or "cos" or "tan"
+				else if (s.AsSpan() is "and" or "or" or "xor" or "is" or "typeof" or "sin" or "cos" or "tan"
 					or "asin" or "acos" or "atan" or "ln" or "Infty" or "Uncty" or "CombineWith" or "CloseOnReturnWith")
 					AddOperatorLexem(s);
-				else if (s.ToString() is "pow" or "tetra" or "penta" or "hexa")
+				else if (s.AsSpan() is "pow" or "tetra" or "penta" or "hexa")
 				{
 					ValidateEquality(ref s);
 					AddOperatorLexem(s);

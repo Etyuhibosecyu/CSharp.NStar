@@ -27,8 +27,8 @@ namespace AvaloniaEdit.Document;
 	/// <summary>
 	/// A tree of TextAnchorNodes.
 	/// </summary>
-	internal sealed class TextAnchorTree
-	{
+	internal sealed class TextAnchorTree(TextDocument document)
+{
 		// The text anchor tree has difficult requirements:
 		// - it must QUICKLY update the offset in all anchors whenever there is a document change
 		// - it must not reference text anchors directly, using weak references instead
@@ -59,11 +59,9 @@ namespace AvaloniaEdit.Document;
 		// This allows computing the Offset from an anchor by walking up the list of parent nodes instead of going
 		// through all predecessor nodes. So computing the Offset runs in O(log N).
 
-		private readonly TextDocument _document;
-		private readonly List<TextAnchorNode> _nodesToDelete = new List<TextAnchorNode>();
+		private readonly TextDocument _document = document;
+		private readonly List<TextAnchorNode> _nodesToDelete = [];
 		private TextAnchorNode _root;
-
-	public TextAnchorTree(TextDocument document) => _document = document;
 
 	[Conditional("DEBUG")]
 	private static void Log(string text) => Debug.WriteLine("TextAnchorTree: " + text);
@@ -118,7 +116,7 @@ namespace AvaloniaEdit.Document;
 
 			// now we need to sort the nodes in the range [beginNode, endNode); putting those with
 			// MovementType.BeforeInsertion in front of those with MovementType.AfterInsertion
-			List<TextAnchorNode> beforeInsert = new List<TextAnchorNode>();
+			List<TextAnchorNode> beforeInsert = [];
 			//List<TextAnchorNode> afterInsert = new List<TextAnchorNode>();
 			var temp = beginNode;
 			while (temp != endNode)
@@ -233,8 +231,7 @@ namespace AvaloniaEdit.Document;
 				TextAnchor anchor = (TextAnchor)node.Target;
 				if (anchor != null && (anchor.SurviveDeletion || entry.RemovalNeverCausesAnchorDeletion))
 				{
-					if (firstDeletionSurvivor == null)
-						firstDeletionSurvivor = node;
+					firstDeletionSurvivor ??= node;
 					// This node should be deleted, but it wants to survive.
 					// We'll just remove the deleted length segment, so the node will be positioned
 					// in front of the removed segment.
@@ -763,15 +760,14 @@ namespace AvaloniaEdit.Document;
 			Debug.Assert(node.TotalLength == totalLength);
 		}
 
-		/*
-	1. A node is either red or black.
-	2. The root is black.
-	3. All leaves are black. (The leaves are the NIL children.)
-	4. Both children of every red node are black. (So every red node must have a black parent.)
-	5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
-	 */
-		[SuppressMessage("ReSharper", "UnusedParameter.Local")]
-		private void CheckNodeProperties(TextAnchorNode node, TextAnchorNode parentNode, bool parentColor, int blackCount, ref int expectedBlackCount)
+	/*
+1. A node is either red or black.
+2. The root is black.
+3. All leaves are black. (The leaves are the NIL children.)
+4. Both children of every red node are black. (So every red node must have a black parent.)
+5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
+ */
+	private void CheckNodeProperties(TextAnchorNode node, TextAnchorNode parentNode, bool parentColor, int blackCount, ref int expectedBlackCount)
 		{
 			if (node == null) return;
 
@@ -797,12 +793,11 @@ namespace AvaloniaEdit.Document;
 			CheckNodeProperties(node.Right, node, node.Color, blackCount, ref expectedBlackCount);
 		}
 #endif
-		#endregion
+	#endregion
 
-		#region GetTreeAsString
+	#region GetTreeAsString
 #if DEBUG
-		[SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-		public string GetTreeAsString()
+	public string GetTreeAsString()
 		{
 			if (_root == null)
 				return "<empty tree>";

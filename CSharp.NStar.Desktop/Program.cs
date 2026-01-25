@@ -9,7 +9,7 @@ using String = NStar.Core.String;
 
 namespace CSharp.NStar.Desktop;
 
-class Program
+internal static class Program
 {
 #pragma warning disable IDE0079 // Удалить ненужное подавление
 #pragma warning disable SYSLIB1054 // Используйте \"LibraryImportAttribute\" вместо \"DllImportAttribute\" для генерирования кода маршализации P/Invoke во время компиляции

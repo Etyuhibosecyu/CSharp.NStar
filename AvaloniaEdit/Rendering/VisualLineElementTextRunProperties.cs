@@ -79,7 +79,7 @@ public class VisualLineElementTextRunProperties : TextRunProperties, ICloneable
 	/// <summary>
 	/// Creates a copy of this instance.
 	/// </summary>
-	public virtual VisualLineElementTextRunProperties Clone() => new VisualLineElementTextRunProperties(this);
+	public virtual VisualLineElementTextRunProperties Clone() => new(this);
 
 	object ICloneable.Clone() => Clone();
 

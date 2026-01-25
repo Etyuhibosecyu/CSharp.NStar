@@ -29,7 +29,7 @@ namespace AvaloniaEdit.Document;
 	/// </summary>
 	public struct SimpleSegment : IEquatable<SimpleSegment>, ISegment
 	{
-		public static readonly SimpleSegment Invalid = new SimpleSegment(-1, -1);
+		public static readonly SimpleSegment Invalid = new(-1, -1);
 
 		/// <summary>
 		/// Gets the overlapping portion of the segments.
@@ -71,7 +71,7 @@ namespace AvaloniaEdit.Document;
 			}
 		}
 
-	public override bool Equals(object obj) => (obj is SimpleSegment) && Equals((SimpleSegment)obj);
+	public override bool Equals(object obj) => obj is SimpleSegment && Equals((SimpleSegment)obj);
 
 	public bool Equals(SimpleSegment other) => Offset == other.Offset && Length == other.Length;
 

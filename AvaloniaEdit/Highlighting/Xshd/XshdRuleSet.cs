@@ -36,7 +36,7 @@ public class XshdRuleSet : XshdElement
 	/// </summary>
 	public bool? IgnoreCase { get; set; }
 
-	private readonly NullSafeCollection<XshdElement> _elements = new NullSafeCollection<XshdElement>();
+	private readonly NullSafeCollection<XshdElement> _elements = [];
 	
 	/// <summary>
 	/// Gets the collection of elements.

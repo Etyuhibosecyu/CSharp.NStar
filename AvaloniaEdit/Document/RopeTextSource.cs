@@ -50,7 +50,6 @@ public sealed class RopeTextSource : ITextSource
 	/// <remarks>
 	/// RopeTextSource only publishes a copy of the contained rope to ensure that the underlying rope cannot be modified.
 	/// </remarks>
-	[SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Not a property because it creates a clone")]
 	public Rope<char> GetRope() => _rope.Clone();
 
 	/// <inheritdoc/>

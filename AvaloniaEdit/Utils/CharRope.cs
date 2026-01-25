@@ -116,8 +116,8 @@ public static class CharRope
 		FillNode(node, text, 0);
 		return node;
 	}
-	
-	static void FillNode(RopeNode<char> node, string text, int start)
+
+	private static void FillNode(RopeNode<char> node, string text, int start)
 	{
 		if (node.Contents != null) {
 			text.CopyTo(start, node.Contents, 0, node.Length);

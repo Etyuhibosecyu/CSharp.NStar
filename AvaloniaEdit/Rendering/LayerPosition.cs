@@ -72,7 +72,7 @@ public enum LayerInsertionPosition
 	Above
 }
 
-sealed class LayerPosition : IComparable<LayerPosition>
+internal sealed class LayerPosition(KnownLayer knownLayer, LayerInsertionPosition position) : IComparable<LayerPosition>
 {
 	internal static readonly AttachedProperty<LayerPosition> LayerPositionProperty =
 		AvaloniaProperty.RegisterAttached<LayerPosition, Control, LayerPosition>("LayerPosition");
@@ -81,16 +81,9 @@ sealed class LayerPosition : IComparable<LayerPosition>
 
 	public static LayerPosition GetLayerPosition(Control layer) => layer.GetValue(LayerPositionProperty);
 
-	internal readonly KnownLayer KnownLayer;
-	internal readonly LayerInsertionPosition Position;
-	
-	public LayerPosition(KnownLayer knownLayer, LayerInsertionPosition position)
-	{
-		KnownLayer = knownLayer;
-		Position = position;
-	}
-	
-	[SuppressMessage("ReSharper", "ImpureMethodCallOnReadonlyValueField")]
+	internal readonly KnownLayer KnownLayer = knownLayer;
+	internal readonly LayerInsertionPosition Position = position;
+
 	public int CompareTo(LayerPosition other)
 	{
 		var r = KnownLayer.CompareTo(other.KnownLayer);

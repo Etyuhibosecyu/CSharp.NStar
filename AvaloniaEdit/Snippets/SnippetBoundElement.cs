@@ -70,23 +70,15 @@ namespace AvaloniaEdit.Snippets;
 		//}
 	}
 
-	internal sealed class BoundActiveElement : IActiveElement
+	internal sealed class BoundActiveElement(InsertionContext context, SnippetReplaceableTextElement targetSnippetElement, SnippetBoundElement boundElement, AnchorSegment segment) : IActiveElement
 	{
-		private readonly InsertionContext _context;
-		private readonly SnippetReplaceableTextElement _targetSnippetElement;
-		private readonly SnippetBoundElement _boundElement;
+		private readonly InsertionContext _context = context;
+		private readonly SnippetReplaceableTextElement _targetSnippetElement = targetSnippetElement;
+		private readonly SnippetBoundElement _boundElement = boundElement;
 		internal IReplaceableActiveElement TargetElement;
-		private AnchorSegment _segment;
+		private AnchorSegment _segment = segment;
 
-		public BoundActiveElement(InsertionContext context, SnippetReplaceableTextElement targetSnippetElement, SnippetBoundElement boundElement, AnchorSegment segment)
-		{
-			_context = context;
-			_targetSnippetElement = targetSnippetElement;
-			_boundElement = boundElement;
-			_segment = segment;
-		}
-
-		public void OnInsertionCompleted()
+	public void OnInsertionCompleted()
 		{
 			TargetElement = _context.GetActiveElement(_targetSnippetElement) as IReplaceableActiveElement;
 			if (TargetElement != null)

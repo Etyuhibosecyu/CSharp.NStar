@@ -27,46 +27,38 @@ using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Highlighting;
 
+/// <summary>
+/// Represents a highlighted document line.
+/// </summary>
+/// <remarks>
+/// Creates a new HighlightedLine instance.
+/// </remarks>
+public class HighlightedLine(IDocument document, IDocumentLine documentLine)
+{
+
 	/// <summary>
-	/// Represents a highlighted document line.
+	/// Gets the document associated with this HighlightedLine.
 	/// </summary>
-	public class HighlightedLine
-	{
-		/// <summary>
-		/// Creates a new HighlightedLine instance.
-		/// </summary>
-		public HighlightedLine(IDocument document, IDocumentLine documentLine)
-		{
-			//if (!document.Lines.Contains(documentLine))
-			//	throw new ArgumentException("Line is null or not part of document");
-			Document = document ?? throw new ArgumentNullException(nameof(document));
-			DocumentLine = documentLine;
-			Sections = new NullSafeCollection<HighlightedSection>();
-		}
+	public IDocument Document { get; } = document ?? throw new ArgumentNullException(nameof(document));
 
-		/// <summary>
-		/// Gets the document associated with this HighlightedLine.
-		/// </summary>
-		public IDocument Document { get; }
+	/// <summary>
+	/// Gets the document line associated with this HighlightedLine.
+	/// </summary>
+	public IDocumentLine DocumentLine { get; } = documentLine;
 
-		/// <summary>
-		/// Gets the document line associated with this HighlightedLine.
-		/// </summary>
-		public IDocumentLine DocumentLine { get; }
+	/// <summary>
+	/// Gets the highlighted sections.
+	/// The sections are not overlapping, but they may be nested.
+	/// In that case, outer sections come in the list before inner sections.
+	/// The sections are sorted by start offset.
+	/// </summary>
+	public IList<HighlightedSection> Sections { get; } = new NullSafeCollection<HighlightedSection>();
 
-		/// <summary>
-		/// Gets the highlighted sections.
-		/// The sections are not overlapping, but they may be nested.
-		/// In that case, outer sections come in the list before inner sections.
-		/// The sections are sorted by start offset.
-		/// </summary>
-		public IList<HighlightedSection> Sections { get; }
-
-		/// <summary>
-		/// Validates that the sections are sorted correctly, and that they are not overlapping.
-		/// </summary>
-		/// <seealso cref="Sections"/>
-		public void ValidateInvariants()
+	/// <summary>
+	/// Validates that the sections are sorted correctly, and that they are not overlapping.
+	/// </summary>
+	/// <seealso cref="Sections"/>
+	public void ValidateInvariants()
 		{
 			var line = this;
 			var lineStartOffset = line.DocumentLine.Offset;
@@ -200,23 +192,14 @@ namespace AvaloniaEdit.Highlighting;
 
 		#region WriteTo / ToHtml
 
-		private sealed class HtmlElement : IComparable<HtmlElement>
+		private sealed class HtmlElement(int offset, int nesting, bool isEnd, HighlightingColor color) : IComparable<HtmlElement>
 		{
-			internal readonly int Offset;
-			internal readonly int Nesting;
-			internal readonly bool IsEnd;
-			internal readonly HighlightingColor Color;
+			internal readonly int Offset = offset;
+			internal readonly int Nesting = nesting;
+			internal readonly bool IsEnd = isEnd;
+			internal readonly HighlightingColor Color = color;
 
-			public HtmlElement(int offset, int nesting, bool isEnd, HighlightingColor color)
-			{
-				Offset = offset;
-				Nesting = nesting;
-				IsEnd = isEnd;
-				Color = color;
-			}
-
-			[SuppressMessage("ReSharper", "ImpureMethodCallOnReadonlyValueField")]
-			public int CompareTo(HtmlElement other)
+		public int CompareTo(HtmlElement other)
 			{
 				var r = Offset.CompareTo(other.Offset);
 				if (r != 0)
@@ -254,7 +237,7 @@ namespace AvaloniaEdit.Highlighting;
 				throw new ArgumentOutOfRangeException("endOffset", endOffset, "Value must be between startOffset and " + documentLineEndOffset);
 			ISegment requestedSegment = new SimpleSegment(startOffset, endOffset - startOffset);
 
-			List<HtmlElement> elements = new List<HtmlElement>();
+			List<HtmlElement> elements = [];
 			for (var i = 0; i < this.Sections.Count; i++) {
 				var s = this.Sections[i];
 				if (SimpleSegment.GetOverlap(s, requestedSegment).Length > 0) {
@@ -325,5 +308,5 @@ namespace AvaloniaEdit.Highlighting;
 	/// <summary>
 	/// Creates a <see cref="RichText"/> that stores the text and highlighting of this line.
 	/// </summary>
-	public RichText ToRichText() => new RichText(Document.GetText(DocumentLine), ToRichTextModel());
+	public RichText ToRichText() => new(Document.GetText(DocumentLine), ToRichTextModel());
 }

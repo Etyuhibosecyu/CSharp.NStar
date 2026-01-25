@@ -20,20 +20,18 @@ using AvaloniaEdit.Document;
 
 namespace AvaloniaEdit.Snippets;
 
-	/// <summary>
-	/// Creates a named anchor that can be accessed by other SnippetElements.
-	/// </summary>
-	public sealed class SnippetAnchorElement : SnippetElement
+/// <summary>
+/// Creates a named anchor that can be accessed by other SnippetElements.
+/// </summary>
+/// <remarks>
+/// Creates a SnippetAnchorElement with the supplied name.
+/// </remarks>
+public sealed class SnippetAnchorElement(string name) : SnippetElement
 	{
-		/// <summary>
-		/// Gets or sets the name of the anchor.
-		/// </summary>
-		public string Name { get; }
-
 	/// <summary>
-	/// Creates a SnippetAnchorElement with the supplied name.
+	/// Gets or sets the name of the anchor.
 	/// </summary>
-	public SnippetAnchorElement(string name) => Name = name;
+	public string Name { get; } = name;
 
 	/// <inheritdoc />
 	public override void Insert(InsertionContext context)
@@ -46,34 +44,27 @@ namespace AvaloniaEdit.Snippets;
 		}
 	}
 
-	/// <summary>
-	/// AnchorElement created by SnippetAnchorElement.
-	/// </summary>
-	public sealed class AnchorElement : IActiveElement
+/// <summary>
+/// AnchorElement created by SnippetAnchorElement.
+/// </summary>
+/// <remarks>
+/// Creates a new AnchorElement.
+/// </remarks>
+public sealed class AnchorElement(AnchorSegment segment, string name, InsertionContext context) : IActiveElement
 	{
 		/// <inheritdoc />
 		public bool IsEditable => false;
 
-		private AnchorSegment _segment;
-		private readonly InsertionContext _context;
+		private AnchorSegment _segment = segment;
+		private readonly InsertionContext _context = context;
 
 		/// <inheritdoc />
 		public ISegment Segment => _segment;
 
-		/// <summary>
-		/// Creates a new AnchorElement.
-		/// </summary>
-		public AnchorElement(AnchorSegment segment, string name, InsertionContext context)
-		{
-			_segment = segment;
-			_context = context;
-			Name = name;
-		}
-
-		/// <summary>
-		/// Gets or sets the text at the anchor.
-		/// </summary>
-		public string Text
+	/// <summary>
+	/// Gets or sets the text at the anchor.
+	/// </summary>
+	public string Text
 		{
 			get => _context.Document.GetText(_segment);
 			set
@@ -89,13 +80,13 @@ namespace AvaloniaEdit.Snippets;
 			}
 		}
 
-		/// <summary>
-		/// Gets or sets the name of the anchor.
-		/// </summary>
-		public string Name { get; }
+	/// <summary>
+	/// Gets or sets the name of the anchor.
+	/// </summary>
+	public string Name { get; } = name;
 
-		/// <inheritdoc />
-		public void OnInsertionCompleted()
+	/// <inheritdoc />
+	public void OnInsertionCompleted()
 		{
 		}
 

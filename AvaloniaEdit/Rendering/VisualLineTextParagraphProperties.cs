@@ -16,13 +16,12 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
 
 namespace AvaloniaEdit.Rendering;
 
-sealed class VisualLineTextParagraphProperties : TextParagraphProperties
+internal sealed class VisualLineTextParagraphProperties : TextParagraphProperties
 {
 	internal TextRunProperties defaultTextRunProperties;
 	internal TextWrapping textWrapping;

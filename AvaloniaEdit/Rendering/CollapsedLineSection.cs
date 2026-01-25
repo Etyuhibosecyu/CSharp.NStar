@@ -43,7 +43,7 @@ public sealed class CollapsedLineSection
 		End = end;
 #if DEBUG
 		unchecked {
-			Id = " #" + (_nextId++);
+			Id = " #" + _nextId++;
 		}
 #endif
 	}

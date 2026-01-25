@@ -26,7 +26,7 @@ namespace AvaloniaEdit.Snippets;
 	/// </summary>
 	public class SnippetContainerElement : SnippetElement
 	{
-		private readonly NullSafeCollection<SnippetElement> _elements = new NullSafeCollection<SnippetElement>();
+		private readonly NullSafeCollection<SnippetElement> _elements = [];
 
 		/// <summary>
 		/// Gets the list of child elements.

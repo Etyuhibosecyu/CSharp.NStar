@@ -67,15 +67,14 @@ public sealed class TextDocumentAccessor : IDocumentAccessor
 		_maxLine = maxLine;
 	}
 
-	private int _num;
 	private string _text;
 	private DocumentLine _line;
 	
 	/// <inheritdoc/>
-	public bool IsReadOnly => _num < _minLine;
+	public bool IsReadOnly => LineNumber < _minLine;
 
 	/// <inheritdoc/>
-	public int LineNumber => _num;
+	public int LineNumber { get; private set; }
 
 	private bool _lineDirty;
 	
@@ -83,7 +82,7 @@ public sealed class TextDocumentAccessor : IDocumentAccessor
 	public string Text {
 		get => _text;
 		set {
-			if (_num < _minLine) return;
+			if (LineNumber < _minLine) return;
 			_text = value;
 			_lineDirty = true;
 		}
@@ -96,9 +95,9 @@ public sealed class TextDocumentAccessor : IDocumentAccessor
 			_doc.Replace(_line, _text);
 			_lineDirty = false;
 		}
-		++_num;
-		if (_num > _maxLine) return false;
-		_line = _doc.GetLineByNumber(_num);
+		++LineNumber;
+		if (LineNumber > _maxLine) return false;
+		_line = _doc.GetLineByNumber(LineNumber);
 		_text = _doc.GetText(_line);
 		return true;
 	}

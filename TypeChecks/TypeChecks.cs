@@ -145,7 +145,7 @@ public static class TypeChecks
 	{
 		if (PrimitiveTypes.TryGetValue(containerType.Type, out netType))
 			return true;
-		if (ExtraTypes.TryGetValue((containerType.Container.ToShortString(), containerType.Type), out netType))
+		if (ExtraTypes.TryGetValue((containerType.Container.ToString(), containerType.Type), out netType))
 			return true;
 		Type? preservedNetType = null;
 		if (containerType.Container.Length != 0)

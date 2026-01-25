@@ -24,7 +24,6 @@ namespace AvaloniaEdit.Utils;
 /// <summary>
 /// Double-ended queue.
 /// </summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
 internal sealed class Deque<T> : ICollection<T>
 {
 	private T[] _arr = Empty<T>.Array;
@@ -56,11 +55,10 @@ internal sealed class Deque<T> : ICollection<T>
 			_arr[(_head + index) % _arr.Length] = value;
 		}
 	}
-	
+
 	/// <summary>
 	/// Adds an element to the end of the deque.
 	/// </summary>
-	[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "PushBack")]
 	public void PushBack(T item)
 	{
 		if (Count == _arr.Length)

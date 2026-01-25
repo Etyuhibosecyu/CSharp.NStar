@@ -41,7 +41,7 @@ namespace AvaloniaEdit.Document;
 	{
 		#region Thread ownership
 
-		private readonly object _lockObject = new object();
+		private readonly object _lockObject = new();
 		#endregion
 
 		#region Fields + Constructor
@@ -50,7 +50,7 @@ namespace AvaloniaEdit.Document;
 		private readonly DocumentLineTree _lineTree;
 		private readonly LineManager _lineManager;
 		private readonly TextAnchorTree _anchorTree;
-		private readonly TextSourceVersionProvider _versionProvider = new TextSourceVersionProvider();
+		private readonly TextSourceVersionProvider _versionProvider = new();
 
 		/// <summary>
 		/// Create an empty text document.
@@ -906,8 +906,7 @@ namespace AvaloniaEdit.Document;
 	/// Gets a document lines by offset.
 	/// Runtime: O(log n)
 	/// </summary>
-	[SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", MessageId = "System.Int32.ToString")]
-		public DocumentLine GetLineByOffset(int offset)
+	public DocumentLine GetLineByOffset(int offset)
 		{
 			VerifyAccess();
 			if (offset < 0 || offset > _rope.Length)
@@ -954,7 +953,7 @@ namespace AvaloniaEdit.Document;
 
 		#region Line Trackers
 
-		private readonly ObservableCollection<ILineTracker> _lineTrackers = new ObservableCollection<ILineTracker>();
+		private readonly ObservableCollection<ILineTracker> _lineTrackers = [];
 
 		/// <summary>
 		/// Gets the list of <see cref="ILineTracker"/>s attached to this document.
@@ -1040,8 +1039,6 @@ namespace AvaloniaEdit.Document;
 	/// <summary>
 	/// Gets the document lines tree in string form.
 	/// </summary>
-	[SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-	[SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 	internal string GetLineTreeAsString() =>
 #if DEBUG
 		_lineTree.GetTreeAsString();
@@ -1049,12 +1046,9 @@ namespace AvaloniaEdit.Document;
 		"Not available in release build.";
 #endif
 
-
 	/// <summary>
 	/// Gets the text anchor tree in string form.
 	/// </summary>
-	[SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-	[SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
 	internal string GetTextAnchorTreeAsString() =>
 #if DEBUG
 		_anchorTree.GetTreeAsString();
@@ -1066,26 +1060,24 @@ namespace AvaloniaEdit.Document;
 
 	#region Service Provider
 
-	private IServiceProvider _serviceProvider;
-
-		internal IServiceProvider ServiceProvider
+	internal IServiceProvider ServiceProvider
 		{
 			get
 			{
 				VerifyAccess();
-				if (_serviceProvider == null)
+				if (field == null)
 				{
 					var container = new ServiceContainer();
 					container.AddService(this);
 					container.AddService<IDocument>(this);
-					_serviceProvider = container;
+					field = container;
 				}
-				return _serviceProvider;
+				return field;
 			}
 			set
 			{
 				VerifyAccess();
-				_serviceProvider = value ?? throw new ArgumentNullException(nameof(value));
+				field = value ?? throw new ArgumentNullException(nameof(value));
 			}
 		}
 
@@ -1095,22 +1087,20 @@ namespace AvaloniaEdit.Document;
 
 	#region FileName
 
-	private string _fileName;
-
-		/// <inheritdoc/>
-		public event EventHandler FileNameChanged;
+	/// <inheritdoc/>
+	public event EventHandler FileNameChanged;
 
 	private void OnFileNameChanged(EventArgs e) => FileNameChanged?.Invoke(this, e);
 
 	/// <inheritdoc/>
 	public string FileName
 		{
-			get { return _fileName; }
-			set
+			get;
+		set
 			{
-				if (_fileName != value)
+				if (field != value)
 				{
-					_fileName = value;
+					field = value;
 					OnFileNameChanged(EventArgs.Empty);
 				}
 			}

@@ -41,7 +41,7 @@ namespace AvaloniaEdit.Editing;
 		/// </summary>
 		public SelectionSegment(int startOffset, int startVisualColumn, int endOffset, int endVisualColumn)
 		{
-			if (startOffset < endOffset || (startOffset == endOffset && startVisualColumn <= endVisualColumn))
+			if (startOffset < endOffset || startOffset == endOffset && startVisualColumn <= endVisualColumn)
 			{
 				StartOffset = startOffset;
 				StartVisualColumn = startVisualColumn;

@@ -23,17 +23,11 @@ namespace AvaloniaEdit.Document;
 /// <summary>
 /// Describes a change to a TextDocument.
 /// </summary>
-internal sealed class DocumentChangeOperation : IUndoableOperationWithContext
+internal sealed class DocumentChangeOperation(TextDocument document, DocumentChangeEventArgs change) : IUndoableOperationWithContext
 {
-	private readonly TextDocument _document;
-	private readonly DocumentChangeEventArgs _change;
-	
-	public DocumentChangeOperation(TextDocument document, DocumentChangeEventArgs change)
-	{
-		_document = document;
-		_change = change;
-	}
-	
+	private readonly TextDocument _document = document;
+	private readonly DocumentChangeEventArgs _change = change;
+
 	public void Undo(UndoStack stack)
 	{
 		Debug.Assert(stack.State == UndoStack.StatePlayback);

@@ -58,7 +58,7 @@ internal static class ThrowUtil
 		return val;
 	}
 
-	public static InvalidOperationException NoDocumentAssigned() => new InvalidOperationException("Document is null");
+	public static InvalidOperationException NoDocumentAssigned() => new("Document is null");
 
-	public static InvalidOperationException NoValidCaretPosition() => new InvalidOperationException("Could not find a valid caret position in the line");
+	public static InvalidOperationException NoValidCaretPosition() => new("Could not find a valid caret position in the line");
 }

@@ -34,15 +34,10 @@ namespace AvaloniaEdit.Rendering;
 /// </summary>
 public sealed class BackgroundGeometryBuilder
 {
-	private double _cornerRadius;
-
 	/// <summary>
 	/// Gets/sets the radius of the rounded corners.
 	/// </summary>
-	public double CornerRadius {
-		get { return _cornerRadius; }
-		set { _cornerRadius = value; }
-	}
+	public double CornerRadius { get; set; }
 
 	/// <summary>
 	/// Gets/Sets whether to align to whole pixels.
@@ -244,7 +239,7 @@ public sealed class BackgroundGeometryBuilder
 					// For word-wrapped lines, visualEndCol doesn't include the whitespace hidden by the wrap,
 					// so we'll need to include it here.
 					// For the last line, visualEndCol already includes the whitespace.
-					left = (line == lastTextLine ? line.WidthIncludingTrailingWhitespace : line.Width);
+					left = line == lastTextLine ? line.WidthIncludingTrailingWhitespace : line.Width;
 				}
 				if (line != lastTextLine || segmentEndVc == int.MaxValue) {
 					// If word-wrap is enabled and the segment continues into the next line,
@@ -274,7 +269,7 @@ public sealed class BackgroundGeometryBuilder
 		}
 	}
 
-	private readonly PathFigures _figures = new PathFigures();
+	private readonly PathFigures _figures = [];
 	private PathFigure _figure;
 	private int _insertionIndex;
 	private double _lastTop, _lastBottom;
@@ -296,32 +291,32 @@ public sealed class BackgroundGeometryBuilder
 		if (_figure == null) {
 			_figure = new PathFigure
 			{
-				StartPoint = new Point(left, top + _cornerRadius)
+				StartPoint = new Point(left, top + CornerRadius)
 			};
-			if (Math.Abs(left - right) > _cornerRadius) {
-				_figure.Segments.Add(MakeArc(left + _cornerRadius, top, SweepDirection.Clockwise));
-				_figure.Segments.Add(MakeLineSegment(right - _cornerRadius, top));
-				_figure.Segments.Add(MakeArc(right, top + _cornerRadius, SweepDirection.Clockwise));
+			if (Math.Abs(left - right) > CornerRadius) {
+				_figure.Segments.Add(MakeArc(left + CornerRadius, top, SweepDirection.Clockwise));
+				_figure.Segments.Add(MakeLineSegment(right - CornerRadius, top));
+				_figure.Segments.Add(MakeArc(right, top + CornerRadius, SweepDirection.Clockwise));
 			}
-			_figure.Segments.Add(MakeLineSegment(right, bottom - _cornerRadius));
+			_figure.Segments.Add(MakeLineSegment(right, bottom - CornerRadius));
 			_insertionIndex = _figure.Segments.Count;
 			//figure.Segments.Add(MakeArc(left, bottom - cornerRadius, SweepDirection.Clockwise));
 		} else {
 			if (!_lastRight.IsClose(right)) {
-				var cr = right < _lastRight ? -_cornerRadius : _cornerRadius;
+				var cr = right < _lastRight ? -CornerRadius : CornerRadius;
 				var dir1 = right < _lastRight ? SweepDirection.Clockwise : SweepDirection.CounterClockwise;
 				var dir2 = right < _lastRight ? SweepDirection.CounterClockwise : SweepDirection.Clockwise;
 				_figure.Segments.Insert(_insertionIndex++, MakeArc(_lastRight + cr, _lastBottom, dir1));
 				_figure.Segments.Insert(_insertionIndex++, MakeLineSegment(right - cr, top));
-				_figure.Segments.Insert(_insertionIndex++, MakeArc(right, top + _cornerRadius, dir2));
+				_figure.Segments.Insert(_insertionIndex++, MakeArc(right, top + CornerRadius, dir2));
 			}
-			_figure.Segments.Insert(_insertionIndex++, MakeLineSegment(right, bottom - _cornerRadius));
-			_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft, _lastTop + _cornerRadius));
+			_figure.Segments.Insert(_insertionIndex++, MakeLineSegment(right, bottom - CornerRadius));
+			_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft, _lastTop + CornerRadius));
 			if (!_lastLeft.IsClose(left)) {
-				var cr = left < _lastLeft ? _cornerRadius : -_cornerRadius;
+				var cr = left < _lastLeft ? CornerRadius : -CornerRadius;
 				var dir1 = left < _lastLeft ? SweepDirection.CounterClockwise : SweepDirection.Clockwise;
 				var dir2 = left < _lastLeft ? SweepDirection.Clockwise : SweepDirection.CounterClockwise;
-				_figure.Segments.Insert(_insertionIndex, MakeArc(_lastLeft, _lastBottom - _cornerRadius, dir1));
+				_figure.Segments.Insert(_insertionIndex, MakeArc(_lastLeft, _lastBottom - CornerRadius, dir1));
 				_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft - cr, _lastBottom));
 				_figure.Segments.Insert(_insertionIndex, MakeArc(left + cr, _lastBottom, dir2));
 			}
@@ -343,7 +338,7 @@ public sealed class BackgroundGeometryBuilder
 		return arc;
 	}
 
-	private static LineSegment MakeLineSegment(double x, double y) => new LineSegment { Point = new Point(x, y) };
+	private static LineSegment MakeLineSegment(double x, double y) => new() { Point = new Point(x, y) };
 
 	/// <summary>
 	/// Closes the current figure.
@@ -351,11 +346,11 @@ public sealed class BackgroundGeometryBuilder
 	public void CloseFigure()
 	{
 		if (_figure != null) {
-			_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft, _lastTop + _cornerRadius));
-			if (Math.Abs(_lastLeft - _lastRight) > _cornerRadius) {
-				_figure.Segments.Insert(_insertionIndex, MakeArc(_lastLeft, _lastBottom - _cornerRadius, SweepDirection.Clockwise));
-				_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft + _cornerRadius, _lastBottom));
-				_figure.Segments.Insert(_insertionIndex, MakeArc(_lastRight - _cornerRadius, _lastBottom, SweepDirection.Clockwise));
+			_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft, _lastTop + CornerRadius));
+			if (Math.Abs(_lastLeft - _lastRight) > CornerRadius) {
+				_figure.Segments.Insert(_insertionIndex, MakeArc(_lastLeft, _lastBottom - CornerRadius, SweepDirection.Clockwise));
+				_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft + CornerRadius, _lastBottom));
+				_figure.Segments.Insert(_insertionIndex, MakeArc(_lastRight - CornerRadius, _lastBottom, SweepDirection.Clockwise));
 			}
 
 			_figure.IsClosed = true;

@@ -67,7 +67,7 @@ namespace AvaloniaEdit.Document;
 		}
 	}
 
-	partial class TextUtilities
+public partial class TextUtilities
 	{
 		/// <summary>
 		/// Finds the next new line character starting at offset.
@@ -106,7 +106,7 @@ namespace AvaloniaEdit.Document;
 	/// <summary>
 	/// Gets whether the specified string is a newline sequence.
 	/// </summary>
-	public static bool IsNewLine(string newLine) => newLine == "\r\n" || newLine == "\n" || newLine == "\r";
+	public static bool IsNewLine(string newLine) => newLine is "\r\n" or "\n" or "\r";
 
 	/// <summary>
 	/// Normalizes all new lines in <paramref name="input"/> to be <paramref name="newLine"/>.

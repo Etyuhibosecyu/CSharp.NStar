@@ -21,27 +21,21 @@ using System.Collections.ObjectModel;
 
 namespace AvaloniaEdit.Utils;
 
-	/// <summary>
-	/// A collection where adding and removing items causes a callback.
-	/// It is valid for the onAdd callback to throw an exception - this will prevent the new item from
-	/// being added to the collection.
-	/// </summary>
-	internal sealed class ObserveAddRemoveCollection<T> : Collection<T>
+/// <summary>
+/// A collection where adding and removing items causes a callback.
+/// It is valid for the onAdd callback to throw an exception - this will prevent the new item from
+/// being added to the collection.
+/// </summary>
+/// <remarks>
+/// Creates a new ObserveAddRemoveCollection using the specified callbacks.
+/// </remarks>
+internal sealed class ObserveAddRemoveCollection<T>(Action<T> onAdd, Action<T> onRemove) : Collection<T>
 	{
-		private readonly Action<T> _onAdd;
-		private readonly Action<T> _onRemove;
+		private readonly Action<T> _onAdd = onAdd ?? throw new ArgumentNullException(nameof(onAdd));
+		private readonly Action<T> _onRemove = onRemove ?? throw new ArgumentNullException(nameof(onRemove));
 
-		/// <summary>
-		/// Creates a new ObserveAddRemoveCollection using the specified callbacks.
-		/// </summary>
-		public ObserveAddRemoveCollection(Action<T> onAdd, Action<T> onRemove)
-		{
-			_onAdd = onAdd ?? throw new ArgumentNullException(nameof(onAdd));
-			_onRemove = onRemove ?? throw new ArgumentNullException(nameof(onRemove));
-		}
-
-		/// <inheritdoc/>
-		protected override void ClearItems()
+	/// <inheritdoc/>
+	protected override void ClearItems()
 		{
 			if (_onRemove != null)
 			{

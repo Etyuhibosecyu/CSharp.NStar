@@ -26,26 +26,15 @@ namespace AvaloniaEdit.Search;
 
 	using Avalonia.Media.Immutable;
 
-	internal class SearchResultBackgroundRenderer : IBackgroundRenderer
+	internal class SearchResultBackgroundRenderer(IBrush brush) : IBackgroundRenderer
 	{
-		public TextSegmentCollection<SearchResult> CurrentResults { get; } = new TextSegmentCollection<SearchResult>();
+		public TextSegmentCollection<SearchResult> CurrentResults { get; } = [];
 
 		public KnownLayer Layer => KnownLayer.Background;
 
-	public SearchResultBackgroundRenderer(IBrush brush) => _markerBrush = brush;
+	public IBrush MarkerBrush { get; set; } = brush;
 
-	private IBrush _markerBrush;
-
-		public IBrush MarkerBrush
-		{
-			get => _markerBrush;
-			set
-			{
-				_markerBrush = value;
-			}
-		}
-
-		public void Draw(TextView textView, DrawingContext drawingContext)
+	public void Draw(TextView textView, DrawingContext drawingContext)
 		{
 		ArgumentNullException.ThrowIfNull(textView);
 		ArgumentNullException.ThrowIfNull(drawingContext);
@@ -71,7 +60,7 @@ namespace AvaloniaEdit.Search;
 				var geometry = geoBuilder.CreateGeometry();
 				if (geometry != null)
 				{
-					drawingContext.DrawGeometry(_markerBrush, null, geometry);
+					drawingContext.DrawGeometry(MarkerBrush, null, geometry);
 				}
 			}
 		}

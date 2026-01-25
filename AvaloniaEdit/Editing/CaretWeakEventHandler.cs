@@ -29,7 +29,6 @@ public static class CaretWeakEventManager
 	/// <summary>
 	/// Handles the Caret.PositionChanged event.
 	/// </summary>
-	[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
 	public sealed class PositionChanged : WeakEventManagerBase<PositionChanged, Caret, EventHandler, EventArgs>
 	{
 		protected override void StartListening(Caret source) => source.PositionChanged += DeliverEvent;

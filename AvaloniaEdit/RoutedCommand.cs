@@ -7,20 +7,14 @@ using Avalonia.Interactivity;
 
 namespace AvaloniaEdit;
 
-	public class RoutedCommand : ICommand
+	public class RoutedCommand(string name, KeyGesture keyGesture = null) : ICommand
 	{
 		private static IInputElement _inputElement;
 
-		public string Name { get; }
-		public KeyGesture Gesture { get; }
+	public string Name { get; } = name;
+	public KeyGesture Gesture { get; } = keyGesture;
 
-		public RoutedCommand(string name, KeyGesture keyGesture = null)
-		{
-			Name = name;
-			Gesture = keyGesture;
-		}
-
-		static RoutedCommand()
+	static RoutedCommand()
 		{
 			CanExecuteEvent.AddClassHandler<Interactive>(CanExecuteEventHandler);
 			ExecutedEvent.AddClassHandler<Interactive>(ExecutedEventHandler);

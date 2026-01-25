@@ -43,7 +43,6 @@ namespace AvaloniaEdit.Search;
 		private SearchResultBackgroundRenderer _renderer;
 		private TextBox _searchTextBox;
 		private TextBox _replaceTextBox;
-		private TextEditor _textEditor { get; set; }
 		private Border _border;
 		private int _currentSearchResultIndex = -1;
 
@@ -114,7 +113,7 @@ namespace AvaloniaEdit.Search;
 		public bool IsReplaceMode
 		{
 			get => GetValue(IsReplaceModeProperty);
-			set => SetValue(IsReplaceModeProperty, _textEditor?.IsReadOnly ?? false ? false : value);
+			set => SetValue(IsReplaceModeProperty, !(TextEditor?.IsReadOnly ?? false) && value);
 		}
 
 		public static readonly StyledProperty<string> ReplacePatternProperty =
@@ -126,17 +125,17 @@ namespace AvaloniaEdit.Search;
 			set => SetValue(ReplacePatternProperty, value);
 		}
 
-		#endregion
+	#endregion
 
-		public TextEditor TextEditor => _textEditor;
+	public TextEditor TextEditor { get; private set; }
 
-		public void SetSearchResultsBrush(IBrush brush)
+	public void SetSearchResultsBrush(IBrush brush)
 		{
 			if (_renderer == null)
 				return;
 
 			_renderer.MarkerBrush = brush;
-			_textEditor.TextArea.TextView.InvalidateVisual();
+			TextEditor.TextArea.TextView.InvalidateVisual();
 		}
 
 		private ISearchStrategy _strategy;
@@ -156,7 +155,7 @@ namespace AvaloniaEdit.Search;
 			// if results are found by the next run, the message will be hidden inside DoSearch ...
 			try
 			{
-				if (_renderer.CurrentResults.Any() && _messageView != null)
+				if (_renderer.CurrentResults.Count != 0 && _messageView != null)
 					_messageView.IsVisible = false;
 				_strategy = SearchStrategyFactory.Create(SearchPattern ?? "", !MatchCase, WholeWords, UseRegex ? SearchMode.RegEx : SearchMode.Normal);
 				OnSearchOptionsChanged(new SearchOptionsChangedEventArgs(SearchPattern, MatchCase, UseRegex, WholeWords));
@@ -216,7 +215,7 @@ namespace AvaloniaEdit.Search;
 
 		private void AttachInternal(TextEditor textEditor)
 		{
-			_textEditor = textEditor;
+			TextEditor = textEditor;
 			_textArea = textEditor.TextArea;
 
 			_renderer = new SearchResultBackgroundRenderer(textEditor.SearchResultsBrush);
@@ -284,7 +283,7 @@ namespace AvaloniaEdit.Search;
 			_searchTextBox.SelectionEnd = _searchTextBox.Text?.Length ?? 0;
 		}
 
-		void SelectAll(ExecutedRoutedEventArgs e)
+	private void SelectAll(ExecutedRoutedEventArgs e)
 		{
 			var focusedTextBox = GetFocusedTextBox();
 
@@ -295,7 +294,7 @@ namespace AvaloniaEdit.Search;
 			focusedTextBox.SelectAll();
 		}
 
-		void Cut(ExecutedRoutedEventArgs e)
+	private void Cut(ExecutedRoutedEventArgs e)
 		{
 			var focusedTextBox = GetFocusedTextBox();
 
@@ -306,7 +305,7 @@ namespace AvaloniaEdit.Search;
 			focusedTextBox.Cut();
 		}
 
-		void Copy(ExecutedRoutedEventArgs e)
+	private void Copy(ExecutedRoutedEventArgs e)
 		{
 			var focusedTextBox = GetFocusedTextBox();
 
@@ -317,7 +316,7 @@ namespace AvaloniaEdit.Search;
 			focusedTextBox.Copy();
 		}
 
-		void Paste(ExecutedRoutedEventArgs e)
+	private void Paste(ExecutedRoutedEventArgs e)
 		{
 			var focusedTextBox = GetFocusedTextBox();
 
@@ -328,7 +327,7 @@ namespace AvaloniaEdit.Search;
 			focusedTextBox.Paste();
 		}
 
-		void Undo(ExecutedRoutedEventArgs e)
+	private void Undo(ExecutedRoutedEventArgs e)
 		{
 			var focusedTextBox = GetFocusedTextBox();
 
@@ -339,7 +338,7 @@ namespace AvaloniaEdit.Search;
 			focusedTextBox.Undo();
 		}
 
-		void Redo(ExecutedRoutedEventArgs e)
+	private void Redo(ExecutedRoutedEventArgs e)
 		{
 			var focusedTextBox = GetFocusedTextBox();
 
@@ -350,7 +349,7 @@ namespace AvaloniaEdit.Search;
 			focusedTextBox.Redo();
 		}
 
-		TextBox GetFocusedTextBox()
+	private TextBox GetFocusedTextBox()
 		{
 			if (_searchTextBox.IsFocused)
 				return _searchTextBox;
@@ -360,7 +359,6 @@ namespace AvaloniaEdit.Search;
 
 			return null;
 		}
-
 
 		/// <summary>
 		/// Moves to the next occurrence in the file starting at the next position from current caret offset.
@@ -384,8 +382,7 @@ namespace AvaloniaEdit.Search;
 				Math.Max(_textArea.Caret.Offset - _textArea.Selection.Length, 0));
 			if (result != null)
 				result = _renderer.CurrentResults.GetPreviousSegment(result);
-			if (result == null)
-				result = _renderer.CurrentResults.LastSegment;
+			result ??= _renderer.CurrentResults.LastSegment;
 			if (result != null)
 			{
 				SetCurrentSearchResult(result);
@@ -472,20 +469,20 @@ namespace AvaloniaEdit.Search;
 			_textArea.TextView.InvalidateLayer(KnownLayer.Selection);
 		}
 
-		void CleanSearchResults()
+	private void CleanSearchResults()
 		{
 			_renderer.CurrentResults.Clear();
 			_currentSearchResultIndex = -1;
 		}
 
-		void UpdateSearchLabel()
+	private void UpdateSearchLabel()
 		{
 			if (_messageView == null || _messageViewContent == null)
 				return;
 
 			_messageView.IsVisible = true;
 
-			if (!_renderer.CurrentResults.Any())
+			if (_renderer.CurrentResults.Count == 0)
 			{
 				_messageViewContent.Text = SR.SearchNoMatchesFoundText;
 			}
@@ -636,42 +633,34 @@ namespace AvaloniaEdit.Search;
 	/// </summary>
 	protected virtual void OnSearchOptionsChanged(SearchOptionsChangedEventArgs e) => SearchOptionsChanged?.Invoke(this, e);
 
-	public IList<RoutedCommandBinding> CommandBindings { get; } = new List<RoutedCommandBinding>();
+	public IList<RoutedCommandBinding> CommandBindings { get; } = [];
 	}
+
+/// <summary>
+/// EventArgs for <see cref="SearchPanel.SearchOptionsChanged"/> event.
+/// </summary>
+/// <remarks>
+/// Creates a new SearchOptionsChangedEventArgs instance.
+/// </remarks>
+public class SearchOptionsChangedEventArgs(string searchPattern, bool matchCase, bool useRegex, bool wholeWords) : EventArgs
+	{
+	/// <summary>
+	/// Gets the search pattern.
+	/// </summary>
+	public string SearchPattern { get; } = searchPattern;
 
 	/// <summary>
-	/// EventArgs for <see cref="SearchPanel.SearchOptionsChanged"/> event.
+	/// Gets whether the search pattern should be interpreted case-sensitive.
 	/// </summary>
-	public class SearchOptionsChangedEventArgs : EventArgs
-	{
-		/// <summary>
-		/// Gets the search pattern.
-		/// </summary>
-		public string SearchPattern { get; }
+	public bool MatchCase { get; } = matchCase;
 
-		/// <summary>
-		/// Gets whether the search pattern should be interpreted case-sensitive.
-		/// </summary>
-		public bool MatchCase { get; }
+	/// <summary>
+	/// Gets whether the search pattern should be interpreted as regular expression.
+	/// </summary>
+	public bool UseRegex { get; } = useRegex;
 
-		/// <summary>
-		/// Gets whether the search pattern should be interpreted as regular expression.
-		/// </summary>
-		public bool UseRegex { get; }
-
-		/// <summary>
-		/// Gets whether the search pattern should only match whole words.
-		/// </summary>
-		public bool WholeWords { get; }
-
-		/// <summary>
-		/// Creates a new SearchOptionsChangedEventArgs instance.
-		/// </summary>
-		public SearchOptionsChangedEventArgs(string searchPattern, bool matchCase, bool useRegex, bool wholeWords)
-		{
-			SearchPattern = searchPattern;
-			MatchCase = matchCase;
-			UseRegex = useRegex;
-			WholeWords = wholeWords;
-		}
-	}
+	/// <summary>
+	/// Gets whether the search pattern should only match whole words.
+	/// </summary>
+	public bool WholeWords { get; } = wholeWords;
+}

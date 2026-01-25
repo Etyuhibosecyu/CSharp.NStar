@@ -25,9 +25,13 @@ using NStar.SortedSets;
 using NStar.SumCollections;
 using NStar.TreeSets;
 using ReactiveUI;
+using System.Collections.Immutable;
 using System.IO;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CSharp.NStar;
 
@@ -50,36 +54,76 @@ public static class BuiltInMemberCollections
 	private static readonly List<String> NoExtraTypes = [];
 	private static readonly List<String> ExtraTypesT = ["T"];
 	private static readonly BlockStack ExtendedTypeBool = new([new(BlockType.Primitive, "bool", 1)]);
+	private static readonly BlockStack ExtendedTypeIFloatNumber = new([new(BlockType.Interface, "IFloatNumber", 1)]);
+	private static readonly BlockStack ExtendedTypeIIncreasable = new([new(BlockType.Interface, "IIncreasable", 1)]);
+	private static readonly BlockStack ExtendedTypeIIntegerNumber = new([new(BlockType.Interface, "IIntegerNumber", 1)]);
+	private static readonly BlockStack ExtendedTypeINumber = new([new(BlockType.Interface, "INumber", 1)]);
+	private static readonly BlockStack ExtendedTypeISignedIntegerNumber = new([new(BlockType.Interface, "ISignedIntegerNumber", 1)]);
 	private static readonly BlockStack ExtendedTypeInt = new([new(BlockType.Primitive, "int", 1)]);
 	private static readonly BlockStack ExtendedTypeList = new([new(BlockType.Primitive, "list", 1)]);
 	private static readonly BlockStack ExtendedTypeString = new([new(BlockType.Primitive, "string", 1)]);
-	private static readonly BranchCollection BranchCollectionT = [new("type", 0, []) { Extra = new NStarType(new BlockStack([new(BlockType.Extra, "T", 1)]), NoBranches) }];
+	private static readonly BranchCollection BranchCollectionT = [new("type", 0, []) { Extra = NStarTypeT }];
+	private static readonly NStarType NStarTypeT = new(new([new(BlockType.Extra, "T", 1)]), NoBranches);
+	private static readonly NStarType CharListType = GetListType(CharType);
+	private static readonly NStarType NStarTypeIFloatNumberT = new(ExtendedTypeIFloatNumber, BranchCollectionT);
+	private static readonly NStarType NStarTypeIIncreasableT = new(ExtendedTypeIIncreasable, BranchCollectionT);
+	private static readonly NStarType NStarTypeIIntegerNumberT = new(ExtendedTypeIIntegerNumber, BranchCollectionT);
+	private static readonly NStarType NStarTypeINumberT = new(ExtendedTypeINumber, BranchCollectionT);
+	private static readonly NStarType NStarTypeISignedIntegerNumberT = new(ExtendedTypeISignedIntegerNumber, BranchCollectionT);
 	private static readonly ExtendedMethodParameter ExtendedParameterIndex = new(IntType, "index", ParameterAttributes.None, []);
 	private static readonly ExtendedMethodParameter ExtendedParameterStringS = new(StringType, "s", ParameterAttributes.None, []);
 	private static readonly ExtendedMethodParameter ExtendedParameterString1 = new(StringType, "string1", ParameterAttributes.None, []);
 	private static readonly ExtendedMethodParameter ExtendedParameterString2 = new(StringType, "string2", ParameterAttributes.None, []);
 	private static readonly ExtendedMethodParameter ExtendedParameterString3 = new(StringType, "string3", ParameterAttributes.None, []);
 
-	public static SortedSet<String> Keywords { get; } = new("_", "abstract", "break", "case", "Class", "const", "Constructor", "continue", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "Megaclass", "multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "private", "protected", "public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while");
+	public static SortedSet<String> Keywords { get; } = new(
+		"_", "abstract", "break", "case", "Class", "const", "Constructor", "continue",
+		"Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern",
+		"false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", 
+		"Megaclass", "multiconst", "Namespace", "new", "null", "Operator", "out", "override",
+		"params", "private", "protected", "public", "readonly", "ref", "repeat", "return",
+		"sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while"
+	);
 
-	public static SortedSet<String> EscapedKeywords { get; } = new("abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue", "decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit", "extern", "false", "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit", "in", "int", "interface", "internal", "is", "lock", "long", "namespace", "new", "null", "object", "operator", "out", "override", "params", "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void", "volatile", "while");
+	public static SortedSet<String> EscapedKeywords { get; } = new(
+		"abstract", "as", "base", "bool", "break", "byte",
+		"case", "catch", "char", "checked", "class", "const", "continue",
+		"decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit", "extern",
+		"false", "finally", "fixed", "float", "for", "foreach", "goto",
+		"if", "implicit", "in", "int", "interface", "internal", "is",
+		"lock", "long", "namespace", "new", "null", "object", "operator", "out", "override",
+		"params", "private", "protected", "public", "readonly", "ref", "return",
+		"sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string", "struct", "switch",
+		"this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using",
+		"virtual", "void", "volatile", "while"
+	);
 
-	public static ListHashSet<String> AssignmentOperators { get; } = new("=", "+=", "-=", "*=", "/=", "%=", "pow=", "&=", "|=", "^=", ">>=", "<<=");
+	public static ImmutableArray<string> AssignmentOperators { get; } = ImmutableArray.Create("=", "+=", "-=", "*=", "/=", "%=", "pow=", "&=", "|=", "^=", ">>=", "<<=");
 
-	public static ListHashSet<String> TernaryOperators { get; } = new("?", "?=", "?>", "?<", "?>=", "?<=", "?!=");
+	public static ImmutableArray<string> TernaryOperators { get; } = ImmutableArray.Create("?", "?=", "?>", "?<", "?>=", "?<=", "?!=");
 
 	/// <summary>
 	/// Sorted by Container, then by Name, also contains Type and ExtraTypes.
 	/// </summary>
 	public static TypeSortedList<TypeVariables> Variables { get; } = [];
 
-	public static SortedSet<String> Namespaces { get; } = new("System", "System.Collections", "System.GUI", "System.IO");
+	public static SortedSet<String> Namespaces { get; } = new("System", "System.Collections", "System.GUI", "System.IO", "System.Threading");
 
 	public static G.HashSet<String> UserDefinedNamespaces { get; } = [];
 
 	public static SortedSet<String> ExplicitlyConnectedNamespaces { get; } = [];
 
-	public static SortedDictionary<String, Type> PrimitiveTypes { get; } = new() { { "null", typeof(void) }, { "object", typeof(object) }, { "bool", typeof(bool) }, { "byte", typeof(byte) }, { "short char", typeof(byte) }, { "short int", typeof(short) }, { "unsigned short int", typeof(ushort) }, { "char", typeof(char) }, { "int", typeof(int) }, { "unsigned int", typeof(uint) }, { "long char", typeof(uint) }, { "long int", typeof(long) }, { "DateTime", typeof(DateTime) }, { "TimeSpan", typeof(TimeSpan) }, { "unsigned long int", typeof(long) }, { "real", typeof(double) }, { "long long", typeof(MpzT) }, { "complex", typeof(Complex) }, { "typename", typeof(void) }, { "string", typeof(String) }, { "index", typeof(Index) }, { "range", typeof(Range) }, { "nint", typeof(nint) }, { "list", typeof(List<>) }, { "dynamic", typeof(void) }, { "var", typeof(void) } };
+	public static SortedDictionary<String, Type> PrimitiveTypes { get; } = new() 
+	{
+		{ "null", typeof(void) }, { "object", typeof(object) }, { "bool", typeof(bool) }, { "byte", typeof(byte) },
+		{ "short char", typeof(byte) }, { "short int", typeof(short) }, { "unsigned short int", typeof(ushort) },
+		{ "char", typeof(char) }, { "int", typeof(int) }, { "unsigned int", typeof(uint) }, 
+		{ "long char", typeof(uint) }, { "long int", typeof(long) }, 
+		{ "DateTime", typeof(DateTime) }, { "TimeSpan", typeof(TimeSpan) }, { "unsigned long int", typeof(long) },
+		{ "real", typeof(double) }, { "long long", typeof(MpzT) }, { "complex", typeof(Complex) },
+		{ "typename", typeof(void) }, { "string", typeof(String) }, { "index", typeof(Index) }, { "range", typeof(Range) },
+		{ "nint", typeof(nint) }, { "list", typeof(List<>) }, { "dynamic", typeof(void) }, { "var", typeof(void) }
+	};
 
 	/// <summary>
 	/// Sorted by tuple, contains Namespace and Type.
@@ -87,6 +131,7 @@ public static class BuiltInMemberCollections
 	public static Mirror<(String Namespace, String Type), Type> ExtraTypes { get; } = new()
 	{
 		{ ("Environment", nameof(Environment.SpecialFolder)), typeof(Environment.SpecialFolder) },
+		{ ("Environment", nameof(Environment.SpecialFolderOption)), typeof(Environment.SpecialFolderOption) },
 		{ ("System", nameof(Convert)), typeof(Convert) },
 		{ ("System", nameof(DateTimeKind)), typeof(DateTimeKind) },
 		{ ("System", nameof(DayOfWeek)), typeof(DayOfWeek) },
@@ -114,7 +159,6 @@ public static class BuiltInMemberCollections
 		{ ("System.Collections", nameof(BaseSet<,>)), typeof(BaseSet<,>) },
 		{ ("System.Collections", nameof(BaseSortedSet<,>)), typeof(BaseSortedSet<,>) },
 		{ ("System.Collections", nameof(BaseSumList<,>)), typeof(BaseSumList<int, SumList>) },
-		{ ("System.Collections", nameof(BigSumList)), typeof(BigSumList) },
 		{ ("System.Collections", nameof(Buffer)), typeof(Buffer<>) },
 		{ ("System.Collections", nameof(Chain)), typeof(Chain) },
 		{ ("System.Collections", nameof(Comparer<>)), typeof(Comparer<>) },
@@ -128,6 +172,7 @@ public static class BuiltInMemberCollections
 		{ ("System.Collections", nameof(LimitedQueue<>)), typeof(LimitedQueue<>) },
 		{ ("System.Collections", nameof(ListEComparer<>)), typeof(ListEComparer<>) },
 		{ ("System.Collections", nameof(ListHashSet<>)), typeof(ListHashSet<>) },
+		{ ("System.Collections", nameof(ListOfBigSums)), typeof(ListOfBigSums) },
 		{ ("System.Collections", nameof(Mirror<,>)), typeof(Mirror<,>) },
 		{ ("System.Collections", nameof(ParallelHashSet<>)), typeof(ParallelHashSet<>) },
 		{ ("System.Collections", nameof(Queue<>)), typeof(Queue<>) },
@@ -217,13 +262,33 @@ public static class BuiltInMemberCollections
 		{ ("System.IO", nameof(Path)), typeof(Path) },
 		{ ("System.IO", nameof(Stream)), typeof(Stream) },
 		{ ("System.IO", nameof(UnixFileMode)), typeof(UnixFileMode) },
-		{ ("System.Unsafe", "UnsafeString"), typeof(string) }
+		{ ("System.Threading", nameof(CancellationToken)), typeof(CancellationToken) },
+		{ ("System.Threading", nameof(CancellationTokenSource)), typeof(CancellationTokenSource) },
+		{ ("System.Threading", "Task"), typeof(ValueTask<>) },
+		{ ("System.Threading", "TaskAwaiter"), typeof(ValueTaskAwaiter<>) },
+		{ ("System.Unsafe", "EmptyTask"), typeof(ValueTask) },
+		{ ("System.Unsafe", "Memory"), typeof(Memory<>) },
+		{ ("System.Unsafe", "ReadOnlyMemory"), typeof(ReadOnlyMemory<>) },
+		{ ("System.Unsafe", "UnsafeString"), typeof(string) },
+		{ ("System.Unsafe", "UnsafeTask"), typeof(Task<>) },
+		{ ("System.Unsafe", "UnsafeEmptyTask"), typeof(Task) },
+		{ ("System.Unsafe", "UnsafeTaskAwaiter"), typeof(TaskAwaiter<>) },
 	};
 
 	/// <summary>
 	/// Sorted by Container and Type, also contains RestrictionPackage modifiers, RestrictionTypes, RestrictionNames and Attributes.
 	/// </summary>
-	public static ExtendedTypesCollection ExtendedTypes { get; } = new(new BlockStackAndStringComparer()) { { (new([new(BlockType.Namespace, "System", 1)]), nameof(Action)), ([new(true, RecursiveType, "Types")], TypeAttributes.Delegate) }, { (new([new(BlockType.Namespace, "System", 1)]), nameof(Func<>)), new([new(false, RecursiveType, "TReturn"), new(true, RecursiveType, "Types")], TypeAttributes.Delegate) } };
+	public static ExtendedTypesCollection ExtendedTypes { get; } = new(new BlockStackAndStringComparer())
+	{
+		{
+			(new([new(BlockType.Namespace, "System", 1)]), nameof(Action)),
+			([new(true, RecursiveType, "Types")], TypeAttributes.Delegate)
+		},
+		{
+			(new([new(BlockType.Namespace, "System", 1)]), nameof(Func<>)),
+			new([new(false, RecursiveType, "TReturn"), new(true, RecursiveType, "Types")], TypeAttributes.Delegate)
+		}
+	};
 
 	/// <summary>
 	/// Sorted by Container and Type, also contains RestrictionPackage modifiers, RestrictionTypes, RestrictionNames and Attributes.
@@ -233,7 +298,66 @@ public static class BuiltInMemberCollections
 	/// <summary>
 	/// Sorted by tuple, contains Namespace, Interface and ExtraTypes.
 	/// </summary>
-	public static SortedDictionary<(String Namespace, String Interface), (List<String> ExtraTypes, Type DotNetType)> Interfaces { get; } = new() { { ([], "IBase"), (ExtraTypesT, typeof(void)) }, { ([], "IChar"), (ExtraTypesT, typeof(void)) }, { ([], nameof(IComparable<>)), (ExtraTypesT, typeof(IComparable<>)) }, { ([], "IComparableRaw"), (NoExtraTypes, typeof(void)) }, { ([], nameof(IConvertible)), (NoExtraTypes, typeof(IConvertible)) }, { ([], nameof(IEquatable<>)), (ExtraTypesT, typeof(IEquatable<>)) }, { ([], "IIncreasable"), (ExtraTypesT, typeof(IIncrementOperators<>)) }, { ([], "IIntegerNumber"), (ExtraTypesT, typeof(IBinaryInteger<>)) }, { ([], "INumber"), (ExtraTypesT, typeof(INumber<>)) }, { ([], "IFloatNumber"), (ExtraTypesT, typeof(IFloatingPoint<>)) }, { ([], "ISignedIntegerNumber"), (ExtraTypesT, typeof(ISignedNumber<>)) }, { ([], "IUnsignedIntegerNumber"), (ExtraTypesT, typeof(IUnsignedNumber<>)) }, { ("System.Collections", nameof(ICollection)), (ExtraTypesT, typeof(ICollection<>)) }, { ("System.Collections", "ICollectionRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", "IComparer"), (ExtraTypesT, typeof(G.IComparer<>)) }, { ("System.Collections", nameof(IDictionary)), (["TKey", "TValue"], typeof(G.IDictionary<,>)) }, { ("System.Collections", "IDictionaryRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", nameof(G.IEnumerable<>)), (ExtraTypesT, typeof(G.IEnumerable<>)) }, { ("System.Collections", "IEnumerableRaw"), (NoExtraTypes, typeof(void)) }, { ("System.Collections", "IEqualityComparer"), (ExtraTypesT, typeof(G.IEqualityComparer<>)) }, { ("System.Collections", nameof(IList)), (ExtraTypesT, typeof(IList<>)) }, { ("System.Collections", "IListRaw"), (NoExtraTypes, typeof(void)) } };
+	public static SortedDictionary<(String Namespace, String Interface), (List<String> ExtraTypes, Type DotNetType)> Interfaces { get; } = new()
+	{
+		{
+			([], "IBase"), (ExtraTypesT, typeof(void))
+		},
+		{
+			([], "IChar"), (ExtraTypesT, typeof(void))
+		},
+		{
+			([], nameof(IComparable<>)), (ExtraTypesT, typeof(IComparable<>)) }, { ([], "IComparableRaw"), (NoExtraTypes, typeof(void))
+		},
+		{
+			([], nameof(IConvertible)), (NoExtraTypes, typeof(IConvertible)) }, { ([], nameof(IEquatable<>)), (ExtraTypesT, typeof(IEquatable<>))
+		},
+		{
+			([], "IIncreasable"), (ExtraTypesT, typeof(IIncrementOperators<>)) }, { ([], "IIntegerNumber"), (ExtraTypesT, typeof(IBinaryInteger<>))
+		},
+		{
+			([], "INumber"), (ExtraTypesT, typeof(INumber<>))
+		},
+		{
+			([], "IFloatNumber"), (ExtraTypesT, typeof(IFloatingPoint<>))
+		},
+		{
+			([], "ISignedIntegerNumber"), (ExtraTypesT, typeof(ISignedNumber<>)) 
+		},
+		{
+			([], "IUnsignedIntegerNumber"), (ExtraTypesT, typeof(IUnsignedNumber<>))
+		},
+		{
+			("System.Collections", nameof(ICollection)), (ExtraTypesT, typeof(ICollection<>)) 
+		}, 
+		{
+			("System.Collections", "ICollectionRaw"), (NoExtraTypes, typeof(void))
+		},
+		{
+			("System.Collections", "IComparer"), (ExtraTypesT, typeof(G.IComparer<>))
+		}, 
+		{
+			("System.Collections", nameof(IDictionary)), (["TKey", "TValue"], typeof(G.IDictionary<,>))
+		},
+		{
+			("System.Collections", "IDictionaryRaw"), (NoExtraTypes, typeof(void))
+		},
+		{
+			("System.Collections", nameof(G.IEnumerable<>)), (ExtraTypesT, typeof(G.IEnumerable<>)) 
+		}, 
+		{ 
+			("System.Collections", "IEnumerableRaw"), (NoExtraTypes, typeof(void)) 
+		}, 
+		{ 
+			("System.Collections", "IEqualityComparer"), (ExtraTypesT, typeof(G.IEqualityComparer<>))
+		},
+		{
+			("System.Collections", nameof(IList)), (ExtraTypesT, typeof(IList<>)) 
+		},
+		{ 
+			("System.Collections", "IListRaw"), (NoExtraTypes, typeof(void))
+		} 
+	};
 
 	/// <summary>
 	/// Sorted by Class, also contains Interface and ExtraTypes.
@@ -376,7 +500,15 @@ public static class BuiltInMemberCollections
 	/// <summary>
 	/// Sorted by Container, then by Name, also contains Restrictions, ReturnType, Attributes, ParameterTypes, ParameterNames, ParameterRestrictions, ParameterAttributes and ParameterDefaultValues.
 	/// </summary>
-	public static TypeSortedList<ExtendedMethods> ExtendedMethods { get; } = new() { { new(), new() { { "ExecuteString", new() { new([], (new([new(BlockType.Primitive, "object", 1)]), NoBranches), FunctionAttributes.Multiconst, [ExtendedParameterStringS, new(new(new([new(BlockType.Primitive, "object", 1)]), NoBranches), "parameters", ParameterAttributes.Params, [])]) } } } } };
+	public static TypeSortedList<ExtendedMethods> ExtendedMethods { get; } = new()
+	{
+		{
+			new(), new()
+			{
+				{ "ExecuteString", new() { new([], ObjectType, FunctionAttributes.Multiconst, [ExtendedParameterStringS, new(ObjectType, "parameters", ParameterAttributes.Params, [])]) } }
+			}
+		}
+	};
 
 	/// <summary>
 	/// Sorted by Container, then by Name, also contains Restrictions, ReturnType, Attributes, ParameterTypes, ParameterNames, ParameterRestrictions, ParameterAttributes and ParameterDefaultValues.
@@ -401,7 +533,52 @@ public static class BuiltInMemberCollections
 	/// <summary>
 	/// Sorted by Operator, also contains Postfix modifiers, ReturnTypes, ReturnNStarType.ExtraTypes, OpdTypes and OpdExtraTypes.
 	/// </summary>
-	public static SortedDictionary<String, UnaryOperatorClasses> UnaryOperators { get; } = new() { { "+", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "INumber", 1)]), new() { (false, (new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } } } }, { "-", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "ISignedIntegerNumber", 1)]), new() { (false, (new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "ISignedIntegerNumber", 1)]), BranchCollectionT)) } }, { new([new(BlockType.Interface, "IFloatNumber", 1)]), new() { (false, (new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT)) } } } }/*, { "++", new(new BlockStackComparer()){ { "IBase", new() { (false, new(new Block[]{ new(BlockType.Extra, "T", 1) }), NoBranches, "IBase", BranchCollectionT), (true, new(new Block[]{ new(BlockType.Extra, "T", 1) }), NoBranches, "IBase", BranchCollectionT) } } } }, { "--", new(new BlockStackComparer()){ { "IBase", new() { (false, new(new Block[]{ new(BlockType.Extra, "T", 1) }), NoBranches, "IBase", BranchCollectionT), (true, new(new Block[]{ new(BlockType.Extra, "T", 1) }), NoBranches, "IBase", BranchCollectionT) } } } }*/, { "!", new(new BlockStackComparer()) { { ExtendedTypeBool, new() { (false, (ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches)) } } } }/*, { "!!", new(new BlockStackComparer()){ { GetPrimitiveBlockStack("bool"), new() { (true, GetPrimitiveBlockStack("bool"), NoBranches, GetPrimitiveBlockStack("bool"), NoBranches) } } } }*/, { "~", new(new BlockStackComparer()) { { new([new(BlockType.Interface, "ISignedIntegerNumber", 1)]), new() { (false, (new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "ISignedIntegerNumber", 1)]), BranchCollectionT)) } } } } };
+	public static SortedDictionary<String, UnaryOperatorClasses> UnaryOperators { get; } = new()
+	{
+		{
+			"+", new(new BlockStackComparer())
+			{
+				{ ExtendedTypeINumber, new() { (false, NStarTypeT, NStarTypeINumberT) } }
+			}
+		},
+		{
+			"-", new(new BlockStackComparer())
+			{
+				{ ExtendedTypeISignedIntegerNumber, new() { (false, NStarTypeT, NStarTypeISignedIntegerNumberT) } },
+				{ ExtendedTypeIFloatNumber, new() { (false, NStarTypeT, NStarTypeIFloatNumberT) } }
+			}
+		},
+		{
+			"++", new(new BlockStackComparer())
+			{
+				{ ExtendedTypeIIncreasable, new() { (false, NStarTypeT, NStarTypeIIncreasableT), (true, NStarTypeT, NStarTypeIIncreasableT) } }
+			}
+		},
+		{
+			"--", new(new BlockStackComparer())
+			{
+				{ ExtendedTypeIIncreasable, new() { (false, NStarTypeT, NStarTypeIIncreasableT), (true, NStarTypeT, NStarTypeIIncreasableT) } }
+			}
+		},
+		{
+			"!", new(new BlockStackComparer())
+			{
+				{ ExtendedTypeBool, new() { (false, BoolType, BoolType) } }
+			}
+		},
+		{
+			"!!", new(new BlockStackComparer())
+			{
+				{ GetPrimitiveBlockStack("bool"), new() { (true, BoolType, BoolType) } }
+			}
+		},
+		{
+			"~", new(new BlockStackComparer())
+			{
+				{ ExtendedTypeISignedIntegerNumber, new() { (false, NStarTypeT, NStarTypeISignedIntegerNumberT) } }
+			}
+		}
+	};
 
 	/// <summary>
 	/// Sorted by Operator, also contains ReturnTypes, ReturnNStarType.ExtraTypes, LeftOpdTypes and LeftOpdExtraTypes, RightOpdTypes and RightOpdExtraTypes.
@@ -411,117 +588,118 @@ public static class BuiltInMemberCollections
 		{
 			"+", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeInt, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } },
-				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } },
-				{ ExtendedTypeString, new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (GetPrimitiveBlockStack("char"), NoBranches), (ExtendedTypeString, NoBranches)), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("char") }]), (ExtendedTypeString, NoBranches)), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeString, NoBranches), (GetPrimitiveBlockStack("char"), NoBranches)), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeString, NoBranches), (ExtendedTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("char") }])), ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (ExtendedTypeString, NoBranches), (ExtendedTypeString, NoBranches)) } }
+				{ ExtendedTypeIIncreasable, new() { (NStarTypeT, NStarTypeIIncreasableT, IntType), (NStarTypeT, IntType, NStarTypeIIncreasableT) } },
+				{ ExtendedTypeINumber, new() { (NStarTypeT, NStarTypeINumberT, NStarTypeINumberT) } },
+				{ ExtendedTypeString, new() { (StringType, CharType, StringType), (StringType, CharListType, StringType), (StringType, StringType, CharType), (StringType, StringType, CharListType), (StringType, StringType, StringType) } }
 			}
 		},
 		{
 			"-", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)), ((ExtendedTypeInt, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } },
-				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } }
+				{ ExtendedTypeIIncreasable, new() { (NStarTypeT, NStarTypeIIncreasableT, IntType), (IntType, NStarTypeIIncreasableT, NStarTypeIIncreasableT) } },
+				{ ExtendedTypeINumber, new() { (NStarTypeT, NStarTypeINumberT, NStarTypeINumberT) } }
 			}
 		},
 		{
 			"*", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } }, { ExtendedTypeString, new() { ((ExtendedTypeString, NoBranches), (ExtendedTypeInt, NoBranches), (ExtendedTypeString, NoBranches)), ((ExtendedTypeString, NoBranches), (ExtendedTypeString, NoBranches), (ExtendedTypeInt, NoBranches)) } }
+				{ ExtendedTypeINumber, new() { (NStarTypeT, NStarTypeINumberT, NStarTypeINumberT) } },
+				{ ExtendedTypeString, new() { (StringType, IntType, StringType), (StringType, StringType, IntType) } }
 			}
 		},
 		{
 			"/", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT)) } },
-				{ new([new(BlockType.Interface, "IFloatNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT)) } }
+				{ ExtendedTypeIIntegerNumber, new() { (NStarTypeT, NStarTypeIIntegerNumberT, NStarTypeIIntegerNumberT) } },
+				{ ExtendedTypeIFloatNumber, new() { (NStarTypeT, NStarTypeIFloatNumberT, NStarTypeIFloatNumberT) } }
 			}
 		},
 		{
 			"pow", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)) } },
-				{ new([new(BlockType.Interface, "IFloatNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IFloatNumber", 1)]), BranchCollectionT)) } } } },
+				{ ExtendedTypeIIntegerNumber, new() { (NStarTypeT, NStarTypeIIntegerNumberT, IntType) } },
+				{ ExtendedTypeIFloatNumber, new() { (NStarTypeT, NStarTypeIFloatNumberT, NStarTypeIFloatNumberT) } } } },
 		{
 			"==", new(new BlockStackComparer())
 			{
-				{ GetPrimitiveBlockStack("object"), new() { ((new([new(BlockType.Interface, "object", 1)]), NoBranches), (new([new(BlockType.Interface, "object", 1)]), NoBranches), (new([new(BlockType.Interface, "object", 1)]), NoBranches)) } }
+				{ GetPrimitiveBlockStack("object"), new() { (BoolType, ObjectType, ObjectType) } }
 			}
 		},
 		{
 			">", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } },
-				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } }
+				{ ExtendedTypeIIncreasable, new() { (BoolType, NStarTypeIIncreasableT, NStarTypeIIncreasableT) } },
+				{ ExtendedTypeINumber, new() { (BoolType, NStarTypeINumberT, NStarTypeINumberT) } }
 			}
 		},
 		{
 			"<", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } },
-				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } }
+				{ ExtendedTypeIIncreasable, new() { (BoolType, NStarTypeIIncreasableT, NStarTypeIIncreasableT) } },
+				{ ExtendedTypeINumber, new() { (BoolType, NStarTypeINumberT, NStarTypeINumberT) } }
 			}
 		},
 		{
 			">=", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } },
-				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } } } },
+				{ ExtendedTypeIIncreasable, new() { (BoolType, NStarTypeIIncreasableT, NStarTypeIIncreasableT) } },
+				{ ExtendedTypeINumber, new() { (BoolType, NStarTypeINumberT, NStarTypeINumberT) } } } },
 		{
 			"<=", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIncreasable", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIncreasable", 1)]), BranchCollectionT)) } },
-				{ new([new(BlockType.Interface, "INumber", 1)]), new() { ((ExtendedTypeBool, NoBranches), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "INumber", 1)]), BranchCollectionT)) } }
+				{ ExtendedTypeIIncreasable, new() { (BoolType, NStarTypeIIncreasableT, NStarTypeIIncreasableT) } },
+				{ ExtendedTypeINumber, new() { (BoolType, NStarTypeINumberT, NStarTypeINumberT) } }
 			}
 		},
 		{
 			"!=", new(new BlockStackComparer())
 			{
-				{ GetPrimitiveBlockStack("object"), new() { ((new([new(BlockType.Interface, "object", 1)]), NoBranches), (new([new(BlockType.Interface, "object", 1)]), NoBranches), (new([new(BlockType.Interface, "object", 1)]), NoBranches)) } }
+				{ GetPrimitiveBlockStack("object"), new() { (BoolType, ObjectType, ObjectType) } }
 			}
 		},
 		{
 			">>", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)) } }
+				{ ExtendedTypeIIntegerNumber, new() { (NStarTypeT, NStarTypeIIntegerNumberT, IntType) } }
 			}
 		},
 		{
 			"<<", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (ExtendedTypeInt, NoBranches)) } }
+				{ ExtendedTypeIIntegerNumber, new() { (NStarTypeT, NStarTypeIIntegerNumberT, IntType) } }
 			}
 		},
 		{
 			"&", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT)) } }
+				{ ExtendedTypeIIntegerNumber, new() { (NStarTypeT, NStarTypeIIntegerNumberT, NStarTypeIIntegerNumberT) } }
 			}
 		},
 		{
 			"|", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT)) } }
+				{ ExtendedTypeIIntegerNumber, new() { (NStarTypeT, NStarTypeIIntegerNumberT, NStarTypeIIntegerNumberT) } }
 			}
 		},
 		{
 			"^", new(new BlockStackComparer())
 			{
-				{ new([new(BlockType.Interface, "IIntegerNumber", 1)]), new() { ((new([new(BlockType.Extra, "T", 1)]), NoBranches), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT), (new([new(BlockType.Interface, "IIntegerNumber", 1)]), BranchCollectionT)) } }
+				{ ExtendedTypeIIntegerNumber, new() { (NStarTypeT, NStarTypeIIntegerNumberT, NStarTypeIIntegerNumberT) } }
 			}
 		},
 		{
-			"&&", new(new BlockStackComparer()) { { ExtendedTypeBool, new() { ((ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches)) } } }
+			"&&", new(new BlockStackComparer()) { { ExtendedTypeBool, new() { (BoolType, BoolType, BoolType) } } }
 		},
 		{
 			"||", new(new BlockStackComparer())
 			{
-				{ ExtendedTypeBool, new() { ((ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches)) } }
+				{ ExtendedTypeBool, new() { (BoolType, BoolType, BoolType) } }
 			}
 		},
 		{
 			"^^", new(new BlockStackComparer())
 			{
-				{ ExtendedTypeBool, new() { ((ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches), (ExtendedTypeBool, NoBranches)) } }
+				{ ExtendedTypeBool, new() { (BoolType, BoolType, BoolType) } }
 			}
 		}
 	};
@@ -529,12 +707,24 @@ public static class BuiltInMemberCollections
 	/// <summary>
 	/// Sorted by Container, also contains Name and Value.
 	/// </summary>
-	public static TypeSortedList<List<(String Name, int Value)>> EnumConstants { get; } = new() { { new([new(BlockType.Namespace, "System", 1), new(BlockType.Enum, "DateTimeKind", 1)]), new() { ("Local", (int)DateTimeKind.Local), ("Unspecified", (int)DateTimeKind.Unspecified), ("UTC", (int)DateTimeKind.Utc) } }, { new([new(BlockType.Namespace, "System", 1), new(BlockType.Enum, "DayOfWeek", 1)]), new() { ("Friday", (int)DayOfWeek.Friday), ("Monday", (int)DayOfWeek.Monday), ("Saturday", (int)DayOfWeek.Saturday), ("Sunday", (int)DayOfWeek.Sunday), ("Thursday", (int)DayOfWeek.Thursday), ("Tuesday", (int)DayOfWeek.Tuesday), ("Wednesday", (int)DayOfWeek.Wednesday) } } };
-
-	/// <summary>
-	/// Sorted by Container, also contains Name, Type and Value.
-	/// </summary>
-	public static TypeSortedList<List<(String Name, NStarType Type, dynamic Value)>> OtherConstants { get; } = new() { { GetPrimitiveBlockStack("byte"), new() { ("MaxValue", (new([new(BlockType.Interface, "byte", 1)]), NoBranches), byte.MaxValue), ("MinValue", (new([new(BlockType.Interface, "byte", 1)]), NoBranches), byte.MinValue) } }, { GetPrimitiveBlockStack("char"), new() { ("MaxValue", (new([new(BlockType.Interface, "char", 1)]), NoBranches), char.MaxValue), ("MinValue", (new([new(BlockType.Interface, "char", 1)]), NoBranches), char.MinValue) } }, { ExtendedTypeInt, new() { ("MaxValue", (new([new(BlockType.Interface, "int", 1)]), NoBranches), int.MaxValue), ("MinValue", (new([new(BlockType.Interface, "int", 1)]), NoBranches), int.MinValue) } }, { new([new(BlockType.Primitive, "long char", 1)]), new() { ("MaxValue", (new([new(BlockType.Interface, "long char", 1)]), NoBranches), uint.MaxValue), ("MinValue", (new([new(BlockType.Interface, "long char", 1)]), NoBranches), uint.MinValue) } }, { new([new(BlockType.Primitive, "long int", 1)]), new() { ("MaxValue", (new([new(BlockType.Interface, "long int", 1)]), NoBranches), long.MaxValue), ("MinValue", (new([new(BlockType.Interface, "long int", 1)]), NoBranches), long.MinValue) } }, { GetPrimitiveBlockStack("real"), new() { ("MaxValue", (new([new(BlockType.Interface, "real", 1)]), NoBranches), double.MaxValue), ("MinPosValue", (new([new(BlockType.Interface, "real", 1)]), NoBranches), double.Epsilon), ("MinValue", (new([new(BlockType.Interface, "real", 1)]), NoBranches), double.MinValue) } }, { new([new(BlockType.Primitive, "short char", 1)]), new() { ("MaxValue", (new([new(BlockType.Interface, "short char", 1)]), NoBranches), byte.MaxValue), ("MinValue", (new([new(BlockType.Interface, "short char", 1)]), NoBranches), byte.MinValue) } }, { new([new(BlockType.Primitive, "short int", 1)]), new() { ("MaxValue", (new([new(BlockType.Interface, "short int", 1)]), NoBranches), short.MaxValue), ("MinValue", (new([new(BlockType.Interface, "short int", 1)]), NoBranches), short.MinValue) } }, { new([new(BlockType.Primitive, "unsigned int", 1)]), new() { ("MaxValue", (new([new(BlockType.Interface, "unsigned int", 1)]), NoBranches), uint.MaxValue), ("MinValue", (new([new(BlockType.Interface, "unsigned int", 1)]), NoBranches), uint.MinValue) } }, { new([new(BlockType.Primitive, "unsigned long int", 1)]), new() { ("MaxValue", (new([new(BlockType.Interface, "unsigned long int", 1)]), NoBranches), ulong.MaxValue), ("MinValue", (new([new(BlockType.Interface, "unsigned long int", 1)]), NoBranches), ulong.MinValue) } }, { new([new(BlockType.Primitive, "unsigned short int", 1)]), new() { ("MaxValue", (new([new(BlockType.Interface, "unsigned short int", 1)]), NoBranches), ushort.MaxValue), ("MinValue", (new([new(BlockType.Interface, "unsigned short int", 1)]), NoBranches), ushort.MinValue) } } };
+	public static TypeSortedList<List<(String Name, int Value)>> EnumConstants { get; } = new()
+	{ 
+		{
+			new([new(BlockType.Namespace, "System", 1), new(BlockType.Enum, "DateTimeKind", 1)]), new() 
+			{
+				("Local", (int)DateTimeKind.Local), ("Unspecified", (int)DateTimeKind.Unspecified),
+				("UTC", (int)DateTimeKind.Utc)
+			}
+		},
+		{
+			new([new(BlockType.Namespace, "System", 1), new(BlockType.Enum, "DayOfWeek", 1)]), new()
+			{
+				("Friday", (int)DayOfWeek.Friday), ("Monday", (int)DayOfWeek.Monday), ("Saturday", (int)DayOfWeek.Saturday), 
+				("Sunday", (int)DayOfWeek.Sunday), ("Thursday", (int)DayOfWeek.Thursday),
+				("Tuesday", (int)DayOfWeek.Tuesday), ("Wednesday", (int)DayOfWeek.Wednesday)
+			} 
+		}
+	};
 
 	/// <summary>
 	/// Sorted by Container, also contains Name and Value.
@@ -544,30 +734,237 @@ public static class BuiltInMemberCollections
 	/// <summary>
 	/// Sorted by SrcType, also contains SrcNStarType.ExtraTypes, DestTypes and their DestNStarType.ExtraTypes.
 	/// </summary>
-	public static TypeSortedList<ImplicitConversions> ImplicitConversions { get; } = new() { { ExtendedTypeBool, new() { { NoBranches, new() { (RealType, false), (UnsignedIntType, false), (IntType, false), (ShortIntType, false), (ByteType, false) } } } }, { GetPrimitiveBlockStack("byte"), new() { { NoBranches, new() { (UnsignedIntType, false), (IntType, false), (ShortIntType, false), (GetPrimitiveType("short char"), true), (BoolType, true) } } } }, { GetPrimitiveBlockStack("char"), new() { { NoBranches, new() { (UnsignedShortIntType, false), (StringType, false) } } } }, { GetPrimitiveBlockStack("complex"), new() { { NoBranches, new() { } } } }, { ExtendedTypeInt, new() { { NoBranches, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (IndexType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true) } } } }, { ExtendedTypeList, new() { { [new("type", 0, []) { Extra = GetPrimitiveType("char") }], new() { (StringType, false) } } } }, { GetPrimitiveBlockStack("long char"), new() { { NoBranches, new() { (UnsignedIntType, false) } } } }, { GetPrimitiveBlockStack("long int"), new() { { NoBranches, new() { (LongLongType, false), (UnsignedLongIntType, true), (BoolType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (RealType, true) } } } }, { GetPrimitiveBlockStack("long long"), new() { { NoBranches, new() { (BoolType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (UnsignedLongIntType, true), (RealType, true) } } } }, { GetPrimitiveBlockStack("real"), new() { { NoBranches, new() { (ComplexType, false), (BoolType, true), (UnsignedLongIntType, true), (LongIntType, true), (UnsignedIntType, true), (IntType, true) } } } }, { GetPrimitiveBlockStack("short char"), new() { { NoBranches, new() { (ByteType, false) } } } }, { GetPrimitiveBlockStack("short int"), new() { { NoBranches, new() { (LongIntType, false), (RealType, false), (IntType, false), (UnsignedShortIntType, false), (BoolType, true), (ByteType, true), (UnsignedIntType, true), (UnsignedLongIntType, true) } } } }, { ExtendedTypeString, new() { { NoBranches, new() { ((ExtendedTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("char") }]), false) } } } }, { GetPrimitiveBlockStack("unsigned int"), new() { { NoBranches, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (IntType, true) } } } }, { GetPrimitiveBlockStack("unsigned long int"), new() { { NoBranches, new() { (BoolType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (LongIntType, true), (RealType, true) } } } }, { GetPrimitiveBlockStack("unsigned short int"), new() { { NoBranches, new() { (UnsignedLongIntType, false), (LongIntType, false), (RealType, false), (UnsignedIntType, false), (IntType, false), (BoolType, true), (ByteType, true), (ShortIntType, true) } } } } };
+	public static TypeSortedList<ImplicitConversions> ImplicitConversions { get; } = new()
+	{
+		{
+			ExtendedTypeBool, new()
+			{
+				{ NoBranches, new() { (RealType, false), (UnsignedIntType, false), (IntType, false), (ShortIntType, false), (ByteType, false) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("byte"), new()
+			{
+				{ NoBranches, new() { (UnsignedIntType, false), (IntType, false), (ShortIntType, false), (GetPrimitiveType("short char"), true), (BoolType, true) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("char"), new() {
+				{ NoBranches, new() { (UnsignedShortIntType, false), (StringType, false) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("complex"), new()
+			{
+				{ NoBranches, new() { } }
+			}
+		},
+		{
+			ExtendedTypeInt, new()
+			{
+				{ NoBranches, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (IndexType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true) } }
+			}
+		},
+		{
+			ExtendedTypeList, new()
+			{
+				{ [new("type", 0, []) { Extra = GetPrimitiveType("char") }], new() { (StringType, false) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("long char"), new()
+			{
+				{ NoBranches, new() { (UnsignedIntType, false) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("long int"), new()
+			{
+				{ NoBranches, new() { (LongLongType, false), (UnsignedLongIntType, true), (BoolType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (RealType, true) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("long long"), new()
+			{
+				{ NoBranches, new() { (BoolType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (UnsignedLongIntType, true), (RealType, true) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("real"), new()
+			{
+				{ NoBranches, new() { (ComplexType, false), (BoolType, true), (UnsignedLongIntType, true), (LongIntType, true), (UnsignedIntType, true), (IntType, true) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("short char"), new()
+			{
+				{ NoBranches, new() { (ByteType, false) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("short int"), new()
+			{
+				{ NoBranches, new() { (LongIntType, false), (RealType, false), (IntType, false), (UnsignedShortIntType, false), (BoolType, true), (ByteType, true), (UnsignedIntType, true), (UnsignedLongIntType, true) } }
+			}
+		},
+		{
+			ExtendedTypeString, new()
+			{
+				{ NoBranches, new() { (CharListType, false) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("unsigned int"), new()
+			{
+				{ NoBranches, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (IntType, true) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("unsigned long int"), new()
+			{
+				{ NoBranches, new() { (BoolType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (LongIntType, true), (RealType, true) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("unsigned short int"), new()
+			{
+				{ NoBranches, new() { (UnsignedLongIntType, false), (LongIntType, false), (RealType, false), (UnsignedIntType, false), (IntType, false), (BoolType, true), (ByteType, true), (ShortIntType, true) } }
+			}
+		}
+	};
 
 	/// <summary>
 	/// Sorted by tuple, contains DestType and DestNStarType.ExtraTypes.
 	/// </summary>
-	public static List<NStarType> ImplicitConversionsFromAnything { get; } = [(GetPrimitiveBlockStack("object"), NoBranches), (GetPrimitiveBlockStack("null"), NoBranches), (ExtendedTypeList, [new("type", 0, []) { Extra = GetPrimitiveType("[this]") }])];
+	public static List<NStarType> ImplicitConversionsFromAnything { get; } = [(GetPrimitiveBlockStack("object"), NoBranches), (GetPrimitiveBlockStack("null"), NoBranches), GetListType(GetPrimitiveType("[this]"))];
 
 	public static G.SortedSet<String> NotImplementedNamespaces { get; } = ["System.Diagnostics", "System.Globalization", "System.Runtime", "System.Text", "System.Threading"];
 
 	/// <summary>
 	/// Sorted by Namespace, also contains UseInstead.
 	/// </summary>
-	public static SortedDictionary<String, String> OutdatedNamespaces { get; } = new() { { "System.Collections.Generic", "System.Collections" }, { "System.Linq", "RedStarLinq" }, { "System.Windows", "System.GUI" }, { "System.Windows.Forms", "System.GUI" } };
+	public static SortedDictionary<String, String> OutdatedNamespaces { get; } = new() 
+	{
+		{ "System.Collections.Generic", "System.Collections" }, { "System.Linq", "RedStarLinq" }, 
+		{ "System.Windows", "System.GUI" }, { "System.Windows.Forms", "System.GUI" }
+	};
 
-	public static G.SortedSet<String> ReservedNamespaces { get; } = ["Microsoft", "System.Activities", "System.AddIn", "System.CodeDom", "Concurrent", "ObjectModel", "Specialized", "System.ComponentModel", "System.Configuration", "System.Data", "System.Deployment", "System.Device", "System.Diagnostics.CodeAnalysis", "System.Diagnostics.Contracts", "System.Diagnostics.Design", "System.Diagnostics.Eventing", "System.Diagnostics.PerformanceData", "System.Diagnostics.SymbolStore", "System.Diagnostics.Tracing", "System.DirectoryServices", "System.Drawing", "System.Dynamic", "System.EnterpriseServices", "System.IdentityModel", "System.IO.Compression", "System.IO.IsolatedStorage", "System.IO.Log", "System.IO.MemoryMappedFiles", "System.IO.Packaging", "System.IO.Pipes", "System.IO.Ports", "System.Management", "System.Media", "System.Messaging", "System.Net", "System.Numerics", "System.Printing", "System.Reflection", "System.Resources", "System.Runtime.Caching", "System.Runtime.CompilerServices", "System.Runtime.ConstrainedExecution", "System.Runtime.DesignerServices", "System.Runtime.ExceptionServices", "System.Runtime.Hosting", "System.Runtime.InteropServices", "System.Runtime.Remoting", "System.Runtime.Serialization", "System.Runtime.Versioning", "System.Security", "System.ServiceModel", "System.ServiceProcess", "System.Speech", "System.StubHelpers", "System.Text.RegularExpressions", "System.Threading.Tasks", "System.Timers", "System.Transactions", "System.Web", "System.Windows.Annotations", "System.Windows.Automation", "System.Windows.Baml2006", "System.Windows.Controls", "System.Windows.Data", "System.Windows.Documents", "System.Windows.Forms.ComponentModel", "System.Windows.Forms.DataVisualization", "System.Windows.Forms.Design", "System.Windows.Forms.Interaction", "System.Windows.Forms.Layout", "System.Windows.Forms.PropertyGridInternal", "System.Windows.Forms.VisualStyles", "System.Windows.Ink", "System.Windows.Input", "System.Windows.Interop", "System.Windows.Markup", "System.Windows.Media", "System.Windows.Navigation", "System.Windows.Resources", "System.Windows.Shapes", "System.Windows.Threading", "System.Windows.Xps", "System.Workflow", "System.Xaml", "System.Xml", "Windows", "XamlGeneratedNamespace"];
+	public static G.SortedSet<String> ReservedNamespaces { get; } = [
+		"Microsoft",
+		"System.Activities", "System.AddIn", "System.CodeDom",
+		"System.Collections.Concurrent", "System.Collections.ObjectModel", "System.Collections.Specialized",
+		"System.ComponentModel", "System.Configuration",
+		"System.Data", "System.Deployment", "System.Device",
+		"System.Diagnostics.CodeAnalysis", "System.Diagnostics.Contracts", "System.Diagnostics.Design",
+		"System.Diagnostics.Eventing", "System.Diagnostics.PerformanceData",
+		"System.Diagnostics.SymbolStore", "System.Diagnostics.Tracing",
+		"System.DirectoryServices", "System.Drawing", "System.Dynamic",
+		"System.EnterpriseServices", "System.IdentityModel",
+		"System.IO.Compression", "System.IO.IsolatedStorage", "System.IO.Log", "System.IO.MemoryMappedFiles",
+		"System.IO.Packaging", "System.IO.Pipes", "System.IO.Ports",
+		"System.Management", "System.Media", "System.Messaging", "System.Net", "System.Numerics",
+		"System.Printing", "System.Reflection", "System.Resources",
+		"System.Runtime.Caching", "System.Runtime.CompilerServices", "System.Runtime.ConstrainedExecution",
+		"System.Runtime.DesignerServices", "System.Runtime.ExceptionServices", "System.Runtime.Hosting",
+		"System.Runtime.InteropServices", "System.Runtime.Remoting",
+		"System.Runtime.Serialization", "System.Runtime.Versioning",
+		"System.Security", "System.ServiceModel", "System.ServiceProcess", "System.Speech", "System.StubHelpers",
+		"System.Text.RegularExpressions", "System.Threading.Tasks",
+		"System.Timers", "System.Transactions", "System.Web",
+		"System.Windows.Annotations", "System.Windows.Automation", "System.Windows.Baml2006", "System.Windows.Controls",
+		"System.Windows.Data", "System.Windows.Documents",
+		"System.Windows.Forms.ComponentModel", "System.Windows.Forms.DataVisualization", "System.Windows.Forms.Design",
+		"System.Windows.Forms.Interaction", "System.Windows.Forms.Layout",
+		"System.Windows.Forms.PropertyGridInternal", "System.Windows.Forms.VisualStyles",
+		"System.Windows.Ink", "System.Windows.Input", "System.Windows.Interop", "System.Windows.Markup", "System.Windows.Media",
+		"System.Windows.Navigation", "System.Windows.Resources", "System.Windows.Shapes",
+		"System.Windows.Threading", "System.Windows.Xps",
+		"System.Workflow", "System.Xaml", "System.Xml", "Windows", "XamlGeneratedNamespace"
+	];
 
-	public static G.SortedSet<(String Namespace, String Type)> NotImplementedTypes { get; } = [([], "long complex"), ([], "long real"), ("System", "Delegate"), ("System", "Enum"), ("System", "Environment"), ("System", "OperatingSystem")];
+	public static G.SortedSet<(String Namespace, String Type)> NotImplementedTypes { get; } = [
+		([], "long complex"), ([], "long real"),
+		("System", "Delegate"), ("System", "Enum"), ("System", "Environment"), ("System", "OperatingSystem")
+	];
 
 	/// <summary>
 	/// Sorted by Namespace and Type, also contains UseInstead.
 	/// </summary>
-	public static SortedDictionary<(String Namespace, String Type), String> OutdatedTypes { get; } = new() { { ([], "*Exception"), "\"if error ...\"" }, { ([], "double"), "real or long real" }, { ([], "float"), "real or long real" }, { ([], "uint"), "unsigned int" }, { ([], "ulong"), "unsigned long int" }, { ([], "ushort"), "unsigned short int" }, { ("System", "Array"), "list" }, { ("System", "Boolean"), "bool" }, { ("System", "Byte"), "byte (from the small letter)" }, { ("System", "Char"), "char (from the small letter), short char or long char" }, { ("System", "Console"), "labels and textboxes" }, { ("System", "ConsoleCancelEventArgs"), "TextBox.KeyDown, TextBox.KeyPress and TextBox.KeyUp" }, { ("System", "ConsoleCancelEventHandler"), "TextBox keyboard events" }, { ("System", "ConsoleColor"), "RichTextBox text color" }, { ("System", "ConsoleKey"), "other item enums" }, { ("System", "ConsoleKeyInfo"), "other item info classes" }, { ("System", "ConsoleModifiers"), "other item modifiers enums" }, { ("System", "ConsoleSpecialKey"), "other item enums" }, { ("System", "Double"), "real or long real" }, { ("System", "Int16"), "short int" }, { ("System", "Int32"), "int" }, { ("System", "Int64"), "long int" }, { ("System", "Object"), "object (from the small letter)" }, { ("System", "Random"), "Random(), IntRandom() etc." }, { ("System", "SByte"), "byte or short int" }, { ("System", "Single"), "real or long real" }, { ("System", "String"), "string (from the small letter)" }, { ("System", "Type"), "typename" }, { ("System", "UInt16"), "unsigned short int" }, { ("System", "UInt32"), "unsigned int" }, { ("System", "UInt64"), "unsigned long int" }, { ("System", "Void"), "null" }, { ("System.Collections", "BitArray"), "BitList" }, { ("System.Collections", "HashSet"), "ListHashSet" }, { ("System.Collections", "Hashtable"), "HashTable" }, { ("System.Collections", "KeyValuePair"), "tuples" }, { ("System.Collections", "SortedSet"), "SortedSet" } };
+	public static SortedDictionary<(String Namespace, String Type), String> OutdatedTypes { get; } = new()
+	{
+		{ ([], "*Exception"), "\"if error ...\"" },
+		{ ([], "double"), "real or long real" }, { ([], "float"), "real or long real" },
+		{ ([], "uint"), "unsigned int" }, { ([], "ulong"), "unsigned long int" }, { ([], "ushort"), "unsigned short int" },
+		{ ("System", "Action"), "System.Func[null, ...]" }, { ("System", "Array"), "list" }, { ("System", "Boolean"), "bool" },
+		{ ("System", "Byte"), "byte (from the small letter)" },
+		{ ("System", "Char"), "char (from the small letter), short char or long char" },
+		{ ("System", "Console"), "labels and textboxes" },
+		{ ("System", "ConsoleCancelEventArgs"), "TextBox.KeyDown, TextBox.KeyPress and TextBox.KeyUp" },
+		{ ("System", "ConsoleCancelEventHandler"), "TextBox keyboard events" },
+		{ ("System", "ConsoleColor"), "RichTextBox text color" }, { ("System", "ConsoleKey"), "other item enums" },
+		{ ("System", "ConsoleKeyInfo"), "other item info classes" },
+		{ ("System", "ConsoleModifiers"), "other item modifiers enums" },
+		{ ("System", "ConsoleSpecialKey"), "other item enums" },
+		{ ("System", "Double"), "real or long real" },
+		{ ("System", "Int16"), "short int" }, { ("System", "Int32"), "int" }, { ("System", "Int64"), "long int" },
+		{ ("System", "Object"), "object (from the small letter)" },
+		{ ("System", "Random"), "Random(), IntRandom() etc." },
+		{ ("System", "SByte"), "byte or short int" }, { ("System", "Single"), "real or long real" },
+		{ ("System", "String"), "string (from the small letter)" },
+		{ ("System", "Type"), "typename" },
+		{ ("System", "UInt16"), "unsigned short int" }, { ("System", "UInt32"), "unsigned int" },
+		{ ("System", "UInt64"), "unsigned long int" }, { ("System", "Void"), "null" },
+		{ ("System.Collections", "BitArray"), "BitList" },
+		{ ("System.Collections", "HashSet"), "ListHashSet" }, { ("System.Collections", "Hashtable"), "Dictionary" },
+		{ ("System.Collections", "KeyValuePair"), "tuples" }, { ("System.Collections", "SortedSet"), "SortedSet" }
+	};
 
-	public static G.SortedSet<(String Namespace, String Type)> ReservedTypes { get; } = [([], "*Attribute"), ([], "*Comparer"), ([], "*Enumerator"), ([], "*UriParser"), ([], "decimal"), ("System", "ActivationContext"), ("System", "ActivationContext.ContextForm"), ("System", "Activator"), ("System", "AppContext"), ("System", "AppDomain"), ("System", "AppDomainInitializer"), ("System", "AppDomainManager"), ("System", "AppDomainManagerInitializationOptions"), ("System", "AppDomainSetup"), ("System", "ApplicationId"), ("System", "ApplicationIdentity"), ("System", "ArgIterator"), ("System", "ArraySegment"), ("System", "AssemblyLoadEventArgs"), ("System", "AsyncCallback"), ("System", "AttributeTargets"), ("System", "Base64FormattingOptions"), ("System", "BitConverter"), ("System", "Buffer"), ("System", "Comparison"), ("System", "ContextBoundObject"), ("System", "ContextStaticAttribute"), ("System", "Convert"), ("System", "Converter"), ("System", "CrossAppDomainDelegate"), ("System", "DateTimeOffset"), ("System", "DBNull"), ("System", "Decimal"), ("System", "Environment.SpecialFolder"), ("System", "Environment.SpecialFolderOption"), ("System", "EnvironmentVariableTarget"), ("System", "EventArgs"), ("System", "EventHandler"), ("System", "FormattableString"), ("System", "GC"), ("System", "GCCollectionMode"), ("System", "GCNotificationStatus"), ("System", "GenericUriParserOptions"), ("System", "Guid"), ("System", "IAppDomainSetup"), ("System", "IAsyncResult"), ("System", "ICloneable"), ("System", "ICustomFormattable"), ("System", "IDisposable"), ("System", "IFormatProvider"), ("System", "IFormattable"), ("System", "IObservable"), ("System", "IObserver"), ("System", "IProgress"), ("System", "IServiceProvider"), ("System", "Lazy"), ("System", "LoaderOptimization"), ("System", "LocalDataStoreSlot"), ("System", "MarshalByRefObject"), ("System", "Math"), ("System", "MidpointRounding"), ("System", "ModuleHandle"), ("System", "MulticastDelegate"), ("System", "Nullable"), ("System", "PlatformID"), ("System", "Progress"), ("System", "ResolveEventArgs"), ("System", "ResolveEventHandler"), ("System", "RuntimeArgumentHandle"), ("System", "RuntimeFieldHandle"), ("System", "RuntimeMethodHandle"), ("System", "RuntimeTypeHandle"), ("System", "StringComparer"), ("System", "StringComparison"), ("System", "StringSplitOptions"), ("System", "TimeZone"), ("System", "TimeZoneInfo"), ("System", "TimeZoneInfo.AdjustmentRule"), ("System", "TimeZoneInfo.TransitionTime"), ("System", "Tuple"), ("System", "TupleExtensions"), ("System", "TypeCode"), ("System", "TypedReference"), ("System", "UIntPtr"), ("System", "Uri"), ("System", "UriBuilder"), ("System", "UriComponents"), ("System", "UriFormat"), ("System", "UriHostNameType"), ("System", "UriIdnScope"), ("System", "UriKind"), ("System", "UriPartial"), ("System", "UriTemplate"), ("System", "UriTemplateEquivalenceComparer"), ("System", "UriTemplateMatch"), ("System", "UriTemplateTable"), ("System", "UriTypeConverter"), ("System", "ValueTuple"), ("System", "ValueType"), ("System", "Version"), ("System", "WeakReference"), ("System", "_AppDomain"), ("System.Collections", "ArrayList"), ("System.Collections", "CaseInsensitiveHashCodeProvider"), ("System.Collections", "CollectionBase"), ("System.Collections", "Dictionary.KeyCollection"), ("System.Collections", "Dictionary.ValueCollection"), ("System.Collections", "DictionaryBase"), ("System.Collections", "DictionaryEntry"), ("System.Collections", "IHashCodeProvider"), ("System.Collections", "IReadOnlyCollection"), ("System.Collections", "IReadOnlyDictionary"), ("System.Collections", "IReadOnlyList"), ("System.Collections", "ISet"), ("System.Collections", "IStructuralComparable"), ("System.Collections", "IStructuralEquatable"), ("System.Collections", "KeyedByTypeCollection"), ("System.Collections", "ReadOnlyCollectionBase"), ("System.Collections", "StructuralComparisons"), ("System.Collections", "SynchronizedCollection"), ("System.Collections", "SynchronizedKeyedCollection"), ("System.Collections", "SynchronizedReadOnlyCollection")];
+	public static G.SortedSet<(String Namespace, String Type)> ReservedTypes { get; } = [
+		([], "*Attribute"), ([], "*Comparer"), ([], "*Enumerator"), ([], "*UriParser"), ([], "decimal"),
+		("System", "ActivationContext"), ("System", "ActivationContext.ContextForm"), ("System", "Activator"),
+		("System", "AppContext"), ("System", "AppDomain"), ("System", "AppDomainInitializer"),
+		("System", "AppDomainManager"), ("System", "AppDomainManagerInitializationOptions"), ("System", "AppDomainSetup"),
+		("System", "ApplicationId"), ("System", "ApplicationIdentity"), ("System", "ArgIterator"), ("System", "ArraySegment"),
+		("System", "AssemblyLoadEventArgs"), ("System", "AsyncCallback"), ("System", "AttributeTargets"),
+		("System", "Base64FormattingOptions"), ("System", "BitConverter"), ("System", "Buffer"),
+		("System", "Comparison"), ("System", "ContextBoundObject"), ("System", "ContextStaticAttribute"),
+		("System", "Convert"), ("System", "Converter"), ("System", "CrossAppDomainDelegate"),
+		("System", "DateTimeOffset"), ("System", "DBNull"), ("System", "Decimal"),
+		("System", "EnvironmentVariableTarget"), ("System", "FormattableString"),
+		("System", "GC"), ("System", "GCCollectionMode"), ("System", "GCNotificationStatus"),
+		("System", "GenericUriParserOptions"), ("System", "Guid"),
+		("System", "IAppDomainSetup"), ("System", "IAsyncResult"), ("System", "ICloneable"), ("System", "ICustomFormattable"),
+		("System", "IDisposable"), ("System", "IFormatProvider"), ("System", "IFormattable"),
+		("System", "IObservable"), ("System", "IObserver"), ("System", "IProgress"), ("System", "IServiceProvider"),
+		("System", "Lazy"), ("System", "LoaderOptimization"), ("System", "LocalDataStoreSlot"),
+		("System", "MarshalByRefObject"), ("System", "Math"), ("System", "MidpointRounding"), ("System", "ModuleHandle"),
+		("System", "MulticastDelegate"), ("System", "Nullable"),
+		("System", "PlatformID"), ("System", "Progress"),
+		("System", "ResolveEventArgs"), ("System", "ResolveEventHandler"),
+		("System", "RuntimeArgumentHandle"), ("System", "RuntimeFieldHandle"),
+		("System", "RuntimeMethodHandle"), ("System", "RuntimeTypeHandle"),
+		("System", "StringComparer"), ("System", "StringComparison"), ("System", "StringSplitOptions"),
+		("System", "TimeZone"), ("System", "TimeZoneInfo"),
+		("System", "TimeZoneInfo.AdjustmentRule"), ("System", "TimeZoneInfo.TransitionTime"),
+		("System", "Tuple"), ("System", "TupleExtensions"), ("System", "TypeCode"), ("System", "TypedReference"),
+		("System", "UIntPtr"), ("System", "Uri"), ("System", "UriBuilder"), ("System", "UriComponents"),
+		("System", "UriFormat"), ("System", "UriHostNameType"), ("System", "UriIdnScope"),
+		("System", "UriKind"), ("System", "UriPartial"),
+		("System", "UriTemplate"), ("System", "UriTemplateEquivalenceComparer"),
+		("System", "UriTemplateMatch"), ("System", "UriTemplateTable"), ("System", "UriTypeConverter"),
+		("System", "ValueTuple"), ("System", "ValueType"), ("System", "Version"),
+		("System", "WeakReference"), ("System", "_AppDomain"),
+		("System.Collections", "ArrayList"), ("System.Collections", "CaseInsensitiveHashCodeProvider"),
+		("System.Collections", "CollectionBase"),
+		("System.Collections", "Dictionary.KeyCollection"), ("System.Collections", "Dictionary.ValueCollection"),
+		("System.Collections", "DictionaryBase"), ("System.Collections", "DictionaryEntry"),
+		("System.Collections", "IHashCodeProvider"), ("System.Collections", "IReadOnlyCollection"),
+		("System.Collections", "IReadOnlyDictionary"), ("System.Collections", "IReadOnlyList"), ("System.Collections", "ISet"),
+		("System.Collections", "IStructuralComparable"), ("System.Collections", "IStructuralEquatable"),
+		("System.Collections", "KeyedByTypeCollection"), ("System.Collections", "ReadOnlyCollectionBase"),
+		("System.Collections", "StructuralComparisons"), ("System.Collections", "SynchronizedCollection"),
+		("System.Collections", "SynchronizedKeyedCollection"), ("System.Collections", "SynchronizedReadOnlyCollection")
+	];
 
 	public static G.SortedSet<String> NotImplementedTypeEnds { get; } = [];
 
@@ -586,17 +983,136 @@ public static class BuiltInMemberCollections
 	/// <summary>
 	/// Sorted by Container, then by Member, also contains UseInstead.
 	/// </summary>
-	public static TypeSortedList<SortedDictionary<String, String>> OutdatedMembers { get; } = new() { { ExtendedTypeBool, new() { { "FalseString", "literal \"false\"" }, { "Parse", "implicit conversion" }, { "TrueString", "literal \"true\"" }, { "TryParse", "implicit conversion" } } }, { GetPrimitiveBlockStack("DateTime"), new() { { "IsDaylightSavingTime", "IsSummertime" }, { "Parse", "implicit conversion" }, { "TryParse", "implicit conversion" } } }, { new([new(BlockType.Interface, "INumber", 1)]), new() { { "Parse", "implicit conversion" }, { "TryParse", "implicit conversion" } } }, { ExtendedTypeList, new() { { "Length", "Length" } } }, { GetPrimitiveBlockStack("object"), new() { { "Equals", "==" } } } };
+	public static TypeSortedList<SortedDictionary<String, String>> OutdatedMembers { get; } = new()
+	{
+		{
+			ExtendedTypeBool, new()
+			{
+				{ "FalseString", "literal \"false\"" }, { "Parse", "implicit conversion" }, 
+				{ "TrueString", "literal \"true\"" }, { "TryParse", "implicit conversion" }
+			}
+		},
+		{ 
+			GetPrimitiveBlockStack("DateTime"), new()
+			{ 
+				{ "IsDaylightSavingTime", "IsSummertime" },
+				{ "Parse", "implicit conversion" }, { "TryParse", "implicit conversion" }
+			} 
+		}, 
+		{ 
+			ExtendedTypeINumber, new()
+			{ 
+				{ "Parse", "implicit conversion" }, { "TryParse", "implicit conversion" }
+			} 
+		},
+		{ 
+			ExtendedTypeList, new()
+			{ 
+				{ "Length", "Length" }
+			} 
+		},
+		{ 
+			GetPrimitiveBlockStack("object"), new()
+			{ 
+				{ "Equals", "==" }
+			}
+		}
+	};
 
 	/// <summary>
 	/// Sorted by Container, also contains Members.
 	/// </summary>
-	public static TypeSortedList<G.SortedSet<String>> ReservedMembers { get; } = new() { { new([new(BlockType.Namespace, "System", 1), new(BlockType.Delegate, "Action", 1)]), new() { "BeginInvoke", "EndInvoke", "Invoke" } }, { GetPrimitiveBlockStack("DateTime"), new() { "FromBinary", "FromFileTime", "FromFileTimeUtc", "FromOADate", "GetDateTimeFormats", "ParseExact", "ToFileTime", "ToFileTimeUtc", "ToLongDateString", "ToLongTimeString", "ToOADate", "ToShortDateString", "ToShortTimeString", "TryParseExact" } }, { new([new(BlockType.Namespace, "System", 1), new(BlockType.Delegate, nameof(Func<>), 1)]), new() { "BeginInvoke", "EndInvoke", "Invoke" } }, { new([new(BlockType.Interface, "IChar", 1)]), new() { "ConvertFromUtf32", "ConvertToUtf32", "GetNumericValue", "GetUnicodeCategory", "IsControl", "IsHighSurrogate", "IsLowSurrogate", "IsNumber", "IsPunctuation", "IsSurrogate", "IsSurrogatePair", "IsSymbol", "ToLowerInvariant", "ToUpperInvariant" } }, { ExtendedTypeList, new() { "AsReadOnly", "Capacity", "ConvertAll", "ForEach", "GetEnumerator", "TrimExcess" } }, { GetPrimitiveBlockStack("object"), new() { "GetType", "GetTypeCode", "ReferenceEquals" } }, { new([new(BlockType.Namespace, "System", 1), new(BlockType.Class, "Predicate", 1)]), new() { "BeginInvoke", "EndInvoke", "Invoke" } }, { ExtendedTypeString, new() { "Clone", "Copy", "CopyTo", "Empty", "Format", "GetEnumerator", "Intern", "IsInterned", "IsNormalized", "IsNullOrEmpty", "IsNullOrWhiteSpace", "Normalize", "ToLowerInvariant", "ToUpperInvariant" } } };
+	public static TypeSortedList<G.SortedSet<String>> ReservedMembers { get; } = new()
+	{
+		{
+			GetPrimitiveBlockStack("DateTime"), new() 
+			{
+				"FromBinary", "FromFileTime", "FromFileTimeUtc", "FromOADate", "GetDateTimeFormats", "ParseExact",
+				"ToFileTime", "ToFileTimeUtc", "ToLongDateString", "ToLongTimeString", "ToOADate",
+				"ToShortDateString", "ToShortTimeString", "TryParseExact"
+			}
+		},
+		{
+			FuncBlockStack, new() { "BeginInvoke", "EndInvoke", "Invoke" }
+		},
+		{
+			new([new(BlockType.Interface, "IChar", 1)]), new()
+			{
+				"ConvertFromUtf32", "ConvertToUtf32", "GetNumericValue", "GetUnicodeCategory",
+				"IsControl", "IsHighSurrogate", "IsLowSurrogate", "IsNumber", "IsPunctuation",
+				"IsSurrogate", "IsSurrogatePair", "IsSymbol",
+				"ToLowerInvariant", "ToUpperInvariant" 
+			}
+		},
+		{
+			ExtendedTypeList, new()
+			{
+				"AsReadOnly", "ConvertAll", "GetEnumerator" 
+			}
+		},
+		{
+			GetPrimitiveBlockStack("object"), new()
+			{
+				"GetType", "GetTypeCode", "ReferenceEquals"
+			}
+		},
+		{
+			new([new(BlockType.Namespace, "System", 1), new(BlockType.Class, "Predicate", 1)]), new() 
+			{ 
+				"BeginInvoke", "EndInvoke", "Invoke"
+			}
+		}, 
+		{ 
+			ExtendedTypeString, new() 
+			{
+				"Clone", "Copy", "CopyTo", "Empty", "Format", "GetEnumerator", "Intern",
+				"IsInterned", "IsNormalized", "IsNullOrEmpty", "IsNullOrWhiteSpace", 
+				"Normalize", "ToLowerInvariant", "ToUpperInvariant" 
+			}
+		}
+	};
+
+	public static OutdatedMethods OutdatedStringMethodOverloads { get; } = new()
+	{
+		{
+			"Concat", new()
+			{
+				([
+					ExtendedParameterString1, ExtendedParameterString2, ExtendedParameterString3,
+					new(StringType, "string4", ParameterAttributes.None, [])
+				], "concatenation in pairs, triples or in an array"),
+				([
+					new(ObjectType, "object1", ParameterAttributes.None, []),
+					new(ObjectType, "object2", ParameterAttributes.None, []),
+					new(ObjectType, "object3", ParameterAttributes.None, []),
+					new(ObjectType, "object4", ParameterAttributes.None, [])
+				], "concatenation in pairs, triples or in an array")
+			}
+		}
+	};
 
 	/// <summary>
 	/// Sorted by Container, then by Name, also contains ParameterTypes, ParameterNames, ParameterRestrictions, ParameterAttributes, ParameterDefaultValues and UseInstead suggestions.
 	/// </summary>
-	public static TypeSortedList<OutdatedMethods> OutdatedMethodOverloads { get; } = new() { { new([new(BlockType.Interface, "IChar", 1)]), new() { { "IsDigit", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "string[index] as a parameter") } }, { "IsLetter", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } }, { "IsLetterOrDigit", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } }, { "IsLower", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } }, { "IsSeparator", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } }, { "IsUpper", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } }, { "IsWhiteSpace", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } } } }, { ExtendedTypeString, new() { { "Concat", new() { ([ExtendedParameterString1, ExtendedParameterString2, ExtendedParameterString3, new(StringType, "string4", ParameterAttributes.None, [])], "concatenation in pairs, triples or in an array"), ([new(new(GetPrimitiveBlockStack("object"), NoBranches), "object1", ParameterAttributes.None, []), new(new(GetPrimitiveBlockStack("object"), NoBranches), "object2", ParameterAttributes.None, []), new(new(GetPrimitiveBlockStack("object"), NoBranches), "object3", ParameterAttributes.None, []), new(new(GetPrimitiveBlockStack("object"), NoBranches), "object4", ParameterAttributes.None, [])], "concatenation in pairs, triples or in an array") } } } } };
+	public static TypeSortedList<OutdatedMethods> OutdatedMethodOverloads { get; } = new()
+	{
+		{
+			new([new(BlockType.Interface, "IChar", 1)]),
+			new()
+			{ 
+				{ "IsDigit", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "string[index] as a parameter") } },
+				{ "IsLetter", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } },
+				{ "IsLetterOrDigit", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } },
+				{ "IsLower", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } },
+				{ "IsSeparator", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } },
+				{ "IsUpper", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } },
+				{ "IsWhiteSpace", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } }
+			} 
+		}, 
+		{ 
+			ExtendedTypeString, OutdatedStringMethodOverloads
+		}
+	};
 
 	/// <summary>
 	/// Sorted by Container, also contains ParameterTypes, ParameterNames, ParameterRestrictions, ParameterAttributes, ParameterDefaultValues and UseInstead suggestions.
@@ -630,7 +1146,7 @@ public static class BuiltInMemberCollections
 		else if (Interfaces.TryGetValue((namespace_, typeName), out var value) && value.DotNetType.IsInterface)
 			return new([.. split.Convert(x => new Block(BlockType.Namespace, x, 1)),
 				new(BlockType.Interface, typeName, 1)]);
-		else if (basic.ToString() is nameof(Action) or nameof(Func<>))
+		else if (basic.AsSpan() is nameof(Action) or nameof(Func<>))
 			return new([new(BlockType.Delegate, basic, 1)]);
 		else
 			return new([new(BlockType.Extra, basic, 1)]);

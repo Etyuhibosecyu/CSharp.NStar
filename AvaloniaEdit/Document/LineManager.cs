@@ -163,7 +163,6 @@ namespace AvaloniaEdit.Document;
 			Debug.Assert(charactersRemovedInStartLine > 0);
 			//startLine.RemovedLinePart(ref deferredEventList, offset - startLineOffset, charactersRemovedInStartLine);
 
-
 			var endLine = _documentLineTree.GetByOffset(offset + length);
 			if (endLine == startLine)
 			{

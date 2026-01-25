@@ -618,15 +618,14 @@ namespace AvaloniaEdit.Document;
 			Debug.Assert(node.DistanceToMaxEnd == distanceToMaxEnd);
 		}
 
-		/*
-	1. A node is either red or black.
-	2. The root is black.
-	3. All leaves are black. (The leaves are the NIL children.)
-	4. Both children of every red node are black. (So every red node must have a black parent.)
-	5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
-	 */
-		[SuppressMessage("ReSharper", "UnusedParameter.Local")]
-		private static void CheckNodeProperties(TextSegment node, TextSegment parentNode, bool parentColor, int blackCount, ref int expectedBlackCount)
+	/*
+1. A node is either red or black.
+2. The root is black.
+3. All leaves are black. (The leaves are the NIL children.)
+4. Both children of every red node are black. (So every red node must have a black parent.)
+5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
+ */
+	private static void CheckNodeProperties(TextSegment node, TextSegment parentNode, bool parentColor, int blackCount, ref int expectedBlackCount)
 		{
 			if (node == null) return;
 

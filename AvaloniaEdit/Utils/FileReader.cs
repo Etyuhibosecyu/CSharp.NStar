@@ -208,10 +208,10 @@ namespace AvaloniaEdit.Utils;
 						break;
 					}
 				}
-				else if (b >= 0xc2 && b < 0xf5)
+				else if (b is >= 0xc2 and < 0xf5)
 				{
 					// beginning of byte sequence
-					if (state == UTF8 || state == ASCII)
+					if (state is UTF8 or ASCII)
 					{
 						state = UTF8Sequence;
 						if (b < 0xe0)

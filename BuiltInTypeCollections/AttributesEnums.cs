@@ -52,7 +52,8 @@ public enum FunctionAttributes
 	Abstract = 64,
 	Sealed = 128,
 	New = 192,
-	Wrong = 256,
+	Async = 256,
+	Wrong = -2147483648,
 }
 
 public enum ParameterAttributes

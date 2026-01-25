@@ -24,17 +24,13 @@ using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Editing;
 
-	sealed class EmptySelection : Selection
+internal sealed class EmptySelection(TextArea textArea) : Selection(textArea)
 	{
-		public EmptySelection(TextArea textArea) : base(textArea)
-		{
-		}
-
 	public override Selection UpdateOnDocumentChange(DocumentChangeEventArgs e) => this;
 
-	public override TextViewPosition StartPosition => new TextViewPosition(TextLocation.Empty);
+	public override TextViewPosition StartPosition => new(TextLocation.Empty);
 
-		public override TextViewPosition EndPosition => new TextViewPosition(TextLocation.Empty);
+		public override TextViewPosition EndPosition => new(TextLocation.Empty);
 
 		public override ISegment SurroundingSegment => null;
 

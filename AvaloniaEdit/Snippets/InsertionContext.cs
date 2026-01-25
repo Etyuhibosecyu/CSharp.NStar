@@ -129,20 +129,20 @@ namespace AvaloniaEdit.Snippets;
 				SimpleSegment segment;
 				while ((segment = NewLineFinder.NextNewLine(text, textOffset)) != SimpleSegment.Invalid)
 				{
-					var insertString = text.Substring(textOffset, segment.Offset - textOffset)
+					var insertString = text[textOffset..segment.Offset]
 						+ LineTerminator + Indentation;
 					Document.Insert(InsertionPosition, insertString);
 					InsertionPosition += insertString.Length;
 					textOffset = segment.EndOffset;
 				}
-				var remainingInsertString = text.Substring(textOffset);
+				var remainingInsertString = text[textOffset..];
 				Document.Insert(InsertionPosition, remainingInsertString);
 				InsertionPosition += remainingInsertString.Length;
 			}
 		}
 
-		private readonly Dictionary<SnippetElement, IActiveElement> _elementMap = new Dictionary<SnippetElement, IActiveElement>();
-		private readonly List<IActiveElement> _registeredElements = new List<IActiveElement>();
+		private readonly Dictionary<SnippetElement, IActiveElement> _elementMap = [];
+		private readonly List<IActiveElement> _registeredElements = [];
 
 		/// <summary>
 		/// Registers an active element. Elements should be registered during insertion and will be called back
@@ -174,25 +174,22 @@ namespace AvaloniaEdit.Snippets;
 		/// </summary>
 		public IEnumerable<IActiveElement> ActiveElements => _registeredElements;
 
-		/// <summary>
-		/// Calls the <see cref="IActiveElement.OnInsertionCompleted"/> method on all registered active elements
-		/// and raises the <see cref="InsertionCompleted"/> event.
-		/// </summary>
-		/// <param name="e">The EventArgs to use</param>
-		[SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate",
-														 Justification = "There is an event and this method is raising it.")]
-		public void RaiseInsertionCompleted(EventArgs e)
+	/// <summary>
+	/// Calls the <see cref="IActiveElement.OnInsertionCompleted"/> method on all registered active elements
+	/// and raises the <see cref="InsertionCompleted"/> event.
+	/// </summary>
+	/// <param name="e">The EventArgs to use</param>
+	public void RaiseInsertionCompleted(EventArgs e)
 		{
 			if (_currentStatus != Status.Insertion)
 				throw new InvalidOperationException();
-			if (e == null)
-				e = EventArgs.Empty;
+			e ??= EventArgs.Empty;
 
 			_currentStatus = Status.RaisingInsertionCompleted;
 			var endPosition = InsertionPosition;
 			_wholeSnippetAnchor = new AnchorSegment(Document, _startPosition, endPosition - _startPosition);
 			TextDocumentWeakEventManager.UpdateFinished.AddHandler(Document, OnUpdateFinished);
-			_deactivateIfSnippetEmpty = (endPosition != _startPosition);
+			_deactivateIfSnippetEmpty = endPosition != _startPosition;
 
 			foreach (var element in _registeredElements)
 			{
@@ -231,12 +228,11 @@ namespace AvaloniaEdit.Snippets;
 		/// <param name="e">The EventArgs to use</param>
 		public void Deactivate(SnippetEventArgs e)
 		{
-			if (_currentStatus == Status.Deactivated || _currentStatus == Status.RaisingDeactivated)
+			if (_currentStatus is Status.Deactivated or Status.RaisingDeactivated)
 				return;
 			if (_currentStatus != Status.Interactive)
 				throw new InvalidOperationException("Cannot call Deactivate() until RaiseInsertionCompleted() has finished.");
-			if (e == null)
-				e = new SnippetEventArgs(DeactivateReason.Unknown);
+			e ??= new SnippetEventArgs(DeactivateReason.Unknown);
 
 			TextDocumentWeakEventManager.UpdateFinished.RemoveHandler(Document, OnUpdateFinished);
 			_currentStatus = Status.RaisingDeactivated;
@@ -254,7 +250,7 @@ namespace AvaloniaEdit.Snippets;
 		/// </summary>
 		public event EventHandler<SnippetEventArgs> Deactivated;
 
-		void OnUpdateFinished(object sender, EventArgs e)
+	private void OnUpdateFinished(object sender, EventArgs e)
 		{
 			// Deactivate if snippet is deleted. This is necessary for correctly leaving interactive
 			// mode if Undo is pressed after a snippet insertion.

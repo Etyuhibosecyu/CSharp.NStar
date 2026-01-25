@@ -27,8 +27,7 @@ namespace AvaloniaEdit.Rendering;
 
 		public TextLine GetTextForNonPrintableCharacter(string text, TextRunProperties properties)
 		{
-			if (_nonPrintableCharacterTexts == null)
-				_nonPrintableCharacterTexts = new Dictionary<string, TextLine>();
+			_nonPrintableCharacterTexts ??= [];
 
 		if (!_nonPrintableCharacterTexts.TryGetValue(text, out var textLine))
 		{

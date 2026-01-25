@@ -32,7 +32,7 @@ namespace AvaloniaEdit.Highlighting;
 		/// <summary>
 		/// The empty string without any formatting information.
 		/// </summary>
-		public static readonly RichText Empty = new RichText(string.Empty);
+		public static readonly RichText Empty = new(string.Empty);
 
 		internal int[] StateChangeOffsets { get; }
 		internal HighlightingColor[] StateChanges { get; }
@@ -141,7 +141,7 @@ namespace AvaloniaEdit.Highlighting;
 	/// <summary>
 	/// Creates a new RichTextModel with the formatting from this RichText.
 	/// </summary>
-	public RichTextModel ToRichTextModel() => new RichTextModel(StateChangeOffsets, StateChanges.Select(ch => ch.Clone()).ToArray());
+	public RichTextModel ToRichTextModel() => new(StateChangeOffsets, StateChanges.Select(ch => ch.Clone()).ToArray());
 
 	/// <summary>
 	/// Gets the text.

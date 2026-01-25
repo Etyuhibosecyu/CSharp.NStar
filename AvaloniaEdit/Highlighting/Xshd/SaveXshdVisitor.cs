@@ -26,19 +26,17 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 /// <summary>
 /// Xshd visitor implementation that saves an .xshd file as XML.
 /// </summary>
-public sealed class SaveXshdVisitor : IXshdVisitor
+/// <remarks>
+/// Creates a new SaveXshdVisitor instance.
+/// </remarks>
+public sealed class SaveXshdVisitor(XmlWriter writer) : IXshdVisitor
 {
 	/// <summary>
 	/// XML namespace for XSHD.
 	/// </summary>
 	public const string Namespace = V2Loader.Namespace;
 
-	private readonly XmlWriter _writer;
-
-	/// <summary>
-	/// Creates a new SaveXshdVisitor instance.
-	/// </summary>
-	public SaveXshdVisitor(XmlWriter writer) => _writer = writer ?? throw new ArgumentNullException(nameof(writer));
+	private readonly XmlWriter _writer = writer ?? throw new ArgumentNullException(nameof(writer));
 
 	/// <summary>
 	/// Writes the specified syntax definition.
@@ -99,8 +97,7 @@ public sealed class SaveXshdVisitor : IXshdVisitor
 				_writer.WriteAttributeString("color", color.ReferencedElement);
 		}
 	}
-	
-	[SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification = "The file format requires lowercase, and all possible values are English-only")]
+
 	private void WriteColorAttributes(XshdColor color)
 	{
 		if (color.Foreground != null)

@@ -1,5 +1,8 @@
 ﻿global using NStar.Core;
 global using NStar.Linq;
+global using System;
+global using System.Collections;
+global using System.Collections.Immutable;
 global using System.Diagnostics;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
@@ -22,27 +25,17 @@ public sealed class Block(BlockType blockType, String name, int unnamedIndex)
 }
 
 [DebuggerDisplay("{ToString()}")]
-public class BlockStack : Stack<Block>
+public readonly struct BlockStack : IReadOnlyCollection<Block>
 {
-	public BlockStack()
-	{
-	}
+	private readonly ImmutableArray<Block> _items;
 
-	public BlockStack(int capacity) : base(capacity)
-	{
-	}
+	public readonly int Length => _items.IsDefaultOrEmpty ? 0 : _items.Length;
 
-	public BlockStack(G.IEnumerable<Block> collection) : base(collection)
-	{
-	}
+	public BlockStack() => _items = [];
 
-	public BlockStack(params Block[] array) : base(array)
-	{
-	}
+	public BlockStack(G.IEnumerable<Block> collection) => _items = ImmutableArray.Create(collection.ToList().AsSpan());
 
-	public BlockStack(int capacity, params Block[] array) : base(capacity, array)
-	{
-	}
+	public BlockStack(params Block[] array) => _items = ImmutableArray.Create(array);
 
 	public override bool Equals(object? obj)
 	{
@@ -58,6 +51,10 @@ public class BlockStack : Stack<Block>
 		return true;
 	}
 
+	public Enumerator GetEnumerator() => new(this);
+	G.IEnumerator<Block> G.IEnumerable<Block>.GetEnumerator() => GetEnumerator();
+	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
 	public override int GetHashCode()
 	{
 		var hash = 0;
@@ -66,13 +63,77 @@ public class BlockStack : Stack<Block>
 		return hash;
 	}
 
-	public string ToShortString() => string.Join(".", this.ToArray(x => (x.BlockType == BlockType.Unnamed) ? "Unnamed(" + x.Name + ")" : x.Name.ToString()));
+	public Block Peek() => _items[^1];
 
 	public override string ToString() => string.Join(".", this.ToArray(x => x.ToString()));
+
+	public bool TryPeek(out Block item)
+	{
+		if (Length == 0)
+		{
+			item = default!;
+			return false;
+		}
+		item = _items[^1];
+		return true;
+	}
 
 	public static bool operator ==(BlockStack? x, BlockStack? y) => x?.Equals(y) ?? y is null;
 
 	public static bool operator !=(BlockStack? x, BlockStack? y) => !(x == y);
+
+	public struct Enumerator : G.IEnumerator<Block>
+	{
+		private readonly BlockStack collection;
+		private int index;
+
+		internal Enumerator(BlockStack collection)
+		{
+			this.collection = collection;
+			index = 0;
+			Current = default!;
+		}
+
+		public readonly void Dispose()
+		{
+		}
+
+		public bool MoveNext()
+		{
+			var localCollection = collection;
+			if ((uint)index < (uint)localCollection.Length)
+			{
+				Current = localCollection._items[index++];
+				return true;
+			}
+			return MoveNextRare();
+		}
+
+		private bool MoveNextRare()
+		{
+			index = collection.Length + 1;
+			Current = default!;
+			return false;
+		}
+
+		public Block Current { get; private set; }
+
+		readonly object IEnumerator.Current
+		{
+			get
+			{
+				if (index == 0 || index == collection.Length + 1)
+					throw new InvalidOperationException("Указатель находится за границей коллекции.");
+				return Current!;
+			}
+		}
+
+		void IEnumerator.Reset()
+		{
+			index = 0;
+			Current = default!;
+		}
+	}
 }
 
 public sealed class BlockComparer : G.IComparer<Block>
@@ -91,10 +152,8 @@ public sealed class BlockComparer : G.IComparer<Block>
 
 public sealed class BlockStackComparer : G.IComparer<BlockStack>
 {
-	public int Compare(BlockStack? x, BlockStack? y)
+	public int Compare(BlockStack x, BlockStack y)
 	{
-		if (x is null || y is null)
-			return (x is null ? 1 : 0) - (y is null ? 1 : 0);
 		for (var i = 0; i < x.Length && i < y.Length; i++)
 		{
 			var comp = new BlockComparer().Compare(x.ElementAt(i), y.ElementAt(i));
@@ -123,7 +182,7 @@ public sealed class BlockStackAndStringComparer : G.IComparer<(BlockStack, Strin
 
 public sealed class BlockStackEComparer : G.IEqualityComparer<BlockStack>
 {
-	public bool Equals(BlockStack? x, BlockStack? y) => x?.Equals(y) ?? y is null;
+	public bool Equals(BlockStack x, BlockStack y) => x.Equals(y);
 
 	public int GetHashCode(BlockStack x) => x.GetHashCode();
 }

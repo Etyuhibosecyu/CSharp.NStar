@@ -76,7 +76,7 @@ namespace AvaloniaEdit.Utils;
 				else
 				{
 					Debug.Assert(Contents != null && Contents.Length == NodeSize);
-					Debug.Assert(Length >= 0 && Length <= NodeSize);
+					Debug.Assert(Length is >= 0 and <= NodeSize);
 				}
 			}
 			else

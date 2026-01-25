@@ -28,11 +28,9 @@ namespace AvaloniaEdit.Utils;
 /// This class ensures the callback is invoked at most once,
 /// even when Dispose is called on multiple threads.
 /// </remarks>
-internal sealed class CallbackOnDispose : IDisposable
+internal sealed class CallbackOnDispose(Action action) : IDisposable
 {
-	private Action _action;
-
-	public CallbackOnDispose(Action action) => _action = action ?? throw new ArgumentNullException(nameof(action));
+	private Action _action = action ?? throw new ArgumentNullException(nameof(action));
 
 	public void Dispose()
 	{

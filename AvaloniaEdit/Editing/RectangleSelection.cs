@@ -37,49 +37,49 @@ namespace AvaloniaEdit.Editing;
 		/// Expands the selection left by one character, creating a rectangular selection.
 		/// Key gesture: Alt+Shift+Left
 		/// </summary>
-		public static readonly RoutedCommand BoxSelectLeftByCharacter = new RoutedCommand(nameof(BoxSelectLeftByCharacter));
+		public static readonly RoutedCommand BoxSelectLeftByCharacter = new(nameof(BoxSelectLeftByCharacter));
 
 		/// <summary>
 		/// Expands the selection right by one character, creating a rectangular selection.
 		/// Key gesture: Alt+Shift+Right
 		/// </summary>
-		public static readonly RoutedCommand BoxSelectRightByCharacter = new RoutedCommand(nameof(BoxSelectRightByCharacter));
+		public static readonly RoutedCommand BoxSelectRightByCharacter = new(nameof(BoxSelectRightByCharacter));
 
 		/// <summary>
 		/// Expands the selection left by one word, creating a rectangular selection.
 		/// Key gesture: Ctrl+Alt+Shift+Left
 		/// </summary>
-		public static readonly RoutedCommand BoxSelectLeftByWord = new RoutedCommand(nameof(BoxSelectLeftByWord));
+		public static readonly RoutedCommand BoxSelectLeftByWord = new(nameof(BoxSelectLeftByWord));
 
 		/// <summary>
 		/// Expands the selection right by one word, creating a rectangular selection.
 		/// Key gesture: Ctrl+Alt+Shift+Right
 		/// </summary>
-		public static readonly RoutedCommand BoxSelectRightByWord = new RoutedCommand(nameof(BoxSelectRightByWord));
+		public static readonly RoutedCommand BoxSelectRightByWord = new(nameof(BoxSelectRightByWord));
 
 		/// <summary>
 		/// Expands the selection up by one line, creating a rectangular selection.
 		/// Key gesture: Alt+Shift+Up
 		/// </summary>
-		public static readonly RoutedCommand BoxSelectUpByLine = new RoutedCommand(nameof(BoxSelectUpByLine));
+		public static readonly RoutedCommand BoxSelectUpByLine = new(nameof(BoxSelectUpByLine));
 
 		/// <summary>
 		/// Expands the selection down by one line, creating a rectangular selection.
 		/// Key gesture: Alt+Shift+Down
 		/// </summary>
-		public static readonly RoutedCommand BoxSelectDownByLine = new RoutedCommand(nameof(BoxSelectDownByLine));
+		public static readonly RoutedCommand BoxSelectDownByLine = new(nameof(BoxSelectDownByLine));
 
 		/// <summary>
 		/// Expands the selection to the start of the line, creating a rectangular selection.
 		/// Key gesture: Alt+Shift+Home
 		/// </summary>
-		public static readonly RoutedCommand BoxSelectToLineStart = new RoutedCommand(nameof(BoxSelectToLineStart));
+		public static readonly RoutedCommand BoxSelectToLineStart = new(nameof(BoxSelectToLineStart));
 
 		/// <summary>
 		/// Expands the selection to the end of the line, creating a rectangular selection.
 		/// Key gesture: Alt+Shift+End
 		/// </summary>
-		public static readonly RoutedCommand BoxSelectToLineEnd = new RoutedCommand(nameof(BoxSelectToLineEnd));
+		public static readonly RoutedCommand BoxSelectToLineEnd = new(nameof(BoxSelectToLineEnd));
 		
 		#endregion
 
@@ -91,7 +91,7 @@ namespace AvaloniaEdit.Editing;
 		private readonly int _topLeftOffset;
 		private readonly int _bottomRightOffset;
 
-		private readonly List<SelectionSegment> _segments = new List<SelectionSegment>();
+		private readonly List<SelectionSegment> _segments = [];
 
 		#region Constructors
 		/// <summary>
@@ -181,7 +181,7 @@ namespace AvaloniaEdit.Editing;
 
 		private TextViewPosition GetStart()
 		{
-			var segment = (_startLine < _endLine ? _segments.First() : _segments.Last());
+			var segment = _startLine < _endLine ? _segments.First() : _segments.Last();
 			if (_startXPos < _endXPos)
 			{
 				return new TextViewPosition(_document.GetLocation(segment.StartOffset), segment.StartVisualColumn);
@@ -191,7 +191,7 @@ namespace AvaloniaEdit.Editing;
 
 		private TextViewPosition GetEnd()
 		{
-			var segment = (_startLine < _endLine ? _segments.Last() : _segments.First());
+			var segment = _startLine < _endLine ? _segments.Last() : _segments.First();
 			if (_startXPos < _endXPos)
 			{
 				return new TextViewPosition(_document.GetLocation(segment.EndOffset), segment.EndVisualColumn);
@@ -217,16 +217,10 @@ namespace AvaloniaEdit.Editing;
 	public override Selection StartSelectionOrSetEndpoint(TextViewPosition startPosition, TextViewPosition endPosition) => SetEndpoint(endPosition);
 
 	/// <inheritdoc/>
-	public override int Length
-		{
-			get
-			{
-				return Segments.Sum(s => s.Length);
-			}
-		}
+	public override int Length => Segments.Sum(s => s.Length);
 
-		/// <inheritdoc/>
-		public override bool EnableVirtualSpace => true;
+	/// <inheritdoc/>
+	public override bool EnableVirtualSpace => true;
 
 		/// <inheritdoc/>
 		public override ISegment SurroundingSegment => new SimpleSegment(_topLeftOffset, _bottomRightOffset - _topLeftOffset);
@@ -357,9 +351,9 @@ namespace AvaloniaEdit.Editing;
 				{
 					var rsel = new RectangleSelection(textArea, startPosition, endLocation.Line, GetXPos(textArea, startPosition));
 					rsel.ReplaceSelectionWithText(text);
-					if (selectInsertedText && textArea.Selection is RectangleSelection)
+					if (selectInsertedText && textArea.Selection is RectangleSelection selection)
 					{
-						var sel = (RectangleSelection)textArea.Selection;
+						var sel = selection;
 						textArea.Selection = new RectangleSelection(textArea, startPosition, sel._endLine, sel._endXPos);
 					}
 					return true;
@@ -379,7 +373,7 @@ namespace AvaloniaEdit.Editing;
 
 			if (EditingCommandHandler.ConfirmDataFormat(textArea, data, RectangularSelectionDataType))
 			{
-				MemoryStream isRectangle = new MemoryStream(1);
+				MemoryStream isRectangle = new(1);
 				isRectangle.WriteByte(1);
 				data.Set(RectangularSelectionDataType, isRectangle);
 			}

@@ -80,20 +80,20 @@ namespace AvaloniaEdit.Rendering;
 		/// </summary>
 		public ReadOnlyCollection<VisualLineElement> Elements { get; private set; }
 
-		private ReadOnlyCollection<TextLine> _textLines;
-
-		/// <summary>
-		/// Gets a read-only collection of text lines.
-		/// </summary>
-		public ReadOnlyCollection<TextLine> TextLines
+	/// <summary>
+	/// Gets a read-only collection of text lines.
+	/// </summary>
+	public ReadOnlyCollection<TextLine> TextLines
 		{
 			get
 			{
 				if (_phase < LifetimePhase.Live)
 					throw new InvalidOperationException();
-				return _textLines;
+				return field;
 			}
-		}
+
+		private set;
+	}
 
 		/// <summary>
 		/// Gets the start offset of the VisualLine inside the document.
@@ -144,7 +144,7 @@ namespace AvaloniaEdit.Rendering;
 			{
 				g.StartGeneration(context);
 			}
-			_elements = new List<VisualLineElement>();
+			_elements = [];
 			PerformVisualElementConstruction(generators);
 			foreach (var g in generators)
 			{
@@ -161,7 +161,7 @@ namespace AvaloniaEdit.Rendering;
 			_phase = LifetimePhase.Transforming;
 		}
 
-		void PerformVisualElementConstruction(IReadOnlyList<VisualLineElementGenerator> generators)
+	private void PerformVisualElementConstruction(IReadOnlyList<VisualLineElementGenerator> generators)
 		{
 			var lineLength = FirstDocumentLine.Length;
 			var offset = FirstDocumentLine.Offset;
@@ -302,7 +302,7 @@ namespace AvaloniaEdit.Rendering;
 		internal void SetTextLines(List<TextLine> textLines)
 		{
 			var defaultLineHeight = TextView.DefaultLineHeight;
-			_textLines = new ReadOnlyCollection<TextLine>(textLines);
+			TextLines = new ReadOnlyCollection<TextLine>(textLines);
 
 			Height = 0;
 			foreach (var line in textLines)
@@ -505,7 +505,7 @@ namespace AvaloniaEdit.Rendering;
 		{
 			var textLine = GetTextLineByVisualYPosition(point.Y);
 			var vc = GetVisualColumn(textLine, point.X, allowVirtualSpace);
-			isAtEndOfLine = (vc >= GetTextLineVisualStartColumn(textLine) + textLine.Length);
+			isAtEndOfLine = vc >= GetTextLineVisualStartColumn(textLine) + textLine.Length;
 			return vc;
 		}
 
@@ -757,9 +757,9 @@ namespace AvaloniaEdit.Rendering;
 			return -1;
 		}
 
-	private static bool HasStopsInVirtualSpace(CaretPositioningMode mode) => mode == CaretPositioningMode.Normal || mode == CaretPositioningMode.EveryCodepoint;
+	private static bool HasStopsInVirtualSpace(CaretPositioningMode mode) => mode is CaretPositioningMode.Normal or CaretPositioningMode.EveryCodepoint;
 
-	private static bool HasImplicitStopAtLineStart(CaretPositioningMode mode) => mode == CaretPositioningMode.Normal || mode == CaretPositioningMode.EveryCodepoint;
+	private static bool HasImplicitStopAtLineStart(CaretPositioningMode mode) => mode is CaretPositioningMode.Normal or CaretPositioningMode.EveryCodepoint;
 
 	private static bool HasImplicitStopAtLineEnd() => true;
 
@@ -781,13 +781,11 @@ namespace AvaloniaEdit.Rendering;
 	}
 
 	// TODO: can inherit from Layoutable, but dev tools crash
-	internal sealed class VisualLineDrawingVisual : Control
+	internal sealed class VisualLineDrawingVisual(VisualLine visualLine) : Control
 	{
-		public VisualLine VisualLine { get; }
-		public double LineHeight => VisualLine.Height;
+	public VisualLine VisualLine { get; } = visualLine;
+	public double LineHeight => VisualLine.Height;
 		internal bool IsAdded { get; set; }
-
-	public VisualLineDrawingVisual(VisualLine visualLine) => VisualLine = visualLine;
 
 	public override void Render(DrawingContext context)
 		{

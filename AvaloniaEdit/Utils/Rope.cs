@@ -28,17 +28,16 @@ using System.Text;
 
 namespace AvaloniaEdit.Utils;
 
-	/// <summary>
-	/// A kind of List&lt;T&gt;, but more efficient for random insertions/removal.
-	/// Also has cheap Clone() and SubRope() implementations.
-	/// </summary>
-	/// <remarks>
-	/// This class is not thread-safe: multiple concurrent write operations or writes concurrent to reads have undefined behaviour.
-	/// Concurrent reads, however, are safe.
-	/// However, clones of a rope are safe to use on other threads even though they share data with the original rope.
-	/// </remarks>
-	[SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-	public sealed class Rope<T> : IList<T>, ICloneable
+/// <summary>
+/// A kind of List&lt;T&gt;, but more efficient for random insertions/removal.
+/// Also has cheap Clone() and SubRope() implementations.
+/// </summary>
+/// <remarks>
+/// This class is not thread-safe: multiple concurrent write operations or writes concurrent to reads have undefined behaviour.
+/// Concurrent reads, however, are safe.
+/// However, clones of a rope are safe to use on other threads even though they share data with the original rope.
+/// </remarks>
+public sealed class Rope<T> : IList<T>, ICloneable
 	{
 		internal RopeNode<T> Root { get; set; }
 
@@ -111,27 +110,26 @@ namespace AvaloniaEdit.Utils;
 			Root.CheckInvariants();
 		}
 
-		/// <summary>
-		/// Creates a new rope that lazily initalizes its content.
-		/// </summary>
-		/// <param name="length">The length of the rope that will be lazily loaded.</param>
-		/// <param name="initializer">
-		/// The callback that provides the content for this rope.
-		/// <paramref name="initializer"/> will be called exactly once when the content of this rope is first requested.
-		/// It must return a rope with the specified length.
-		/// Because the initializer function is not called when a rope is cloned, and such clones may be used on another threads,
-		/// it is possible for the initializer callback to occur on any thread.
-		/// </param>
-		/// <remarks>
-		/// Any modifications inside the rope will also cause the content to be initialized.
-		/// However, insertions at the beginning and the end, as well as inserting this rope into another or
-		/// using the <see cref="Concat(Rope{T},Rope{T})"/> method, allows constructions of larger ropes where parts are
-		/// lazily loaded.
-		/// However, even methods like Concat may sometimes cause the initializer function to be called, e.g. when
-		/// two short ropes are concatenated.
-		/// </remarks>
-		[SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-		public Rope(int length, Func<Rope<T>> initializer)
+	/// <summary>
+	/// Creates a new rope that lazily initalizes its content.
+	/// </summary>
+	/// <param name="length">The length of the rope that will be lazily loaded.</param>
+	/// <param name="initializer">
+	/// The callback that provides the content for this rope.
+	/// <paramref name="initializer"/> will be called exactly once when the content of this rope is first requested.
+	/// It must return a rope with the specified length.
+	/// Because the initializer function is not called when a rope is cloned, and such clones may be used on another threads,
+	/// it is possible for the initializer callback to occur on any thread.
+	/// </param>
+	/// <remarks>
+	/// Any modifications inside the rope will also cause the content to be initialized.
+	/// However, insertions at the beginning and the end, as well as inserting this rope into another or
+	/// using the <see cref="Concat(Rope{T},Rope{T})"/> method, allows constructions of larger ropes where parts are
+	/// lazily loaded.
+	/// However, even methods like Concat may sometimes cause the initializer function to be called, e.g. when
+	/// two short ropes are concatenated.
+	/// </remarks>
+	public Rope(int length, Func<Rope<T>> initializer)
 		{
 		ArgumentNullException.ThrowIfNull(initializer);
 		if (length < 0)
@@ -520,10 +518,7 @@ namespace AvaloniaEdit.Utils;
 			var stack = _lastUsedNodeStack;
 			var oldStack = stack;
 
-			if (stack == null)
-			{
-				stack = ImmutableStack<RopeCacheEntry>.Empty.Push(new RopeCacheEntry(Root, 0));
-			}
+			stack ??= ImmutableStack<RopeCacheEntry>.Empty.Push(new RopeCacheEntry(Root, 0));
 			while (!stack.PeekOrDefault().IsInside(index))
 				stack = stack.Pop();
 			while (true)

@@ -22,17 +22,15 @@ using AvaloniaEdit.Rendering;
 
 namespace AvaloniaEdit.Highlighting;
 
-	/// <summary>
-	/// A colorizer that applies the highlighting from a <see cref="RichTextModel"/> to the editor.
-	/// </summary>
-	public class RichTextColorizer : DocumentColorizingTransformer
+/// <summary>
+/// A colorizer that applies the highlighting from a <see cref="RichTextModel"/> to the editor.
+/// </summary>
+/// <remarks>
+/// Creates a new RichTextColorizer instance.
+/// </remarks>
+public class RichTextColorizer(RichTextModel richTextModel) : DocumentColorizingTransformer
 	{
-		private readonly RichTextModel _richTextModel;
-
-	/// <summary>
-	/// Creates a new RichTextColorizer instance.
-	/// </summary>
-	public RichTextColorizer(RichTextModel richTextModel) => _richTextModel = richTextModel ?? throw new ArgumentNullException(nameof(richTextModel));
+		private readonly RichTextModel _richTextModel = richTextModel ?? throw new ArgumentNullException(nameof(richTextModel));
 
 	/// <inheritdoc/>
 	protected override void ColorizeLine(DocumentLine line)

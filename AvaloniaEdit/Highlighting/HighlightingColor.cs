@@ -31,9 +31,7 @@ namespace AvaloniaEdit.Highlighting;
 	public class HighlightingColor : IFreezable, ICloneable, IEquatable<HighlightingColor>
 	{
 		internal static readonly HighlightingColor Empty = FreezableHelper.FreezeAndReturn(new HighlightingColor());
-
-		private string _name;
-		private FontFamily _fontFamily;
+	private FontFamily _fontFamily;
 		private int? _fontSize;
 		private FontWeight? _fontWeight;
 		private FontStyle? _fontStyle;
@@ -47,12 +45,12 @@ namespace AvaloniaEdit.Highlighting;
 		/// </summary>
 		public string Name
 		{
-			get => _name;
+			get;
 			set
 			{
 				if (IsFrozen)
 					throw new InvalidOperationException();
-				_name = value;
+				field = value;
 			}
 		}
 
@@ -174,32 +172,31 @@ namespace AvaloniaEdit.Highlighting;
 			}
 		}
 
-		///// <summary>
-		///// Serializes this HighlightingColor instance.
-		///// </summary>
-		//public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-		//{
-		//	if (info == null)
-		//		throw new ArgumentNullException("info");
-		//	info.AddValue("Name", this.Name);
-		//	info.AddValue("HasWeight", this.FontWeight.HasValue);
-		//	if (this.FontWeight.HasValue)
-		//		info.AddValue("Weight", this.FontWeight.Value.ToOpenTypeWeight());
-		//	info.AddValue("HasStyle", this.FontStyle.HasValue);
-		//	if (this.FontStyle.HasValue)
-		//		info.AddValue("Style", this.FontStyle.Value.ToString());
-		//	info.AddValue("HasUnderline", this.Underline.HasValue);
-		//	if (this.Underline.HasValue)
-		//		info.AddValue("Underline", this.Underline.Value);
-		//	info.AddValue("Foreground", this.Foreground);
-		//	info.AddValue("Background", this.Background);
-		//}
+	///// <summary>
+	///// Serializes this HighlightingColor instance.
+	///// </summary>
+	//public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+	//{
+	//	if (info == null)
+	//		throw new ArgumentNullException("info");
+	//	info.AddValue("Name", this.Name);
+	//	info.AddValue("HasWeight", this.FontWeight.HasValue);
+	//	if (this.FontWeight.HasValue)
+	//		info.AddValue("Weight", this.FontWeight.Value.ToOpenTypeWeight());
+	//	info.AddValue("HasStyle", this.FontStyle.HasValue);
+	//	if (this.FontStyle.HasValue)
+	//		info.AddValue("Style", this.FontStyle.Value.ToString());
+	//	info.AddValue("HasUnderline", this.Underline.HasValue);
+	//	if (this.Underline.HasValue)
+	//		info.AddValue("Underline", this.Underline.Value);
+	//	info.AddValue("Foreground", this.Foreground);
+	//	info.AddValue("Background", this.Background);
+	//}
 
-		/// <summary>
-		/// Gets CSS code for the color.
-		/// </summary>
-		[SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification = "CSS usually uses lowercase, and all possible values are English-only")]
-		public virtual string ToCss()
+	/// <summary>
+	/// Gets CSS code for the color.
+	/// </summary>
+	public virtual string ToCss()
 		{
 			var b = new StringBuilder();
 			var c = Foreground?.GetColor(null);
@@ -216,7 +213,7 @@ namespace AvaloniaEdit.Highlighting;
 			if (FontSize != null)
 			{
 				b.Append("font-size: ");
-				b.Append(FontSize.Value.ToString());
+				b.Append(FontSize.Value);
 				b.Append("; ");
 			}
 			if (FontWeight != null)
@@ -283,21 +280,20 @@ namespace AvaloniaEdit.Highlighting;
 		{
 			if (other == null)
 				return false;
-			return _name == other._name && _fontWeight == other._fontWeight
+			return Name == other.Name && _fontWeight == other._fontWeight
 				&& _fontStyle == other._fontStyle && _underline == other._underline && this._strikethrough == other._strikethrough
 				&& Equals(_foreground, other._foreground) && Equals(_background, other._background)
 				&& Equals(_fontFamily, other._fontFamily) && Equals(_fontSize, other._fontSize);
 		}
 
-		/// <inheritdoc/>
-		[SuppressMessage("ReSharper", "NonReadonlyMemberInGetHashCode")]
-		public override int GetHashCode()
+	/// <inheritdoc/>
+	public override int GetHashCode()
 		{
 			var hashCode = 0;
 			unchecked
 			{
-				if (_name != null)
-					hashCode += 1000000007 * _name.GetHashCode();
+				if (Name != null)
+					hashCode += 1000000007 * Name.GetHashCode();
 				hashCode += 1000000009 * _fontWeight.GetHashCode();
 				hashCode += 1000000021 * _fontStyle.GetHashCode();
 				if (_foreground != null)

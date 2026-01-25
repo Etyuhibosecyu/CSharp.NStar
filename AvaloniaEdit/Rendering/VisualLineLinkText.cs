@@ -26,10 +26,15 @@ using Avalonia.Media.TextFormatting;
 
 namespace AvaloniaEdit.Rendering;
 
-	/// <summary>
-	/// VisualLineElement that represents a piece of text and is a clickable link.
-	/// </summary>
-	public class VisualLineLinkText : VisualLineText
+/// <summary>
+/// VisualLineElement that represents a piece of text and is a clickable link.
+/// </summary>
+/// <remarks>
+/// Creates a visual line text element with the specified length.
+/// It uses the <see cref="ITextRunConstructionContext.VisualLine"/> and its
+/// <see cref="VisualLineElement.RelativeTextOffset"/> to find the actual text string.
+/// </remarks>
+public class VisualLineLinkText(VisualLine parentVisualLine, int length) : VisualLineText(parentVisualLine, length)
 	{
 	static VisualLineLinkText() => OpenUriEvent.AddClassHandler<Window>(ExecuteOpenUriEventHandler);
 
@@ -48,18 +53,11 @@ namespace AvaloniaEdit.Rendering;
 		/// </summary>
 		public string TargetName { get; set; }
 
-		/// <summary>
-		/// Gets/Sets whether the user needs to press Control to click the link.
-		/// The default value is true.
-		/// </summary>
-		public bool RequireControlModifierForClick { get; set; }
-
 	/// <summary>
-	/// Creates a visual line text element with the specified length.
-	/// It uses the <see cref="ITextRunConstructionContext.VisualLine"/> and its
-	/// <see cref="VisualLineElement.RelativeTextOffset"/> to find the actual text string.
+	/// Gets/Sets whether the user needs to press Control to click the link.
+	/// The default value is true.
 	/// </summary>
-	public VisualLineLinkText(VisualLine parentVisualLine, int length) : base(parentVisualLine, length) => RequireControlModifierForClick = true;
+	public bool RequireControlModifierForClick { get; set; } = true;
 
 	/// <inheritdoc/>
 	public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)
@@ -141,9 +139,7 @@ namespace AvaloniaEdit.Rendering;
 		}
 	}
 
-	public sealed class OpenUriRoutedEventArgs : RoutedEventArgs
+	public sealed class OpenUriRoutedEventArgs(Uri uri) : RoutedEventArgs
 	{
-		public Uri Uri { get; }
-
-	public OpenUriRoutedEventArgs(Uri uri) => Uri = uri ?? throw new ArgumentNullException(nameof(uri));
+	public Uri Uri { get; } = uri ?? throw new ArgumentNullException(nameof(uri));
 }

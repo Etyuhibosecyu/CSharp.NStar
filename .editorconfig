@@ -233,6 +233,11 @@ dotnet_diagnostic.CA1859.severity = silent
 csharp_style_prefer_primary_constructors = true:suggestion
 csharp_style_prefer_unbound_generic_type_in_nameof = true:suggestion
 csharp_prefer_system_threading_lock = true:suggestion
+csharp_style_prefer_implicitly_typed_lambda_expression = true:suggestion
+csharp_style_prefer_simple_property_accessors = true:suggestion
+dotnet_diagnostic.CA1805.severity = warning
+dotnet_diagnostic.CA2011.severity = warning
+dotnet_diagnostic.CA1859.severity = suggestion
 
 [*.{cs,vb}]
 dotnet_style_coalesce_expression = true:suggestion
@@ -264,3 +269,11 @@ dotnet_style_operator_placement_when_wrapping = beginning_of_line
 tab_width = 4
 indent_size = 4
 end_of_line = crlf
+dotnet_diagnostic.CA1832.severity = warning
+dotnet_diagnostic.CA1836.severity = warning
+dotnet_diagnostic.CA2219.severity = warning
+dotnet_diagnostic.CA2242.severity = warning
+dotnet_diagnostic.CA2245.severity = warning
+dotnet_diagnostic.CA2249.severity = warning
+
+[*.vb]

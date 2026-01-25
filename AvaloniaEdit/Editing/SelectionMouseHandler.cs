@@ -31,7 +31,7 @@ namespace AvaloniaEdit.Editing;
 	/// <summary>
 	/// Handles selection of text using the mouse.
 	/// </summary>
-	internal sealed class SelectionMouseHandler : ITextAreaInputHandler
+	internal sealed class SelectionMouseHandler(TextArea textArea) : ITextAreaInputHandler
 	{
 		#region enum SelectionMode
 
@@ -75,11 +75,10 @@ namespace AvaloniaEdit.Editing;
 		private Point _lastMousePosition;
 
 	#region Constructor + Attach + Detach
-	public SelectionMouseHandler(TextArea textArea) => TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
-	public TextArea TextArea { get; }
+	public TextArea TextArea { get; } = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
-		public void Attach()
+	public void Attach()
 		{
 			TextArea.PointerPressed += TextArea_MouseLeftButtonDown;
 			TextArea.PointerMoved += TextArea_MouseMove;
@@ -113,19 +112,19 @@ namespace AvaloniaEdit.Editing;
 		private void AttachDragDrop()
 		{
 			DragDrop.SetAllowDrop(TextArea, true);
-			TextArea.AddHandler(DragDrop.DragEnterEvent, textArea_DragEnter);
-			TextArea.AddHandler(DragDrop.DragOverEvent, textArea_DragOver);
-			TextArea.AddHandler(DragDrop.DragLeaveEvent, textArea_DragLeave);
-			TextArea.AddHandler(DragDrop.DropEvent, textArea_Drop);
+			TextArea.AddHandler(DragDrop.DragEnterEvent, TextArea_DragEnter);
+			TextArea.AddHandler(DragDrop.DragOverEvent, TextArea_DragOver);
+			TextArea.AddHandler(DragDrop.DragLeaveEvent, TextArea_DragLeave);
+			TextArea.AddHandler(DragDrop.DropEvent, TextArea_Drop);
 		}
 
 		private void DetachDragDrop()
 		{
 			DragDrop.SetAllowDrop(TextArea, false);
-			TextArea.RemoveHandler(DragDrop.DragEnterEvent, textArea_DragEnter);
-			TextArea.RemoveHandler(DragDrop.DragOverEvent, textArea_DragOver);
-			TextArea.RemoveHandler(DragDrop.DragLeaveEvent, textArea_DragLeave);
-			TextArea.RemoveHandler(DragDrop.DropEvent, textArea_Drop);
+			TextArea.RemoveHandler(DragDrop.DragEnterEvent, TextArea_DragEnter);
+			TextArea.RemoveHandler(DragDrop.DragOverEvent, TextArea_DragOver);
+			TextArea.RemoveHandler(DragDrop.DragLeaveEvent, TextArea_DragLeave);
+			TextArea.RemoveHandler(DragDrop.DropEvent, TextArea_Drop);
 		}
 
 		private bool _enableTextDragDrop;
@@ -142,11 +141,10 @@ namespace AvaloniaEdit.Editing;
 					DetachDragDrop();
 			}
 		}
-		#endregion
+	#endregion
 
-		#region Dropping text
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-		void textArea_DragEnter(object sender, DragEventArgs e)
+	#region Dropping text
+	private void TextArea_DragEnter(object sender, DragEventArgs e)
 		{
 			try
 			{
@@ -155,12 +153,11 @@ namespace AvaloniaEdit.Editing;
 			}
 			catch (Exception ex)
 			{
-				OnDragException(ex);
+			OnDragException(ex);
 			}
 		}
 
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-		void textArea_DragOver(object sender, DragEventArgs e)
+	private void TextArea_DragOver(object sender, DragEventArgs e)
 		{
 			try
 			{
@@ -168,11 +165,11 @@ namespace AvaloniaEdit.Editing;
 			}
 			catch (Exception ex)
 			{
-				OnDragException(ex);
+			OnDragException(ex);
 			}
 		}
 
-		DragDropEffects GetEffect(DragEventArgs e)
+	private DragDropEffects GetEffect(DragEventArgs e)
 		{
 			if (e.Data.Contains(DataFormats.Text))
 			{
@@ -199,8 +196,7 @@ namespace AvaloniaEdit.Editing;
 			return DragDropEffects.None;
 		}
 
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-		void textArea_DragLeave(object sender, DragEventArgs e)
+	private void TextArea_DragLeave(object sender, DragEventArgs e)
 		{
 			try
 			{
@@ -210,12 +206,11 @@ namespace AvaloniaEdit.Editing;
 			}
 			catch (Exception ex)
 			{
-				OnDragException(ex);
+			OnDragException(ex);
 			}
 		}
 
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-		void textArea_Drop(object sender, DragEventArgs e)
+	private void TextArea_Drop(object sender, DragEventArgs e)
 		{
 			try
 			{
@@ -269,11 +264,11 @@ namespace AvaloniaEdit.Editing;
 			}
 			catch (Exception ex)
 			{
-				OnDragException(ex);
+			OnDragException(ex);
 			}
 		}
 
-	void OnDragException(Exception ex) =>
+	private static void OnDragException(Exception ex) =>
 		// swallows exceptions during drag'n'drop or reports them incorrectly, so
 		// we re-throw them later to allow the application's unhandled exception handler
 		// to catch them
@@ -314,9 +309,9 @@ namespace AvaloniaEdit.Editing;
 	#endregion
 
 	#region Start Drag
-	object currentDragDescriptor;
+	private object currentDragDescriptor;
 
-		async void StartDrag(PointerEventArgs e)
+	private async void StartDrag(PointerEventArgs e)
 		{
 			// prevent nested StartDrag calls
 			_mode = SelectionMode.Drag;
@@ -372,7 +367,7 @@ namespace AvaloniaEdit.Editing;
 
 			if (deleteOnMove != null && resultEffect == DragDropEffects.Move && (allowedEffects & DragDropEffects.Move) == DragDropEffects.Move)
 			{
-				var draggedInsideSingleDocument = (dragDescriptor == TextArea.Document.UndoStack.LastGroupDescriptor);
+				var draggedInsideSingleDocument = dragDescriptor == TextArea.Document.UndoStack.LastGroupDescriptor;
 				if (draggedInsideSingleDocument)
 					TextArea.Document.UndoStack.StartContinuedUndoGroup(null);
 				TextArea.Document.BeginUpdate();
@@ -487,7 +482,7 @@ namespace AvaloniaEdit.Editing;
 						else if (modifiers.HasFlag(KeyModifiers.Control) && e.ClickCount == 1) // e.ClickCount == 1
 						{
 							_mode = SelectionMode.WholeWord;
-							if (shift && !(TextArea.Selection is RectangleSelection))
+							if (shift && TextArea.Selection is not RectangleSelection)
 							{
 								TextArea.Selection = TextArea.Selection.StartSelectionOrSetEndpoint(oldPosition, TextArea.Caret.Position);
 							}
@@ -495,7 +490,7 @@ namespace AvaloniaEdit.Editing;
 						else if (pointer.Properties.IsLeftButtonPressed && e.ClickCount == 1) // e.ClickCount == 1
 						{
 							_mode = SelectionMode.Normal;
-							if (shift && !(TextArea.Selection is RectangleSelection))
+							if (shift && TextArea.Selection is not RectangleSelection)
 							{
 								TextArea.Selection = TextArea.Selection.StartSelectionOrSetEndpoint(oldPosition, TextArea.Caret.Position);
 							}
@@ -542,7 +537,6 @@ namespace AvaloniaEdit.Editing;
 					e.Handled = true;
 				}
 			}
-
 		}
 		#endregion
 
@@ -658,7 +652,7 @@ namespace AvaloniaEdit.Editing;
 			var mousePosition = e.GetPosition(TextArea.TextView);
 			_lastMousePosition = mousePosition;
 
-			if (_mode == SelectionMode.Normal || _mode == SelectionMode.WholeWord || _mode == SelectionMode.WholeLine || _mode == SelectionMode.Rectangular)
+			if (_mode is SelectionMode.Normal or SelectionMode.WholeWord or SelectionMode.WholeLine or SelectionMode.Rectangular)
 			{
 				e.Handled = true;
 				if (TextArea.TextView.VisualLinesValid)
@@ -685,10 +679,10 @@ namespace AvaloniaEdit.Editing;
 		{
 			// Handle indirect mouse movement caused by scrolling the text area while holding down
 			// the mouse button.
-			if (_mode == SelectionMode.Normal 
-				|| _mode == SelectionMode.WholeWord 
-				|| _mode == SelectionMode.WholeLine 
-				|| _mode == SelectionMode.Rectangular)
+			if (_mode is SelectionMode.Normal
+				or SelectionMode.WholeWord
+				or SelectionMode.WholeLine
+				or SelectionMode.Rectangular)
 			{
 				if (TextArea.TextView.VisualLinesValid)
 				{
@@ -730,17 +724,17 @@ namespace AvaloniaEdit.Editing;
 		private void ExtendSelectionToMouse(Point pointerPosition)
 		{
 			var oldPosition = TextArea.Caret.Position;
-			if (_mode == SelectionMode.Normal || _mode == SelectionMode.Rectangular)
+			if (_mode is SelectionMode.Normal or SelectionMode.Rectangular)
 			{
 				SetCaretOffsetToMousePosition(pointerPosition);
 				if (_mode == SelectionMode.Normal && TextArea.Selection is RectangleSelection)
 					TextArea.Selection = new SimpleSelection(TextArea, oldPosition, TextArea.Caret.Position);
-				else if (_mode == SelectionMode.Rectangular && !(TextArea.Selection is RectangleSelection))
+				else if (_mode == SelectionMode.Rectangular && TextArea.Selection is not RectangleSelection)
 					TextArea.Selection = new RectangleSelection(TextArea, oldPosition, TextArea.Caret.Position);
 				else
 					TextArea.Selection = TextArea.Selection.StartSelectionOrSetEndpoint(oldPosition, TextArea.Caret.Position);
 			}
-			else if (_mode == SelectionMode.WholeWord || _mode == SelectionMode.WholeLine)
+			else if (_mode is SelectionMode.WholeWord or SelectionMode.WholeLine)
 			{
 				var newWord = (_mode == SelectionMode.WholeLine) ? GetLineAtMousePosition(pointerPosition) : GetWordAtMousePosition(pointerPosition);
 				if (newWord != SimpleSegment.Invalid && _startWord != null)

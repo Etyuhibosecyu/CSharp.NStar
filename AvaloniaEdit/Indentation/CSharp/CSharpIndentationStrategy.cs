@@ -38,28 +38,26 @@ namespace AvaloniaEdit.Indentation.CSharp;
 	/// </summary>
 	public CSharpIndentationStrategy(TextEditorOptions options) => IndentationString = options.IndentationString;
 
-	private string _indentationString = "\t";
-
-		/// <summary>
-		/// Gets/Sets the indentation string.
-		/// </summary>
-		public string IndentationString
+	/// <summary>
+	/// Gets/Sets the indentation string.
+	/// </summary>
+	public string IndentationString
 		{
-			get => _indentationString;
+			get;
 			set
 			{
 				if (string.IsNullOrEmpty(value))
 					throw new ArgumentException("Indentation string must not be null or empty");
-				_indentationString = value;
+				field = value;
 			}
-		}
+		} = "\t";
 
-		/// <summary>
-		/// Performs indentation using the specified document accessor.
-		/// </summary>
-		/// <param name="document">Object used for accessing the document line-by-line</param>
-		/// <param name="keepEmptyLines">Specifies whether empty lines should be kept</param>
-		public void Indent(IDocumentAccessor document, bool keepEmptyLines)
+	/// <summary>
+	/// Performs indentation using the specified document accessor.
+	/// </summary>
+	/// <param name="document">Object used for accessing the document line-by-line</param>
+	/// <param name="keepEmptyLines">Specifies whether empty lines should be kept</param>
+	public void Indent(IDocumentAccessor document, bool keepEmptyLines)
 		{
 		ArgumentNullException.ThrowIfNull(document);
 		var settings = new IndentationSettings

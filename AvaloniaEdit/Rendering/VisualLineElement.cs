@@ -57,12 +57,10 @@ public abstract class VisualLineElement
 	/// Gets the length of this element in the text document.
 	/// </summary>
 	public int DocumentLength { get; private set; }
-	
+
 	/// <summary>
 	/// Gets the visual column where this element starts.
 	/// </summary>
-	[SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods",
-													 Justification = "This property holds the start visual column, use GetVisualColumn to get inner visual columns.")]
 	public int VisualColumn { get; internal set; }
 	
 	/// <summary>
@@ -137,7 +135,7 @@ public abstract class VisualLineElement
 		if (relativeSplitVisualColumn <= 0 || relativeSplitVisualColumn >= VisualLength)
 			throw new ArgumentOutOfRangeException(nameof(splitVisualColumn), splitVisualColumn, "Value must be between " + (VisualColumn + 1) + " and " + (VisualColumn + VisualLength - 1));
 		if (relativeSplitRelativeTextOffset < 0 || relativeSplitRelativeTextOffset > DocumentLength)
-			throw new ArgumentOutOfRangeException(nameof(splitRelativeTextOffset), splitRelativeTextOffset, "Value must be between " + (RelativeTextOffset) + " and " + (RelativeTextOffset + DocumentLength));
+			throw new ArgumentOutOfRangeException(nameof(splitRelativeTextOffset), splitRelativeTextOffset, "Value must be between " + RelativeTextOffset + " and " + (RelativeTextOffset + DocumentLength));
 		var oldVisualLength = VisualLength;
 		var oldDocumentLength = DocumentLength;
 		var oldVisualColumn = VisualColumn;

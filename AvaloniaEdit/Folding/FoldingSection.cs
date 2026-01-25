@@ -29,21 +29,19 @@ namespace AvaloniaEdit.Folding;
 	public sealed class FoldingSection : TextSegment
 	{
 		private readonly FoldingManager _manager;
-		private bool _isFolded;
-		private string _title;
-		internal CollapsedLineSection[] CollapsedSections;
+	internal CollapsedLineSection[] CollapsedSections;
 
 		/// <summary>
 		/// Gets/sets if the section is folded.
 		/// </summary>
 		public bool IsFolded
 		{
-			get { return _isFolded; }
-			set
+			get;
+		set
 			{
-				if (_isFolded != value)
+				if (field != value)
 				{
-					_isFolded = value;
+					field = value;
 					ValidateCollapsedLineSections(); // create/destroy CollapsedLineSection
 					_manager.Redraw(this);
 				}
@@ -52,7 +50,7 @@ namespace AvaloniaEdit.Folding;
 
 		internal void ValidateCollapsedLineSections()
 		{
-			if (!_isFolded)
+			if (!IsFolded)
 			{
 				RemoveCollapsedLineSection();
 				return;
@@ -67,8 +65,7 @@ namespace AvaloniaEdit.Folding;
 			}
 			else
 			{
-				if (CollapsedSections == null)
-					CollapsedSections = new CollapsedLineSection[_manager.TextViews.Count];
+				CollapsedSections ??= new CollapsedLineSection[_manager.TextViews.Count];
 				// Validate collapsed line sections
 				var startLinePlusOne = startLine.NextLine;
 				for (var i = 0; i < CollapsedSections.Length; i++)
@@ -103,15 +100,12 @@ namespace AvaloniaEdit.Folding;
 		/// </summary>
 		public string Title
 		{
-			get
+			get;
+		set
 			{
-				return _title;
-			}
-			set
-			{
-				if (_title != value)
+				if (field != value)
 				{
-					_title = value;
+					field = value;
 					if (IsFolded)
 						_manager.Redraw(this);
 				}

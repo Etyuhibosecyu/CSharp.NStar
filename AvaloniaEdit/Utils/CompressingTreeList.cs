@@ -25,18 +25,16 @@ using System.Text;
 
 namespace AvaloniaEdit.Utils;
 
-	/// <summary>
-	/// A IList{T} implementation that has efficient insertion and removal (in O(lg n) time)
-	/// and that saves memory by allocating only one node when a value is repeated in adjacent indices.
-	/// Based on this "compression", it also supports efficient InsertRange/SetRange/RemoveRange operations.
-	/// </summary>
-	/// <remarks>
-	/// Current memory usage: 5*IntPtr.Size + 12 + sizeof(T) per node.
-	/// Use this class only if lots of adjacent values are identical (can share one node).
-	/// </remarks>
-	[SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix",
-													 Justification = "It's an IList<T> implementation")]
-	internal sealed class CompressingTreeList<T> : IList<T>
+/// <summary>
+/// A IList{T} implementation that has efficient insertion and removal (in O(lg n) time)
+/// and that saves memory by allocating only one node when a value is repeated in adjacent indices.
+/// Based on this "compression", it also supports efficient InsertRange/SetRange/RemoveRange operations.
+/// </summary>
+/// <remarks>
+/// Current memory usage: 5*IntPtr.Size + 12 + sizeof(T) per node.
+/// Use this class only if lots of adjacent values are identical (can share one node).
+/// </remarks>
+internal sealed class CompressingTreeList<T> : IList<T>
 	{
 		// Further memory optimization: this tree could work without parent pointers. But that
 		// requires changing most of tree manipulating logic.
@@ -45,24 +43,17 @@ namespace AvaloniaEdit.Utils;
 
 		#region Node definition
 
-		private sealed class Node
-		{
+		private sealed class Node(T value, int count)
+	{
 			internal Node Left { get; set; }
 			internal Node Right { get; set; }
 			internal Node Parent { get; set; }
 			internal bool Color { get; set; }
-			internal int Count { get; set; }
-			internal int TotalCount { get; set; }
-			internal T Value { get; set; }
+		internal int Count { get; set; } = count;
+		internal int TotalCount { get; set; } = count;
+		internal T Value { get; set; } = value;
 
-			public Node(T value, int count)
-			{
-				Value = value;
-				Count = count;
-				TotalCount = count;
-			}
-
-			internal Node LeftMost
+		internal Node LeftMost
 			{
 				get
 				{
@@ -266,7 +257,7 @@ namespace AvaloniaEdit.Utils;
 				Node firstNodeBeforeDeletedRange;
 				if (index > 0)
 				{
-					count -= (n.Count - index);
+					count -= n.Count - index;
 					n.Count = index;
 					UpdateAugmentedData(n);
 					firstNodeBeforeDeletedRange = n;
@@ -901,15 +892,14 @@ namespace AvaloniaEdit.Utils;
 			Debug.Assert(node.TotalCount == totalCount);
 		}
 
-		/*
-	1. A node is either red or black.
-	2. The root is black.
-	3. All leaves are black. (The leaves are the NIL children.)
-	4. Both children of every red node are black. (So every red node must have a black parent.)
-	5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
-	 */
-		[SuppressMessage("ReSharper", "UnusedParameter.Local")]
-		private void CheckNodeProperties(Node node, Node parentNode, bool parentColor, int blackCount, ref int expectedBlackCount)
+	/*
+1. A node is either red or black.
+2. The root is black.
+3. All leaves are black. (The leaves are the NIL children.)
+4. Both children of every red node are black. (So every red node must have a black parent.)
+5. Every simple path from a node to a descendant leaf contains the same number of black nodes. (Not counting the leaf node.)
+ */
+	private void CheckNodeProperties(Node node, Node parentNode, bool parentColor, int blackCount, ref int expectedBlackCount)
 		{
 			if (node == null) return;
 

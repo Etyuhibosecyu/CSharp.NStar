@@ -93,73 +93,65 @@ namespace AvaloniaEdit.Document;
 			int num = controlCharacter;
 			if (num < C0Table.Length)
 				return C0Table[num];
-			if (num >= 127 && num <= 159)
+			if (num is >= 127 and <= 159)
 				return DelAndC1Table[num - 127];
 			return num.ToString("x4", CultureInfo.InvariantCulture);
 		}
-		#endregion
+	#endregion
 
-		#region GetWhitespace
-		/// <summary>
-		/// Gets all whitespace (' ' and '\t', but no newlines) after offset.
-		/// </summary>
-		/// <param name="textSource">The text source.</param>
-		/// <param name="offset">The offset where the whitespace starts.</param>
-		/// <returns>The segment containing the whitespace.</returns>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Whitespace")]
-		public static ISegment GetWhitespaceAfter(ITextSource textSource, int offset)
+	#region GetWhitespace
+	/// <summary>
+	/// Gets all whitespace (' ' and '\t', but no newlines) after offset.
+	/// </summary>
+	/// <param name="textSource">The text source.</param>
+	/// <param name="offset">The offset where the whitespace starts.</param>
+	/// <returns>The segment containing the whitespace.</returns>
+	public static ISegment GetWhitespaceAfter(ITextSource textSource, int offset)
 		{
 		ArgumentNullException.ThrowIfNull(textSource);
 		int pos;
 			for (pos = offset; pos < textSource.TextLength; pos++)
 			{
 				var c = textSource.GetCharAt(pos);
-				if (c != ' ' && c != '\t')
+				if (c is not ' ' and not '\t')
 					break;
 			}
 			return new SimpleSegment(offset, pos - offset);
 		}
 
-		/// <summary>
-		/// Gets all whitespace (' ' and '\t', but no newlines) before offset.
-		/// </summary>
-		/// <param name="textSource">The text source.</param>
-		/// <param name="offset">The offset where the whitespace ends.</param>
-		/// <returns>The segment containing the whitespace.</returns>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Whitespace")]
-		public static ISegment GetWhitespaceBefore(ITextSource textSource, int offset)
+	/// <summary>
+	/// Gets all whitespace (' ' and '\t', but no newlines) before offset.
+	/// </summary>
+	/// <param name="textSource">The text source.</param>
+	/// <param name="offset">The offset where the whitespace ends.</param>
+	/// <returns>The segment containing the whitespace.</returns>
+	public static ISegment GetWhitespaceBefore(ITextSource textSource, int offset)
 		{
 		ArgumentNullException.ThrowIfNull(textSource);
 		int pos;
 			for (pos = offset - 1; pos >= 0; pos--)
 			{
 				var c = textSource.GetCharAt(pos);
-				if (c != ' ' && c != '\t')
+				if (c is not ' ' and not '\t')
 					break;
 			}
 			pos++; // go back the one character that isn't whitespace
 			return new SimpleSegment(pos, offset - pos);
 		}
 
-		/// <summary>
-		/// Gets the leading whitespace segment on the document line.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Whitespace")]
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters",
-														 Justification = "Parameter cannot be ITextSource because it must belong to the DocumentLine")]
-		public static ISegment GetLeadingWhitespace(TextDocument document, DocumentLine documentLine)
+	/// <summary>
+	/// Gets the leading whitespace segment on the document line.
+	/// </summary>
+	public static ISegment GetLeadingWhitespace(TextDocument document, DocumentLine documentLine)
 		{
 		ArgumentNullException.ThrowIfNull(documentLine);
 		return GetWhitespaceAfter(document, documentLine.Offset);
 		}
 
-		/// <summary>
-		/// Gets the trailing whitespace segment on the document line.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Whitespace")]
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters",
-														 Justification = "Parameter cannot be ITextSource because it must belong to the DocumentLine")]
-		public static ISegment GetTrailingWhitespace(TextDocument document, DocumentLine documentLine)
+	/// <summary>
+	/// Gets the trailing whitespace segment on the document line.
+	/// </summary>
+	public static ISegment GetTrailingWhitespace(TextDocument document, DocumentLine documentLine)
 		{
 		ArgumentNullException.ThrowIfNull(documentLine);
 		var segment = GetWhitespaceBefore(document, documentLine.EndOffset);
@@ -211,16 +203,15 @@ namespace AvaloniaEdit.Document;
 			}
 			return new SimpleSegment(offset, pos - offset);
 		}
-		#endregion
+	#endregion
 
-		#region GetCharacterClass
-		/// <summary>
-		/// Gets whether the character is whitespace, part of an identifier, or line terminator.
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "c")]
-		public static CharacterClass GetCharacterClass(char c)
+	#region GetCharacterClass
+	/// <summary>
+	/// Gets whether the character is whitespace, part of an identifier, or line terminator.
+	/// </summary>
+	public static CharacterClass GetCharacterClass(char c)
 		{
-			if (c == '\r' || c == '\n')
+			if (c is '\r' or '\n')
 				return CharacterClass.LineTerminator;
 			if (c == '_')
 				return CharacterClass.IdentifierPart;
@@ -237,13 +228,13 @@ namespace AvaloniaEdit.Document;
 			return CharacterClass.Other;
 		}
 
-		private static readonly Func<char, UnicodeCategory> GetUnicodeCategory = (Func<char, UnicodeCategory>)typeof(char)
+		private static readonly Func<char, UnicodeCategory> GetUnicodeCategory = typeof(char)
 			.GetRuntimeMethod("GetUnicodeCategory", new[] { typeof(char) })
-			.CreateDelegate(typeof(Func<char, UnicodeCategory>));
+			.CreateDelegate<Func<char, UnicodeCategory>>();
 
-		private static readonly Func<string, int, UnicodeCategory> GetUnicodeCategoryString = (Func<string, int, UnicodeCategory>)typeof(char)
+		private static readonly Func<string, int, UnicodeCategory> GetUnicodeCategoryString = typeof(char)
 			.GetRuntimeMethod("GetUnicodeCategory", new[] { typeof(string), typeof(int) })
-			.CreateDelegate(typeof(Func<string, int, UnicodeCategory>));
+			.CreateDelegate<Func<string, int, UnicodeCategory>>();
 
 		private static CharacterClass GetCharacterClass(UnicodeCategory c)
 		{
@@ -301,8 +292,8 @@ namespace AvaloniaEdit.Document;
 				default:
 					throw new ArgumentException("Unsupported CaretPositioningMode: " + mode, nameof(mode));
 			}
-			if (direction != LogicalDirection.Backward
-				&& direction != LogicalDirection.Forward)
+			if (direction is not LogicalDirection.Backward
+				and not LogicalDirection.Forward)
 			{
 				throw new ArgumentException("Invalid LogicalDirection: " + direction, nameof(direction));
 			}
@@ -338,7 +329,7 @@ namespace AvaloniaEdit.Document;
 				else if (nextPos == textLength)
 				{
 					// at the document end, there's never a word start
-					if (mode != CaretPositioningMode.WordStart && mode != CaretPositioningMode.WordStartOrSymbol)
+					if (mode is not CaretPositioningMode.WordStart and not CaretPositioningMode.WordStartOrSymbol)
 					{
 						// at the document end, there's only a word border
 						// if the last character is not whitespace
@@ -375,7 +366,7 @@ namespace AvaloniaEdit.Document;
 			}
 		}
 
-	private static bool IsNormal(CaretPositioningMode mode) => mode == CaretPositioningMode.Normal || mode == CaretPositioningMode.EveryCodepoint;
+	private static bool IsNormal(CaretPositioningMode mode) => mode is CaretPositioningMode.Normal or CaretPositioningMode.EveryCodepoint;
 
 	private static bool StopBetweenCharacters(CaretPositioningMode mode, CharacterClass charBefore, CharacterClass charAfter)
 		{
@@ -422,11 +413,10 @@ namespace AvaloniaEdit.Document;
 		/// The character is not whitespace, line terminator or part of an identifier.
 		/// </summary>
 		Other,
-		/// <summary>
-		/// The character is whitespace (but not line terminator).
-		/// </summary>
-		[System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Whitespace")]
-		Whitespace,
+	/// <summary>
+	/// The character is whitespace (but not line terminator).
+	/// </summary>
+	Whitespace,
 		/// <summary>
 		/// The character can be part of an identifier (Letter, digit or underscore).
 		/// </summary>

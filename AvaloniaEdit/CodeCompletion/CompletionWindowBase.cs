@@ -74,7 +74,6 @@ namespace AvaloniaEdit.CodeCompletion;
 			TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
 			_parentWindow = textArea.GetVisualRoot() as Window;
 
-
 			AddHandler(PointerReleasedEvent, OnMouseUp, handledEventsToo: true);
 
 			StartOffset = EndOffset = TextArea.Caret.Offset;
@@ -257,8 +256,7 @@ namespace AvaloniaEdit.CodeCompletion;
 	/// <param name="event">The bubbling event.</param>
 	/// <param name="args">The event args to use.</param>
 	/// <returns>The <see cref="RoutedEventArgs.Handled"/> value of the event args.</returns>
-	[SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")]
-		protected static bool RaiseEventPair(Control target, RoutedEvent previewEvent, RoutedEvent @event, RoutedEventArgs args)
+	protected static bool RaiseEventPair(Control target, RoutedEvent previewEvent, RoutedEvent @event, RoutedEventArgs args)
 		{
 		ArgumentNullException.ThrowIfNull(target);
 		ArgumentNullException.ThrowIfNull(args);

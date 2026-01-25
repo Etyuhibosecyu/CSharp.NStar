@@ -160,7 +160,7 @@ namespace AvaloniaEdit.Folding;
 			return finalSize;
 		}
 
-		private readonly List<FoldingMarginMarker> _markers = new List<FoldingMarginMarker>();
+		private readonly List<FoldingMarginMarker> _markers = [];
 
 		protected override void OnTextViewVisualLinesChanged()
 		{
@@ -203,8 +203,8 @@ namespace AvaloniaEdit.Folding;
 			}
 		}
 
-		private Pen _foldingControlPen = new Pen(FoldingMarkerBrushProperty.GetDefaultValue(typeof(FoldingMargin)));
-		private Pen _selectedFoldingControlPen = new Pen(SelectedFoldingMarkerBrushProperty.GetDefaultValue(typeof(FoldingMargin)));
+		private Pen _foldingControlPen = new(FoldingMarkerBrushProperty.GetDefaultValue(typeof(FoldingMargin)));
+		private Pen _selectedFoldingControlPen = new(SelectedFoldingMarkerBrushProperty.GetDefaultValue(typeof(FoldingMargin)));
 
 		/// <inheritdoc/>
 		public override void Render(DrawingContext drawingContext)

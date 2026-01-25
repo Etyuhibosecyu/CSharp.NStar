@@ -57,7 +57,7 @@ public static class PixelSnapHelpers
 		// 0.5 -> 0.5
 		// 0.9 -> 0.5
 		// 1 -> 1.5
-		pixelSize * (Math.Round((value / pixelSize) + 0.5, MidpointRounding.AwayFromZero) - 0.5);
+		pixelSize * (Math.Round(value / pixelSize + 0.5, MidpointRounding.AwayFromZero) - 0.5);
 
 	/// <summary>
 	/// Aligns the borders of rect on the middles of pixels.
@@ -74,12 +74,12 @@ public static class PixelSnapHelpers
 	/// <summary>
 	/// Rounds <paramref name="point"/> to whole number of pixels.
 	/// </summary>
-	public static Point Round(Point point, Size pixelSize) => new Point(Round(point.X, pixelSize.Width), Round(point.Y, pixelSize.Height));
+	public static Point Round(Point point, Size pixelSize) => new(Round(point.X, pixelSize.Width), Round(point.Y, pixelSize.Height));
 
 	/// <summary>
 	/// Rounds val to whole number of pixels.
 	/// </summary>
-	public static Rect Round(Rect rect, Size pixelSize) => new Rect(Round(rect.X, pixelSize.Width), Round(rect.Y, pixelSize.Height),
+	public static Rect Round(Rect rect, Size pixelSize) => new(Round(rect.X, pixelSize.Width), Round(rect.Y, pixelSize.Height),
 						Round(rect.Width, pixelSize.Width), Round(rect.Height, pixelSize.Height));
 
 	/// <summary>
