@@ -8,6 +8,7 @@ global using static System.Math;
 global using String = NStar.Core.String;
 using Avalonia.Controls;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace CSharp.NStar;
 
@@ -63,6 +64,8 @@ public static class MemberConverters
 		if (function.AsSpan() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf)
 			or nameof(Grid.SetColumn) or nameof(Grid.SetRow) && parameters.Length >= 2)
 			parameters[1].Insert(0, '(').AddRange(") - 1");
+		if (function.AsSpan() is nameof(Parallel.For) && parameters.Length >= 2)
+			parameters[1].Insert(0, '(').AddRange(") + 1");
 		result.AddRange(String.Join(", ", parameters)).Add(')');
 		if (function.AsSpan() is nameof(parameters.IndexOf) or nameof(parameters.LastIndexOf))
 			result.Insert(0, '(').AddRange(") + 1");

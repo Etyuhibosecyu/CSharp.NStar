@@ -23,35 +23,46 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 	public static readonly NStarType StringType = GetPrimitiveType("string");
 	public static readonly NStarType IndexType = GetPrimitiveType("index");
 	public static readonly NStarType RangeType = GetPrimitiveType("range");
-	public static readonly NStarType UnsafeStringType = new(new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "UnsafeString", 1)]), NoBranches);
+	public static readonly NStarType UnsafeStringType = new(new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "UnsafeString", 1)), NoBranches);
 	public static readonly NStarType BitListType = GetListType(BoolType);
 	public static readonly BlockStack EmptyBlockStack = new();
-	public static readonly BlockStack ListBlockStack = new([new(BlockType.Primitive, "list", 1)]);
-	public static readonly BlockStack TupleBlockStack = new([new(BlockType.Primitive, "tuple", 1)]);
-	public static readonly BlockStack EventHandlerBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Delegate, "EventHandler", 1)]);
-	public static readonly BlockStack FuncBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Delegate, nameof(Func<>), 1)]);
+	public static readonly BlockStack ListBlockStack = new(new Block(BlockType.Primitive, "list", 1));
+	public static readonly BlockStack TupleBlockStack = new(new Block(BlockType.Primitive, "tuple", 1));
+	public static readonly BlockStack EventHandlerBlockStack = new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Delegate, "EventHandler", 1));
+	public static readonly BlockStack FuncBlockStack = new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Delegate, nameof(Func<>), 1));
 	public static readonly BlockStack RecursiveBlockStack = GetPrimitiveBlockStack("typename");
-	public static readonly BlockStack IEnumerableBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Collections", 1), new(BlockType.Interface, nameof(G.IEnumerable<>), 1)]);
-	public static readonly BlockStack BaseIndexableBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(BaseIndexable<>), 1)]);
-	public static readonly BlockStack DictionaryBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(Dictionary<,>), 1)]);
-	public static readonly BlockStack ListHashSetBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(ListHashSet<>), 1)]);
-	public static readonly BlockStack TaskBlockStack = new([new(BlockType.Struct, "Task", 1)]);
-	public static readonly BlockStack EmptyTaskBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Struct, "EmptyTask", 1)]);
-	public static readonly BlockStack UnsafeTaskBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "UnsafeTask", 1)]);
-	public static readonly BlockStack UnsafeEmptyTaskBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "UnsafeEmptyTask", 1)]);
+	public static readonly BlockStack IEnumerableBlockStack = new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Collections", 1), new(BlockType.Interface, nameof(G.IEnumerable<>), 1));
+	public static readonly BlockStack BaseIndexableBlockStack = new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(BaseIndexable<>), 1));
+	public static readonly BlockStack DictionaryBlockStack = new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(Dictionary<,>), 1));
+	public static readonly BlockStack ListHashSetBlockStack = new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(ListHashSet<>), 1));
+	public static readonly BlockStack TaskBlockStack = new(new Block(BlockType.Class, "Task", 1));
+	public static readonly BlockStack ValueTaskBlockStack = new(new Block(BlockType.Struct, "ValueTask", 1));
+	public static readonly BlockStack TaskBlockStackNamespace = new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Threading", 1), new(BlockType.Class, "Task", 1));
+	public static readonly BlockStack ValueTaskBlockStackNamespace = new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Threading", 1), new(BlockType.Struct, "ValueTask", 1));
+	public static readonly BlockStack EmptyTaskBlockStack = new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "EmptyTask", 1));
+	public static readonly BlockStack ValueEmptyTaskBlockStack = new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Struct, "ValueEmptyTask", 1));
 	public static readonly ImmutableArray<BlockStack> TaskBlockStacks = [
-		TaskBlockStack, EmptyTaskBlockStack, UnsafeTaskBlockStack, UnsafeEmptyTaskBlockStack
+		TaskBlockStack, ValueTaskBlockStack, TaskBlockStackNamespace, ValueTaskBlockStackNamespace,
+		EmptyTaskBlockStack, ValueEmptyTaskBlockStack
 	];
+
+	public NStarType Copy() => new(new(MainType), new(ExtraTypes.Values.Convert(x =>
+		new TreeBranch(x.Name.Copy(), x.Pos, x.Container)
+		{
+			Elements = x.Elements.Copy(),
+			Extra = x.Extra is NStarType NStarType ? NStarType.Copy() : x
+		})));
 
 	public static NStarType GetListType(NStarType InnerType)
 	{
@@ -76,9 +87,10 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 			return new(ListBlockStack, new([new("2", 0, []), NStarType.ExtraTypes[^1]]));
 	}
 
-	public static BlockStack GetPrimitiveBlockStack(String primitive) => new([new(BlockType.Primitive, primitive, 1)]);
+	public static BlockStack GetPrimitiveBlockStack(String primitive) => new(new Block(BlockType.Primitive, primitive, 1));
 
-	public static NStarType GetPrimitiveType(String primitive) => (new([new(BlockType.Primitive, primitive, 1)]), NoBranches);
+	public static NStarType GetPrimitiveType(String primitive) =>
+		(new(new Block(BlockType.Primitive, primitive, 1)), NoBranches);
 
 	public static (BlockStack Container, String Type) SplitType(BlockStack blockStack) =>
 		(new(blockStack.ToList().SkipLast(1)), blockStack.TryPeek(out var block) ? block.Name : []);

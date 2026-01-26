@@ -141,7 +141,7 @@ public static class TypeConverters
 	{
 		try
 		{
-			if (leftType.Equals(rightType))
+			if (leftType.Equals(rightType) && !leftType.Equals(GetPrimitiveType("DateTime")))
 				return leftType;
 			if (TypeIsPrimitive(leftType.MainType) && TypeIsPrimitive(rightType.MainType))
 			{
@@ -213,7 +213,8 @@ public static class TypeConverters
 			else
 				return "unsigned long int";
 		}
-		else if (leftTypeName == "TimeSpan" || rightTypeName == "TimeSpan")
+		else if (leftTypeName == "TimeSpan" || rightTypeName == "TimeSpan"
+			|| leftTypeName == "DateTime" && rightTypeName == "DateTime")
 			return "TimeSpan";
 		else if (leftTypeName == "DateTime" || rightTypeName == "DateTime")
 			return "DateTime";
@@ -497,7 +498,7 @@ public static class TypeConverters
 		}
 		if (TaskBlockStacks.Contains(destinationType.MainType) && destinationType.ExtraTypes.Length == 1
 			&& destinationType.ExtraTypes[0].Name == "type" && destinationType.ExtraTypes[0].Extra is NStarType TaskNStarType
-			&& TaskNStarType.Equals(sourceType))
+			&& (TaskNStarType.Equals(sourceType) || sourceType.MainType.Equals(EmptyTaskBlockStack)))
 		{
 			destExpr = srcExpr;
 			return true;
@@ -716,7 +717,14 @@ public static class TypeConverters
 		{
 			if (TypeExists(SplitType(NStarType.MainType), out var netType))
 			{
-				if (netType.ContainsGenericParameters)
+				if (netType == typeof(Task<>) && NStarType.ExtraTypes.Length == 1 && NStarType.ExtraTypes[0].Name == "type"
+					&& NStarType.ExtraTypes[0].Extra is NStarType InnerNStarType && InnerNStarType.Equals(NullType))
+					return typeof(Task);
+				else if (netType == typeof(ValueTask<>) && NStarType.ExtraTypes.Length == 1
+					&& NStarType.ExtraTypes[0].Name == "type"
+					&& NStarType.ExtraTypes[0].Extra is NStarType ValueInnerNStarType && ValueInnerNStarType.Equals(NullType))
+					return typeof(ValueTask);
+				else if (netType.ContainsGenericParameters)
 					return netType.MakeGenericType(NStarType.ExtraTypes.ToArray(x => TypeMapping(x.Value)));
 				else
 					return netType;
@@ -846,7 +854,7 @@ public static class TypeConverters
 		{
 			var genericArgumentsIndex = Array.IndexOf(genericArguments, netType);
 			if (genericArgumentsIndex < 0 || extraTypes.Length <= genericArgumentsIndex)
-				return new(new([new(BlockType.Extra, netType.Name, 1)]), []);
+				return new(new(new Block(BlockType.Extra, netType.Name, 1)), []);
 			else if (extraTypes[genericArgumentsIndex].Name != "type"
 				|| extraTypes[genericArgumentsIndex].Extra is not NStarType InnerNStarType)
 				throw new InvalidOperationException();
@@ -896,6 +904,10 @@ public static class TypeConverters
 				return typename == "list" ? GetListType(TypeMappingBack(typeGenericArguments[0], genericArguments,
 					new(extraTypes.Values.TakeLast(genericArguments.Length))))
 					: GetPrimitiveType(typename);
+			else if (netType == typeof(Task))
+				return new(TaskBlockStack, [new("type", 0, []) { Extra = NullType }]);
+			else if (netType == typeof(ValueTask))
+				return new(ValueTaskBlockStack, [new("type", 0, []) { Extra = NullType }]);
 			else if (ExtraTypes.TryGetKey(netType, out var type2))
 				return new(GetBlockStack(type2.Namespace + "." + type2.Type),
 					new([.. typeGenericArguments.Convert((x, index) =>

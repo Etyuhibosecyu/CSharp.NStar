@@ -13,6 +13,7 @@ global using static System.Math;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace CSharp.NStar;
 
@@ -228,6 +229,13 @@ public static class MemberChecks
 			functions = [];
 			return false;
 		}
+		if (container.ExtraTypes.Length == 0)
+		{
+			if (netType == typeof(Task<>))
+				netType = typeof(Task);
+			else if (netType == typeof(ValueTask<>))
+				netType = typeof(ValueTask);
+		}
 		var callParameterNetTypes = callParameterTypes.ToArray(TypeMapping);
 		var validity = int.MinValue;
 		var methods = netType.GetMethods().FindAllMax(x =>
@@ -432,8 +440,7 @@ public static class MemberChecks
 			typeName == x.Type || x.ExtraTypes.Contains(typeName))];
 		TreeBranch GetTypeAsBranch(String typeName) => new("type", 0, [])
 		{
-			Extra
-			= functionOverload.ExtraTypes.Contains(typeName)
+			Extra = functionOverload.ExtraTypes.Contains(typeName)
 			? FindParameter(typeName) : new NStarType(GetBlockStack(typeName), [])
 		};
 	}

@@ -6687,6 +6687,19 @@ static Class MyClass2
 
 return new MyClass().Async1();
 ", "25", "Ошибок нет")]
+	[DataRow(@"using System.Threading;
+var time = DateTime.Now;
+list() Task[null] tasks = (Task.Delay(3000), Task.Delay(3000), Task.Delay(3000),
+	Task.Delay(3000), Task.Delay(3000));
+Task.WaitAll(tasks);
+return (DateTime.Now - time).TotalSeconds < 5;
+", "true", "Ошибок нет")]
+	[DataRow(@"using System;
+using System.Threading;
+() int list = Fill(int.MaxValue, 100000000);
+Parallel.For(1, list.Length, i => list[i] = i + 1);
+return (list[12345678], list[100000000]);
+", "(12345679, 100000001)", "Ошибок нет")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());
