@@ -42,8 +42,7 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(Dictionary<,>), 1)]);
 	public static readonly BlockStack ListHashSetBlockStack = new([new(BlockType.Namespace, "System", 1),
 		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(ListHashSet<>), 1)]);
-	public static readonly BlockStack TaskBlockStack = new([new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Threading", 1), new(BlockType.Struct, "Task", 1)]);
+	public static readonly BlockStack TaskBlockStack = new([new(BlockType.Struct, "Task", 1)]);
 	public static readonly BlockStack EmptyTaskBlockStack = new([new(BlockType.Namespace, "System", 1),
 		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Struct, "EmptyTask", 1)]);
 	public static readonly BlockStack UnsafeTaskBlockStack = new([new(BlockType.Namespace, "System", 1),

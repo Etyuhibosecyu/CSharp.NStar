@@ -128,11 +128,11 @@ public static class MemberChecks
 	public static List<G.KeyValuePair<String, UserDefinedProperty>> GetAllProperties(BlockStack container)
 	{
 		List<G.KeyValuePair<String, UserDefinedProperty>> result = [];
+		if (UserDefinedTypes.TryGetValue(SplitType(container), out var userDefinedType))
+			result.AddRange(GetAllProperties(userDefinedType.BaseType.MainType));
 		if (UserDefinedProperties.TryGetValue(container, out var containerProperties))
 			foreach (var containerProperty in containerProperties)
 				result.Add(containerProperty);
-		if (UserDefinedTypes.TryGetValue(SplitType(container), out var userDefinedType))
-			result.AddRange(GetAllProperties(userDefinedType.BaseType.MainType));
 		return result;
 	}
 

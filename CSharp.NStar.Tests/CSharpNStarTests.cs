@@ -6384,6 +6384,309 @@ null Function F2()
 }
 ", "null", @"Warning 801D in line 13 at position 7: complicated, spaghetti-like recursional dependencies detected
 ")]
+	[DataRow(@"using System.Threading;
+Class MyClass
+{
+	Constructor()
+	{
+		Sync1();
+		Async1();
+		var x = Sync2(5);
+		Task[int] y = Async2(5);
+		var z = y;
+		new MyClass().Sync1();
+		new MyClass().Async1();
+		x = new MyClass().Sync2(5);
+		y = new MyClass().Async2(5);
+		z = y;
+		MyClass2.Sync1();
+		MyClass2.Async1();
+		x = MyClass2.Sync2(5);
+		y = MyClass2.Async2(5);
+		z = y;
+	}
+	null Function Sync1()
+	{
+		Sync1();
+		var x = Sync2(5);
+		Task[int] y = Async2(5);
+		var z = y;
+		new MyClass().Sync1();
+		new MyClass().Async1();
+		x = new MyClass().Sync2(5);
+		y = new MyClass().Async2(5);
+		z = y;
+		MyClass2.Sync1();
+		MyClass2.Async1();
+		x = MyClass2.Sync2(5);
+		y = MyClass2.Async2(5);
+		z = y;
+		return null;
+	}
+	Task[null] Function Async1()
+	{
+		Sync1();
+		var x = Sync2(5);
+		Task[int] y = Async2(5);
+		var z = y;
+		new MyClass().Sync1();
+		new MyClass().Async1();
+		x = new MyClass().Sync2(5);
+		y = new MyClass().Async2(5);
+		z = y;
+		MyClass2.Sync1();
+		MyClass2.Async1();
+		x = MyClass2.Sync2(5);
+		y = MyClass2.Async2(5);
+		z = y;
+		return null;
+	}
+	int Function Sync2(int n)
+	{
+		Sync1();
+		var x = Sync2(5);
+		Task[int] y = Async2(5);
+		var z = y;
+		new MyClass().Sync1();
+		new MyClass().Async1();
+		x = new MyClass().Sync2(5);
+		y = new MyClass().Async2(5);
+		z = y;
+		MyClass2.Sync1();
+		MyClass2.Async1();
+		x = MyClass2.Sync2(5);
+		y = MyClass2.Async2(5);
+		z = y;
+		return n * n;
+	}
+	Task[int] Function Async2(int n)
+	{
+		Sync1();
+		var x = Sync2(5);
+		Task[int] y = Async2(5);
+		var z = y;
+		new MyClass().Sync1();
+		new MyClass().Async1();
+		x = new MyClass().Sync2(5);
+		y = new MyClass().Async2(5);
+		z = y;
+		MyClass2.Sync1();
+		MyClass2.Async1();
+		x = MyClass2.Sync2(5);
+		y = MyClass2.Async2(5);
+		z = y;
+		return n * n;
+	}
+}
+
+static Class MyClass2
+{
+	null Function Sync1()
+	{
+		Sync1();
+		var x = Sync2(5);
+		Task[int] y = Async2(5);
+		var z = y;
+		new MyClass().Sync1();
+		new MyClass().Async1();
+		x = new MyClass().Sync2(5);
+		y = new MyClass().Async2(5);
+		z = y;
+		MyClass2.Sync1();
+		MyClass2.Async1();
+		x = MyClass2.Sync2(5);
+		y = MyClass2.Async2(5);
+		z = y;
+		return null;
+	}
+	Task[null] Function Async1()
+	{
+		Sync1();
+		var x = Sync2(5);
+		Task[int] y = Async2(5);
+		var z = y;
+		new MyClass().Sync1();
+		new MyClass().Async1();
+		x = new MyClass().Sync2(5);
+		y = new MyClass().Async2(5);
+		z = y;
+		MyClass2.Sync1();
+		MyClass2.Async1();
+		x = MyClass2.Sync2(5);
+		y = MyClass2.Async2(5);
+		z = y;
+		return null;
+	}
+	int Function Sync2(int n)
+	{
+		Sync1();
+		var x = Sync2(5);
+		Task[int] y = Async2(5);
+		var z = y;
+		new MyClass().Sync1();
+		new MyClass().Async1();
+		x = new MyClass().Sync2(5);
+		y = new MyClass().Async2(5);
+		z = y;
+		MyClass2.Sync1();
+		MyClass2.Async1();
+		x = MyClass2.Sync2(5);
+		y = MyClass2.Async2(5);
+		z = y;
+		return n * n;
+	}
+	Task[int] Function Async2(int n)
+	{
+		Sync1();
+		var x = Sync2(5);
+		Task[int] y = Async2(5);
+		var z = y;
+		new MyClass().Sync1();
+		new MyClass().Async1();
+		x = new MyClass().Sync2(5);
+		y = new MyClass().Async2(5);
+		z = y;
+		MyClass2.Sync1();
+		MyClass2.Async1();
+		x = MyClass2.Sync2(5);
+		y = MyClass2.Async2(5);
+		z = y;
+		return n * n;
+	}
+}
+", "null", @"Warning 801D in line 28 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 28 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 29 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 30 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 31 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 33 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 42 at position 2: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 46 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 46 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 47 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 47 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 48 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 49 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 51 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 52 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 60 at position 2: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 61 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 64 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 64 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 65 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 65 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 66 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 66 at position 20: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 67 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 69 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 70 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 71 at position 15: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 78 at position 2: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 79 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 80 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 82 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 82 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 83 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 83 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 84 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 84 at position 20: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 85 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 85 at position 20: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 87 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 88 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 89 at position 15: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 90 at position 15: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 100 at position 2: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 101 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 102 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 104 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 104 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 105 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 105 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 106 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 106 at position 20: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 107 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 107 at position 20: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 109 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 110 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 111 at position 15: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 112 at position 15: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 118 at position 2: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 119 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 120 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 122 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 122 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 123 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 123 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 124 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 124 at position 20: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 125 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 125 at position 20: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 127 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 128 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 129 at position 15: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 130 at position 15: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 136 at position 2: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 137 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 138 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 140 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 140 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 141 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 141 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 142 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 142 at position 20: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 143 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 143 at position 20: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 145 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 146 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 147 at position 15: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 148 at position 15: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 154 at position 2: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 155 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 156 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 158 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 158 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 159 at position 6: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 159 at position 16: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 160 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 160 at position 20: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 161 at position 10: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 161 at position 20: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 163 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 164 at position 11: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 165 at position 15: complicated, spaghetti-like recursional dependencies detected
+Warning 801D in line 166 at position 15: complicated, spaghetti-like recursional dependencies detected
+")]
+	[DataRow(@"using System;
+using System.Threading;
+Class MyClass
+{
+	Constructor()
+	{
+	}
+	int Function Sync()
+	{
+		var x = MyClass2.MyFunc(5);
+		return x;
+	}
+	Task[int] Function Async1()
+	{
+		var x = MyClass2.MyFunc(5);
+		return x;
+	}
+	Task[int] Function Async2(int n)
+	{
+		return n * n;
+	}
+}
+
+static Class MyClass2
+{
+	Func[Task[int], int] MyFunc = new MyClass().Async2;
+}
+
+return new MyClass().Async1();
+", "25", "Ошибок нет")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());

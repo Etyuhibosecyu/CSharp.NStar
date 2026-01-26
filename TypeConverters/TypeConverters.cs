@@ -495,6 +495,13 @@ public static class TypeConverters
 				return false;
 			}
 		}
+		if (TaskBlockStacks.Contains(destinationType.MainType) && destinationType.ExtraTypes.Length == 1
+			&& destinationType.ExtraTypes[0].Name == "type" && destinationType.ExtraTypes[0].Extra is NStarType TaskNStarType
+			&& TaskNStarType.Equals(sourceType))
+		{
+			destExpr = srcExpr;
+			return true;
+		}
 		if (UserDefinedTypes.TryGetValue(SplitType(sourceType.MainType), out var userDefinedType)
 			&& userDefinedType.BaseType != NullType && TypesAreCompatible(userDefinedType.BaseType, destinationType,
 			out warning, srcExpr, out destExpr, out extraMessage))

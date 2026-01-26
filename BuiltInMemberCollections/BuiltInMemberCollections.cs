@@ -838,7 +838,7 @@ public static class BuiltInMemberCollections
 	/// </summary>
 	public static List<NStarType> ImplicitConversionsFromAnything { get; } = [(GetPrimitiveBlockStack("object"), NoBranches), (GetPrimitiveBlockStack("null"), NoBranches), GetListType(GetPrimitiveType("[this]"))];
 
-	public static G.SortedSet<String> NotImplementedNamespaces { get; } = ["System.Diagnostics", "System.Globalization", "System.Runtime", "System.Text", "System.Threading"];
+	public static G.SortedSet<String> NotImplementedNamespaces { get; } = ["System.Diagnostics", "System.Globalization", "System.Runtime", "System.Text"];
 
 	/// <summary>
 	/// Sorted by Namespace, also contains UseInstead.

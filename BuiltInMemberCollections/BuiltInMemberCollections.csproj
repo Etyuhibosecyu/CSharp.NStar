@@ -16,9 +16,6 @@
 		<PackageReference Include="Nito.AsyncEx.Context" Version="5.1.2" />
 		<PackageReference Include="PanAndZoom" Version="11.3.6" />
 		<PackageReference Include="ReactiveUI.Avalonia" Version="11.3.8" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\NStarType\NStarType.csproj" />
+		<ProjectReference Include="..\NStarType\NStarType.csproj" />
 	</ItemGroup>
 </Project>
