@@ -12,6 +12,7 @@ global using static NStar.Core.Extents;
 global using static System.Math;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -48,11 +49,11 @@ public static class MemberChecks
 			&& containerProperties.TryGetValue(name, out var a))
 		{
 			property = a;
-			return true;
+			return ProcessProperty(container, ref property);
 		}
 		else if (UserDefinedTypes.TryGetValue(SplitType(container.MainType), out var userDefinedType)
 			&& PropertyExists(userDefinedType.BaseType, name, @static, out property))
-			return true;
+			return ProcessProperty(container, ref property);
 		var containerType = SplitType(container.MainType);
 		if (!TypeExists(containerType, out var netType))
 		{
@@ -126,6 +127,37 @@ public static class MemberChecks
 		return false;
 	}
 
+	private static bool ProcessProperty(NStarType container, ref UserDefinedProperty? property)
+	{
+		Debug.Assert(property != null);
+		(BlockStack Container, String Type) matchingType = default!;
+		if (!CheckContainer(container.MainType, x => UserDefinedTypes.ContainsKey(matchingType = SplitType(x)), out _))
+			return true;
+		var restrictions = UserDefinedTypes[matchingType].Restrictions;
+		if (restrictions.Length == 0)
+			return true;
+		var sourceTypes = restrictions.ToList(x => new NStarType(new(new Block(BlockType.Extra, x.Name, 1)), NoBranches));
+		var destinationTypes = container.ExtraTypes
+			.ToList(x => x.Value.Name == "type" && x.Value.Extra is NStarType NStarType ? NStarType : NullType)
+			.AddRange(container.ExtraTypes.Length == 1 && container.ExtraTypes[0].Name == "List"
+			? container.ExtraTypes[0].Elements
+			.Convert(x => x.Name == "type" && x.Extra is NStarType NStarType ? NStarType
+			: x.Name == "Hypername" && x.Length == 1 && x[0].Name == "type" && x[0].Extra is NStarType NStarType2
+			? NStarType2 : NullType) : []).FilterInPlace(x => !x.Equals(NullType));
+		var patterns = GetNStarReplacementPatterns(restrictions.ToList(x => x.Name),
+			destinationTypes, sourceTypes)
+			.AddRange(GetNStarReplacementPatterns(restrictions.ToList(x => x.Name),
+			sourceTypes, destinationTypes));
+		var returnType = property.Value.NStarType;
+		for (var j = 0; j < patterns.Length; j++)
+		{
+			for (var k = 0; k < sourceTypes.Length; k++)
+				returnType = ReplaceExtraType(returnType, patterns[j]);
+		}
+		property = new(returnType, property.Value.Attributes, property.Value.DefaultValue);
+		return true;
+	}
+
 	public static List<G.KeyValuePair<String, UserDefinedProperty>> GetAllProperties(BlockStack container)
 	{
 		List<G.KeyValuePair<String, UserDefinedProperty>> result = [];
@@ -156,14 +188,14 @@ public static class MemberChecks
 			return false;
 		}
 		var netProperty = netType.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.FlattenHierarchy)
-			.Find(x => x.IsLiteral && x.IsInitOnly && x.Name == name.ToString());
+			.Find(x => x.IsInitOnly && x.Name == name.ToString());
 		if (netProperty == null)
 		{
 			constant = null;
 			return false;
 		}
 		constant = new(TypeMappingBack(netProperty.FieldType, netType.GetGenericArguments(), container.ExtraTypes),
-			ConstantAttributes.None, new("null", 0, []));
+			ConstantAttributes.None, new(netProperty.GetValue(null)?.ToString() ?? "null", 0, []));
 		return true;
 	}
 
@@ -481,7 +513,7 @@ public static class MemberChecks
 				}
 				else if (UserDefinedFunctionExists(userDefinedType.BaseType, name, callParameterTypes,
 					out functions, out matchingContainer, out derived))
-					return true;
+					return ProcessUserDefinedMethod(callParameterTypes, functions, mainType);
 			}
 			functions = null;
 			derived = false;
@@ -489,6 +521,12 @@ public static class MemberChecks
 		}
 		functions = [.. functions.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
 		derived = false;
+		return ProcessUserDefinedMethod(callParameterTypes, functions, mainType);
+	}
+
+	private static bool ProcessUserDefinedMethod(List<NStarType> callParameterTypes, UserDefinedMethodOverloads functions,
+		BlockStack mainType)
+	{
 		(BlockStack Container, String Type) matchingType = default!;
 		if (!CheckContainer(mainType, x => UserDefinedTypes.ContainsKey(matchingType = SplitType(x)), out _))
 			return true;
@@ -503,16 +541,18 @@ public static class MemberChecks
 				new ExtendedMethodParameter(x.Type, x.Name, x.Attributes, x.DefaultValue))];
 			var functionParameterTypes = parameters.ToList(x => x.Type);
 			var patterns = GetNStarReplacementPatterns(restrictions.ToList(x => x.Name),
-				callParameterTypes, functionParameterTypes)
+				callParameterTypes, functionParameterTypes.Append(ReturnNStarType))
 				.AddRange(GetNStarReplacementPatterns(restrictions.ToList(x => x.Name),
-				functionParameterTypes, callParameterTypes));
+				functionParameterTypes.Append(ReturnNStarType), callParameterTypes));
 			for (var j = 0; j < patterns.Length; j++)
 			{
 				ReturnNStarType = ReplaceExtraType(ReturnNStarType, patterns[j]);
 				for (var k = 0; k < functionParameterTypes.Length; k++)
+				{
 					functionParameterTypes[k] = ReplaceExtraType(functionParameterTypes[k], patterns[j]);
-				parameters[j] = new(functionParameterTypes[j], parameters[j].Name, parameters[j].Attributes,
-					parameters[j].DefaultValue);
+					parameters[k] = new(functionParameterTypes[k], parameters[k].Name, parameters[k].Attributes,
+						parameters[k].DefaultValue);
+				}
 			}
 			functions[i] = new(function.RealName, function.Restrictions, ReturnNStarType, function.Attributes, parameters);
 		}
@@ -533,12 +573,12 @@ public static class MemberChecks
 		return true;
 	}
 
-	public static List<(String ExtraType, NStarType TypeToInsert)>
+	public static ListHashSet<(String ExtraType, NStarType TypeToInsert)>
 		GetNStarReplacementPatterns(List<String> genericArguments, List<NStarType> callParameterTypes,
 		List<NStarType> functionParameterTypes)
 	{
 		var length = Min(callParameterTypes.Length, functionParameterTypes.Length);
-		List<(String ExtraType, NStarType TypeToInsert)> result = [];
+		ListHashSet<(String ExtraType, NStarType TypeToInsert)> result = [];
 		for (var i = 0; i < genericArguments.Length; i++)
 		{
 			var genericArgument = genericArguments[i];
@@ -622,24 +662,51 @@ public static class MemberChecks
 		return true;
 	}
 
-	public static bool UserDefinedConstructorsExist(NStarType container, List<NStarType> parameterTypes,
+	public static bool UserDefinedConstructorsExist(NStarType container, List<NStarType> callParameterTypes,
 		[MaybeNullWhen(false)] out ConstructorOverloads constructors)
 	{
-		if (UserDefinedConstructors.TryGetValue(container.MainType, out var temp_constructors)
-			&& !(UserDefinedTypes.TryGetValue(SplitType(container.MainType), out var userDefinedType)
+		var mainType = container.MainType;
+		if (!UserDefinedConstructors.TryGetValue(container.MainType, out var temp_constructors)
+			|| UserDefinedTypes.TryGetValue(SplitType(container.MainType), out var userDefinedType)
 			&& (userDefinedType.Attributes & (TypeAttributes.Struct | TypeAttributes.Static))
-			is not (0 or TypeAttributes.Sealed or TypeAttributes.Struct)))
+			is not (0 or TypeAttributes.Sealed or TypeAttributes.Struct))
 		{
-			constructors = [.. temp_constructors,
-				.. ConstructorsExist(userDefinedType.BaseType, parameterTypes, out var baseConstructors)
-				? baseConstructors : [],
-				.. UserDefinedConstructorsExist(userDefinedType.BaseType, parameterTypes, out baseConstructors)
-				? baseConstructors : []];
-			if (constructors.Length != 0)
-				return true;
+			constructors = null;
+			return false;
 		}
-		constructors = null;
-		return false;
+		constructors = [.. temp_constructors,
+			.. ConstructorsExist(userDefinedType.BaseType, callParameterTypes, out var baseConstructors)
+			? baseConstructors : [],
+			.. UserDefinedConstructorsExist(userDefinedType.BaseType, callParameterTypes, out baseConstructors)
+			? baseConstructors : []];
+		(BlockStack Container, String Type) matchingType = default!;
+		if (!CheckContainer(mainType, x => UserDefinedTypes.ContainsKey(matchingType = SplitType(x)), out _))
+			return true;
+		var restrictions = UserDefinedTypes[matchingType].Restrictions;
+		if (restrictions.Length == 0)
+			return true;
+		for (var i = 0; i < constructors.Length; i++)
+		{
+			var constructor = constructors[i];
+			ExtendedMethodParameters parameters = [.. constructor.Parameters.Convert(x =>
+				new ExtendedMethodParameter(x.Type, x.Name, x.Attributes, x.DefaultValue))];
+			var constructorParameterTypes = parameters.ToList(x => x.Type);
+			var patterns = GetNStarReplacementPatterns(restrictions.ToList(x => x.Name),
+				callParameterTypes, constructorParameterTypes)
+				.AddRange(GetNStarReplacementPatterns(restrictions.ToList(x => x.Name),
+				constructorParameterTypes, callParameterTypes));
+			for (var j = 0; j < patterns.Length; j++)
+			{
+				for (var k = 0; k < constructorParameterTypes.Length; k++)
+				{
+					constructorParameterTypes[k] = ReplaceExtraType(constructorParameterTypes[k], patterns[j]);
+					parameters[k] = new(constructorParameterTypes[k], parameters[k].Name, parameters[k].Attributes,
+						parameters[k].DefaultValue);
+				}
+			}
+			constructors[i] = new(constructor.Attributes, parameters, constructor.UnsetRequiredProperties);
+		}
+		return true;
 	}
 
 	public static bool TypeIsFullySpecified(NStarType type, BlockStack container)

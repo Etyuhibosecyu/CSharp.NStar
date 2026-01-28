@@ -382,7 +382,7 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 	private String TranslateTimeDefaultExpr(ref int i, NStarType LeftNStarType, NStarType RightNStarType)
 	{
 		Branch[i].Extra = GetResultType(LeftNStarType, RightNStarType, Value1.ToString(true), Value2.ToString(true));
-		return Branch[Max(i - 3, 0)].Name.Copy().Add(' ').AddRange(Branch[i - 1].Name).Add(' ').AddRange(Branch[i++ - 1].Name);
+		return Branch[i - 2].Name.Copy().Add(' ').AddRange(Branch[i].Name).Add(' ').AddRange(Branch[i - 1].Name);
 	}
 
 	private void GenerateMessage(ref List<String>? errors, ushort code, Index pos, params dynamic[] parameters)

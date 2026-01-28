@@ -5780,11 +5780,11 @@ return x;
 ", "0-1.5707963267948966I", "Ошибок нет")]
 	[DataRow(@"var x = Log(I, I);
 return x;
-", "0+0I", @"Error 4026 in line 1 at position 12: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
+", "null", @"Error 4026 in line 1 at position 12: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
 ")]
 	[DataRow(@"var x = Log(I, -I);
 return x;
-", "0+0I", @"Error 4026 in line 1 at position 12: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
+", "null", @"Error 4026 in line 1 at position 12: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
 ")]
 	[DataRow(@"var x = ln (-5c);
 return x;
@@ -6700,6 +6700,221 @@ using System.Threading;
 Parallel.For(1, list.Length, i => list[i] = i + 1);
 return (list[12345678], list[100000000]);
 ", "(12345679, 100000001)", "Ошибок нет")]
+	[DataRow(@"Class Pair
+{
+	required typename T1 { get, init };
+	required typename T2 { get, init };
+	T1 First { get, set };
+	T2 Second { get, set };
+
+	Constructor(T1 first, T2 second)
+	{
+		First = first;
+		Second = second;
+	}
+}
+
+var pair = new Pair[int, string](100, ""Status"");
+var x = pair.First + "": "" + pair.Second;
+var pair2 = new Pair[string, string](""Name"", ""Status"");
+var y = pair2.First + "": "" + pair2.Second;
+var pair3 = new Pair[int, int](100, 255);
+var z = pair3.First + "": "" + pair3.Second;
+return (x, y, z);
+", """("100: Status", "Name: Status", "100: 255")""", "Ошибок нет")]
+	[DataRow(@"using System;
+Class Pair
+{
+	required typename T1 { get, init };
+	required typename T2 { get, init };
+	T1 First { get, set };
+	T2 Second { get, set };
+	() (T1, T2) List { get, set };
+
+	Constructor(T1 first, T2 second, () (T1, T2) list)
+	{
+		First = first;
+		Second = second;
+		List = list;
+	}
+}
+
+var pair = new Pair[int, string](100, ""Status"", ((5, ""A""), (10, ""B""), (15, ""C"")));
+var x = pair.First + "": "" + pair.Second + "" - ""
+	+ string.Join("", "", RedStarLinq.Convert(pair.List, x => x[1] + "", "" + x[2]));
+var pair2 = new Pair[string, string](""Name"", ""Status"", ((""A"", ""X""), (""B"", ""Y""), (""C"", ""Z"")));
+var y = pair2.First + "": "" + pair2.Second + "" - ""
+	+ string.Join("", "", RedStarLinq.Convert(pair2.List, x => x[1] + "", "" + x[2]));
+var pair3 = new Pair[int, int](100, 255, ((5, 8), (10, 16), (15, 24)));
+var z = pair3.First + "": "" + pair3.Second + "" - ""
+	+ string.Join("", "", RedStarLinq.Convert(pair3.List, x => x[1] + "", "" + x[2]));
+return (x, y, z);
+", """("100: Status - 5, A, 10, B, 15, C", "Name: Status - A, X, B, Y, C, Z", "100: 255 - 5, 8, 10, 16, 15, 24")""", "Ошибок нет")]
+	[DataRow(@"abstract Class BaseStack
+{
+	required typename T { get, init };
+	
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+}
+
+Class IntStack : BaseStack[int]
+{
+	private () int list = new(32);
+
+	int Function Peek()
+	{
+		return list[^1];
+	}
+
+	int Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(int item)
+	{
+		list.Add(item);
+	}
+}
+
+Class StringStack : BaseStack[string]
+{
+	private () string list = new(32);
+
+	string Function Peek()
+	{
+		return list[^1];
+	}
+
+	string Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(string item)
+	{
+		list.Add(item);
+	}
+}
+
+BaseStack[int] intStack = new IntStack();
+intStack.Push(5);
+intStack.Push(10);
+var x = (intStack.Pop(), intStack.Peek());
+BaseStack[string] stringStack = new StringStack();
+stringStack.Push(""A"");
+stringStack.Push(""B"");
+var y = (stringStack.Pop(), stringStack.Peek());
+return (x, y);
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"object item = ""Welcome!"";
+if (item is string text)
+	return text;
+", @"""Welcome!""", "Ошибок нет")]
+	[DataRow(@"int age = 25;
+bool bool = age is >= 18 and <= 30;
+if (""A"" is not null)
+	return bool;
+", "true", "Ошибок нет")]
+	[DataRow(@"real temperature = 35.2;
+string category = temperature switch 
+{
+	< 0 => ""Freezing"",
+	>= 0 and < 20 => ""Cold"",
+	>= 20 and <= 30 => ""Warm"",
+	> 30 => ""Hot"",
+	_ => ""Unknown"",
+};
+return category;
+", @"""Hot""", "Ошибок нет")]
+	[DataRow(@"() int list = (5, 10, 15, 20, 25);
+if (list is var data && data.Length > 0) 
+	return ""Data retrieved!"";
+", @"""Data retrieved!""", "Ошибок нет")]
+	[DataRow(@"return null is _;
+", "true", "Ошибок нет")]
+	[DataRow(@"var x = null is _;
+return x;
+", "true", "Ошибок нет")]
+	[DataRow(@"object obj = 5;
+return (obj is int, obj is real, IntToReal(obj) is real);
+", "(true, false, null)", @"Error 4026 in line 2 at position 43: incompatibility between the type of the parameter of the call ""object"" and the type of the parameter of the function ""System.IIntegerNumber[object]""
+Error 40A1 in line 2 at position 48: the expression of the type ""null"" cannot be matched with the pattern of the type ""real""
+")]
+	[DataRow(@"int value = 10;
+if (value is 10)
+	return true;
+", "true", "Ошибок нет")]
+	[DataRow(@"object value = 42;
+string result = value switch 
+{
+	int i if i > 100 => ""Large number"",
+	int i => ""Number: "" + i,
+	string s => ""Text: "" + s,
+	null => ""Null value"",
+	_ => ""Unknown type"",
+};
+return result;
+", @"""Number: 42""", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+Class MyClass : ListHashSet[string]
+{
+}
+ListHashSet[string] set = new(""A"", ""B"", ""C"");
+if (set is MyClass)
+	return false;
+set = new MyClass();
+if (set is MyClass)
+	return true;
+", "true", "Ошибок нет")]
+	[DataRow(@"string text = ""hello"";
+if (text is >= ""a"" and <= ""z"")
+	return true;
+", "null", @"Error 40A0 in line 2 at position 12: the relational pattern matching can be only applied to the numbers
+Error 40A0 in line 2 at position 23: the relational pattern matching can be only applied to the numbers
+")]
+	[DataRow(@"if (3.5 is not int)
+	return true;
+", "null", @"Error 40A1 in line 1 at position 8: the expression of the type ""real"" cannot be matched with the pattern of the type ""int""
+")]
+	[DataRow(@"object obj = 42;
+if (obj is var 123abc)
+	return true;
+", "null", @"Error 200B in line 2 at position 15: expected: )
+Error 200B in line 2 at position 15: expected: )
+")]
+	[DataRow(@"int num = 5;
+string result = num switch
+{
+	_ if num > 10 => ""Big"",
+	_ => ""Small"", 
+	5 => ""Five"",
+};
+return result;
+", "null", @"Error 2034 in line 6 at position 1: the switch expression cannot contain cases after ""_""
+")]
+	[DataRow(@"int x = 5;
+if (x is int i and real j)
+	return true;
+", "null", @"Error 40A1 in line 2 at position 6: the expression of the type ""int"" cannot be matched with the pattern of the type ""real""
+")]
+	[DataRow(@"() int items = (1, 2, 3, 4, 5);
+if (items is not () real list)
+	return true;
+", "null", @"Error 40A1 in line 2 at position 10: the expression of the type ""list() int"" cannot be matched with the pattern of the type ""list() real""
+")]
+	[DataRow(@"object obj = 42;
+if (obj is 5 or string s)
+	return true;
+", "null", @"Error 40A2 in line 2 at position 13: the declaration patterns cannot be used with the operator ""or""
+")]
+	[DataRow(@"object obj = 42;
+if (obj is not 5 and not string s)
+	return true;
+", "null", @"Error 40A3 in line 2 at position 17: the negative declaration patterns cannot be used with the operator ""and""
+")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());

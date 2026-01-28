@@ -295,7 +295,7 @@ public static class TypeConverters
 			&& destinationType.ExtraTypes[0].Name == "type"
 			&& destinationType.ExtraTypes[0].Extra is NStarType DestinationSubtype)
 			destinationType = DestinationSubtype;
-		if (sourceType.Equals(destinationType))
+		if (IsDerivedClass(sourceType, destinationType))
 		{
 			destExpr = srcExpr;
 			return true;
@@ -520,17 +520,19 @@ public static class TypeConverters
 			&& destinationNetType.IsAssignableFrom(sourceNetType)
 			|| destinationNetType.GetGenericArguments().Length == 1
 			&& destinationNetType.GetGenericArguments()[0].Name == "TSelf"
-			&& destinationNetType.MakeGenericType(sourceNetType).IsAssignableFrom(sourceNetType))
+			&& destinationNetType.TryWrap(x => x.MakeGenericType(sourceNetType), out var genericType)
+			&& genericType.IsAssignableFrom(sourceNetType))
 			|| ExplicitlyConnectedNamespaces.FindIndex(x =>
 			ExtraTypes.TryGetValue((x,
 			sourceType.MainType.TryPeek(out var sourceBlock) ? sourceBlock.Name : ""), out var sourceNetType)
 			&& sourceNetType.GetGenericArguments().Length == 0
 			&& ExtraTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToString(),
-			sourceType.MainType.TryPeek(out var destinationBlock) ? sourceBlock.Name : ""), out var destinationNetType)
+			sourceType.MainType.TryPeek(out var destinationBlock) ? destinationBlock.Name : ""), out var destinationNetType)
 			&& (destinationNetType.GetGenericArguments().Length == 0
 			&& destinationNetType.IsAssignableFrom(sourceNetType)
 			|| destinationNetType.GetGenericArguments()[0].Name == "TSelf"
-			&& destinationNetType.MakeGenericType(sourceNetType).IsAssignableFrom(sourceNetType))) >= 0)
+			&& destinationNetType.TryWrap(x => x.MakeGenericType(sourceNetType), out var genericType)
+			&& genericType.IsAssignableFrom(sourceNetType))) >= 0)
 		{
 			destExpr = srcExpr;
 			return true;
@@ -715,7 +717,8 @@ public static class TypeConverters
 		}
 		if (!TypeEqualsToPrimitive(NStarType, "tuple", false))
 		{
-			if (TypeExists(SplitType(NStarType.MainType), out var netType))
+			var split = SplitType(NStarType.MainType);
+			if (TypeExists(split, out var netType))
 			{
 				if (netType == typeof(Task<>) && NStarType.ExtraTypes.Length == 1 && NStarType.ExtraTypes[0].Name == "type"
 					&& NStarType.ExtraTypes[0].Extra is NStarType InnerNStarType && InnerNStarType.Equals(NullType))
@@ -725,6 +728,14 @@ public static class TypeConverters
 					&& NStarType.ExtraTypes[0].Extra is NStarType ValueInnerNStarType && ValueInnerNStarType.Equals(NullType))
 					return typeof(ValueTask);
 				else if (netType.ContainsGenericParameters)
+					return netType.MakeGenericType(NStarType.ExtraTypes.ToArray(x => TypeMapping(x.Value)));
+				else
+					return netType;
+			}
+			else if (Interfaces.TryGetValue((split.Container.ToString(), split.Type), out var @interface))
+			{
+				netType = @interface.DotNetType;
+				if (netType.ContainsGenericParameters)
 					return netType.MakeGenericType(NStarType.ExtraTypes.ToArray(x => TypeMapping(x.Value)));
 				else
 					return netType;
@@ -757,6 +768,7 @@ public static class TypeConverters
 			{
 				tupleComponents.Add(innerResult);
 				first = TypeMapping(InnerNStarType2);
+				innerResult = first;
 				continue;
 			}
 			innerResult = ConstructTupleType(RedStarLinq.FillArray(innerResult,

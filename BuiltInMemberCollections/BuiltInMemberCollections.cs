@@ -358,8 +358,14 @@ public static class BuiltInMemberCollections
 			("System.Collections", nameof(IList)), (ExtraTypesT, typeof(IList<>)) 
 		},
 		{ 
-			("System.Collections", "IListRaw"), (NoExtraTypes, typeof(void))
-		} 
+			("System.Collections", "IListRaw"), (NoExtraTypes, typeof(G.IList<>))
+		},
+		{
+			("System.Collections", nameof(IReadOnlyList<>)), (ExtraTypesT, typeof(IReadOnlyList<>)) 
+		},
+		{ 
+			("System.Collections", "IReadOnlyListRaw"), (NoExtraTypes, typeof(G.IReadOnlyList<>))
+		},
 	};
 
 	/// <summary>

@@ -217,6 +217,11 @@ public static class Messages
 			0x4090 => "the recursive type cannot be value of itself",
 			0x4091 => "cannot get type of the type",
 			0x4092 => "the recursive type variable, property or constant cannot have the name \"typename\"",
+			0x40A0 => "the relational pattern matching can be only applied to the numbers",
+			0x40A1 => "the expression of the type \"" + parameters[0] + "\" cannot be matched with the pattern of the type \""
+				+ parameters[1] + "\"",
+			0x40A2 => "the declaration patterns cannot be used with the operator \"" + parameters[0] + "\"",
+			0x40A3 => "the negative declaration patterns cannot be used with the operator \"" + parameters[0] + "\"",
 			0x8000 => "the properties and the methods are static in the static class implicitly;" +
 				" the word \"static\" is not necessary",
 			0x8001 => "the semicolon in the end of the line with condition or cycle may easily be unnoticed" +

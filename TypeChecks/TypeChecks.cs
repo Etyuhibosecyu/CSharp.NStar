@@ -28,6 +28,22 @@ public static class TypeChecks
 		return false;
 	}
 
+	public static bool IsDerivedClass(NStarType derived, NStarType @base)
+	{
+		if (derived.Equals(@base))
+			return true;
+		var type = derived;
+		while (!type.Equals(NullType))
+		{
+			if (!UserDefinedTypes.TryGetValue(SplitType(derived.MainType), out var userDefinedType))
+				return false;
+			type = userDefinedType.BaseType;
+			if (type.Equals(@base))
+				return true;
+		}
+		return false;
+	}
+
 	public static bool IsNotImplementedNamespace(String @namespace)
 	{
 		if (NotImplementedNamespaces.Contains(@namespace))
@@ -150,8 +166,8 @@ public static class TypeChecks
 		Type? preservedNetType = null;
 		if (containerType.Container.Length != 0)
 			return false;
-		if (ExplicitlyConnectedNamespaces.FindIndex(x =>
-			ExtraTypes.TryGetValue((x, containerType.Type), out preservedNetType)) < 0)
+		if (ExplicitlyConnectedNamespaces
+			.FindIndex(x => ExtraTypes.TryGetValue((x, containerType.Type), out preservedNetType)) < 0)
 			return false;
 		if (preservedNetType == null)
 			return false;
