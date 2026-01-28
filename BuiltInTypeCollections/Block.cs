@@ -21,7 +21,7 @@ public sealed class Block(BlockType blockType, String name, int unnamedIndex)
 
 	public override int GetHashCode() => BlockType.GetHashCode() ^ Name.GetHashCode();
 
-	public override string ToString() => (BlockType == BlockType.Unnamed) ? "Unnamed(" + Name + ")" : (ExplicitNameBlockTypes.Contains(BlockType) ? BlockType.ToString() : "") + Name;
+	public override string ToString() => (BlockType == BlockType.Unnamed) ? "Unnamed(" + Name + ")" : (ExplicitNameBlockTypes.Contains(BlockType) ? BlockType.ToString() + ": " : "") + Name;
 }
 
 [DebuggerDisplay("{ToString()}")]

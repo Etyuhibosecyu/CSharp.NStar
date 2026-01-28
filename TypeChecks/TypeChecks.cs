@@ -28,9 +28,9 @@ public static class TypeChecks
 		return false;
 	}
 
-	public static bool IsDerivedClass(NStarType derived, NStarType @base)
+	public static bool IsEqualOrDerived(NStarType derived, NStarType @base)
 	{
-		if (derived.Equals(@base))
+		if (derived.Equals(@base) || @base.Equals(ObjectType))
 			return true;
 		var type = derived;
 		while (!type.Equals(NullType))
@@ -51,7 +51,7 @@ public static class TypeChecks
 		return false;
 	}
 
-	public static bool IsOutdatedNamespace(String @namespace, out String useInstead)
+	public static bool IsOutdatedNamespace(String @namespace, out String? useInstead)
 	{
 		if (OutdatedNamespaces.TryGetValue(@namespace, out useInstead))
 			return true;
@@ -73,7 +73,7 @@ public static class TypeChecks
 		return false;
 	}
 
-	public static bool IsOutdatedType(String @namespace, String typeName, out String useInstead)
+	public static bool IsOutdatedType(String @namespace, String typeName, out String? useInstead)
 	{
 		if (OutdatedTypes.TryGetValue((@namespace, typeName), out useInstead))
 			return true;
@@ -140,7 +140,7 @@ public static class TypeChecks
 		return false;
 	}
 
-	public static bool IsOutdatedMember(BlockStack type, String member, out String useInstead)
+	public static bool IsOutdatedMember(BlockStack type, String member, out String? useInstead)
 	{
 		if (OutdatedMembers.TryGetValue(type, out var containerMembers)
 			&& containerMembers.TryGetValue(member, out useInstead))

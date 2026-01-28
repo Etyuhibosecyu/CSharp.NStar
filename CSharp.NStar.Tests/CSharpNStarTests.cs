@@ -1,8 +1,12 @@
 ﻿global using System;
 global using String = NStar.Core.String;
 using Mpir.NET;
+using NStar.Core;
+using NStar.RemoveDoubles;
 using System.Globalization;
 using static CSharp.NStar.SemanticTree;
+using static System.Math;
+using E = System.Linq.Enumerable;
 
 namespace CSharp.NStar.Tests;
 
@@ -6915,6 +6919,35 @@ if (obj is not 5 and not string s)
 	return true;
 ", "null", @"Error 40A3 in line 2 at position 17: the negative declaration patterns cannot be used with the operator ""and""
 ")]
+	[DataRow(@"var obj = 42;
+if (obj is var x and >= 10)
+	return true;
+", "true", "Ошибок нет")]
+	[DataRow(@"const [string, int] Dic = (""AAA"": 1, (""BBB"", 2), ""CCC"": 3, var x: x.Length);
+return Dic[""C#.NStar""];
+", "8", "Ошибок нет")]
+	[DataRow(@"const [real, int] Dic = (var T: 1, (typename, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4093 in line 1 at position 25: the recursive type in the pattern matching must contain the variable declaration
+")]
+	[DataRow(@"const [real, int] Dic = (var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "1", @"Warning 801E in line 1 at position 25: the previous pattern has already processed all the possible variants of key; this one is redundant
+")]
+	[DataRow(@"const [real, int] Dic = (object obj: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "1", @"Warning 801E in line 1 at position 25: the previous pattern has already processed all the possible variants of key; this one is redundant
+")]
+	[DataRow(@"const [typename, int] Dic = (var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4014 in line 2 at position 10: cannot convert from the type ""real"" to the type ""typename""
+")]
+	[DataRow(@"const [typename, int] Dic = (var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[int];
+", "1", "Ошибок нет")]
+	[DataRow(@"const [typename, int] Dic = ((int, 2), var T: 1, var T2: 3, var T3: 4);
+return Dic[int];
+", "2", "Ошибок нет")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());
@@ -7125,6 +7158,87 @@ Warning 8006 in line 18 at position 2: at present time the word ""internal"" doe
 			+ TargetResult.Replace("\"", "\"\"") + "\"") + (TargetErrors == null
 			|| errors == TargetErrors ? "" : " and produced errors @\"" + errors.Replace("\"", "\"\"")
 			+ "\" instead of @\"" + TargetErrors.Replace("\"", "\"\"") + "\"") + "!");
+	}
+}
+
+[TestClass]
+public class FuncDictionaryTests
+{
+	[TestMethod]
+	public void ComplexTest()
+	{
+		Random random = new(1234567890);
+		Random random2 = new(1234567890);
+		Random actionsRandom = new(1234567890);
+		var counter = 0;
+	l1:
+		var arr = RedStarLinq.FillArray(random.Next(1, 100), _ => (Key: random.Next(100), Value: (Func<int, int>)(key => (int)Round(Sin(key) * 1000))));
+		var arr2 = RedStarLinq.FillArray(random2.Next(1, 100), _ => (Key: random2.Next(100), Value: (Func<int, int>)(key => (int)Round(Sin(key) * 1000))));
+		FuncDictionary<int, int> dic = new(new(arr2), []);
+		var dic2 = E.ToDictionary(arr.RemoveDoubles(x => x.Key), x => x.Key, x => x.Value);
+		var actions = new[] { () =>
+		{
+			var (index, n) = (random.Next(100), random.Next(100));
+			_ = (random2.Next(100), random2.Next(100));
+			switch (actionsRandom.Next(3))
+			{
+				case 0:
+				if (dic.TryAdd(index, n))
+					dic2.Add(index, key => n);
+				break;
+				case 1:
+				if (dic.TryAdd(index, key => n))
+					dic2.Add(index, key => n);
+				break;
+				case 2:
+				if (dic2.Count == 0)
+					return;
+				index = dic2.Keys.ToList().Random(actionsRandom);
+				n = dic2[index](index);
+				dic.Remove(index);
+				dic.Add(key => key == index, key => n);
+				break;
+				default:
+					throw new InvalidOperationException();
+			}
+			Assert.HasCount(dic2.Count, dic);
+			Assert.IsTrue(dic2.All(x => dic.TryGetValue(x.Key, out var value) && value.Equals(x.Value(x.Key))));
+		}, () =>
+		{
+			if (dic.Length == 0)
+				return;
+			var (index, n) = (random.Next(100), random.Next(100));
+			_ = (random2.Next(100), random2.Next(100));
+			dic[index] = n;
+			dic2[index] = key => n;
+			Assert.HasCount(dic2.Count, dic);
+			Assert.IsTrue(dic2.All(x => dic.TryGetValue(x.Key, out var value) && value.Equals(x.Value(x.Key))));
+		}, () =>
+		{
+			if (dic.Length == 0)
+				return;
+			if (actionsRandom.Next(25) == 0)
+			{
+				dic.Clear();
+				dic2.Clear();
+			}
+			else
+			{
+				var (n, _) = (random.Next(100), random.Next(100));
+				_ = (random2.Next(100), random2.Next(100));
+				var b = dic.TryGetValue(n, out _);
+				if (!b)
+					return;
+				dic.Remove(n);
+				dic2.Remove(n);
+			}
+			Assert.HasCount(dic2.Count, dic);
+			Assert.IsTrue(dic2.All(x => dic.TryGetValue(x.Key, out var value) && value.Equals(x.Value(x.Key))));
+		} };
+		for (var i = 0; i < 1000; i++)
+			actions.Random(actionsRandom)();
+		if (counter++ < 1000)
+			goto l1;
 	}
 }
 

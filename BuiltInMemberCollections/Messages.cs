@@ -217,6 +217,7 @@ public static class Messages
 			0x4090 => "the recursive type cannot be value of itself",
 			0x4091 => "cannot get type of the type",
 			0x4092 => "the recursive type variable, property or constant cannot have the name \"typename\"",
+			0x4093 => "the recursive type in the pattern matching must contain the variable declaration",
 			0x40A0 => "the relational pattern matching can be only applied to the numbers",
 			0x40A1 => "the expression of the type \"" + parameters[0] + "\" cannot be matched with the pattern of the type \""
 				+ parameters[1] + "\"",
@@ -265,6 +266,7 @@ public static class Messages
 				+ " dictionary of lambdas or non-private and non-protected property starts with lower case letter",
 			0x801C => "type inside the type inside the type detected",
 			0x801D => "complicated, spaghetti-like recursional dependencies detected",
+			0x801E => "the previous pattern has already processed all the possible variants of key; this one is redundant",
 			0x9000 => "unexpected end of code reached; expected: single quote",
 			0x9001 => "there must be a single character or a single escape-sequence in the single quotes",
 			0x9002 => "unexpected end of code reached; expected: double quote",
@@ -290,6 +292,7 @@ public static class Messages
 			0x9015 => "too many sequential whitespaces",
 			0x9016 => "spaces instead of tabs at the line start",
 			0x9017 => "too many indentation units (both present and missing indents) (only 5 are supported)",
+			0x9018 => "cannot mention the \"Class\" keyword in the round brackets several times in one block",
 			0xF000 => "compilation failed because of internal compiler error",
 			_ => throw new InvalidOperationException(),
 		});

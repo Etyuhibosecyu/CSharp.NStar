@@ -26,9 +26,10 @@ public static class TypeConverters
 {
 	private static readonly Random random = new();
 	private static readonly List<String> CollectionTypesList = [nameof(Buffer), nameof(Dictionary<,>),
-		nameof(FastDelHashSet<>), "HashTable", nameof(ICollection), nameof(G.IEnumerable<>), nameof(IList),
-		nameof(IReadOnlyCollection<>), nameof(IReadOnlyList<>), nameof(LimitedQueue<>), nameof(G.LinkedList<>),
-		nameof(G.LinkedListNode<>), nameof(ListHashSet<>), nameof(Memory<>), nameof(Mirror<,>),
+		nameof(FastDelHashSet<>), nameof(FuncDictionary<,>), "HashTable",
+		nameof(ICollection), nameof(G.IEnumerable<>), nameof(IList), nameof(IReadOnlyCollection<>), nameof(IReadOnlyList<>),
+		nameof(LimitedQueue<>), nameof(G.LinkedList<>), nameof(G.LinkedListNode<>), nameof(ListHashSet<>),
+		nameof(Memory<>), nameof(Mirror<,>),
 		nameof(Queue<>), nameof(ParallelHashSet<>), nameof(ReadOnlyMemory<>), nameof(ReadOnlySpan<>),
 		nameof(Slice<>), nameof(SortedDictionary<,>), nameof(SortedSet<>), nameof(Span<>), nameof(Stack<>),
 		nameof(TreeHashSet<>), nameof(TreeSet<>)];
@@ -295,7 +296,7 @@ public static class TypeConverters
 			&& destinationType.ExtraTypes[0].Name == "type"
 			&& destinationType.ExtraTypes[0].Extra is NStarType DestinationSubtype)
 			destinationType = DestinationSubtype;
-		if (IsDerivedClass(sourceType, destinationType))
+		if (IsEqualOrDerived(sourceType, destinationType))
 		{
 			destExpr = srcExpr;
 			return true;
@@ -551,7 +552,12 @@ public static class TypeConverters
 		if (foundIndex != -1)
 		{
 			warning = typeConversions[foundIndex].Warning;
-			destExpr = srcExpr == null ? null : !warning ? srcExpr : AdaptTerminalType(srcExpr, sourceType, destinationType);
+			if (srcExpr == null)
+				destExpr = null;
+			else if (!warning && !sourceType.Equals(BoolType))
+				destExpr = srcExpr;
+			else
+				destExpr = AdaptTerminalType(srcExpr, sourceType, destinationType);
 			return true;
 		}
 		List<(NStarType Type, bool Warning)> types_list = [(sourceType, false)];
@@ -630,6 +636,11 @@ public static class TypeConverters
 		{
 			Debug.Assert(srcTypeBlockName != "bool");
 			return ((String)"(").AddRange(source).AddRange(") >= 1");
+		}
+		else if (srcTypeBlockName == "bool")
+		{
+			Debug.Assert(destTypeBlockName != "bool");
+			return ((String)"(").AddRange(source).AddRange(") ? 1 : 0");
 		}
 		else if (srcTypeBlockName == "real")
 		{

@@ -1023,6 +1023,27 @@ public sealed partial class SemanticTree
 				GenerateMessage(ref errors, 0x4054, branch.Parent[assignmentIndex].Pos);
 				return "default!";
 			}
+			if (branch[0].Extra is NStarType DictionaryNStarType
+				&& DictionaryNStarType.MainType.Equals(DictionaryBlockStack) && branch.Parent[0].Name == nameof(List)
+				&& branch.Parent[0].Elements.All(x => x.Name == nameof(List) && x.Length == 2)
+				&& branch.Parent[0].Elements.Any(x => x[0].Name.AsSpan() is "Pattern" or "type" or "Declaration"))
+			{
+				if (DictionaryNStarType.ExtraTypes[0].Extra is NStarType KeyNStarType
+					&& KeyNStarType.MainType.TryPeek(out var sourceBlock)
+					&& (sourceBlock.BlockType == BlockType.Primitive && sourceBlock.Name.AsSpan() is "byte" or "short int"
+					or "unsigned short int" or "int" or "unsigned int" or "long int" or "unsigned long int" or "real"
+					or "string" or "object" || sourceBlock.BlockType == BlockType.Class && sourceBlock.Name == "UnsafeString"))
+				{
+					branch[0].Extra = DictionaryNStarType = new(FuncBlockStack,
+						new([DictionaryNStarType.ExtraTypes[1], DictionaryNStarType.ExtraTypes[0]]));
+					DictionaryToFunc(branch.Parent[0], ref errors, DictionaryNStarType);
+				}
+				else
+				{
+					branch[0].Extra = DictionaryNStarType = new(FuncDictionaryBlockStack, DictionaryNStarType.ExtraTypes);
+					DictionaryToFuncDictionary(branch.Parent[0], ref errors, DictionaryNStarType);
+				}
+			}
 			UserDefinedConstants[matchingContainer][varName] = new(constant.Value.NStarType,
 				constant.Value.Attributes, branch.Parent[0]);
 		}
@@ -1043,9 +1064,10 @@ public sealed partial class SemanticTree
 				}
 				branch.Extra = branch[0].Extra = AssigningNStarType;
 			}
-			else if (branch.Parent[prevIndex - 1].Extra == null && prepass) { }
-			else if (branch.Parent.Length > prevIndex + 1 && branch.Parent[prevIndex + 1].Name == "is")
-				branch.Extra = branch[0].Extra = branch.Parent[prevIndex - 1].Extra;
+			else if (prevIndex >= 1 && branch.Parent[prevIndex - 1].Extra == null && prepass) { }
+			else if (IsPattern(branch, out var patternBranch, out var patternIndex)
+				|| IsSwitchPattern(branch, out patternBranch, out patternIndex))
+				branch.Extra = branch[0].Extra = patternBranch[patternIndex - 2].Extra;
 			else
 			{
 				var otherPos = branch[0].Pos;
@@ -1248,8 +1270,28 @@ public sealed partial class SemanticTree
 				var constantsDepth = this.constantsDepth;
 				this.constantsDepth++;
 				List<String>? innerErrors = null;
+				TreeBranch cvalue;
 				if (constantsDepth >= 25)
 					return ConstantsDepthExceeded(ref errors, constantsDepth);
+				else if (constant.HasValue && (cvalue = constant.Value.DefaultValue) != null
+					&& cvalue.Parent != null && cvalue.Parent.Name == nameof(Assignment) && cvalue.Parent.Length == 3
+					&& ReferenceEquals(cvalue.Parent[0], cvalue)
+					&& cvalue.Parent[1].Name == nameof(Declaration) && cvalue.Parent[1].Length == 2
+					&& cvalue.Parent[1][0].Name == "type" && cvalue.Parent[1][0].Extra is NStarType NStarType
+					&& (NStarType.MainType.Equals(DictionaryBlockStack) && cvalue.Name == nameof(List)
+					&& cvalue.Elements.All(x => x.Name == nameof(List) && x.Length == 2)
+					|| NStarType.MainType.Equals(FuncBlockStack) && cvalue.Name == nameof(Lambda) && cvalue.Length == 2
+					&& (cvalue[0].Length == 1 ? cvalue[0][0] : cvalue[0]).Name is var keyName
+					&& cvalue[1].Name == nameof(SwitchExpr) && cvalue[1].Length == 2 && cvalue[1][0].Name == keyName
+					&& cvalue[1][1].Name == "switch" && cvalue[1][1].Length != 0
+					&& cvalue[1][1].Elements.All(x => x.Name == "case" && x.Length == 2)
+					|| NStarType.MainType.Equals(FuncDictionaryBlockStack) && cvalue.Name == nameof(Hypername)
+					&& cvalue.Length == 2 && cvalue[0].Name == "new type" && NStarType.Equals(cvalue[0].Extra)
+					&& cvalue[1].Name == nameof(ConstructorCall) && NStarType.Equals(cvalue[1].Extra)))
+				{
+					branch.Extra = branch[0].Extra = NStarType;
+					extra = new List<object> { (String)"Variable", NStarType, subbranchValues };
+				}
 				else if (constant.HasValue && constant.Value.DefaultValue != null
 					&& TryReadValue(ParseAction(constant.Value.DefaultValue.Name)(constant.Value.DefaultValue,
 					out innerErrors).ToString(), out value))
@@ -1986,8 +2028,8 @@ public sealed partial class SemanticTree
 			String? joinedParameters;
 			if (addParameters)
 			{
-				joinedParameters = ((String)", ").AddRange(List(new(nameof(List),
-					branch[index].Elements[1..], branch.Container), out var parametersErrors));
+				joinedParameters = ((String)", ").AddRange(List(new(nameof(List), branch[index].Elements[1..]),
+					out var parametersErrors));
 				AddRange(ref errors, parametersErrors);
 			}
 			else
@@ -2543,7 +2585,28 @@ public sealed partial class SemanticTree
 				oldRange = false;
 				continue;
 			}
-			var trivialIndex = IsTrivialIndexType(CollectionNStarType) && branch[index][i].Extra is NStarType IndexNStarType
+			if (branch[index][i].Extra is not NStarType IndexNStarType)
+			{
+				if (IsTrivialIndexType(CollectionNStarType))
+					branch[index][i].Extra = IndexType;
+				else if ((CollectionNStarType.MainType.Equals(new BlockStack([new(BlockType.Class, nameof(Dictionary<,>), 1)]))
+					|| CollectionNStarType.MainType.Equals(new BlockStack([new(BlockType.Namespace, "System", 1),
+					new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(Dictionary<,>), 1)])))
+					&& CollectionNStarType.ExtraTypes.Length == 2
+					&& CollectionNStarType.ExtraTypes[0].Extra is NStarType KeyNStarType)
+					branch[index][i].Extra = KeyNStarType;
+				else if (CollectionNStarType.MainType.Equals(new BlockStack([new(BlockType.Namespace, "System", 1),
+					new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, nameof(FuncDictionary<,>), 1)]))
+					&& CollectionNStarType.ExtraTypes.Length == 2
+					&& CollectionNStarType.ExtraTypes[0].Extra is NStarType FuncKeyNStarType)
+					branch[index][i].Extra = FuncKeyNStarType;
+				x = ParseAction(branch[index][i].Name)(branch[index][i], out var innerErrors);
+				AddRange(ref errors, innerErrors);
+				if (branch[index][i].Extra is not NStarType NewIndexNStarType)
+					throw new InvalidOperationException();
+				IndexNStarType = NewIndexNStarType;
+			}
+			var trivialIndex = IsTrivialIndexType(CollectionNStarType)
 				&& !IndexNStarType.Equals(IndexType) && !(range = IndexNStarType.Equals(RangeType));
 			if (trivialIndex && int.TryParse(x.ToString(), out repeatsCount) && repeatsCount <= 0)
 			{
@@ -2551,22 +2614,63 @@ public sealed partial class SemanticTree
 				GenerateMessage(ref errors, 0x4016, otherPos);
 				return "default!";
 			}
+			else if (trivialIndex
+				&& (!TypesAreCompatible(IndexNStarType, IndexType, out var warning, x, out var destExpr, out var extraMessage)
+				|| warning || destExpr == null))
+			{
+				var otherPos = branch[index].Pos;
+				GenerateMessage(ref errors, 0x4014, otherPos, extraMessage!, IndexNStarType, IndexType);
+				return "default!";
+			}
+			else if ((CollectionNStarType.MainType.Equals(new BlockStack([new(BlockType.Class, nameof(Dictionary<,>), 1)]))
+				|| CollectionNStarType.MainType.Equals(new BlockStack([new(BlockType.Namespace, "System", 1),
+				new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(Dictionary<,>), 1)])))
+				&& CollectionNStarType.ExtraTypes.Length == 2
+				&& CollectionNStarType.ExtraTypes[0].Extra is NStarType KeyNStarType
+				&& (!TypesAreCompatible(IndexNStarType, KeyNStarType, out warning, x, out destExpr, out extraMessage)
+				|| warning || destExpr == null))
+			{
+				var otherPos = branch[index].Pos;
+				GenerateMessage(ref errors, 0x4014, otherPos, extraMessage!, IndexNStarType, KeyNStarType);
+				return "default!";
+			}
+			else if (CollectionNStarType.MainType.Equals(new BlockStack([new(BlockType.Namespace, "System", 1),
+				new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, nameof(FuncDictionary<,>), 1)]))
+				&& CollectionNStarType.ExtraTypes.Length == 2
+				&& CollectionNStarType.ExtraTypes[0].Extra is NStarType FuncKeyNStarType
+				&& (!TypesAreCompatible(IndexNStarType, FuncKeyNStarType, out warning, x, out destExpr, out extraMessage)
+				|| warning || destExpr == null))
+			{
+				var otherPos = branch[index].Pos;
+				GenerateMessage(ref errors, 0x4014, otherPos, extraMessage!, IndexNStarType, FuncKeyNStarType);
+				return "default!";
+			}
 			if (trivialIndex)
 				result.AddRange("[(");
+			else if (CollectionNStarType.MainType.Equals(FuncBlockStack))
+				result.Add('(');
 			else
 				result.Add('[');
 			result.AddRange(x);
 			if (trivialIndex)
 				result.AddRange(") - 1]");
+			else if (CollectionNStarType.MainType.Equals(FuncBlockStack))
+				result.Add(')');
 			else
 				result.Add(']');
 			if (!range)
 			{
-				if (CollectionNStarType.MainType.Equals(new BlockStack([new(BlockType.Class,
-					nameof(Dictionary<,>), 1)]))
+				if ((CollectionNStarType.MainType.Equals(new BlockStack([new(BlockType.Class, nameof(Dictionary<,>), 1)]))
 					|| CollectionNStarType.MainType.Equals(new BlockStack([new(BlockType.Namespace, "System", 1),
 					new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(Dictionary<,>), 1)])))
-					CollectionNStarType = (NStarType)CollectionNStarType.ExtraTypes[^1].Extra!;
+					&& CollectionNStarType.ExtraTypes.Length == 2)
+					CollectionNStarType = (NStarType)CollectionNStarType.ExtraTypes[1].Extra!;
+				else if (CollectionNStarType.MainType.Equals(new BlockStack([new(BlockType.Namespace, "System", 1),
+					new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, nameof(FuncDictionary<,>), 1)]))
+					&& CollectionNStarType.ExtraTypes.Length == 2)
+					CollectionNStarType = (NStarType)CollectionNStarType.ExtraTypes[1].Extra!;
+				else if (CollectionNStarType.MainType.Equals(FuncBlockStack))
+					CollectionNStarType = (NStarType)CollectionNStarType.ExtraTypes[0].Extra!;
 				else
 					CollectionNStarType = GetSubtype(CollectionNStarType);
 			}
@@ -2993,6 +3097,7 @@ public sealed partial class SemanticTree
 		}
 		ListHashSet<int> IncompatibleConstructors = [];
 		ListHashSet<(int ConstructorIndex, int ParameterIndex)> BadlyCompatibleConstructors = [];
+		ListHashSet<(int ConstructorIndex, int ParameterIndex)> ConversionConstructors = [];
 		var callIndexes = new int[constructors.Length];
 		var constructorIndexes = new int[constructors.Length];
 		for (var j = 0; j < constructors.Length; j++)
@@ -3016,6 +3121,8 @@ public sealed partial class SemanticTree
 				IncompatibleConstructors.Add(j);
 			else if (warnings.Any(x => x))
 				_ = warnings.ToList((x, i) => x ? BadlyCompatibleConstructors.Add((j, i)) : default);
+			adaptedInnerResults[j].Combine(parameters)
+				.ToList((x, i) => x.Item1 != x.Item2 ? ConversionConstructors.Add((j, i)) : default);
 		}
 		var thresholdIndexes = callIndexes.IndexesOfMax();
 		var incompatibleLength = IncompatibleConstructors.Length;
@@ -3031,12 +3138,23 @@ public sealed partial class SemanticTree
 		}
 		BadlyCompatibleConstructors.FilterInPlace(x => !IncompatibleConstructors.Contains(x.ConstructorIndex));
 		var bccGroups = BadlyCompatibleConstructors.Group(x => x.ParameterIndex);
+		ConversionConstructors.FilterInPlace(x => !IncompatibleConstructors.Contains(x.ConstructorIndex)
+			|| BadlyCompatibleConstructors.Exists(y => y.ConstructorIndex == x.ConstructorIndex));
+		var cvcGroups = ConversionConstructors.Group(x => x.ParameterIndex);
 		var WellCompatibleConstructors = new Chain(constructors.Length).ToHashSet()
-			.ExceptWith(IncompatibleConstructors).ExceptWith(bccGroups.ConvertAndJoin(x => x).Convert(x => x.ConstructorIndex));
+			.ExceptWith(IncompatibleConstructors).ExceptWith(bccGroups.ConvertAndJoin(x => x).Convert(x => x.ConstructorIndex))
+			.ExceptWith(cvcGroups.ConvertAndJoin(x => x).Convert(x => x.ConstructorIndex));
 		if (WellCompatibleConstructors.Length != 0)
 		{
 			_ = parameters.ToList((x, i) => x != adaptedInnerResults[WellCompatibleConstructors[^1]][i]
 				? x.Replace(adaptedInnerResults[WellCompatibleConstructors[^1]][i] ?? "default!") : "");
+			branch.Extra = ConstructingNStarType;
+			return true;
+		}
+		else if (ConversionConstructors.Length != 0)
+		{
+			_ = parameters.ToList((x, i) => x != adaptedInnerResults[ConversionConstructors[^1].ConstructorIndex][i]
+				? x.Replace(adaptedInnerResults[ConversionConstructors[^1].ConstructorIndex][i] ?? "default!") : "");
 			branch.Extra = ConstructingNStarType;
 			return true;
 		}
@@ -3086,10 +3204,23 @@ public sealed partial class SemanticTree
 		for (i = 0; i < branch.Length; i++)
 		{
 			var constantsDepth = this.constantsDepth;
-			if (branch[i].Name == "type")
+			if (branch[i].Name == "type" && branch[0].Extra is NStarType DirectNStarType)
 			{
-				subbranchValues.SetOrAdd(i, "typeof(" + (branch[0].Extra is NStarType type
-					? Type(ref type, branch[0], ref errors) : "dynamic") + ")");
+				var typeName = Type(ref DirectNStarType, branch[0], ref errors);
+				if (branch.Name == "Pattern" && branch.Extra is NStarType PatternNStarType
+					&& !(PatternNStarType.Equals(ObjectType)
+					|| PatternNStarType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Extra
+					|| DirectNStarType.MainType.TryPeek(out block) && block.BlockType == BlockType.Extra
+					|| IsEqualOrDerived(DirectNStarType, PatternNStarType)))
+				{
+					var otherPos = branch[i].Pos;
+					GenerateMessage(ref errors, 0x40A1, otherPos, PatternNStarType, DirectNStarType);
+					branch.Name = "default!";
+					branch.RemoveEnd(0);
+					branch.Extra = NullType;
+					return "not object";
+				}
+				subbranchValues.SetOrAdd(i, branch.Name == "Pattern" ? typeName : "typeof(" + typeName + ")");
 				continue;
 			}
 			else if (branch[i].Name == nameof(Hypername) && branch[i].Length == 1)
@@ -3526,6 +3657,21 @@ public sealed partial class SemanticTree
 			LeftNStarType = NullType;
 		if (branch[i - 1].Extra is not NStarType RightNStarType)
 			RightNStarType = NullType;
+		if (!LeftNStarType.Equals(NullType) && !RightNStarType.Equals(NullType))
+		{
+			if (TypesAreCompatible(RightNStarType, LeftNStarType, out var warning, subbranchValues[^1],
+				out var destExpr, out _) && !warning && destExpr != null)
+			{
+				RightNStarType = LeftNStarType;
+				subbranchValues[^1].Replace(destExpr);
+			}
+			else if (TypesAreCompatible(LeftNStarType, RightNStarType, out warning, subbranchValues[^2], out destExpr, out _)
+				&& !warning && destExpr != null)
+			{
+				LeftNStarType = RightNStarType;
+				subbranchValues[^2].Replace(destExpr);
+			}
+		}
 		var resultType = GetResultType(LeftNStarType, RightNStarType, subbranchValues[^2], subbranchValues[^1]);
 		String @default = "default";
 		if (!(branch.Parent?.Name == "return"
@@ -3575,8 +3721,7 @@ public sealed partial class SemanticTree
 				branch[Max(i - 3, 0)].AddRange(branch.GetRange(i - 1, 2));
 			else
 			{
-				branch[Max(i - 3, 0)] = new(nameof(PMExpr),
-					[branch[Max(i - 3, 0)], branch[i - 1], branch[i]], branch[i].Container)
+				branch[Max(i - 3, 0)] = new(nameof(PMExpr), [branch[Max(i - 3, 0)], branch[i - 1], branch[i]])
 				{
 					Extra = resultType
 				};
@@ -3587,7 +3732,7 @@ public sealed partial class SemanticTree
 		}
 		else if (i >= 4 && !isStringLeft && isStringRight)
 		{
-			branch[0] = new TreeBranch(nameof(PMExpr), branch.GetRange(0, i - 1), branch[i - 2].Container);
+			branch[0] = new TreeBranch(nameof(PMExpr), branch.GetRange(0, i - 1));
 			branch.Remove(1, i - 2);
 			i = 2;
 		}
@@ -3683,8 +3828,7 @@ public sealed partial class SemanticTree
 				branch[Max(i - 3, 0)].AddRange(branch.GetRange(i - 1, 2));
 			else
 			{
-				branch[Max(i - 3, 0)] = new(nameof(MulDivExpr), [branch[Max(i - 3, 0)], branch[i - 1], branch[i]],
-					branch[i].Container)
+				branch[Max(i - 3, 0)] = new(nameof(MulDivExpr), [branch[Max(i - 3, 0)], branch[i - 1], branch[i]])
 				{
 					Extra = resultType
 				};
@@ -3922,18 +4066,26 @@ public sealed partial class SemanticTree
 			LeftNStarType = NullType;
 		if (branch[i - 1].Extra is not NStarType RightNStarType)
 			RightNStarType = NullType;
-		String? adaptedSource;
 		if (ContainsTypes(branch[i - 1]) && !(LeftNStarType.Equals(ObjectType)
 			|| LeftNStarType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Extra
 			|| RightNStarType.MainType.TryPeek(out block) && block.BlockType == BlockType.Extra
-			|| IsDerivedClass(RightNStarType, LeftNStarType)))
+			|| IsEqualOrDerived(RightNStarType, LeftNStarType)))
 		{
-			var otherPos = branch[i].Pos;
-			GenerateMessage(ref errors, 0x40A1, otherPos, LeftNStarType, RightNStarType);
-			branch.Name = "default!";
-			branch.RemoveEnd(0);
-			branch.Extra = NullType;
-			return "default!";
+			if (branch[i - 1].Name == "Pattern" && branch[i - 1].Length == 1 && branch[i - 1][0].Name == "type"
+				&& branch[i - 1][0].Extra is NStarType SingleNStarType && LeftNStarType.Equals(RecursiveType))
+			{
+				var typeName = Type(ref SingleNStarType, branch, ref errors);
+				return subbranchValues[^2].Copy().AddRange(" == typeof(").AddRange(typeName).Add(')');
+			}
+			else
+			{
+				var otherPos = branch[i].Pos;
+				GenerateMessage(ref errors, 0x40A1, otherPos, LeftNStarType, RightNStarType);
+				branch.Name = "default!";
+				branch.RemoveEnd(0);
+				branch.Extra = NullType;
+				return "default!";
+			}
 		}
 		branch[i].Extra = BoolType;
 		if (subbranchValues[^1] == "_")
@@ -3941,7 +4093,7 @@ public sealed partial class SemanticTree
 		else if (subbranchValues[^1].AsSpan() is "default" or "default!" or "_ = default" or "_ = default!")
 			return subbranchValues[^2].Copy().AddRange(" is null");
 		else
-			return i < 2 ? branch[i].Name : subbranchValues[^2].Copy().Add(' ').AddRange(branch[i].Name)
+			return subbranchValues[^2].Copy().Add(' ').AddRange(branch[i].Name)
 				.Add(' ').AddRange(subbranchValues[^1] == "_" ? "default!" : subbranchValues[^1]);
 	}
 
@@ -4226,8 +4378,35 @@ public sealed partial class SemanticTree
 				if (MainNStarType.ExtraTypes[0].Name != "type" || MainNStarType.ExtraTypes[0].Extra is not NStarType
 					|| MainNStarType.ExtraTypes[1].Name != "type" || MainNStarType.ExtraTypes[1].Extra is not NStarType)
 					throw new InvalidOperationException();
+				NStarType itemType = new(TupleBlockStack, MainNStarType.ExtraTypes);
 				for (var i = 0; i < branch.Length; i++)
-					branch[i].Extra = new NStarType(TupleBlockStack, MainNStarType.ExtraTypes);
+					branch[i].Extra = itemType;
+			}
+			else if (MainNStarType.MainType.Equals(FuncDictionaryBlockStack))
+			{
+				if (MainNStarType.ExtraTypes.Length != 2)
+					throw new InvalidOperationException();
+				if (MainNStarType.ExtraTypes[0].Name != "type" || MainNStarType.ExtraTypes[0].Extra is not NStarType
+					|| MainNStarType.ExtraTypes[1].Name != "type" || MainNStarType.ExtraTypes[1].Extra is not NStarType)
+					Type(ref MainNStarType, branch, ref errors, true);
+				if (MainNStarType.ExtraTypes[0].Name != "type" || MainNStarType.ExtraTypes[0].Extra is not NStarType
+					|| MainNStarType.ExtraTypes[1].Name != "type" || MainNStarType.ExtraTypes[1].Extra is not NStarType)
+					throw new InvalidOperationException();
+				TreeBranch boolBranch = new("type", MainNStarType.ExtraTypes[0].Pos, MainNStarType.ExtraTypes[0].Container)
+				{
+					Extra = BoolType
+				};
+				TreeBranch keyBranch = new("type", MainNStarType.ExtraTypes[0].Pos, MainNStarType.ExtraTypes[0].Container)
+				{
+					Extra = new NStarType(FuncBlockStack, new([boolBranch, MainNStarType.ExtraTypes[0]]))
+				};
+				TreeBranch valueBranch = new("type", MainNStarType.ExtraTypes[0].Pos, MainNStarType.ExtraTypes[0].Container)
+				{
+					Extra = new NStarType(FuncBlockStack, new([MainNStarType.ExtraTypes[1], MainNStarType.ExtraTypes[0]]))
+				};
+				NStarType itemType = new(TupleBlockStack, new([keyBranch, valueBranch]));
+				for (var i = 0; i < branch.Length; i++)
+					branch[i].Extra = itemType;
 			}
 		}
 		for (var i = 0; i < branch.Length; i++)
@@ -4389,7 +4568,7 @@ public sealed partial class SemanticTree
 		parameterBranches = FunctionNStarType.ExtraTypes.Skip(1).ToList(x => x.Value);
 		if (parameterTypes.Length == 1 && LambdaIsValidParameter(branch[0], out var singleParameterName))
 		{
-			result/*.AddRange("async ")*/.AddRange(singleParameterName).AddRange(" => ");
+			result.AddRange(singleParameterName).AddRange(" => ");
 			branch[0].Extra = parameterTypes[0];
 			branch[1].Extra = (NStarType)FunctionNStarType.ExtraTypes[0].Extra!;
 			return LambdaClosing(branch, ref errors, result, parameterBranches);
@@ -4460,7 +4639,7 @@ public sealed partial class SemanticTree
 		if (branch[1].Extra is not NStarType ReturnNStarType2)
 			throw new InvalidOperationException();
 		if (!((NStarType)branch.Extra!).MainType.Equals(EventHandlerBlockStack))
-			branch.Extra = new NStarType(FuncBlockStack, new([new TreeBranch("type", branch.Pos, branch.Container)
+			branch.Extra ??= new NStarType(FuncBlockStack, new([new TreeBranch("type", branch.Pos, branch.Container)
 			{
 				Extra = ReturnNStarType2
 			}, .. parameterBranches]));
@@ -4477,9 +4656,9 @@ public sealed partial class SemanticTree
 		if (branch.Length == 1 || branch[1].Name != "switch")
 			return result;
 		if (branch[0].Extra is not NStarType SourceNStarType || !SourceNStarType.MainType.TryPeek(out var sourceBlock)
-			|| sourceBlock.BlockType is not BlockType.Primitive || sourceBlock.Name.AsSpan() is not ("byte" or "short int"
+			|| !(sourceBlock.BlockType == BlockType.Primitive && sourceBlock.Name.AsSpan() is "byte" or "short int"
 			or "unsigned short int" or "int" or "unsigned int" or "long int" or "unsigned long int" or "real"
-			or "string" or "object"))
+			or "string" or "object" || sourceBlock.BlockType == BlockType.Class && sourceBlock.Name == "UnsafeString"))
 		{
 			GenerateMessage(ref errors, 0x4019, branch[0].FirstPos);
 			branch.Extra = NullType;
@@ -4501,12 +4680,28 @@ public sealed partial class SemanticTree
 			else if (i == 2)
 				innerResult = result.AddRange(prevResult).AddRange(innerResult);
 			if (i >= branch[1].Length)
+			{
+				if (i == 1)
+					innerResult.AddRange(prevCaseResult);
 				continue;
+			}
 			var x = branch[1][i];
 			if (x.Length < 2)
 				continue;
 			var constantsDepth = this.constantsDepth;
 			this.constantsDepth++;
+			if (x[0].Name.AsSpan() is nameof(Declaration) or "Pattern" && x[0].Length != 0
+				&& x[0][0].Name == "type" && x[0][0].Extra is NStarType PatternNStarType)
+			{
+				if (x.Length == 2 && IsEqualOrDerived(SourceNStarType, PatternNStarType) && i != branch[1].Length - 1)
+				{
+					var otherPos = branch[1][i + 1].FirstPos;
+					GenerateMessage(ref errors, 0x801E, otherPos);
+					branch[1].RemoveEnd(i + 1);
+				}
+				if (PatternNStarType.Equals(StringType))
+					x[0].Extra = x[0][0].Extra = UnsafeStringType;
+			}
 			x[0].Extra ??= SourceNStarType;
 			String parseResult;
 			if (x[0].Name.AsSpan() is "_" or "null")
@@ -4904,7 +5099,8 @@ public sealed partial class SemanticTree
 			x.BlockType is not (BlockType.Namespace or BlockType.Class or BlockType.Struct
 			or BlockType.Interface or BlockType.Delegate)) + 1))
 			.ToString()));
-		ExplicitlyConnectedNamespaces.Reverse<String>().ForEach(x => result.ReplaceInPlace(x.Copy().Add('.'), ""));
+		ExplicitlyConnectedNamespaces.Reverse<String>().Prepend("System.Unsafe")
+			.ForEach(x => result.ReplaceInPlace(x.Copy().Add('.'), ""));
 		if (result == nameof(G.IEnumerable<>))
 			result.Insert(0, "G.");
 		if (result == nameof(ListHashSet<>) && type.ExtraTypes.Length == 1)
@@ -4991,6 +5187,8 @@ public sealed partial class SemanticTree
 		after = typeName.GetAfter("System.Collections.");
 		if (after.Length != 0)
 			return after;
+		if (typeName == "System.Unsafe.UnsafeString")
+			return "string";
 		return typeName;
 	}
 
@@ -5174,6 +5372,92 @@ public sealed partial class SemanticTree
 			result.Add(')');
 		}
 		return result;
+	}
+
+	private void DictionaryToFunc(TreeBranch branch, ref List<String>? errors, NStarType DictionaryNStarType)
+	{
+		TreeBranch key = new("key", branch.Pos, branch.Container)
+		{
+			Extra = DictionaryNStarType.ExtraTypes[1].Extra
+		};
+		TreeBranch lambda = new(nameof(Lambda), new(nameof(Hypername), key))
+		{
+			Extra = DictionaryNStarType
+		};
+		TreeBranch switchExpr = new(nameof(SwitchExpr), key)
+		{
+			Extra = DictionaryNStarType.ExtraTypes[0].Extra
+		};
+		lambda.Add(switchExpr);
+		TreeBranch @switch = new("switch", branch.Pos, branch.Container);
+		switchExpr.Add(@switch);
+		for (var i = 0; i < branch.Length; i++)
+		{
+			Debug.Assert(branch[i].Length == 2);
+			if (branch[i][0].Name == nameof(Hypername) && branch[i][0].Length == 1
+				&& PrimitiveTypes.ContainsKey(branch[i][0][0].Name))
+			{
+				if (branch[i][0][0].Name == "typename")
+				{
+					var otherPos = branch.FirstPos;
+					GenerateMessage(ref errors, 0x4093, otherPos);
+					branch.Replace(new("null", branch.Pos, branch.EndPos, branch.Container) { Extra = NullType });
+					return;
+				}
+				NStarType primitiveType = (new([new(PrimitiveTypes.ContainsKey(branch[i][0][0].Name)
+					? BlockType.Primitive : BlockType.Extra, branch[i][0][0].Name, 1)]), NoBranches);
+				branch[i][0] = new("Pattern", new("type", branch.Pos, branch.Container) { Extra = primitiveType });
+			}
+			@switch.Add(new("case", branch[i].Elements));
+		}
+		branch.Replace(lambda);
+	}
+
+	private void DictionaryToFuncDictionary(TreeBranch branch, ref List<String>? errors, NStarType DictionaryNStarType)
+	{
+		for (var i = 0; i < branch.Length; i++)
+		{
+			Debug.Assert(branch[i].Length == 2);
+			if (branch[i][0].Name == nameof(Hypername) && branch[i][0].Length == 1
+				&& PrimitiveTypes.ContainsKey(branch[i][0][0].Name))
+			{
+				if (branch[i][0][0].Name == "typename")
+				{
+					var otherPos = branch.FirstPos;
+					GenerateMessage(ref errors, 0x4093, otherPos);
+					branch.Replace(new("null", branch.Pos, branch.EndPos, branch.Container) { Extra = NullType });
+					return;
+				}
+				NStarType primitiveType = (new([new(PrimitiveTypes.ContainsKey(branch[i][0][0].Name)
+					? BlockType.Primitive : BlockType.Extra, branch[i][0][0].Name, 1)]), NoBranches);
+				branch[i][0] = new("Pattern", new("type", branch.Pos, branch.Container) { Extra = primitiveType });
+			}
+			if (!(branch[i][0].Name.AsSpan() is nameof(Declaration) or "Pattern" && branch[i][0].Length != 0
+				&& DictionaryNStarType.ExtraTypes[0].Extra is NStarType KeyNStarType))
+				continue;
+			TreeBranch key = new("key", branch.Pos, branch.Container)
+			{
+				Extra = KeyNStarType
+			};
+			NStarType KeyFuncNStarType = new(FuncBlockStack,
+				new([new("type", branch.Pos, branch.Container) { Extra = BoolType }, DictionaryNStarType.ExtraTypes[0]]));
+			branch[i][0] = new(nameof(Lambda),
+				[new(nameof(Hypername), key), new(nameof(Expr),
+				[new(nameof(Hypername), key), branch[i][0], new("is", branch.Pos, branch.Container)])])
+			{
+				Extra = KeyFuncNStarType
+			};
+			NStarType ValueFuncNStarType = new(FuncBlockStack,
+				new([DictionaryNStarType.ExtraTypes[1], DictionaryNStarType.ExtraTypes[0]]));
+			branch[i][1] = new(nameof(Lambda), [new(nameof(Hypername), key), branch[i][1]])
+			{
+				Extra = ValueFuncNStarType
+			};
+		}
+		branch.Replace(new(nameof(Hypername), [new("new type", branch.Pos, branch.Container)
+		{
+			Extra = DictionaryNStarType
+		}, new(nameof(ConstructorCall), branch.Elements)]));
 	}
 
 	private bool VariableExists(TreeBranch branch, String name, ref List<String>? errors)
@@ -5687,6 +5971,50 @@ public sealed partial class SemanticTree
 		}
 		constructorBranch = null;
 		overloads = null;
+		return false;
+	}
+
+	private static bool IsPattern(TreeBranch branch, [MaybeNullWhen(false)] out TreeBranch patternBranch,
+		out int patternIndex)
+	{
+		var parent = branch.Parent;
+		while (parent != null)
+		{
+			if (parent.Name == nameof(Expr) && parent.Length >= 3 && parent[^1].Name == "is")
+			{
+				var prevIndex = parent.Elements.FindIndex(x => ReferenceEquals(branch, x));
+				patternBranch = parent;
+				patternIndex = Max(prevIndex + 1, 2);
+				return true;
+			}
+			branch = parent;
+			parent = parent.Parent;
+		}
+		patternBranch = null;
+		patternIndex = -1;
+		return false;
+	}
+
+	private static bool IsSwitchPattern(TreeBranch branch, [MaybeNullWhen(false)] out TreeBranch patternBranch,
+		out int patternIndex)
+	{
+		var parent = branch.Parent;
+		while (parent != null)
+		{
+			if (parent.Name == nameof(SwitchExpr) && parent.Length == 2 && parent[0].Extra is NStarType NStarType)
+			{
+				var prevIndex = parent.Elements.FindIndex(x => ReferenceEquals(branch, x));
+				patternBranch = parent;
+				patternIndex = Max(prevIndex + 1, 2);
+				if (NStarType.Equals(StringType))
+					parent[0].Extra = UnsafeStringType;
+				return true;
+			}
+			branch = parent;
+			parent = parent.Parent;
+		}
+		patternBranch = null;
+		patternIndex = -1;
 		return false;
 	}
 

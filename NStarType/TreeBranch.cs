@@ -54,24 +54,24 @@ public sealed class TreeBranch
 		Container = container;
 	}
 
-	public TreeBranch(String name, TreeBranch element, BlockStack container)
+	public TreeBranch(String name, TreeBranch element, BlockStack? container = null)
 	{
 		Name = name;
 		Pos = element.Pos;
 		EndPos = element.EndPos;
 		Elements = [element];
 		element.Parent = this;
-		Container = container;
+		Container = container ?? element.Container;
 	}
 
-	public TreeBranch(String name, List<TreeBranch> elements, BlockStack container)
+	public TreeBranch(String name, List<TreeBranch> elements, BlockStack? container = null)
 	{
 		Name = name;
 		Pos = elements.Length == 0 ? throw new ArgumentException(null, nameof(elements)) : elements[0].Pos;
 		EndPos = elements.Length == 0 ? throw new ArgumentException(null, nameof(elements)) : elements[^1].EndPos;
 		Elements = elements;
 		Elements.ForEach(x => x.Parent = this);
-		Container = container;
+		Container = container ?? elements[0].Container;
 	}
 
 	public static TreeBranch DoNotAdd() => new(nameof(DoNotAdd), 0, int.MaxValue, new());

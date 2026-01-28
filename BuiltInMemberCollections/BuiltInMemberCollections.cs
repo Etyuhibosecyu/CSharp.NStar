@@ -121,7 +121,7 @@ public static class BuiltInMemberCollections
 		{ "long char", typeof(uint) }, { "long int", typeof(long) }, 
 		{ "DateTime", typeof(DateTime) }, { "TimeSpan", typeof(TimeSpan) }, { "unsigned long int", typeof(long) },
 		{ "real", typeof(double) }, { "long long", typeof(MpzT) }, { "complex", typeof(Complex) },
-		{ "typename", typeof(void) }, { "string", typeof(String) }, { "index", typeof(Index) }, { "range", typeof(Range) },
+		{ "typename", typeof(Type) }, { "string", typeof(String) }, { "index", typeof(Index) }, { "range", typeof(Range) },
 		{ "nint", typeof(nint) }, { "list", typeof(List<>) }, { "dynamic", typeof(void) }, { "var", typeof(void) }
 	};
 
@@ -272,6 +272,7 @@ public static class BuiltInMemberCollections
 		{ ("System.Threading", "ValueTask"), typeof(ValueTask<>) },
 		{ ("System.Threading", "ValueTaskAwaiter"), typeof(ValueTaskAwaiter<>) },
 		{ ("System.Unsafe", "EmptyTask"), typeof(Task) },
+		{ ("System.Unsafe", nameof(FuncDictionary<,>)), typeof(FuncDictionary<,>) },
 		{ ("System.Unsafe", "Memory"), typeof(Memory<>) },
 		{ ("System.Unsafe", "ReadOnlyMemory"), typeof(ReadOnlyMemory<>) },
 		{ ("System.Unsafe", "UnsafeString"), typeof(string) },
@@ -839,7 +840,7 @@ public static class BuiltInMemberCollections
 			{
 				{ NoBranches, new() { (UnsignedLongIntType, false), (LongIntType, false), (RealType, false), (UnsignedIntType, false), (IntType, false), (BoolType, true), (ByteType, true), (ShortIntType, true) } }
 			}
-		}
+		},
 	};
 
 	/// <summary>
