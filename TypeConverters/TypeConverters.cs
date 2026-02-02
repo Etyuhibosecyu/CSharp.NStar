@@ -296,7 +296,8 @@ public static class TypeConverters
 			&& destinationType.ExtraTypes[0].Name == "type"
 			&& destinationType.ExtraTypes[0].Extra is NStarType DestinationSubtype)
 			destinationType = DestinationSubtype;
-		if (IsEqualOrDerived(sourceType, destinationType))
+		if (IsEqualOrDerived(sourceType, destinationType) && (sourceType.ExtraTypes, destinationType.ExtraTypes).Combine()
+			.All(x => x.Item1.Value.Equals(x.Item2.Value)))
 		{
 			destExpr = srcExpr;
 			return true;

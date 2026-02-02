@@ -21,7 +21,11 @@ public sealed class FuncDictionary<TKey, TValue> : BaseDictionary<TKey, TValue, 
 		this.high = high;
 	}
 
+	public FuncDictionary(Func<TKey, TValue> function) : this([], [(key => true, function)]) { }
+
 	public FuncDictionary(params (Func<TKey, bool> Key, Func<TKey, TValue> Value)[] collection) : this([], collection) { }
+
+	public FuncDictionary(TValue value) : this([], [(key => true, key => value)]) { }
 
 	public override int Length => low.Length + high.Length;
 

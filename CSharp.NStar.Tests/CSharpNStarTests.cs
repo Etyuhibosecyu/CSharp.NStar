@@ -4791,6 +4791,14 @@ return c[1, 2, 3];
 	= ((b, b, b), (b, b, b), (b, b, b));
 return c[1, 2, 3];
 ", """(((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159))), ((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159))), ((("A", 77777, 3.14159), ("A", 77777, 3.14159), ("A", 77777, 3.14159))))""", "Ошибок нет")]
+	[DataRow(@"() var list = (5, 8);
+return list;
+", "null", @"Error 2022 in line 1 at position 3: the keyword ""var"" is not a type and cannot be used inside the type
+Error 2008 in line 1 at position 3: expected: "";""
+Error 2007 in line 1 at position 3: unrecognized construction
+Error 2022 in line 1 at position 3: the keyword ""var"" is not a type and cannot be used inside the type
+Error 4001 in line 2 at position 7: the identifier ""list"" is not defined in this location
+")]
 	[DataRow(@"using System.Collections;
 var dic = new [string, int]();
 dic.TryAdd(""1"", 1);
@@ -6013,6 +6021,22 @@ using System.IO;
 File.WriteAllBytes(@""D:\aaa.txt"", list);
 File.Delete(@""D:\aaa.txt"");
 ", "null", "Ошибок нет")]
+	[DataRow(@"using System;
+using System.IO;
+const typename Dictionary = System.IO.FileInfo;
+var Var = new Dictionary(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+	@""Visual Studio 2022\Projects\Добавить эту строку в .csproj всех проектов.txt""));
+return Var.Length;
+", "75", "Ошибок нет")]
+	[DataRow(@"using System;
+using System.IO;
+const typename Dictionary = System.IO.FileInfo;
+const var Var = new Dictionary(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+	@""Visual Studio 2022\Projects\Добавить эту строку в .csproj всех проектов.txt""));
+return Var.Length;
+", "null", @"Error 4050 in line 4 at position 20: this expression must be constant but it isn't
+Error 4000 in line 4 at position 30: internal compiler error
+")]
 	[DataRow(@"return  Q();
 ", @"""return  Q();\r\n""", @"Warning 800C in line 1 at position 7: redundant space(s)
 ")]
@@ -6928,15 +6952,15 @@ return Dic[""C#.NStar""];
 ", "8", "Ошибок нет")]
 	[DataRow(@"const [real, int] Dic = (var T: 1, (typename, 2), var T2: 3, var T3: 4);
 return Dic[3.14159];
-", "null", @"Error 4093 in line 1 at position 25: the recursive type in the pattern matching must contain the variable declaration
+", "null", @"Error 4093 in line 1 at position 36: the recursive type in the pattern matching must contain the variable declaration
 ")]
 	[DataRow(@"const [real, int] Dic = (var T: 1, (int, 2), var T2: 3, var T3: 4);
 return Dic[3.14159];
-", "1", @"Warning 801E in line 1 at position 25: the previous pattern has already processed all the possible variants of key; this one is redundant
+", "1", @"Warning 801E in line 1 at position 36: the previous pattern has already processed all the possible variants of key; this one is redundant
 ")]
 	[DataRow(@"const [real, int] Dic = (object obj: 1, (int, 2), var T2: 3, var T3: 4);
 return Dic[3.14159];
-", "1", @"Warning 801E in line 1 at position 25: the previous pattern has already processed all the possible variants of key; this one is redundant
+", "1", @"Warning 801E in line 1 at position 41: the previous pattern has already processed all the possible variants of key; this one is redundant
 ")]
 	[DataRow(@"const [typename, int] Dic = (var T: 1, (int, 2), var T2: 3, var T3: 4);
 return Dic[3.14159];
@@ -6948,6 +6972,246 @@ return Dic[int];
 	[DataRow(@"const [typename, int] Dic = ((int, 2), var T: 1, var T2: 3, var T3: 4);
 return Dic[int];
 ", "2", "Ошибок нет")]
+	[DataRow(@"const [typename, (abstract Class)] BaseStack = (var T:
+{
+	required typename T2 { get, init };
+	
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+", "null", "Ошибок нет")]
+	[DataRow(@"const [string, int] Dic = new(""AAA"": 1, (""BBB"", 2), ""CCC"": 3, var x: x.Length);
+return Dic[""C#.NStar""];
+", "8", "Ошибок нет")]
+	[DataRow(@"const [real, int] Dic = new(var T: 1, (typename, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4093 in line 1 at position 39: the recursive type in the pattern matching must contain the variable declaration
+")]
+	[DataRow(@"const [real, int] Dic = new(var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "1", @"Warning 801E in line 1 at position 39: the previous pattern has already processed all the possible variants of key; this one is redundant
+")]
+	[DataRow(@"const [real, int] Dic = new(object obj: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "1", @"Warning 801E in line 1 at position 44: the previous pattern has already processed all the possible variants of key; this one is redundant
+")]
+	[DataRow(@"const [typename, int] Dic = new(var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4014 in line 2 at position 10: cannot convert from the type ""real"" to the type ""typename""
+")]
+	[DataRow(@"const [typename, int] Dic = new(var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[int];
+", "1", "Ошибок нет")]
+	[DataRow(@"const [typename, int] Dic = new((int, 2), var T: 1, var T2: 3, var T3: 4);
+return Dic[int];
+", "2", "Ошибок нет")]
+	[DataRow(@"const [typename, (abstract Class)] BaseStack = new(var T:
+{
+	required typename T2 { get, init };
+	
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+", "null", "Ошибок нет")]
+	[DataRow(@"const [string, int] Dic = new [string, int](""AAA"": 1, (""BBB"", 2), ""CCC"": 3, var x: x.Length);
+return Dic[""C#.NStar""];
+", "8", "Ошибок нет")]
+	[DataRow(@"const [real, int] Dic = new [real, int](var T: 1, (typename, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4093 in line 1 at position 51: the recursive type in the pattern matching must contain the variable declaration
+")]
+	[DataRow(@"const [real, int] Dic = new [real, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "1", @"Warning 801E in line 1 at position 51: the previous pattern has already processed all the possible variants of key; this one is redundant
+")]
+	[DataRow(@"const [real, int] Dic = new [real, int](object obj: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "1", @"Warning 801E in line 1 at position 56: the previous pattern has already processed all the possible variants of key; this one is redundant
+")]
+	[DataRow(@"const [typename, int] Dic = new [typename, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4014 in line 2 at position 10: cannot convert from the type ""real"" to the type ""typename""
+")]
+	[DataRow(@"const [typename, int] Dic = new [typename, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[int];
+", "1", "Ошибок нет")]
+	[DataRow(@"const [typename, int] Dic = new [typename, int]((int, 2), var T: 1, var T2: 3, var T3: 4);
+return Dic[int];
+", "2", "Ошибок нет")]
+	[DataRow(@"const [typename, (abstract Class)] BaseStack = new [typename, (abstract Class)](var T:
+{
+	required typename T2 { get, init };
+	
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+", "null", @"Wreck 9018 in line 1 at position 77: cannot mention the ""Class"" keyword in the round brackets several times in one block
+")]
+	[DataRow(@"const var Dic = new [string, int](""AAA"": 1, (""BBB"", 2), ""CCC"": 3, var x: x.Length);
+return Dic[""C#.NStar""];
+", "8", "Ошибок нет")]
+	[DataRow(@"const var Dic = new [real, int](var T: 1, (typename, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4093 in line 1 at position 43: the recursive type in the pattern matching must contain the variable declaration
+")]
+	[DataRow(@"const var Dic = new [real, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "1", @"Warning 801E in line 1 at position 43: the previous pattern has already processed all the possible variants of key; this one is redundant
+")]
+	[DataRow(@"const var Dic = new [real, int](object obj: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "1", @"Warning 801E in line 1 at position 48: the previous pattern has already processed all the possible variants of key; this one is redundant
+")]
+	[DataRow(@"const var Dic = new [typename, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4014 in line 2 at position 10: cannot convert from the type ""real"" to the type ""typename""
+")]
+	[DataRow(@"const var Dic = new [typename, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[int];
+", "1", "Ошибок нет")]
+	[DataRow(@"const var Dic = new [typename, int]((int, 2), var T: 1, var T2: 3, var T3: 4);
+return Dic[int];
+", "2", "Ошибок нет")]
+	[DataRow(@"const var BaseStack = new [typename, (abstract Class)](var T:
+{
+	required typename T2 { get, init };
+	
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+", "null", "Ошибок нет")]
+	[DataRow(@"const [typename T, int] Dic = (var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4014 in line 2 at position 10: cannot convert from the type ""real"" to the type ""typename""
+")]
+	[DataRow(@"const [typename T, int] Dic = (var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[int];
+", "1", "Ошибок нет")]
+	[DataRow(@"const [typename T, int] Dic = ((int, 2), var T: 1, var T2: 3, var T3: 4);
+return Dic[int];
+", "2", "Ошибок нет")]
+	[DataRow(@"const [typename T, (abstract Class)] BaseStack = (var T:
+{
+	required typename T2 { get, init };
+	
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+", "null", "Ошибок нет")]
+	[DataRow(@"const [typename T, int] Dic = new(var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4014 in line 2 at position 10: cannot convert from the type ""real"" to the type ""typename""
+")]
+	[DataRow(@"const [typename T, int] Dic = new(var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[int];
+", "1", "Ошибок нет")]
+	[DataRow(@"const [typename T, int] Dic = new((int, 2), var T: 1, var T2: 3, var T3: 4);
+return Dic[int];
+", "2", "Ошибок нет")]
+	[DataRow(@"const [typename T, (abstract Class)] BaseStack = new(var T:
+{
+	required typename T2 { get, init };
+	
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+", "null", "Ошибок нет")]
+	[DataRow(@"const var Dic = new [typename T, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4014 in line 2 at position 10: cannot convert from the type ""real"" to the type ""typename""
+")]
+	[DataRow(@"const var Dic = new [typename T, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[int];
+", "1", "Ошибок нет")]
+	[DataRow(@"const var Dic = new [typename T, int]((int, 2), var T: 1, var T2: 3, var T3: 4);
+return Dic[int];
+", "2", "Ошибок нет")]
+	[DataRow(@"const var BaseStack = new [typename T, (abstract Class)](var T:
+{
+	required typename T2 { get, init };
+	
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+", "null", "Ошибок нет")]
+	[DataRow(@"const [typename T, int] Dic = new [typename T, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4014 in line 2 at position 10: cannot convert from the type ""real"" to the type ""typename""
+")]
+	[DataRow(@"const [typename T, int] Dic = new [typename T, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[int];
+", "1", "Ошибок нет")]
+	[DataRow(@"const [typename T, int] Dic = new [typename T, int]((int, 2), var T: 1, var T2: 3, var T3: 4);
+return Dic[int];
+", "2", "Ошибок нет")]
+	[DataRow(@"const [typename T, (abstract Class)] BaseStack = new [typename T, (abstract Class)](var T:
+{
+	required typename T2 { get, init };
+	
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+", "null", @"Wreck 9018 in line 1 at position 81: cannot mention the ""Class"" keyword in the round brackets several times in one block
+")]
+	[DataRow(@"const [typename T, int] Dic = new(5);
+return Dic[real];
+", "5", "Ошибок нет")]
+	[DataRow(@"const [typename T, int] Dic = new [typename T, int](5);
+return Dic[real];
+", "5", "Ошибок нет")]
+	[DataRow(@"const var Dic = new [typename T, int](5);
+return Dic[real];
+", "5", "Ошибок нет")]
+	[DataRow(@"const [typename T, int] Dic = new [typename T, int](T == int ? 2: T is var T2 ? 1 : -1);
+return (Dic[int], Dic[string], Dic[null]);
+", "(2, 1, -1)", "Ошибок нет")]
+	[DataRow(@"abstract Class BaseStack
+{
+	required typename T { get, init };
+	
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+}
+
+const [typename T, (Class : BaseStack[T])] Stack = new(
+{
+	private () T list = new(32);
+
+	T Function Peek()
+	{
+		return list[^1];
+	}
+
+	T Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(T item)
+	{
+		list.Add(item);
+	}
+});
+
+BaseStack[int] intStack = new Stack[int]();
+intStack.Push(5);
+intStack.Push(10);
+var x = (intStack.Pop(), intStack.Peek());
+BaseStack[string] stringStack = new Stack[string]();
+stringStack.Push(""A"");
+stringStack.Push(""B"");
+var y = (stringStack.Pop(), stringStack.Peek());
+return (x, y);
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());

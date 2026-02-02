@@ -26,6 +26,7 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 	public static readonly NStarType UnsafeStringType = new(new(new(BlockType.Namespace, "System", 1),
 		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "UnsafeString", 1)), NoBranches);
 	public static readonly NStarType BitListType = GetListType(BoolType);
+	public static readonly NStarType WrongVarType = new(new(new Block(BlockType.Other, "wrong var", 1)), NoBranches);
 	public static readonly BlockStack EmptyBlockStack = new();
 	public static readonly BlockStack ListBlockStack = new(new Block(BlockType.Primitive, "list", 1));
 	public static readonly BlockStack TupleBlockStack = new(new Block(BlockType.Primitive, "tuple", 1));

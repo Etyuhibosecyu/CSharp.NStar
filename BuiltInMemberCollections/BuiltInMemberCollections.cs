@@ -253,6 +253,7 @@ public static class BuiltInMemberCollections
 		{ ("System.IO", nameof(File)), typeof(File) },
 		{ ("System.IO", nameof(FileAccess)), typeof(FileAccess) },
 		{ ("System.IO", nameof(FileAttributes)), typeof(FileAttributes) },
+		{ ("System.IO", nameof(FileInfo)), typeof(FileInfo) },
 		{ ("System.IO", nameof(FileMode)), typeof(FileMode) },
 		{ ("System.IO", nameof(FileOptions)), typeof(FileOptions) },
 		{ ("System.IO", nameof(FileShare)), typeof(FileShare) },
@@ -295,9 +296,16 @@ public static class BuiltInMemberCollections
 	};
 
 	/// <summary>
-	/// Sorted by Container and Type, also contains RestrictionPackage modifiers, RestrictionTypes, RestrictionNames and Attributes.
+	/// Sorted by Container and Type, also contains Restrictions, Attributes, BaseType and Decomposition.
 	/// </summary>
-	public static Dictionary<(BlockStack Container, String Type), UserDefinedType> UserDefinedTypes { get; } = new(new BlockStackAndStringEComparer()) { };
+	public static Dictionary<(BlockStack Container, String Type), UserDefinedType> UserDefinedTypes { get; } = new(new BlockStackAndStringEComparer());
+
+	/// <summary>
+	/// Sorted by Container, then by Name, also contains Attributes, BaseType, StartPos and EndPos.
+	/// </summary>
+	public static TypeDictionary<Dictionary<String, TempType>> TempTypes { get; } = [];
+
+	public static TypeDictionary<String> UnnamedTypeStartIndexes { get; } = [];
 
 	/// <summary>
 	/// Sorted by tuple, contains Namespace, Interface and ExtraTypes.

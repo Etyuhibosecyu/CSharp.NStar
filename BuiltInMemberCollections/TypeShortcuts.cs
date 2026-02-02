@@ -3,6 +3,7 @@
 namespace CSharp.NStar;
 
 public record struct UserDefinedType(ExtendedRestrictions Restrictions, TypeAttributes Attributes, NStarType BaseType, BranchCollection Decomposition);
+public record struct TempType(TypeAttributes Attributes, NStarType BaseType, int StartPos, int EndPos);
 public record struct UserDefinedProperty(NStarType NStarType, PropertyAttributes Attributes, String DefaultValue);
 public record struct UserDefinedConstant(NStarType NStarType, ConstantAttributes Attributes, TreeBranch DefaultValue);
 public record struct ExtendedRestriction(bool Package, NStarType RestrictionType, String Name);

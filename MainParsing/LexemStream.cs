@@ -118,10 +118,16 @@ public class LexemStream
 			Constructor();
 		else if (IsCurrentLexemOther("{"))
 		{
+			BlockStack container = new(nestedBlocksChain);
 			var unnamedIndex = (nestedBlocksChain.Length == 0) ? globalUnnamedIndex++ : nestedBlocksChain.Peek().UnnamedIndex++;
-			if (UserDefinedTypes.TryGetValue((new(nestedBlocksChain), "#RoundBracket#"), out var userDefinedType))
-				UserDefinedTypes.TryAdd((new BlockStack(nestedBlocksChain), "#" + unnamedIndex), userDefinedType);
-			nestedBlocksChain.Push(new(BlockType.Unnamed, "#" + unnamedIndex.ToString(), 1));
+			if (UserDefinedTypes.TryGetValue((container, "#RoundBracket#"), out var userDefinedType)
+				&& UnnamedTypeStartIndexes.TryGetValue(container, out var startIndex))
+			{
+				UserDefinedTypes.TryAdd((new BlockStack(nestedBlocksChain), startIndex), userDefinedType);
+				nestedBlocksChain.Push(new(BlockType.Class, startIndex, 1));
+			}
+			else
+				nestedBlocksChain.Push(new(BlockType.Unnamed, "#" + unnamedIndex.ToString(), 1));
 			figureBk++;
 			pos++;
 		}
@@ -135,6 +141,7 @@ public class LexemStream
 			else
 			{
 				nestedBlocksChain.Pop();
+				UserDefinedTypes.Remove((new BlockStack(nestedBlocksChain), "#RoundBracket#"));
 				figureBk--;
 			}
 			pos++;
@@ -286,6 +293,7 @@ public class LexemStream
 				GenerateMessage(0x9018, pos, name);
 				return;
 			}
+			prevPos = pos;
 			if (IsCurrentLexemOperator(":"))
 			{
 				if ((attributes & TypeAttributes.Static) == TypeAttributes.Static)
@@ -295,8 +303,12 @@ public class LexemStream
 				CloseBracket(ref pos, ")", ref errors);
 				registeredTypes.Add((container, name, pos3, --pos));
 			}
+			var unnamedIndex = (nestedBlocksChain.Length == 0) ? globalUnnamedIndex : nestedBlocksChain.Peek().UnnamedIndex;
 			UserDefinedTypes.Add((container, name), new([], attributes, NullType, []));
-			blocksToJump.Add((container, nameof(Class), name, blockStart, pos));
+			var savedContainer = container;
+			SubscribeToChanges(name, savedContainer);
+			UnnamedTypeStartIndexes.Add(container, "#" + unnamedIndex);
+			blocksToJump.Add((container, nameof(Class), name, blockStart, prevPos));
 			return;
 		}
 		else if (lexems[pos].Type == LexemType.Identifier)
@@ -339,6 +351,22 @@ public class LexemStream
 		});
 	}
 
+	protected static void SubscribeToChanges(String name, BlockStack container) => name.ListChanged += s =>
+	{
+		UserDefinedTypes[(container, s)] = UserDefinedTypes.Find(x => x.Key.Type == s).Value;
+		var nestedTypes = UserDefinedTypes.FindAll(x => x.Key.Container.Any(y => y.Name == s));
+		foreach (var x in nestedTypes)
+			UserDefinedTypes[x.Key] = x.Value;
+		var properties = UserDefinedProperties.FindAll(x => x.Key.Any(y => y.Name == s));
+		foreach (var x in properties)
+			UserDefinedProperties[x.Key] = x.Value;
+		var functions = UserDefinedFunctions.FindAll(x => x.Key.Any(y => y.Name == s));
+		foreach (var x in functions)
+			UserDefinedFunctions[x.Key] = x.Value;
+		var constructors = UserDefinedConstructors.FindAll(x => x.Key.Any(y => y.Name == s));
+		foreach (var x in constructors)
+			UserDefinedConstructors[x.Key] = x.Value;
+	};
 	private void Function()
 	{
 		prevPos = pos;

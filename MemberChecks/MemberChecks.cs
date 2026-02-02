@@ -169,8 +169,8 @@ public static class MemberChecks
 		return result;
 	}
 
-	public static bool ConstantExists(NStarType container, String name, [MaybeNullWhen(false)]
-		out UserDefinedConstant? constant)
+	public static bool ConstantExists(NStarType container, String name,
+		[MaybeNullWhen(false)] out UserDefinedConstant? constant)
 	{
 		if (UserDefinedConstants.TryGetValue(container.MainType, out var containerConstants)
 			&& containerConstants.TryGetValue(name, out var a))
@@ -513,7 +513,7 @@ public static class MemberChecks
 				}
 				else if (UserDefinedFunctionExists(userDefinedType.BaseType, name, callParameterTypes,
 					out functions, out matchingContainer, out derived))
-					return ProcessUserDefinedMethod(callParameterTypes, functions, mainType);
+					return ProcessUserDefinedMethod(container, callParameterTypes, functions);
 			}
 			functions = null;
 			derived = false;
@@ -521,12 +521,13 @@ public static class MemberChecks
 		}
 		functions = [.. functions.Filter(x => (x.Attributes & FunctionAttributes.Wrong) == 0)];
 		derived = false;
-		return ProcessUserDefinedMethod(callParameterTypes, functions, mainType);
+		return ProcessUserDefinedMethod(container, callParameterTypes, functions);
 	}
 
-	private static bool ProcessUserDefinedMethod(List<NStarType> callParameterTypes, UserDefinedMethodOverloads functions,
-		BlockStack mainType)
+	private static bool ProcessUserDefinedMethod(NStarType container, List<NStarType> callParameterTypes,
+		UserDefinedMethodOverloads functions)
 	{
+		var mainType = container.MainType;
 		(BlockStack Container, String Type) matchingType = default!;
 		if (!CheckContainer(mainType, x => UserDefinedTypes.ContainsKey(matchingType = SplitType(x)), out _))
 			return true;
@@ -539,15 +540,30 @@ public static class MemberChecks
 			var ReturnNStarType = function.ReturnNStarType;
 			ExtendedMethodParameters parameters = [.. function.Parameters.Convert(x =>
 				new ExtendedMethodParameter(x.Type, x.Name, x.Attributes, x.DefaultValue))];
-			var functionParameterTypes = parameters.ToList(x => x.Type);
+			callParameterTypes = callParameterTypes.Copy();
+			var extraTypes = container.ExtraTypes.Values;
+			if (extraTypes.Count == 1 && extraTypes.First() is var extraType && extraType.Name == "List")
+				extraTypes = extraType.Elements;
+			foreach (var x in extraTypes)
+			{
+				TreeBranch branch;
+				if (x.Name == "Hypername" && x.Length == 1)
+					branch = x[0];
+				else
+					branch = x;
+				if (branch.Name == "type" && branch.Extra is NStarType NStarType)
+					callParameterTypes.Add(NStarType);
+			}
+			var functionParameterTypes = parameters.ToList(x => x.Type)
+				.Concat(restrictions.ToList(x => new NStarType(new(new Block(BlockType.Extra, x.Name, 1)), NoBranches)));
 			var patterns = GetNStarReplacementPatterns(restrictions.ToList(x => x.Name),
-				callParameterTypes, functionParameterTypes.Append(ReturnNStarType))
+				callParameterTypes, functionParameterTypes)
 				.AddRange(GetNStarReplacementPatterns(restrictions.ToList(x => x.Name),
-				functionParameterTypes.Append(ReturnNStarType), callParameterTypes));
+				functionParameterTypes, callParameterTypes));
 			for (var j = 0; j < patterns.Length; j++)
 			{
 				ReturnNStarType = ReplaceExtraType(ReturnNStarType, patterns[j]);
-				for (var k = 0; k < functionParameterTypes.Length; k++)
+				for (var k = 0; k < parameters.Length; k++)
 				{
 					functionParameterTypes[k] = ReplaceExtraType(functionParameterTypes[k], patterns[j]);
 					parameters[k] = new(functionParameterTypes[k], parameters[k].Name, parameters[k].Attributes,

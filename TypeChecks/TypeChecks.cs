@@ -8,15 +8,27 @@ namespace CSharp.NStar;
 
 public static class TypeChecks
 {
-	public static bool ExtraTypeExists(BlockStack container, String typeName)
+	public static bool ExtraTypeExists(BlockStack container, String typeName, out bool @class)
 	{
+		@class = false;
 		if (container.Length != 0 && UserDefinedTypes.TryGetValue(SplitType(container), out var userDefinedType)
 			&& userDefinedType.Restrictions.Exists(x => x.Name == typeName))
 			return true;
 		if (UserDefinedConstants.TryGetValue(container, out var containerConstants)
-			&& containerConstants.TryGetValue(typeName, out var constantType))
-			return TypeIsPrimitive(constantType.NStarType.MainType) && constantType.NStarType.MainType.Peek().Name == "typename"
-				&& constantType.NStarType.ExtraTypes.Length == 0;
+			&& containerConstants.TryGetValue(typeName, out var constant))
+		{
+			if (TypeIsPrimitive(constant.NStarType.MainType) && constant.NStarType.MainType.TryPeek(out var block)
+				&& block.Name == "typename" && constant.NStarType.ExtraTypes.Length == 0)
+				return true;
+			if (constant.NStarType.MainType.Equals(DictionaryBlockStack) && constant.NStarType.ExtraTypes.Length == 2
+				&& constant.NStarType.ExtraTypes[1].Name == "type"
+				&& constant.NStarType.ExtraTypes[1].Extra is NStarType ValueNStarType
+				&& ValueNStarType.MainType.TryPeek(out block) && block.BlockType == BlockType.Other && block.Name == "Class")
+			{
+				@class = true;
+				return true;
+			}
+		}
 		if (Variables.TryGetValue(container, out var containerVariables)
 			&& containerVariables.TryGetValue(typeName, out var variableName))
 			return TypeIsPrimitive(variableName.MainType) && variableName.MainType.Peek().Name == "typename"
@@ -38,7 +50,7 @@ public static class TypeChecks
 			if (!UserDefinedTypes.TryGetValue(SplitType(derived.MainType), out var userDefinedType))
 				return false;
 			type = userDefinedType.BaseType;
-			if (type.Equals(@base))
+			if (type.MainType.Equals(@base.MainType))
 				return true;
 		}
 		return false;
