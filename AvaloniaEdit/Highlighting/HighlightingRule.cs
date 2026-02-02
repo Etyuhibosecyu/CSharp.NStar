@@ -29,7 +29,7 @@ public class HighlightingRule
 	/// Gets/Sets the regular expression for the rule.
 	/// </summary>
 	public Regex Regex { get; set; }
-	
+
 	/// <summary>
 	/// Gets/Sets the highlighting color.
 	/// </summary>

@@ -80,7 +80,7 @@ namespace AvaloniaEdit.Editing;
 		/// Key gesture: Alt+Shift+End
 		/// </summary>
 		public static readonly RoutedCommand BoxSelectToLineEnd = new(nameof(BoxSelectToLineEnd));
-		
+
 		#endregion
 
 		private TextDocument _document;

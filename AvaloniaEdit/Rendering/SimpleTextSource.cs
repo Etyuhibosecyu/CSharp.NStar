@@ -32,7 +32,7 @@ internal sealed class SimpleTextSource(string text, TextRunProperties properties
 		if (textSourceCharacterIndex < _text.Length)
 			return new TextCharacters(
 				_text.AsMemory()[textSourceCharacterIndex.._text.Length], _properties);
-		
+
 		return new TextEndOfParagraph(1);
 	}
 }

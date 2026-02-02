@@ -57,7 +57,7 @@ Error 4007 in line 5 at position 102: the strings cannot be subtracted
 ")]
 	[DataRow("""
 		return (("A", 77777, 3.14159) + 5, ("A", 77777, 3.14159) - 5, ("A", 77777, 3.14159) * 5, ("A", 77777, 3.14159) / 5, ("A", 77777, 3.14159) % 5);
-		
+
 		""", """(null, null, null, null, null)""", @"Warning 800F in line 1 at position 0: too long line (128 characters are supported, actually 143)
 Error 4006 in line 1 at position 30: cannot apply the operator ""+"" to the types ""(string, int, real)"" and ""byte""
 Error 4006 in line 1 at position 57: cannot apply the operator ""-"" to the types ""(string, int, real)"" and ""byte""
@@ -67,7 +67,7 @@ Error 4006 in line 1 at position 138: cannot apply the operator ""%"" to the typ
 ")]
 	[DataRow("""
 		return (5 + ("A", 77777, 3.14159), 5 - ("A", 77777, 3.14159), 5 * ("A", 77777, 3.14159), 5 / ("A", 77777, 3.14159), 5 % ("A", 77777, 3.14159));
-				
+
 		""", """(null, null, null, 0, 0)""", """
 			Warning 800F in line 1 at position 0: too long line (128 characters are supported, actually 143)
 			Error 4006 in line 1 at position 10: cannot apply the operator "+" to the types "byte" and "(string, int, real)"
@@ -79,7 +79,7 @@ Error 4006 in line 1 at position 138: cannot apply the operator ""%"" to the typ
 			""")]
 	[DataRow("""
 		return (5 + null, 5 - null, 5 * null, 5 / null, 5 % null, null + 5, null - 5, null * 5, null / 5, null % 5);
-		
+
 		""", """(5, 5, 0, 0, 0, 5, -5, 0, 0, 0)""", @"Error 4006 in line 1 at position 40: cannot apply the operator ""/"" to the types ""byte"" and ""null""
 Error 4006 in line 1 at position 50: cannot apply the operator ""%"" to the types ""byte"" and ""null""
 ")]
@@ -87,7 +87,7 @@ Error 4006 in line 1 at position 50: cannot apply the operator ""%"" to the type
 		var a = ("A", 77777, 3.14159);
 		var b = 5;
 		return (a + b, a - b, a * b, a / b, a % b, b + a, b - a, b * a, b / a, b % a);
-		
+
 		""", """(null, null, null, null, null, null, null, null, 0, 0)""", @"Error 4006 in line 3 at position 10: cannot apply the operator ""+"" to the types ""(string, int, real)"" and ""byte""
 Error 4006 in line 3 at position 17: cannot apply the operator ""-"" to the types ""(string, int, real)"" and ""byte""
 Error 4006 in line 3 at position 24: cannot apply the operator ""*"" to the types ""(string, int, real)"" and ""byte""
@@ -113,7 +113,7 @@ Error 4003 in line 1 at position 98: cannot compute factorial of this constant
 		var a = 5;
 		var b = null;
 		return (a + b, a - b, a * b, a / b, a % b, b + a, b - a, b * a, b / a, b % a);
-		
+
 		""", """(5, 5, 0, 0, 0, 5, -5, 0, 0, 0)""", @"Error 4006 in line 3 at position 31: cannot apply the operator ""/"" to the types ""byte"" and ""null""
 Error 4006 in line 3 at position 38: cannot apply the operator ""%"" to the types ""byte"" and ""null""
 ")]
@@ -261,7 +261,7 @@ return (a1, a2, a3, a4);
 			int a = 5;
 			real b = 3.14159;
 			string c = ""A"";
-			
+
 			Constructor(bool bool)
 			{
 				if (bool)
@@ -285,7 +285,7 @@ return (a1, a2, a3, a4);
 			int a = 5;
 			real b = 3.14159;
 			string c = ""A"";
-			
+
 			Constructor(bool bool)
 			{
 				if (bool)
@@ -317,17 +317,17 @@ return F();
 	{
 		return 0;
 	}
-	
+
 	int Function F2(int n)
 	{
 		return n * n;
 	}
-	
+
 	static int Function G1()
 	{
 		return 0;
 	}
-	
+
 	static int Function G2(int n)
 	{
 		return n * n;
@@ -1219,7 +1219,7 @@ Error 4061 in line 15 at position 64: incompatibility between the type of the pa
 ")]
 	[DataRow("""
 using System.Collections;
-			
+
 Class MyClass : ListHashSet[string]
 {
 }
@@ -1233,7 +1233,7 @@ return hs;
 """, """("1", "2", "3")""", "Ошибок нет")]
 	[DataRow("""
 using System.Collections;
-			
+
 Class MyClass : ListHashSet[string]
 {
 }
@@ -1251,7 +1251,7 @@ return F();
 """, """("1", "2", "3")""", "Ошибок нет")]
 	[DataRow("""
 using System.Collections;
-			
+
 Class MyClass : ListHashSet[string]
 {
 }
@@ -1269,7 +1269,7 @@ return F().Length;
 """, "3", "Ошибок нет")]
 	[DataRow("""
 using System.Collections;
-			
+
 Class MyClass : ListHashSet[string]
 {
 }
@@ -1287,7 +1287,7 @@ return F().RemoveAt(2);
 """, """("1", "3")""", "Ошибок нет")]
 	[DataRow("""
 using System.Collections;
-			
+
 Class MyClass : ListHashSet[string]
 {
 }
@@ -1304,7 +1304,7 @@ return hs;
 """, """("1", "2", "3")""", "Ошибок нет")]
 	[DataRow("""
 using System.Collections;
-			
+
 Class MyClass : ListHashSet[string]
 {
 }
@@ -1458,7 +1458,7 @@ Error 4001 in line 12 at position 8: the identifier "hs" is not defined in this 
 """)]
 	[DataRow("""
 using System.Collections;
-			
+
 Class MyClass : ListHashSet[int]
 {
 }
@@ -1472,7 +1472,7 @@ return hs;
 """, """(1, 2, 3)""", "Ошибок нет")]
 	[DataRow("""
 using System.Collections;
-			
+
 Class MyClass : ListHashSet[int]
 {
 }
@@ -1490,7 +1490,7 @@ return F();
 """, """(1, 2, 3)""", "Ошибок нет")]
 	[DataRow("""
 using System.Collections;
-			
+
 Class MyClass : ListHashSet[int]
 {
 }
@@ -1508,7 +1508,7 @@ return F().Length;
 """, "3", "Ошибок нет")]
 	[DataRow("""
 using System.Collections;
-			
+
 Class MyClass : ListHashSet[int]
 {
 }
@@ -1526,7 +1526,7 @@ return F().RemoveAt(2);
 """, """(1, 3)""", "Ошибок нет")]
 	[DataRow("""
 using System.Collections;
-			
+
 Class MyClass : ListHashSet[int]
 {
 }
@@ -1543,7 +1543,7 @@ return hs;
 """, """(1, 2, 3)""", "Ошибок нет")]
 	[DataRow("""
 using System.Collections;
-			
+
 Class MyClass : ListHashSet[int]
 {
 }
@@ -5678,7 +5678,7 @@ return (dic, dic[""1""], x2);
 {
 	required typename T { get, init };
 	private T _content;
-	
+
 	null Function Put(T item)
 	{
 		_content = item;
@@ -6781,7 +6781,7 @@ return (x, y, z);
 	[DataRow(@"abstract Class BaseStack
 {
 	required typename T { get, init };
-	
+
 	abstract T Function Peek();
 	abstract T Function Pop();
 	abstract null Function Push(T item);
@@ -6975,7 +6975,7 @@ return Dic[int];
 	[DataRow(@"const [typename, (abstract Class)] BaseStack = (var T:
 {
 	required typename T2 { get, init };
-	
+
 	abstract T Function Peek();
 	abstract T Function Pop();
 	abstract null Function Push(T item);
@@ -7009,7 +7009,7 @@ return Dic[int];
 	[DataRow(@"const [typename, (abstract Class)] BaseStack = new(var T:
 {
 	required typename T2 { get, init };
-	
+
 	abstract T Function Peek();
 	abstract T Function Pop();
 	abstract null Function Push(T item);
@@ -7043,7 +7043,7 @@ return Dic[int];
 	[DataRow(@"const [typename, (abstract Class)] BaseStack = new [typename, (abstract Class)](var T:
 {
 	required typename T2 { get, init };
-	
+
 	abstract T Function Peek();
 	abstract T Function Pop();
 	abstract null Function Push(T item);
@@ -7078,7 +7078,7 @@ return Dic[int];
 	[DataRow(@"const var BaseStack = new [typename, (abstract Class)](var T:
 {
 	required typename T2 { get, init };
-	
+
 	abstract T Function Peek();
 	abstract T Function Pop();
 	abstract null Function Push(T item);
@@ -7097,7 +7097,7 @@ return Dic[int];
 	[DataRow(@"const [typename T, (abstract Class)] BaseStack = (var T:
 {
 	required typename T2 { get, init };
-	
+
 	abstract T Function Peek();
 	abstract T Function Pop();
 	abstract null Function Push(T item);
@@ -7116,7 +7116,7 @@ return Dic[int];
 	[DataRow(@"const [typename T, (abstract Class)] BaseStack = new(var T:
 {
 	required typename T2 { get, init };
-	
+
 	abstract T Function Peek();
 	abstract T Function Pop();
 	abstract null Function Push(T item);
@@ -7135,7 +7135,7 @@ return Dic[int];
 	[DataRow(@"const var BaseStack = new [typename T, (abstract Class)](var T:
 {
 	required typename T2 { get, init };
-	
+
 	abstract T Function Peek();
 	abstract T Function Pop();
 	abstract null Function Push(T item);
@@ -7154,7 +7154,7 @@ return Dic[int];
 	[DataRow(@"const [typename T, (abstract Class)] BaseStack = new [typename T, (abstract Class)](var T:
 {
 	required typename T2 { get, init };
-	
+
 	abstract T Function Peek();
 	abstract T Function Pop();
 	abstract null Function Push(T item);
@@ -7176,7 +7176,7 @@ return (Dic[int], Dic[string], Dic[null]);
 	[DataRow(@"abstract Class BaseStack
 {
 	required typename T { get, init };
-	
+
 	abstract T Function Peek();
 	abstract T Function Pop();
 	abstract null Function Push(T item);

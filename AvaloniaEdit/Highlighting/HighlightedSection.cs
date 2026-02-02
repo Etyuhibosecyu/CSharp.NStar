@@ -29,12 +29,12 @@ public class HighlightedSection : ISegment
 	/// Gets/sets the document offset of the section.
 	/// </summary>
 	public int Offset { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the length of the section.
 	/// </summary>
 	public int Length { get; set; }
-	
+
 	int ISegment.EndOffset => Offset + Length;
 
 	/// <summary>

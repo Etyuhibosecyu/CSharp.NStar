@@ -34,29 +34,29 @@ public interface ITextSource
 	/// Returns null for unversioned text sources.
 	/// </summary>
 	ITextSourceVersion Version { get; }
-	
+
 	/// <summary>
 	/// Creates an immutable snapshot of this text source.
 	/// Unlike all other methods in this interface, this method is thread-safe.
 	/// </summary>
 	ITextSource CreateSnapshot();
-	
+
 	/// <summary>
 	/// Creates an immutable snapshot of a part of this text source.
 	/// Unlike all other methods in this interface, this method is thread-safe.
 	/// </summary>
 	ITextSource CreateSnapshot(int offset, int length);
-	
+
 	/// <summary>
 	/// Creates a new TextReader to read from this text source.
 	/// </summary>
 	TextReader CreateReader();
-	
+
 	/// <summary>
 	/// Creates a new TextReader to read from this text source.
 	/// </summary>
 	TextReader CreateReader(int offset, int length);
-	
+
 	/// <summary>
 	/// Gets the total text length.
 	/// </summary>
@@ -69,7 +69,7 @@ public interface ITextSource
 	/// Gets the whole text as string.
 	/// </summary>
 	string Text { get; }
-	
+
 	/// <summary>
 	/// Gets a character at the specified position in the document.
 	/// </summary>
@@ -79,7 +79,7 @@ public interface ITextSource
 	/// <remarks>This is the same as Text[offset], but is more efficient because
 	///  it doesn't require creating a String object.</remarks>
 	char GetCharAt(int offset);
-	
+
 	/// <summary>
 	/// Retrieves the text for a portion of the document.
 	/// </summary>
@@ -87,23 +87,23 @@ public interface ITextSource
 	/// <remarks>This is the same as Text.Substring, but is more efficient because
 	///  it doesn't require creating a String object for the whole document.</remarks>
 	string GetText(int offset, int length);
-	
+
 	/// <summary>
 	/// Retrieves the text for a portion of the document.
 	/// </summary>
 	/// <exception cref="ArgumentOutOfRangeException">offset or length is outside the valid range.</exception>
 	string GetText(ISegment segment);
-	
+
 	/// <summary>
 	/// Writes the text from this document into the TextWriter.
 	/// </summary>
 	void WriteTextTo(TextWriter writer);
-	
+
 	/// <summary>
 	/// Writes the text from this document into the TextWriter.
 	/// </summary>
 	void WriteTextTo(TextWriter writer, int offset, int length);
-	
+
 	/// <summary>
 	/// Gets the index of the first occurrence of the character in the specified array.
 	/// </summary>
@@ -112,7 +112,7 @@ public interface ITextSource
 	/// <param name="count">Length of the area to search.</param>
 	/// <returns>The first index where the character was found; or -1 if no occurrence was found.</returns>
 	int IndexOf(char c, int startIndex, int count);
-	
+
 	/// <summary>
 	/// Gets the index of the first occurrence of any character in the specified array.
 	/// </summary>
@@ -121,7 +121,7 @@ public interface ITextSource
 	/// <param name="count">Length of the area to search.</param>
 	/// <returns>The first index where any character was found; or -1 if no occurrence was found.</returns>
 	int IndexOfAny(char[] anyOf, int startIndex, int count);
-	
+
 	/// <summary>
 	/// Gets the index of the first occurrence of the specified search text in this text source.
 	/// </summary>
@@ -131,7 +131,7 @@ public interface ITextSource
 	/// <param name="comparisonType">String comparison to use.</param>
 	/// <returns>The first index where the search term was found; or -1 if no occurrence was found.</returns>
 	int IndexOf(string searchText, int startIndex, int count, StringComparison comparisonType);
-	
+
 	/// <summary>
 	/// Gets the index of the last occurrence of the specified character in this text source.
 	/// </summary>
@@ -142,7 +142,7 @@ public interface ITextSource
 	/// <remarks>The search proceeds backwards from (startIndex+count) to startIndex.
 	/// This is different than the meaning of the parameters on string.LastIndexOf!</remarks>
 	int LastIndexOf(char c, int startIndex, int count);
-	
+
 	/// <summary>
 	/// Gets the index of the last occurrence of the specified search text in this text source.
 	/// </summary>
@@ -154,19 +154,19 @@ public interface ITextSource
 	/// <remarks>The search proceeds backwards from (startIndex+count) to startIndex.
 	/// This is different than the meaning of the parameters on string.LastIndexOf!</remarks>
 	int LastIndexOf(string searchText, int startIndex, int count, StringComparison comparisonType);
-	
+
 	/* What about:
 	void Insert (int offset, string value);
 	void Remove (int offset, int count);
 	void Remove (ISegment segment);
-	
+
 	void Replace (int offset, int count, string value);
-	
+
 	Or more search operations:
-	
+
 	IEnumerable<int> SearchForward (string pattern, int startIndex);
 	IEnumerable<int> SearchForwardIgnoreCase (string pattern, int startIndex);
-	
+
 	IEnumerable<int> SearchBackward (string pattern, int startIndex);
 	IEnumerable<int> SearchBackwardIgnoreCase (string pattern, int startIndex);
 	*/
@@ -190,7 +190,7 @@ public interface ITextSourceVersion
 	/// Returns false when given <c>null</c>.
 	/// </remarks>
 	bool BelongsToSameDocumentAs(ITextSourceVersion other);
-	
+
 	/// <summary>
 	/// Compares the age of this checkpoint to the other checkpoint.
 	/// </summary>
@@ -200,7 +200,7 @@ public interface ITextSourceVersion
 	/// 0 if <c>this</c> version instance represents the same version as <paramref name="other"/>.
 	/// 1 if this version is newer than <paramref name="other"/>.</returns>
 	int CompareAge(ITextSourceVersion other);
-	
+
 	/// <summary>
 	/// Gets the changes from this checkpoint to the other checkpoint.
 	/// If 'other' is older than this checkpoint, reverse changes are calculated.
@@ -208,7 +208,7 @@ public interface ITextSourceVersion
 	/// <remarks>This method is thread-safe.</remarks>
 	/// <exception cref="ArgumentException">Raised if 'other' belongs to a different document than this checkpoint.</exception>
 	IEnumerable<TextChangeEventArgs> GetChangesTo(ITextSourceVersion other);
-	
+
 	/// <summary>
 	/// Calculates where the offset has moved in the other buffer version.
 	/// </summary>

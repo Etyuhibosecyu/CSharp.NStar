@@ -30,14 +30,14 @@ public class XshdRuleSet : XshdElement
 	/// Gets/Sets the name of the rule set.
 	/// </summary>
 	public string Name { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets whether the case is ignored in expressions inside this rule set.
 	/// </summary>
 	public bool? IgnoreCase { get; set; }
 
 	private readonly NullSafeCollection<XshdElement> _elements = [];
-	
+
 	/// <summary>
 	/// Gets the collection of elements.
 	/// </summary>

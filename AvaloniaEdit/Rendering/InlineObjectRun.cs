@@ -103,7 +103,7 @@ public class InlineObjectRun : DrawableTextRun
 
 	/// <inheritdoc/>
 	public override Size Size => DesiredSize;
-	
+
 	/// <inheritdoc/>
 	public override void Draw(DrawingContext drawingContext, Point origin)
 	{

@@ -29,7 +29,7 @@ internal class Layer : Control
 {
 	protected readonly TextView TextView;
 	protected readonly KnownLayer KnownLayer;
-	
+
 	public Layer(TextView textView, KnownLayer knownLayer)
 	{
 		Debug.Assert(textView != null);

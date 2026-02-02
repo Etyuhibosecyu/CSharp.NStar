@@ -31,7 +31,7 @@ public interface IBackgroundRenderer
 	/// Gets the layer on which this background renderer should draw.
 	/// </summary>
 	KnownLayer Layer { get; }
-	
+
 	/// <summary>
 	/// Causes the background renderer to draw.
 	/// </summary>

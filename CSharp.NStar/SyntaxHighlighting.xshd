@@ -11,7 +11,7 @@
 		<Rule foreground="#BF4000" multiline="true">
 			(?:(?:"(?:[^\\"]|\\[0abfnqrtv'"!]|\\x[0-9A-Fa-f]{2}|\\u[0-9A-Fa-f]{4})*?"))|(?:'(?:[^\\'"]|\\[0abfnqrtv'"!]|\\x[0-9A-Fa-f]{2}|\\u[0-9A-Fa-f]{4})?')
 		</Rule>
-		
+
 		<Span name="SingleLineComment" foreground="#BFBF00" begin="//" />
 		<Span name="MultiLineComment" foreground="#BFBF00" multiline="true"
 			 begin="/\*" end="\*/" />

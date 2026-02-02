@@ -118,7 +118,7 @@ public class FormattedTextRun : DrawableTextRun
 		get
 		{
 			var formattedText = Element.FormattedText;
-			
+
 			if (formattedText != null) {
 				return new Size(formattedText.WidthIncludingTrailingWhitespace, formattedText.Height);
 			}

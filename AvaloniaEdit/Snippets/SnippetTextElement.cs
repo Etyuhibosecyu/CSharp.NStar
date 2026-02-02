@@ -36,7 +36,7 @@ public class SnippetTextElement : SnippetElement
 			context.InsertText(Text);
 		}
 	}
-	
+
 	///// <inheritdoc/>
 	//public override Inline ToTextRun()
 	//{

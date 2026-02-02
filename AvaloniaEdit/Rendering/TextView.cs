@@ -1462,7 +1462,7 @@ namespace AvaloniaEdit.Rendering;
 					0, 32000,
 					new VisualLineTextParagraphProperties { defaultTextRunProperties = textRunProperties });
 			}
-			
+
 			if (line != null)
 			{
 				WideSpaceWidth = Math.Max(1, line.WidthIncludingTrailingWhitespace);

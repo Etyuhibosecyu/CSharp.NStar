@@ -36,29 +36,29 @@ public interface ICompletionData
 		/// Gets the image.
 		/// </summary>
 		IImage Image { get; }
-	
+
 	/// <summary>
 	/// Gets the text. This property is used to filter the list of visible elements.
 	/// </summary>
 	string Text { get; }
-	
+
 	/// <summary>
 	/// The displayed content. This can be the same as 'Text', or a control if
 	/// you want to display rich content.
 	/// </summary>
 	object Content { get; }
-	
+
 	/// <summary>
 	/// Gets the description.
 	/// </summary>
 	object Description { get; }
-	
+
 	/// <summary>
 	/// Gets the priority. This property is used in the selection logic. You can use it to prefer selecting those items
 	/// which the user is accessing most frequently.
 	/// </summary>
 	double Priority { get; }
-	
+
 	/// <summary>
 	/// Perform the completion.
 	/// </summary>

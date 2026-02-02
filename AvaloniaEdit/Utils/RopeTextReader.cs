@@ -31,7 +31,7 @@ public sealed class RopeTextReader : TextReader
 	private readonly Stack<RopeNode<char>> _stack = new();
 	private RopeNode<char> _currentNode;
 	private int _indexInsideNode;
-	
+
 	/// <summary>
 	/// Creates a new RopeTextReader.
 	/// Internally, this method creates a Clone of the rope; so the text reader will always read through the old
@@ -44,7 +44,7 @@ public sealed class RopeTextReader : TextReader
 		// We force the user to iterate through a clone of the rope to keep the API contract of RopeTextReader simple
 		// (what happens when a rope is modified while iterating through it?)
 		rope.Root.Publish();
-		
+
 		// special case for the empty rope:
 		// leave currentNode initialized to null (RopeTextReader doesn't support empty nodes)
 		if (rope.Length != 0) {
@@ -67,7 +67,7 @@ public sealed class RopeTextReader : TextReader
 		}
 		Debug.Assert(_currentNode.Height == 0);
 	}
-	
+
 	/// <inheritdoc/>
 	public override int Peek()
 	{
@@ -75,7 +75,7 @@ public sealed class RopeTextReader : TextReader
 			return -1;
 		return _currentNode.Contents[_indexInsideNode];
 	}
-	
+
 	/// <inheritdoc/>
 	public override int Read()
 	{
@@ -97,7 +97,7 @@ public sealed class RopeTextReader : TextReader
 			GoToLeftMostLeaf();
 		}
 	}
-	
+
 	/// <inheritdoc/>
 	public override int Read(char[] buffer, int index, int count)
 	{

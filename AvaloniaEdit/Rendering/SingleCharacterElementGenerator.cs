@@ -110,7 +110,7 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 			var textLine = TextFormatter.Current.FormatLine(textSource, 0, double.MaxValue, new GenericTextParagraphProperties(properties));
 			return new SpaceTextElement(textLine);
 		}
-		
+
 		if (ShowTabs && c == '\t')
 		{
 			var properties = new VisualLineElementTextRunProperties(CurrentContext.GlobalTextRunProperties);
@@ -210,7 +210,7 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 				get
 				{
 					var s = base.Size;
-					
+
 					return s.WithWidth(s.Width + BoxMargin);
 				}
 			}
@@ -218,15 +218,15 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 			public override void Draw(DrawingContext drawingContext, Point origin)
 			{
 			var (x, y) = origin;
-			
+
 			var newOrigin = new Point(x + BoxMargin / 2, y);
-			
+
 				var (width, height) = Size;
-				
+
 				var r = new Rect(x, y, width, height);
-				
+
 				drawingContext.FillRectangle(DarkGrayBrush, r, 2.5f);
-				
+
 				base.Draw(drawingContext, newOrigin);
 			}
 		}

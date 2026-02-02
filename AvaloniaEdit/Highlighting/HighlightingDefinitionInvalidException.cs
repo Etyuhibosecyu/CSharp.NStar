@@ -31,14 +31,14 @@ public class HighlightingDefinitionInvalidException : Exception
 	public HighlightingDefinitionInvalidException()
 	{
 	}
-	
+
 	/// <summary>
 	/// Creates a new HighlightingDefinitionInvalidException instance.
 	/// </summary>
 	public HighlightingDefinitionInvalidException(string message) : base(message)
 	{
 	}
-	
+
 	/// <summary>
 	/// Creates a new HighlightingDefinitionInvalidException instance.
 	/// </summary>

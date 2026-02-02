@@ -30,7 +30,7 @@ public interface IReadOnlySectionProvider
 	/// Gets whether insertion is possible at the specified offset.
 	/// </summary>
 	bool CanInsert(int offset);
-	
+
 	/// <summary>
 	/// Gets the deletable segments inside the given segment.
 	/// </summary>

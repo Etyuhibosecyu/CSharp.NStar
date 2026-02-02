@@ -29,7 +29,7 @@ namespace AvaloniaEdit.Utils;
 	/// Gets if this instance is frozen. Frozen instances are immutable and thus thread-safe.
 	/// </summary>
 	bool IsFrozen { get; }
-	
+
 	/// <summary>
 	/// Freezes this instance.
 	/// </summary>
@@ -43,7 +43,7 @@ namespace AvaloniaEdit.Utils;
 		if (freezable.IsFrozen)
 			throw new InvalidOperationException("Cannot mutate frozen " + freezable.GetType().Name);
 	}
-	
+
 	public static IList<T> FreezeListAndElements<T>(IList<T> list)
 	{
 		if (list != null) {
@@ -52,7 +52,7 @@ namespace AvaloniaEdit.Utils;
 		}
 		return FreezeList(list);
 	}
-	
+
 	public static IList<T> FreezeList<T>(IList<T> list)
 	{
 		if (list == null || list.Count == 0)
@@ -65,19 +65,19 @@ namespace AvaloniaEdit.Utils;
 			return new ReadOnlyCollection<T>(list.ToArray());
 		}
 	}
-	
+
 	public static void Freeze(object item)
 	{
 		var f = item as IFreezable;
 		f?.Freeze();
 	}
-	
+
 	public static T FreezeAndReturn<T>(T item) where T : IFreezable
 	{
 		item.Freeze();
 		return item;
 	}
-	
+
 	/// <summary>
 	/// If the item is not frozen, this method creates and returns a frozen clone.
 	/// If the item is already frozen, it is returned without creating a clone.
@@ -109,7 +109,7 @@ namespace AvaloniaEdit.Utils;
 			IsFrozen = true;
 		}
 	}
-	
+
 	protected virtual void FreezeInternal()
 	{
 	}

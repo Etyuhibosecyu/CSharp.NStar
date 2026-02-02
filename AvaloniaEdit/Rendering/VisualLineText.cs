@@ -77,12 +77,12 @@ public class VisualLineText(VisualLine parentVisualLine, int length) : VisualLin
 		ArgumentNullException.ThrowIfNull(context);
 
 		var relativeOffset = visualColumnLimit - VisualColumn;
-		
+
 		var text = context.GetText(context.VisualLine.FirstDocumentLine.Offset + RelativeTextOffset, relativeOffset);
-		
+
 		return text.Text.AsMemory().Slice(text.Offset, text.Count);
 	}
-	
+
 	/// <inheritdoc/>
 	public override bool CanSplit => true;
 

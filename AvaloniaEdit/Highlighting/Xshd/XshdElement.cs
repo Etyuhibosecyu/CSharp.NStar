@@ -27,12 +27,12 @@ public abstract class XshdElement
 	/// Gets the line number in the .xshd file.
 	/// </summary>
 	public int LineNumber { get; set; }
-	
+
 	/// <summary>
 	/// Gets the column number in the .xshd file.
 	/// </summary>
 	public int ColumnNumber { get; set; }
-	
+
 	/// <summary>
 	/// Applies the visitor to this element.
 	/// </summary>

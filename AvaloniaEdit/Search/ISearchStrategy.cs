@@ -36,7 +36,7 @@ public interface ISearchStrategy : IEquatable<ISearchStrategy>
 	/// (e.g. if two results are returned, EndOffset of first result must be less than or equal StartOffset of second result).
 	/// </remarks>
 	IEnumerable<ISearchResult> FindAll(ITextSource document, int offset, int length);
-	
+
 	/// <summary>
 	/// Finds the next match in the given ITextSource and the given range.
 	/// </summary>
@@ -81,12 +81,12 @@ public class SearchPatternException : Exception
 	public SearchPatternException()
 	{
 	}
-	
+
 	/// <inheritdoc/>
 	public SearchPatternException(string message) : base(message)
 	{
 	}
-	
+
 	/// <inheritdoc/>
 	public SearchPatternException(string message, Exception innerException) : base(message, innerException)
 	{

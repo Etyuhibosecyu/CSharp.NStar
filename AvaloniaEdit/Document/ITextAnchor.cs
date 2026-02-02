@@ -50,13 +50,13 @@ public interface ITextAnchor
 	/// </summary>
 	/// <exception cref="InvalidOperationException">Thrown when trying to get the Offset from a deleted anchor.</exception>
 	TextLocation Location { get; }
-	
+
 	/// <summary>
 	/// Gets the offset of the text anchor.
 	/// </summary>
 	/// <exception cref="InvalidOperationException">Thrown when trying to get the Offset from a deleted anchor.</exception>
 	int Offset { get; }
-	
+
 	/// <summary>
 	/// Controls how the anchor moves.
 	/// </summary>
@@ -65,7 +65,7 @@ public interface ITextAnchor
 	/// The property <see cref="MovementType"/> will be used to determine which of these two options the anchor will choose.
 	/// The default value is <see cref="AnchorMovementType.Default"/>.</remarks>
 	AnchorMovementType MovementType { get; set; }
-	
+
 	/// <summary>
 	/// <para>
 	/// Specifies whether the anchor survives deletion of the text containing it.
@@ -76,7 +76,7 @@ public interface ITextAnchor
 	/// </summary>
 	/// <remarks><inheritdoc cref="IsDeleted" /></remarks>
 	bool SurviveDeletion { get; set; }
-	
+
 	/// <summary>
 	/// Gets whether the anchor was deleted.
 	/// </summary>
@@ -89,7 +89,7 @@ public interface ITextAnchor
 	/// but in other cases you want to still be able to use the anchor. For those cases, set <c><see cref="SurviveDeletion"/> = true</c>.</para>
 	/// </remarks>
 	bool IsDeleted { get; }
-	
+
 	/// <summary>
 	/// Occurs after the anchor was deleted.
 	/// </summary>
@@ -100,13 +100,13 @@ public interface ITextAnchor
 	/// </para>
 	/// </remarks>
 	event EventHandler Deleted;
-	
+
 	/// <summary>
 	/// Gets the line number of the anchor.
 	/// </summary>
 	/// <exception cref="InvalidOperationException">Thrown when trying to get the Offset from a deleted anchor.</exception>
 	int Line { get; }
-	
+
 	/// <summary>
 	/// Gets the column number of this anchor.
 	/// </summary>

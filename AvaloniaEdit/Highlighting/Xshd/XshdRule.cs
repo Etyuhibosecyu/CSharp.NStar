@@ -27,12 +27,12 @@ public class XshdRule : XshdElement
 	/// Gets/sets the rule regex.
 	/// </summary>
 	public string Regex { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the rule regex type.
 	/// </summary>
 	public XshdRegexType RegexType { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the color reference.
 	/// </summary>

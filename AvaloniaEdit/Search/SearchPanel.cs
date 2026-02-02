@@ -442,7 +442,7 @@ namespace AvaloniaEdit.Search;
 			{
 				_textArea.ClearSelection();
 			}
-			
+
 			if (!string.IsNullOrEmpty(SearchPattern))
 			{
 				// We cast from ISearchResult to SearchResult; this is safe because we always use the built-in strategy
@@ -565,7 +565,7 @@ namespace AvaloniaEdit.Search;
 			_messageView?.IsVisible = false;
 
 			_textArea.TextView.BackgroundRenderers.Remove(_renderer);
-			
+
 			IsClosed = true;
 
 			// Clear existing search results so that the segments don't have to be maintained
@@ -608,7 +608,7 @@ namespace AvaloniaEdit.Search;
 
 			base.OnGotFocus(e);
 		}
-		
+
 		private static int GetSearchResultIndex(TextSegmentCollection<SearchResult> searchResults, SearchResult match)
 		{
 			var index = 0;
@@ -616,7 +616,7 @@ namespace AvaloniaEdit.Search;
 			{
 				if (searchResult.Equals(match))
 					return index;
-				
+
 				index++;
 			}
 

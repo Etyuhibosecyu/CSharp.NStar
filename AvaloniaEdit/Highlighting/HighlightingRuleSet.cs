@@ -34,17 +34,17 @@ public class HighlightingRuleSet
 		Spans = new NullSafeCollection<HighlightingSpan>();
 		Rules = new NullSafeCollection<HighlightingRule>();
 	}
-	
+
 	/// <summary>
 	/// Gets/Sets the name of the rule set.
 	/// </summary>
 	public string Name { get; set; }
-	
+
 	/// <summary>
 	/// Gets the list of spans.
 	/// </summary>
 	public IList<HighlightingSpan> Spans { get; }
-	
+
 	/// <summary>
 	/// Gets the list of rules.
 	/// </summary>

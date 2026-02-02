@@ -40,12 +40,12 @@ public class HtmlOptions
 		ArgumentNullException.ThrowIfNull(options);
 		TabSize = options.IndentationSize;
 	}
-	
+
 	/// <summary>
 	/// The amount of spaces a tab gets converted to.
 	/// </summary>
 	public int TabSize { get; set; }
-	
+
 	/// <summary>
 	/// Writes the HTML attribute for the style to the text writer.
 	/// </summary>
@@ -57,7 +57,7 @@ public class HtmlOptions
 		writer.Write(WebUtility.HtmlEncode(color.ToCss()));
 		writer.Write('"');
 	}
-	
+
 	/// <summary>
 	/// Gets whether the color needs to be written out to HTML.
 	/// </summary>

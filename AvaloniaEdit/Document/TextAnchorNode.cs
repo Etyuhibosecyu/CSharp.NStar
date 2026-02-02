@@ -42,7 +42,7 @@ internal sealed class TextAnchorNode(TextAnchor anchor) : WeakReference(anchor)
 			return node;
 		}
 	}
-	
+
 	internal TextAnchorNode RightMost {
 		get {
 			var node = this;
@@ -51,7 +51,7 @@ internal sealed class TextAnchorNode(TextAnchor anchor) : WeakReference(anchor)
 			return node;
 		}
 	}
-	
+
 	/// <summary>
 	/// Gets the inorder successor of the node.
 	/// </summary>
@@ -71,7 +71,7 @@ internal sealed class TextAnchorNode(TextAnchor anchor) : WeakReference(anchor)
 			}
 		}
 	}
-	
+
 	/// <summary>
 	/// Gets the inorder predecessor of the node.
 	/// </summary>

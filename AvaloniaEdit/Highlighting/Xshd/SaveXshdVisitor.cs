@@ -49,22 +49,22 @@ public sealed class SaveXshdVisitor(XmlWriter writer) : IXshdVisitor
 			_writer.WriteAttributeString("name", definition.Name);
 		if (definition.Extensions != null)
 			_writer.WriteAttributeString("extensions", string.Join(";", definition.Extensions.ToArray()));
-		
+
 		definition.AcceptElements(this);
-		
+
 		_writer.WriteEndElement();
 	}
-	
+
 	object IXshdVisitor.VisitRuleSet(XshdRuleSet ruleSet)
 	{
 		_writer.WriteStartElement("RuleSet", Namespace);
-		
+
 		if (ruleSet.Name != null)
 			_writer.WriteAttributeString("name", ruleSet.Name);
 		WriteBoolAttribute("ignoreCase", ruleSet.IgnoreCase);
-		
+
 		ruleSet.AcceptElements(this);
-		
+
 		_writer.WriteEndElement();
 		return null;
 	}
@@ -109,7 +109,7 @@ public sealed class SaveXshdVisitor(XmlWriter writer) : IXshdVisitor
 		if (color.FontStyle != null)
 			_writer.WriteAttributeString("fontStyle", color.FontStyle.Value.ToString().ToLowerInvariant());
 	}
-	
+
 	object IXshdVisitor.VisitColor(XshdColor color)
 	{
 		_writer.WriteStartElement("Color", Namespace);
@@ -121,7 +121,7 @@ public sealed class SaveXshdVisitor(XmlWriter writer) : IXshdVisitor
 		_writer.WriteEndElement();
 		return null;
 	}
-	
+
 	object IXshdVisitor.VisitKeywords(XshdKeywords keywords)
 	{
 		_writer.WriteStartElement("Keywords", Namespace);
@@ -132,7 +132,7 @@ public sealed class SaveXshdVisitor(XmlWriter writer) : IXshdVisitor
 		_writer.WriteEndElement();
 		return null;
 	}
-	
+
 	object IXshdVisitor.VisitSpan(XshdSpan span)
 	{
 		_writer.WriteStartElement("Span", Namespace);
@@ -144,7 +144,7 @@ public sealed class SaveXshdVisitor(XmlWriter writer) : IXshdVisitor
 		WriteRuleSetReference(span.RuleSetReference);
 		if (span.Multiline)
 			_writer.WriteAttributeString("multiline", "true");
-		
+
 		if (span.BeginRegexType == XshdRegexType.IgnorePatternWhitespace)
 			WriteBeginEndElement("Begin", span.BeginRegex, span.BeginColorReference);
 		if (span.EndRegexType == XshdRegexType.IgnorePatternWhitespace)
@@ -165,7 +165,7 @@ public sealed class SaveXshdVisitor(XmlWriter writer) : IXshdVisitor
 			_writer.WriteEndElement();
 		}
 	}
-	
+
 	object IXshdVisitor.VisitImport(XshdImport import)
 	{
 		_writer.WriteStartElement("Import", Namespace);
@@ -173,14 +173,14 @@ public sealed class SaveXshdVisitor(XmlWriter writer) : IXshdVisitor
 		_writer.WriteEndElement();
 		return null;
 	}
-	
+
 	object IXshdVisitor.VisitRule(XshdRule rule)
 	{
 		_writer.WriteStartElement("Rule", Namespace);
 		WriteColorReference(rule.ColorReference);
-		
+
 		_writer.WriteString(rule.Regex);
-		
+
 		_writer.WriteEndElement();
 		return null;
 	}

@@ -177,12 +177,12 @@ namespace AvaloniaEdit.Rendering;
 		node.LineNode.CollapsedSections = null;
 		EndRemoval();
 	}
-	
+
 //		void ILineTracker.AfterRemoveLine(DocumentLine line)
 //		{
 //
 //		}
-	
+
 	void ILineTracker.LineInserted(DocumentLine insertionPos, DocumentLine newLine)
 	{
 		InsertAfter(GetNode(insertionPos), newLine);

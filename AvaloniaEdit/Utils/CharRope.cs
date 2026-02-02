@@ -34,7 +34,7 @@ public static class CharRope
 		ArgumentNullException.ThrowIfNull(text);
 		return new Rope<char>(InitFromString(text));
 	}
-	
+
 	/// <summary>
 	/// Retrieves the text for a portion of the rope.
 	/// Runs in O(lg N + M), where M=<paramref name="length"/>.
@@ -52,7 +52,7 @@ public static class CharRope
 		#endif
 		if (length == 0)
 			return string.Empty;
-		
+
 #if NET6_0_OR_GREATER
 		return string.Create(length, (rope, startIndex, length), (dest, x) =>
 			x.rope.CopyTo(x.startIndex, dest, 0, x.length));
@@ -62,7 +62,7 @@ public static class CharRope
 		return new string(buffer);
 #endif
 	}
-	
+
 	/// <summary>
 	/// Retrieves the text for a portion of the rope and writes it to the specified text writer.
 	/// Runs in O(lg N + M), where M=<paramref name="length"/>.
@@ -106,7 +106,7 @@ public static class CharRope
 		rope.root = rope.root.Insert(index, text);
 		rope.OnChanged();*/
 	}
-	
+
 	internal static RopeNode<char> InitFromString(string text)
 	{
 		if (text.Length == 0) {
@@ -126,7 +126,7 @@ public static class CharRope
 			FillNode(node.Right, text, start + node.Left.Length);
 		}
 	}
-	
+
 	internal static void WriteTo(this RopeNode<char> node, int index, TextWriter output, int count)
 	{
 		if (node.Height == 0) {
@@ -150,7 +150,7 @@ public static class CharRope
 			}
 		}
 	}
-	
+
 	/// <summary>
 	/// Gets the index of the first occurrence of any element in the specified array.
 	/// </summary>
@@ -164,7 +164,7 @@ public static class CharRope
 		ArgumentNullException.ThrowIfNull(rope);
 		ArgumentNullException.ThrowIfNull(anyOf);
 		rope.VerifyRange(startIndex, length);
-		
+
 		while (length > 0) {
 			var entry = rope.FindNodeUsingCache(startIndex).PeekOrDefault();
 			var contents = entry.Node.Contents;
@@ -182,7 +182,7 @@ public static class CharRope
 		}
 		return -1;
 	}
-	
+
 	/// <summary>
 	/// Gets the index of the first occurrence of the search text.
 	/// </summary>
@@ -197,7 +197,7 @@ public static class CharRope
 		else
 			return pos + startIndex;
 	}
-	
+
 	/// <summary>
 	/// Gets the index of the last occurrence of the search text.
 	/// </summary>

@@ -27,7 +27,7 @@ public class XshdProperty : XshdElement
 	/// Gets/sets the name.
 	/// </summary>
 	public string Name { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the value.
 	/// </summary>

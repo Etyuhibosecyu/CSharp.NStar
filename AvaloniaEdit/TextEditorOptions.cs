@@ -719,7 +719,7 @@ namespace AvaloniaEdit;
 			{
 				if (value <= 0 || double.IsNaN(value) || double.IsInfinity(value))
 					throw new ArgumentOutOfRangeException(nameof(value), value, "value must be a positive number");
-				
+
 				if (field != value)
 				{
 					field = value;

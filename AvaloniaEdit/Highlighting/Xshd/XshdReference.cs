@@ -49,7 +49,7 @@ public struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElem
 		ReferencedElement = referencedElement ?? throw new ArgumentNullException(nameof(referencedElement));
 		InlineElement = null;
 	}
-	
+
 	/// <summary>
 	/// Creates a new XshdReference instance.
 	/// </summary>
@@ -100,7 +100,7 @@ public struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElem
 	{
 		return left.Equals(right);
 	}
-	
+
 	/// <summary>
 	/// Inequality operator.
 	/// </summary>

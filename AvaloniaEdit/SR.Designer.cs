@@ -9,8 +9,8 @@
 
 namespace AvaloniaEdit {
 	using System;
-	
-	
+
+
 	/// <summary>
 	///   A strongly-typed resource class, for looking up localized strings, etc.
 	/// </summary>
@@ -22,15 +22,15 @@ namespace AvaloniaEdit {
 	[global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
 	[global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
 	public class SR {
-		
+
 		private static global::System.Resources.ResourceManager resourceMan;
-		
+
 		private static global::System.Globalization.CultureInfo resourceCulture;
-		
+
 		[global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
 		internal SR() {
 		}
-		
+
 		/// <summary>
 		///   Returns the cached ResourceManager instance used by this class.
 		/// </summary>
@@ -44,7 +44,7 @@ namespace AvaloniaEdit {
 				return resourceMan;
 			}
 		}
-		
+
 		/// <summary>
 		///   Overrides the current thread's CurrentUICulture property for all
 		///   resource lookups using this strongly typed resource class.
@@ -58,7 +58,7 @@ namespace AvaloniaEdit {
 				resourceCulture = value;
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to Replace....
 		/// </summary>
@@ -67,7 +67,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("ReplaceLabel", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to 1 match.
 		/// </summary>
@@ -76,7 +76,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("Search1Match", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to Error: .
 		/// </summary>
@@ -85,7 +85,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("SearchErrorText", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to Find next (F3).
 		/// </summary>
@@ -94,7 +94,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("SearchFindNextText", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to Find previous (Shift+F3).
 		/// </summary>
@@ -103,7 +103,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("SearchFindPreviousText", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to Find....
 		/// </summary>
@@ -112,7 +112,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("SearchLabel", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to Match case.
 		/// </summary>
@@ -121,7 +121,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("SearchMatchCaseText", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to Match whole words.
 		/// </summary>
@@ -130,7 +130,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("SearchMatchWholeWordsText", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to No matches found.
 		/// </summary>
@@ -139,7 +139,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("SearchNoMatchesFoundText", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to Replace all (Alt+A).
 		/// </summary>
@@ -148,7 +148,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("SearchReplaceAll", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to Replace next (Alt+R).
 		/// </summary>
@@ -157,7 +157,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("SearchReplaceNext", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to Toggle between find and replace modes.
 		/// </summary>
@@ -166,7 +166,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("SearchToggleReplace", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to Use regular expressions.
 		/// </summary>
@@ -175,7 +175,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("SearchUseRegexText", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to {0} matches.
 		/// </summary>
@@ -184,7 +184,7 @@ namespace AvaloniaEdit {
 				return ResourceManager.GetString("SearchXMatches", resourceCulture);
 			}
 		}
-		
+
 		/// <summary>
 		///   Looks up a localized string similar to {0} of {1}.
 		/// </summary>

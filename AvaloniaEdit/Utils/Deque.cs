@@ -41,7 +41,7 @@ internal sealed class Deque<T> : ICollection<T>
 		_head = 0;
 		_tail = 0;
 	}
-	
+
 	/// <summary>
 	/// Gets/Sets an element inside the deque.
 	/// </summary>
@@ -67,7 +67,7 @@ internal sealed class Deque<T> : ICollection<T>
 		if (_tail == _arr.Length) _tail = 0;
 		Count++;
 	}
-	
+
 	/// <summary>
 	/// Pops an element from the end of the deque.
 	/// </summary>
@@ -84,7 +84,7 @@ internal sealed class Deque<T> : ICollection<T>
 		Count--;
 		return val;
 	}
-	
+
 	/// <summary>
 	/// Adds an element to the front of the deque.
 	/// </summary>
@@ -99,7 +99,7 @@ internal sealed class Deque<T> : ICollection<T>
 		_arr[_head] = item;
 		Count++;
 	}
-	
+
 	/// <summary>
 	/// Pops an element from the end of the deque.
 	/// </summary>
@@ -123,7 +123,7 @@ internal sealed class Deque<T> : ICollection<T>
 		_tail = (Count == capacity) ? 0 : Count;
 		_arr = newArr;
 	}
-	
+
 	/// <inheritdoc/>
 	public IEnumerator<T> GetEnumerator()
 	{
@@ -153,7 +153,7 @@ internal sealed class Deque<T> : ICollection<T>
 				return true;
 		return false;
 	}
-	
+
 	/// <inheritdoc/>
 	public void CopyTo(T[] array, int arrayIndex)
 	{

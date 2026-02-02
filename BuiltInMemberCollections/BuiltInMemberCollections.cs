@@ -1208,6 +1208,6 @@ public class GUIWindow : Window
 				HorizontalAlignment="Stretch"
 				VerticalAlignment="Stretch" />
 		</Window>
-												
+
 		"""));
 }

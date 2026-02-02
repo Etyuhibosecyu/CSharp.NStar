@@ -111,7 +111,7 @@ internal sealed class VisualLineTextSource(VisualLine visualLine) : ITextSource,
 					return span;
 				}
 			}
-			
+
 			return ReadOnlyMemory<char>.Empty;
 		} catch (Exception ex) {
 			Debug.WriteLine(ex.ToString());

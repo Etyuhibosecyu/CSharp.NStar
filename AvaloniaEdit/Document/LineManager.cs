@@ -55,7 +55,7 @@ namespace AvaloniaEdit.Document;
 	HashSet<DocumentLine> deletedLines = new HashSet<DocumentLine>();
 	readonly HashSet<DocumentLine> changedLines = new HashSet<DocumentLine>();
 	HashSet<DocumentLine> deletedOrChangedLines = new HashSet<DocumentLine>();
-	
+
 	/// <summary>
 	/// Gets the list of lines deleted since the last RetrieveChangedLines() call.
 	/// The returned list is unsorted.
@@ -66,7 +66,7 @@ namespace AvaloniaEdit.Document;
 		deletedLines = new HashSet<DocumentLine>();
 		return r;
 	}
-	
+
 	/// <summary>
 	/// Gets the list of lines changed since the last RetrieveChangedLines() call.
 	/// The returned list is sorted by line number and does not contain deleted lines.
@@ -81,7 +81,7 @@ namespace AvaloniaEdit.Document;
 		changedLines.Clear();
 		return list;
 	}
-	
+
 	/// <summary>
 	/// Gets the list of lines changed since the last RetrieveDeletedOrChangedLines() call.
 	/// The returned list is not sorted.

@@ -110,7 +110,7 @@ namespace AvaloniaEdit;
 		public static RoutedCommand Redo { get; } = new RoutedCommand(nameof(Redo), new KeyGesture(Key.Y, PlatformCommandKey));
 		public static RoutedCommand Find { get; } = new RoutedCommand(nameof(Find), new KeyGesture(Key.F, PlatformCommandKey));
 		public static RoutedCommand Replace { get; } = new RoutedCommand(nameof(Replace), GetReplaceKeyGesture());
-		
+
 		private static KeyModifiers GetPlatformCommandKey()
 		{			
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))

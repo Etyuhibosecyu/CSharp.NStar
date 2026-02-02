@@ -28,7 +28,7 @@ public interface ITextViewConnect
 	/// Called when added to a text view.
 	/// </summary>
 	void AddToTextView(TextView textView);
-	
+
 	/// <summary>
 	/// Called when removed from a text view.
 	/// </summary>

@@ -42,42 +42,42 @@ public class XshdSpan : XshdElement
 	/// Gets/sets the begin regex.
 	/// </summary>
 	public string BeginRegex { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the begin regex type.
 	/// </summary>
 	public XshdRegexType BeginRegexType { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the end regex.
 	/// </summary>
 	public string EndRegex { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the end regex type.
 	/// </summary>
 	public XshdRegexType EndRegexType { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets whether the span is multiline.
 	/// </summary>
 	public bool Multiline { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the rule set reference.
 	/// </summary>
 	public XshdReference<XshdRuleSet> RuleSetReference { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the span color.
 	/// </summary>
 	public XshdReference<XshdColor> SpanColorReference { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the span begin color.
 	/// </summary>
 	public XshdReference<XshdColor> BeginColorReference { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the span end color.
 	/// </summary>

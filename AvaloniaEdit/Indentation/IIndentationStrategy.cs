@@ -30,7 +30,7 @@ public interface IIndentationStrategy
 	/// Usually this is constructed from the indentation of the previous line.
 	/// </summary>
 	void IndentLine(TextDocument document, DocumentLine line);
-	
+
 	/// <summary>
 	/// Reindents a set of lines.
 	/// </summary>

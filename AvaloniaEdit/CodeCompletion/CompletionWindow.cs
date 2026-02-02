@@ -96,17 +96,17 @@ namespace AvaloniaEdit.CodeCompletion;
 
 			var item = CompletionList.SelectedItem;
 			var description = item?.Description;
-			
-	
+
+
 			if (description != null && Host is Control placementTarget && CompletionList.CurrentList != null)
 			{
 				_toolTipContent.Content = description;
 
 				double yOffset = 0;
 				var selectedIndex = CompletionList.ListBox.SelectedIndex;
-					
+
 				var itemContainer = CompletionList.ListBox.ContainerFromIndex(selectedIndex);
-					
+
 				if (itemContainer != null)
 				{
 					_toolTip.Placement = PlacementMode.RightEdgeAlignedTop;

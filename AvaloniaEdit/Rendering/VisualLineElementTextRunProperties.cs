@@ -64,7 +64,7 @@ public class VisualLineElementTextRunProperties : TextRunProperties, ICloneable
 		_foregroundBrush = textRunProperties.ForegroundBrush;
 		_typeface = textRunProperties.Typeface;
 		_textDecorations = textRunProperties.TextDecorations;
-		
+
 		/*if (textDecorations != null && !textDecorations.IsFrozen) {
 			textDecorations = textDecorations.Clone();
 		}*/

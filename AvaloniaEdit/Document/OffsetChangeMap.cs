@@ -97,7 +97,7 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 	public OffsetChangeMap()
 	{
 	}
-	
+
 	internal OffsetChangeMap(int capacity)
 		: base(new List<OffsetChangeMapEntry>(capacity))
 	{
@@ -118,7 +118,7 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 		}
 		return offset;
 	}
-	
+
 	/// <summary>
 	/// Gets whether this OffsetChangeMap is a valid explanation for the specified document change.
 	/// </summary>
@@ -134,7 +134,7 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 		// check that the total delta matches
 		return endOffset == offset + insertionLength;
 	}
-	
+
 	/// <summary>
 	/// Calculates the inverted OffsetChangeMap (used for the undo operation).
 	/// </summary>
@@ -150,28 +150,28 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 		}
 		return newMap;
 	}
-	
+
 	/// <inheritdoc/>
 	protected override void ClearItems()
 	{
 		CheckFrozen();
 		base.ClearItems();
 	}
-	
+
 	/// <inheritdoc/>
 	protected override void InsertItem(int index, OffsetChangeMapEntry item)
 	{
 		CheckFrozen();
 		base.InsertItem(index, item);
 	}
-	
+
 	/// <inheritdoc/>
 	protected override void RemoveItem(int index)
 	{
 		CheckFrozen();
 		base.RemoveItem(index);
 	}
-	
+
 	/// <inheritdoc/>
 	protected override void SetItem(int index, OffsetChangeMapEntry item)
 	{
@@ -204,10 +204,10 @@ public struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
 {
 	// MSB: DefaultAnchorMovementIsBeforeInsertion
 	private readonly uint _insertionLengthWithMovementFlag;
-	
+
 	// MSB: RemovalNeverCausesAnchorDeletion; other 31 bits: RemovalLength
 	private readonly uint _removalLengthWithDeletionFlag;
-	
+
 	/// <summary>
 	/// The offset at which the change occurs.
 	/// </summary>
@@ -246,7 +246,7 @@ public struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
 			// we're getting trouble (both if statements in here would apply)
 			// if there's no removal and we insert at the offset
 			// -> we'd need to disambiguate by movementType, which is handled after the if
-			
+
 			// offset is before start of change: no movement
 			if (oldOffset <= Offset)
 				return oldOffset;
@@ -263,7 +263,7 @@ public struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
 			return Offset;
 		return DefaultAnchorMovementIsBeforeInsertion ? Offset : Offset + insertionLength;
 	}
-	
+
 	/// <summary>
 	/// Creates a new OffsetChangeMapEntry instance.
 	/// </summary>
@@ -272,12 +272,12 @@ public struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
 		ThrowUtil.CheckNotNegative(offset, "offset");
 		ThrowUtil.CheckNotNegative(removalLength, "removalLength");
 		ThrowUtil.CheckNotNegative(insertionLength, "insertionLength");
-		
+
 		Offset = offset;
 		_removalLengthWithDeletionFlag = (uint)removalLength;
 		_insertionLengthWithMovementFlag = (uint)insertionLength;
 	}
-	
+
 	/// <summary>
 	/// Creates a new OffsetChangeMapEntry instance.
 	/// </summary>
@@ -289,7 +289,7 @@ public struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
 		if (defaultAnchorMovementIsBeforeInsertion)
 			_insertionLengthWithMovementFlag |= 0x80000000;
 	}
-	
+
 	/// <inheritdoc/>
 	public override int GetHashCode()
 	{
@@ -311,7 +311,7 @@ public struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
 	{
 		return left.Equals(right);
 	}
-	
+
 	/// <summary>
 	/// Tests the two entries for inequality.
 	/// </summary>

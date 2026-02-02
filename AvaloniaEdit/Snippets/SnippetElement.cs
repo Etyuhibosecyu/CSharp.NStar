@@ -27,7 +27,7 @@ public abstract class SnippetElement
 	/// Performs insertion of the snippet.
 	/// </summary>
 	public abstract void Insert(InsertionContext context);
-	
+
 	///// <summary>
 	///// Converts the snippet to text, with replaceable fields in italic.
 	///// </summary>

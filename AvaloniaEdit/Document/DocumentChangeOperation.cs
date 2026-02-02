@@ -36,7 +36,7 @@ internal sealed class DocumentChangeOperation(TextDocument document, DocumentCha
 		Undo();
 		stack.State = UndoStack.StatePlayback;
 	}
-	
+
 	public void Redo(UndoStack stack)
 	{
 		Debug.Assert(stack.State == UndoStack.StatePlayback);
@@ -45,7 +45,7 @@ internal sealed class DocumentChangeOperation(TextDocument document, DocumentCha
 		Redo();
 		stack.State = UndoStack.StatePlayback;
 	}
-	
+
 	public void Undo()
 	{
 		var map = _change.OffsetChangeMapOrNull;

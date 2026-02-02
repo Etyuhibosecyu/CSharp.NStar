@@ -6343,7 +6343,7 @@ public static async Task<dynamic?> F(params dynamic?[] args)
 
 				return null;
 			}
-			
+
 				public static void Main(string[] args)
 				{
 					Program.args = args;
@@ -6393,7 +6393,7 @@ public static async Task<dynamic?> F(params dynamic?[] args)
 					base.OnFrameworkInitializationCompleted();
 				}
 			}
-						
+
 			"""");
 
 	private static (byte[] Bytes, List<String> ErrorsList) CompileProgram((String s, List<String>? errors,

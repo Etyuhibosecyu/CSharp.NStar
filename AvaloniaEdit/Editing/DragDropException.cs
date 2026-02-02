@@ -34,14 +34,14 @@ public class DragDropException : Exception
 	public DragDropException()
 	{
 	}
-	
+
 	/// <summary>
 	/// Creates a new DragDropException.
 	/// </summary>
 	public DragDropException(string message) : base(message)
 	{
 	}
-	
+
 	/// <summary>
 	/// Creates a new DragDropException.
 	/// </summary>

@@ -32,14 +32,14 @@ public class VisualLinesInvalidException  : Exception
 	public VisualLinesInvalidException()
 	{
 	}
-	
+
 	/// <summary>
 	/// Creates a new VisualLinesInvalidException instance.
 	/// </summary>
 	public VisualLinesInvalidException(string message) : base(message)
 	{
 	}
-	
+
 	/// <summary>
 	/// Creates a new VisualLinesInvalidException instance.
 	/// </summary>

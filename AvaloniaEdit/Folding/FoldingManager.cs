@@ -343,7 +343,7 @@ namespace AvaloniaEdit.Folding;
 			textEditor.TextArea.TextView.ElementGenerators.Add(foldingGenerator);
 			textEditor.TextArea.LeftMargins.Add(foldingMarginBorder);
 		}
-		
+
 		void UpdateTextViewClip(object sender, SizeChangedEventArgs e)
 		{
 			textEditor.TextArea.TextView.Clip = new RectangleGeometry(

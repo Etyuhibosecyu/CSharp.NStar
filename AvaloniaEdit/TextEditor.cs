@@ -76,7 +76,7 @@ namespace AvaloniaEdit;
 		/// </summary>
 		protected TextEditor(TextArea textArea) : this(textArea, new TextDocument())
 		{
-			
+
 		}
 
 		protected TextEditor(TextArea textArea, TextDocument document)
@@ -588,7 +588,7 @@ namespace AvaloniaEdit;
 		}
 
 		#endregion
-		
+
 		#region LineNumbersMargin
 		/// <summary>
 		/// LineNumbersMargin dependency property.

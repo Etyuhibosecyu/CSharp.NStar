@@ -40,7 +40,7 @@ public struct StringSegment : IEquatable<StringSegment>
 		Offset = offset;
 		Count = count;
 	}
-	
+
 	/// <summary>
 	/// Creates a new StringSegment.
 	/// </summary>
@@ -50,7 +50,7 @@ public struct StringSegment : IEquatable<StringSegment>
 		Offset = 0;
 		Count = text.Length;
 	}
-	
+
 	/// <summary>
 	/// Gets the string used for this segment.
 	/// </summary>
@@ -90,7 +90,7 @@ public struct StringSegment : IEquatable<StringSegment>
 	{
 		return left.Equals(right);
 	}
-	
+
 	/// <summary>
 	/// Inequality operator.
 	/// </summary>

@@ -44,13 +44,13 @@ public abstract class VisualLineElementGenerator
 	/// Should only be used by VisualLine.ConstructVisualElements.
 	/// </summary>
 	internal int CachedInterest;
-	
+
 	/// <summary>
 	/// Gets the first offset >= startOffset where the generator wants to construct an element.
 	/// Return -1 to signal no interest.
 	/// </summary>
 	public abstract int GetFirstInterestedOffset(int startOffset);
-	
+
 	/// <summary>
 	/// Constructs an element at the specified offset.
 	/// May return null if no element should be constructed.

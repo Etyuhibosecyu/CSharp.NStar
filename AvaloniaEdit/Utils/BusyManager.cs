@@ -25,9 +25,9 @@ namespace AvaloniaEdit.Utils;
 
 		public void Dispose() => _objectList?.RemoveAt(_objectList.Count - 1);
 	}
-	
+
 		[ThreadStatic] private static List<object> _activeObjects;
-	
+
 		public static BusyLock Enter(object obj)
 		{
 			var activeObjects = _activeObjects ??= [];

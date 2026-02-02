@@ -52,7 +52,7 @@ internal static class TextFormatterFactory
 			typeface = element.CreateTypeface();
 		emSize ??= TextElement.GetFontSize(element);
 		foreground ??= TextElement.GetForeground(element);
-		
+
 		return new FormattedText(
 			text,
 			CultureInfo.CurrentCulture,

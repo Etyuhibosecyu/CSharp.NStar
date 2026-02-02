@@ -61,10 +61,10 @@ public sealed class TextAnchor : ITextAnchor
 
 	/// <inheritdoc/>
 	public AnchorMovementType MovementType { get; set; }
-	
+
 	/// <inheritdoc/>
 	public bool SurviveDeletion { get; set; }
-	
+
 	/// <inheritdoc/>
 	public bool IsDeleted {
 		get {
@@ -72,16 +72,16 @@ public sealed class TextAnchor : ITextAnchor
 			return Node == null;
 		}
 	}
-	
+
 	/// <inheritdoc/>
 	public event EventHandler Deleted;
-	
+
 	internal void OnDeleted(DelayedEvents delayedEvents)
 	{
 		Node = null;
 		delayedEvents.DelayedRaise(Deleted, this, EventArgs.Empty);
 	}
-	
+
 	/// <summary>
 	/// Gets the offset of the text anchor.
 	/// </summary>
@@ -89,7 +89,7 @@ public sealed class TextAnchor : ITextAnchor
 	public int Offset {
 		get {
 			Document.DebugVerifyAccess();
-			
+
 			var n = Node ?? throw new InvalidOperationException();
 			var offset = n.Length;
 			if (n.Left != null)
@@ -105,7 +105,7 @@ public sealed class TextAnchor : ITextAnchor
 			return offset;
 		}
 	}
-	
+
 	/// <summary>
 	/// Gets the line number of the anchor.
 	/// </summary>
@@ -122,7 +122,7 @@ public sealed class TextAnchor : ITextAnchor
 			return offset - Document.GetLineByOffset(offset).Offset + 1;
 		}
 	}
-	
+
 	/// <summary>
 	/// Gets the text location of this anchor.
 	/// </summary>

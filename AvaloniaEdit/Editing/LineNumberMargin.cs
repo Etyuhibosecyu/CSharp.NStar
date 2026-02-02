@@ -93,12 +93,12 @@ namespace AvaloniaEdit.Editing;
 		);
 		return new Size(text.Width, 0);
 	}
-		
+
 	public override void Render(DrawingContext drawingContext)
 	{
 		var textView = TextView;
 		var renderSize = Bounds.Size;
-			
+
 		if (textView is {VisualLinesValid: true}) {
 			var foreground = GetValue(TextBlock.ForegroundProperty);
 			foreach (var line in textView.VisualLines) {

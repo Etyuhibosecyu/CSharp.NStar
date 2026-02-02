@@ -349,7 +349,7 @@ public sealed class Rope<T> : IList<T>, ICloneable
 			}
 		}
 	}
-	
+
 	/// <summary>
 	/// Gets whether two ropes have the same content.
 	/// Runs in O(N + M).
@@ -358,7 +358,7 @@ public sealed class Rope<T> : IList<T>, ICloneable
 	{
 		return Equals(obj as Rope);
 	}
-	
+
 	/// <summary>
 	/// Calculates the hash code of the rope's content.
 	/// Runs in O(N).

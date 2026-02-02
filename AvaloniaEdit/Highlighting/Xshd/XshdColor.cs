@@ -29,12 +29,12 @@ public class XshdColor : XshdElement
 	/// Gets/sets the name.
 	/// </summary>
 	public string Name { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the foreground brush.
 	/// </summary>
 	public HighlightingBrush Foreground { get; set; }
-	
+
 	/// <summary>
 	/// Gets/sets the background brush.
 	/// </summary>
@@ -69,7 +69,7 @@ public class XshdColor : XshdElement
 	/// Gets/sets the font style.
 	/// </summary>
 	public FontStyle? FontStyle { get; set; }
-	
+
 	/// <summary>
 	/// Gets/Sets the example text that demonstrates where the color is used.
 	/// </summary>
