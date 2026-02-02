@@ -39,7 +39,7 @@ public sealed partial class SemanticTree
 	private bool wreckOccurred, noAddAsync = true, containsAsync;
 	private readonly String compiledClasses = [];
 	private UserDefinedMethodOverload? currentFunction;
-	private int constantsDepth, indentationUnits;
+	private int constantsDepth, indentationUnits, unnamedIndex = 1;
 	private readonly Dictionary<String, String> prepassClasses = [];
 	private readonly ListHashSet<String> nestedPrepassClasses = [];
 	private readonly Dictionary<NStarType, String> parsedTypes = [];
@@ -171,6 +171,8 @@ public sealed partial class SemanticTree
 		var conditionReturns = false;
 		var nestedConditions = 0;
 		NStarType? extraToReturn = null;
+		var unnamedIndex = this.unnamedIndex;
+		this.unnamedIndex = 1;
 		for (var i = 0; i < branch.Length; i++)
 		{
 			var x = branch[i];
@@ -182,21 +184,21 @@ public sealed partial class SemanticTree
 			}
 			var indentationUnits = this.indentationUnits;
 			this.indentationUnits += (i != 0 && BranchOpeners.Contains(branch[i - 1].Name.ToString())
-				|| xName == nameof(Main) && branch.Length != 1 && x.Container == branch.Container)
+				|| xName == nameof(Main) && branch.Length != 1)
 				&& !(xName == nameof(Main) && x[0].Name.AsSpan() is "if" or "if!" && lexems[x[0].Pos].String == "while")
 				? 1 : 0;
 			if (this.indentationUnits > 5)
 			{
 				this.indentationUnits = indentationUnits;
-				GenerateMessage(ref errors, 0x9017, branch.Pos);
+				GenerateMessage(ref errors, 0x9017, x.Pos);
 				wreckOccurred = true;
 				return [];
 			}
 			else if (CreateVar(this.indentationUnits - lexems[x.Pos].Pos, out var indentsBalance) > 0
 				&& !(xName == "break" && lexems[x.Pos].String == "}"))
-				GenerateMessage(ref errors, 0x800D, branch.Pos);
+				GenerateMessage(ref errors, 0x800D, x.Pos);
 			else if (indentsBalance < 0 && !(x.Pos != 0 && lexems[x.Pos - 1].LineN == lexems[x.Pos].LineN))
-				GenerateMessage(ref errors, 0x800E, branch.Pos);
+				GenerateMessage(ref errors, 0x800E, x.Pos);
 			var parsedSubbranch = ParseAction(x.Name)(x, out var innerErrors);
 			this.indentationUnits = indentationUnits;
 			if (xName is nameof(Main) or "return")
@@ -216,6 +218,9 @@ public sealed partial class SemanticTree
 					break;
 				}
 			}
+			if (xName == nameof(Main) && x.Container != branch.Container
+				|| x.Name == nameof(Class) && x[^1].Container != branch.Container && x.Name != xName)
+				this.unnamedIndex++;
 			if (BranchOpeners.Contains(xName))
 				nestedConditions++;
 			if (xName is nameof(Main) or "return" && x.Extra is NStarType)
@@ -272,6 +277,7 @@ public sealed partial class SemanticTree
 			if (innerErrors != null)
 				AddRange(ref errors, innerErrors);
 		}
+		this.unnamedIndex = unnamedIndex;
 		if (thisBlockReturns)
 			branch.Extra ??= extraToReturn;
 		else if (branch.Parent != null && branch.Parent.Name.AsSpan() is not (nameof(Constructor) or nameof(Main))
@@ -789,7 +795,7 @@ public sealed partial class SemanticTree
 		if (branch[^1].Name != "null" && expr.AsSpan() is "_" or "default" or "default!" or "_ = default" or "_ = default!")
 		{
 			AddRange(ref errors, innerErrors);
-			branch[^1].Replace(new("null", branch.Pos, branch.EndPos, branch.Container) { Extra = NullType });
+			branch[^1].Replace(new("null", branch[^1].Pos, branch[^1].EndPos, branch[^1].Container) { Extra = NullType });
 			return result.AddRange("default!;");
 		}
 		else if (TypeEqualsToPrimitive(NStarType, "typename") && name == "typename")
@@ -1043,9 +1049,6 @@ public sealed partial class SemanticTree
 				branch.Extra = branch[0].Extra = NStarType = AssigningNStarType;
 			}
 			if (NStarType.MainType.Equals(DictionaryBlockStack) && branch.Parent[0].Name == nameof(List)
-				&& branch.Parent[0].Length == 1 && branch.Parent[0][0].Name == "ClassMain")
-				ClassMainToPolymorphClass(branch.Parent[0], ref errors, NStarType);
-			if (NStarType.MainType.Equals(DictionaryBlockStack) && branch.Parent[0].Name == nameof(List)
 				&& branch.Parent[0].Length == 1 && !(branch.Parent[0][0].Name == nameof(List) && branch.Parent[0][0].Length == 2
 				&& branch.Parent[0][0][0].Name.AsSpan() is "Pattern" or "type" or "Declaration")
 				&& branch.Parent[0][0].Name != "ClassMain")
@@ -1059,9 +1062,10 @@ public sealed partial class SemanticTree
 			else if (NStarType.MainType.Equals(DictionaryBlockStack) && branch.Parent[0].Name == nameof(Hypername)
 				&& branch.Parent[0].Length == 2 && branch.Parent[0][0].Name == "new type"
 				&& NStarType.Equals(branch.Parent[0][0].Extra) && branch.Parent[0][1].Name == nameof(ConstructorCall)
-				&& branch.Parent[0][1].Elements.All(x => x.Name == nameof(List) && x.Length == 2)
-				&& branch.Parent[0][1].Elements.Any(x => x[0].Name.AsSpan() is "Pattern" or "type" or "Declaration"))
-				branch.Parent[0] = new(nameof(List), branch.Parent[0][1].Elements);
+				&& (branch.Parent[0][1].Elements.All(x => x.Name == nameof(List) && x.Length == 2)
+				&& branch.Parent[0][1].Elements.Any(x => x[0].Name.AsSpan() is "Pattern" or "type" or "Declaration")
+				|| branch.Parent[0][1][0].Name == "ClassMain"))
+				branch.Parent[0] = new(nameof(List), branch.Parent[0][1].Elements, branch.Parent[0][1].Container);
 			else if (NStarType.MainType.Equals(DictionaryBlockStack) && branch.Parent[0].Name == nameof(Hypername)
 				&& branch.Parent[0].Length == 2 && branch.Parent[0][0].Name == "new type"
 				&& NStarType.Equals(branch.Parent[0][0].Extra) && branch.Parent[0][1].Name == nameof(ConstructorCall)
@@ -1073,6 +1077,9 @@ public sealed partial class SemanticTree
 				TreeBranch pattern = new("Pattern", [type, @null, new("or", branch.Parent[0].Pos, branch.Parent[0].Container)]);
 				branch.Parent[0] = new(nameof(List), new(nameof(List), [pattern, branch.Parent[0][1]]));
 			}
+			if (NStarType.MainType.Equals(DictionaryBlockStack) && branch.Parent[0].Name == nameof(List)
+				&& branch.Parent[0].Length == 1 && branch.Parent[0][0].Name == "ClassMain")
+				ClassMainToPolymorphClass(branch.Parent[0], ref errors, NStarType);
 			if (NStarType.MainType.Equals(DictionaryBlockStack) && branch.Parent[0].Name == nameof(List)
 				&& branch.Parent[0].Elements.All(x => x.Name == nameof(List) && x.Length == 2)
 				&& branch.Parent[0].Elements.Any(x => x[0].Name.AsSpan() is "Pattern" or "type" or "Declaration"))
@@ -4965,8 +4972,8 @@ public sealed partial class SemanticTree
 		{
 			var name = type.MainType.Peek().Name;
 			if (UserDefinedPolymorphTypeExists(branch.Container, name, out _)
-				|| CheckContainer(branch.Container, TempTypes.ContainsKey, out var matchingContainer)
-				&& TempTypes[matchingContainer].Any(x => x.Key == name))
+				|| CheckContainer(branch.Container, stack => TempTypes.TryGetValue(stack, out var containerTempTypes)
+				&& containerTempTypes.Any(x => x.Name == name), out _))
 				return name;
 			if (!((ConstantExists(new(new(type.MainType.SkipLast(1)), NoBranches), name, out var constant)
 				|| UserDefinedConstantExists(branch.Container, name, out constant, out _, out _))
@@ -5483,6 +5490,7 @@ public sealed partial class SemanticTree
 			if (!(branch[i][0].Name.AsSpan() is nameof(Declaration) or "Pattern" && branch[i][0].Length != 0
 				&& DictionaryNStarType.ExtraTypes[0].Extra is NStarType KeyNStarType))
 				continue;
+			String restrictionName = default!;
 			if (branch.Length == 1 && KeyNStarType.Equals(RecursiveType)
 				&& DictionaryNStarType.ExtraTypes[1].Extra is NStarType ValueNStarType
 				&& ValueNStarType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Other
@@ -5490,16 +5498,18 @@ public sealed partial class SemanticTree
 				&& ReferenceEquals(branch.Parent[0], branch) && branch.Parent[1].Name == nameof(Declaration)
 				&& branch.Parent[1].Length == 2 && branch.Parent[1][0].Name == "type"
 				&& DictionaryNStarType.Equals(branch.Parent[1][0].Extra) && branch.Parent[1][1].Name is var className
-				&& UnnamedTypeStartIndexes.TryGetValue(branch.Container, out var startIndex)
+				&& UnnamedTypeStartIndexes.TryGetValue(branch.Container, out var containerStartIndexes)
+				&& containerStartIndexes.Find(x => int.TryParse(x[1..].ToString(), out var otherUnnamedIndex)
+				&& otherUnnamedIndex == unnamedIndex) is var startIndex && startIndex != null
 				&& UserDefinedTypes.TryGetValue((branch.Container, startIndex), out var userDefinedType)
 				&& (branch[i][0].Name == nameof(Declaration) && branch[i][0].Length == 2
-				? branch[i][0][1].Name : branch[i][0].Name == "Pattern" && branch[i][0].Length == 3
+				? restrictionName = branch[i][0][1].Name : branch[i][0].Name == "Pattern" && branch[i][0].Length == 3
 				&& branch[i][0][2].Name == "or" && branch[i][0][1].Name == "null" && branch[i][0][0].Name == "type"
 				&& branch[i][0][0].Extra is NStarType RecursiveNStarType && RecursiveNStarType.Equals(RecursiveType)
-				&& CheckContainer(branch[i][0][0].Container, TempTypes.ContainsKey, out var matchingContainer)
-				&& TempTypes[matchingContainer].Find(x => branch[i][0][0].Pos >= x.Value.StartPos
-				&& branch[i][0][0].Pos < x.Value.EndPos) is var found && found.Key != null ? found.Key : [])
-				is var restrictionName && branch[i][1].Name == "ClassMain")
+				&& CheckContainer(branch.Container, stack => TempTypes.TryGetValue(stack, out var containerTempTypes)
+				&& containerTempTypes.Find(x => branch[i][0][0].Pos >= x.StartPos && branch[i][0][0].Pos < x.EndPos)
+				is var found && (restrictionName = found.Name) != null, out _) ? restrictionName : [])
+				is not null && branch[i][1].Name == "ClassMain")
 			{
 				userDefinedType.Restrictions.Insert(0, new ExtendedRestriction(false, KeyNStarType, restrictionName));
 				startIndex.Replace(className);
@@ -5515,8 +5525,8 @@ public sealed partial class SemanticTree
 				return;
 			}
 			var keyName = TempTypes.TryGetValue(branch[i].Container, out var containerTempTypes)
-				&& containerTempTypes.Find(x => branch[i].Pos >= x.Value.StartPos && branch[i].Pos < x.Value.EndPos)
-				is var kvp && kvp.Key != null ? kvp.Key : "key";
+				&& containerTempTypes.Find(x => branch[i].Pos >= x.StartPos && branch[i].Pos < x.EndPos)
+				is var kvp && kvp.Name != null ? kvp.Name : "key";
 			TreeBranch key = new("key", branch[i].Pos, branch[i].Container) { Extra = KeyNStarType };
 			TreeBranch namedKey = new(keyName, branch[i].Pos, branch[i].Container) { Extra = KeyNStarType };
 			NStarType KeyFuncNStarType = new(FuncBlockStack,
@@ -5544,18 +5554,20 @@ public sealed partial class SemanticTree
 	{
 		var i = 0;
 		var KeyNStarType = RecursiveType;
+		String restrictionName = default!;
 		if (branch.Length == 1 && DictionaryNStarType.ExtraTypes[1].Extra is NStarType ValueNStarType
 			&& ValueNStarType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Other
 			&& block.Name == nameof(Class) && branch.Parent != null && branch.Parent.Length == 3
 			&& ReferenceEquals(branch.Parent[0], branch) && branch.Parent[1].Name == nameof(Declaration)
 			&& branch.Parent[1].Length == 2 && branch.Parent[1][0].Name == "type"
 			&& DictionaryNStarType.Equals(branch.Parent[1][0].Extra) && branch.Parent[1][1].Name is var className
-			&& UnnamedTypeStartIndexes.TryGetValue(branch.Container, out var startIndex)
+			&& UnnamedTypeStartIndexes.TryGetValue(branch.Container, out var containerStartIndexes)
+			&& containerStartIndexes.Find(x => int.TryParse(x[1..].ToString(), out var otherUnnamedIndex)
+			&& otherUnnamedIndex == unnamedIndex) is var startIndex && startIndex != null
 			&& UserDefinedTypes.TryGetValue((branch.Container, startIndex), out var userDefinedType)
-			&& CheckContainer(branch[i].Container, TempTypes.ContainsKey, out var matchingContainer)
-			&& TempTypes[matchingContainer].Find(x => branch[i].Pos >= x.Value.StartPos
-			&& branch[i].Pos < x.Value.EndPos) is var found && found.Key != null && found.Key is var restrictionName
-			&& branch[i].Name == "ClassMain")
+			&& CheckContainer(branch.Container, stack => TempTypes.TryGetValue(stack, out var containerTempTypes)
+			&& containerTempTypes.Find(x => branch[i].Pos >= x.StartPos && branch[i].Pos < x.EndPos)
+			is var found && (restrictionName = found.Name) != null, out _) && branch[i].Name == "ClassMain")
 		{
 			userDefinedType.Restrictions.Insert(0, new ExtendedRestriction(false, KeyNStarType, restrictionName));
 			startIndex.Replace(className);
@@ -5568,7 +5580,6 @@ public sealed partial class SemanticTree
 				branch.Parent.Add(new("type", baseTypeBranch.Pos, baseTypeBranch.Container) { Extra = baseType });
 			}
 			branch.Parent.Add(branch[i]);
-			return;
 		}
 	}
 
@@ -5656,7 +5667,7 @@ public sealed partial class SemanticTree
 				else if (BranchesToSearchDeeperNoReturn.Contains(branches[i][j].Name.ToString())
 					&& (branches[i][j].Name != "for" || j == indexes[i] - 2
 					|| branches[i].Elements[(j + 1)..(indexes[i] - 1)].All(x => x.Name.AsSpan() is "if" or "if!"))
-				&& VariableExistsInsideExpr(branches[i][j], name, out _, out innerExtra))
+					&& VariableExistsInsideExpr(branches[i][j], name, out _, out innerExtra))
 				{
 					extra = innerExtra;
 					return true;

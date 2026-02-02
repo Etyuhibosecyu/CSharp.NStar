@@ -303,9 +303,9 @@ public static class BuiltInMemberCollections
 	/// <summary>
 	/// Sorted by Container, then by Name, also contains Attributes, BaseType, StartPos and EndPos.
 	/// </summary>
-	public static TypeDictionary<Dictionary<String, TempType>> TempTypes { get; } = [];
+	public static TypeDictionary<ListHashSet<TempType>> TempTypes { get; } = [];
 
-	public static TypeDictionary<String> UnnamedTypeStartIndexes { get; } = [];
+	public static TypeDictionary<ListHashSet<String>> UnnamedTypeStartIndexes { get; } = [];
 
 	/// <summary>
 	/// Sorted by tuple, contains Namespace, Interface and ExtraTypes.

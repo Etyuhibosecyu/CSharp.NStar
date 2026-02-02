@@ -80,9 +80,9 @@ public class BranchCollection : Dictionary<String, TreeBranch>
 	public static bool operator !=(BranchCollection? x, BranchCollection? y) => !(x == y);
 }
 
-public sealed class BranchCollectionEComparer : G.IEqualityComparer<BranchCollection>
+public readonly struct BranchCollectionEComparer : G.IEqualityComparer<BranchCollection>
 {
-	public bool Equals(BranchCollection? x, BranchCollection? y)
+	public readonly bool Equals(BranchCollection? x, BranchCollection? y)
 	{
 		if (x is null && y is null)
 			return true;
@@ -100,7 +100,7 @@ public sealed class BranchCollectionEComparer : G.IEqualityComparer<BranchCollec
 		return true;
 	}
 
-	public int GetHashCode(BranchCollection x)
+	public readonly int GetHashCode(BranchCollection x)
 	{
 		var hash = 0;
 		for (var i = 0; i < x.Length; i++)

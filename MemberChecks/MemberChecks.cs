@@ -703,8 +703,8 @@ public static class MemberChecks
 			return true;
 		for (var i = 0; i < constructors.Length; i++)
 		{
-			var constructor = constructors[i];
-			ExtendedMethodParameters parameters = [.. constructor.Parameters.Convert(x =>
+			var (Attributes, Parameters, UnsetRequiredProperties) = constructors[i];
+			ExtendedMethodParameters parameters = [.. Parameters.Convert(x =>
 				new ExtendedMethodParameter(x.Type, x.Name, x.Attributes, x.DefaultValue))];
 			var constructorParameterTypes = parameters.ToList(x => x.Type);
 			var patterns = GetNStarReplacementPatterns(restrictions.ToList(x => x.Name),
@@ -720,7 +720,7 @@ public static class MemberChecks
 						parameters[k].DefaultValue);
 				}
 			}
-			constructors[i] = new(constructor.Attributes, parameters, constructor.UnsetRequiredProperties);
+			constructors[i] = new(Attributes, parameters, UnsetRequiredProperties);
 		}
 		return true;
 	}

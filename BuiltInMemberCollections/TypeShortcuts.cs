@@ -3,7 +3,7 @@
 namespace CSharp.NStar;
 
 public record struct UserDefinedType(ExtendedRestrictions Restrictions, TypeAttributes Attributes, NStarType BaseType, BranchCollection Decomposition);
-public record struct TempType(TypeAttributes Attributes, NStarType BaseType, int StartPos, int EndPos);
+public record struct TempType(String Name, TypeAttributes Attributes, NStarType BaseType, int StartPos, int EndPos);
 public record struct UserDefinedProperty(NStarType NStarType, PropertyAttributes Attributes, String DefaultValue);
 public record struct UserDefinedConstant(NStarType NStarType, ConstantAttributes Attributes, TreeBranch DefaultValue);
 public record struct ExtendedRestriction(bool Package, NStarType RestrictionType, String Name);
@@ -76,8 +76,9 @@ public class MethodParameters : List<MethodParameter>
 public class FunctionsList : SortedDictionary<String, FunctionOverload>
 {
 }
-public class ExtendedRestrictions : List<ExtendedRestriction>
+public class ExtendedRestrictions : ListHashSet<ExtendedRestriction>
 {
+	public ExtendedRestrictions() : base(new ExtendedRestrictionEComparer()) { }
 }
 public class ExtendedMethodParameters : List<ExtendedMethodParameter>
 {
@@ -173,4 +174,11 @@ public class TByteImitator<T> : TImitator where T : TImitator, new()
 {
 	private static readonly T _underlying = new();
 	public override MpzT Equivalent { get; } = _underlying.Equivalent << 8;
+}
+
+public readonly struct ExtendedRestrictionEComparer : G.IEqualityComparer<ExtendedRestriction>
+{
+	public readonly bool Equals(ExtendedRestriction x, ExtendedRestriction y) => x.Name == y.Name;
+
+	public readonly int GetHashCode(ExtendedRestriction obj) => obj.Name.GetHashCode();
 }

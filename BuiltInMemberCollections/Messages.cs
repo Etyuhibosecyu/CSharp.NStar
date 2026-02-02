@@ -292,7 +292,6 @@ public static class Messages
 			0x9015 => "too many sequential whitespaces",
 			0x9016 => "spaces instead of tabs at the line start",
 			0x9017 => "too many indentation units (both present and missing indents) (only 5 are supported)",
-			0x9018 => "cannot mention the \"Class\" keyword in the round brackets several times in one block",
 			0xF000 => "compilation failed because of internal compiler error",
 			_ => throw new InvalidOperationException(),
 		});

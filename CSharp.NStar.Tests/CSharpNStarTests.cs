@@ -6068,12 +6068,12 @@ Wreck 9015 in line 1 at position 14: too many sequential whitespaces
 		if (x % 2 == 0)
 			return x;
 }
-", "null", @"Warning 800D in line 5 at position 3: missing indent(s) detected
-Warning 800D in line 5 at position 3: missing indent(s) detected
+", "null", @"Warning 800D in line 7 at position 1: missing indent(s) detected
 Warning 800D in line 8 at position 2: missing indent(s) detected
 Warning 800D in line 8 at position 2: missing indent(s) detected
-Warning 800E in line 3 at position 1: redundant indent(s) detected
-Warning 800E in line 3 at position 1: redundant indent(s) detected
+Warning 800D in line 9 at position 3: missing indent(s) detected
+Warning 800E in line 10 at position 2: redundant indent(s) detected
+Warning 800E in line 11 at position 3: redundant indent(s) detected
 Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
 ")]
 	[DataRow(@"int Function F(int x)
@@ -6086,11 +6086,11 @@ Error 402A in line 3 at position 1: this function or lambda must return the valu
 	x++;
 }
 return F(-5);
-", "0", @"Warning 800D in line 3 at position 1: missing indent(s) detected
+", "0", @"Warning 800D in line 4 at position 1: missing indent(s) detected
 Warning 800D in line 4 at position 1: missing indent(s) detected
-Warning 800D in line 4 at position 1: missing indent(s) detected
-Warning 800D in line 4 at position 1: missing indent(s) detected
-Warning 800D in line 4 at position 1: missing indent(s) detected
+Warning 800D in line 5 at position 2: missing indent(s) detected
+Warning 800D in line 6 at position 1: missing indent(s) detected
+Warning 800D in line 7 at position 2: missing indent(s) detected
 Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
 ")]
 	[DataRow(@"Class MyClass
@@ -7048,8 +7048,7 @@ return Dic[int];
 	abstract T Function Pop();
 	abstract null Function Push(T item);
 });
-", "null", @"Wreck 9018 in line 1 at position 77: cannot mention the ""Class"" keyword in the round brackets several times in one block
-")]
+", "null", "Ошибок нет")]
 	[DataRow(@"const var Dic = new [string, int](""AAA"": 1, (""BBB"", 2), ""CCC"": 3, var x: x.Length);
 return Dic[""C#.NStar""];
 ", "8", "Ошибок нет")]
@@ -7159,8 +7158,7 @@ return Dic[int];
 	abstract T Function Pop();
 	abstract null Function Push(T item);
 });
-", "null", @"Wreck 9018 in line 1 at position 81: cannot mention the ""Class"" keyword in the round brackets several times in one block
-")]
+", "null", "Ошибок нет")]
 	[DataRow(@"const [typename T, int] Dic = new(5);
 return Dic[real];
 ", "5", "Ошибок нет")]
@@ -7183,6 +7181,423 @@ return (Dic[int], Dic[string], Dic[null]);
 }
 
 const [typename T, (Class : BaseStack[T])] Stack = new(
+{
+	private () T list = new(32);
+
+	T Function Peek()
+	{
+		return list[^1];
+	}
+
+	T Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(T item)
+	{
+		list.Add(item);
+	}
+});
+
+BaseStack[int] intStack = new Stack[int]();
+intStack.Push(5);
+intStack.Push(10);
+var x = (intStack.Pop(), intStack.Peek());
+BaseStack[string] stringStack = new Stack[string]();
+stringStack.Push(""A"");
+stringStack.Push(""B"");
+var y = (stringStack.Pop(), stringStack.Peek());
+return (x, y);
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"const [typename T, (abstract Class)] BaseStack = new(
+{
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+
+{
+	const [typename T, (Class : BaseStack[T])] Stack = new(
+	{
+		private () T list = new(32);
+	
+		T Function Peek()
+		{
+			return list[^1];
+		}
+	
+		T Function Pop
+		{
+			return list.GetAndRemove(list.Length - 1);
+		}
+	
+		null Function Push(T item)
+		{
+			list.Add(item);
+		}
+	});
+	
+	BaseStack[int] intStack = new Stack[int]();
+	intStack.Push(5);
+	intStack.Push(10);
+	var x = (intStack.Pop(), intStack.Peek());
+	BaseStack[string] stringStack = new Stack[string]();
+	stringStack.Push(""A"");
+	stringStack.Push(""B"");
+	var y = (stringStack.Pop(), stringStack.Peek());
+	return (x, y);
+}
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"const [typename T, (abstract Class)] BaseStack = new(
+{
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+
+const [typename T2, (Class : BaseStack[T2])] Stack = new(
+{
+	private () T2 list = new(32);
+
+	T2 Function Peek()
+	{
+		return list[^1];
+	}
+
+	T2 Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(T2 item)
+	{
+		list.Add(item);
+	}
+});
+
+BaseStack[int] intStack = new Stack[int]();
+intStack.Push(5);
+intStack.Push(10);
+var x = (intStack.Pop(), intStack.Peek());
+BaseStack[string] stringStack = new Stack[string]();
+stringStack.Push(""A"");
+stringStack.Push(""B"");
+var y = (stringStack.Pop(), stringStack.Peek());
+return (x, y);
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"abstract Class BaseStack
+{
+	required typename T { get, init };
+
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+}
+
+const var Stack = new [typename T, (Class : BaseStack[T])](
+{
+	private () T list = new(32);
+
+	T Function Peek()
+	{
+		return list[^1];
+	}
+
+	T Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(T item)
+	{
+		list.Add(item);
+	}
+});
+
+BaseStack[int] intStack = new Stack[int]();
+intStack.Push(5);
+intStack.Push(10);
+var x = (intStack.Pop(), intStack.Peek());
+BaseStack[string] stringStack = new Stack[string]();
+stringStack.Push(""A"");
+stringStack.Push(""B"");
+var y = (stringStack.Pop(), stringStack.Peek());
+return (x, y);
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"const var BaseStack = new [typename T, (abstract Class)](
+{
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+
+{
+	const var Stack = new [typename T, (Class : BaseStack[T])](
+	{
+		private () T list = new(32);
+	
+		T Function Peek()
+		{
+			return list[^1];
+		}
+	
+		T Function Pop
+		{
+			return list.GetAndRemove(list.Length - 1);
+		}
+	
+		null Function Push(T item)
+		{
+			list.Add(item);
+		}
+	});
+	
+	BaseStack[int] intStack = new Stack[int]();
+	intStack.Push(5);
+	intStack.Push(10);
+	var x = (intStack.Pop(), intStack.Peek());
+	BaseStack[string] stringStack = new Stack[string]();
+	stringStack.Push(""A"");
+	stringStack.Push(""B"");
+	var y = (stringStack.Pop(), stringStack.Peek());
+	return (x, y);
+}
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"const var BaseStack = new [typename T, (abstract Class)](
+{
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+
+const var Stack = new [typename T2, (Class : BaseStack[T2])](
+{
+	private () T2 list = new(32);
+
+	T2 Function Peek()
+	{
+		return list[^1];
+	}
+
+	T2 Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(T2 item)
+	{
+		list.Add(item);
+	}
+});
+
+BaseStack[int] intStack = new Stack[int]();
+intStack.Push(5);
+intStack.Push(10);
+var x = (intStack.Pop(), intStack.Peek());
+BaseStack[string] stringStack = new Stack[string]();
+stringStack.Push(""A"");
+stringStack.Push(""B"");
+var y = (stringStack.Pop(), stringStack.Peek());
+return (x, y);
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"abstract Class BaseStack
+{
+	required typename T { get, init };
+
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+}
+
+const [typename T, (Class : BaseStack[T])] Stack = new [typename T, (Class : BaseStack[T])](
+{
+	private () T list = new(32);
+
+	T Function Peek()
+	{
+		return list[^1];
+	}
+
+	T Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(T item)
+	{
+		list.Add(item);
+	}
+});
+
+BaseStack[int] intStack = new Stack[int]();
+intStack.Push(5);
+intStack.Push(10);
+var x = (intStack.Pop(), intStack.Peek());
+BaseStack[string] stringStack = new Stack[string]();
+stringStack.Push(""A"");
+stringStack.Push(""B"");
+var y = (stringStack.Pop(), stringStack.Peek());
+return (x, y);
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"const [typename T, (abstract Class)] BaseStack = new [typename T, (abstract Class)](
+{
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+
+{
+	const [typename T, (Class : BaseStack[T])] Stack = new [typename T, (Class : BaseStack[T])](
+	{
+		private () T list = new(32);
+	
+		T Function Peek()
+		{
+			return list[^1];
+		}
+	
+		T Function Pop
+		{
+			return list.GetAndRemove(list.Length - 1);
+		}
+	
+		null Function Push(T item)
+		{
+			list.Add(item);
+		}
+	});
+	
+	BaseStack[int] intStack = new Stack[int]();
+	intStack.Push(5);
+	intStack.Push(10);
+	var x = (intStack.Pop(), intStack.Peek());
+	BaseStack[string] stringStack = new Stack[string]();
+	stringStack.Push(""A"");
+	stringStack.Push(""B"");
+	var y = (stringStack.Pop(), stringStack.Peek());
+	return (x, y);
+}
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"const [typename T, (abstract Class)] BaseStack = new [typename T, (abstract Class)](
+{
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+
+const [typename T2, (Class : BaseStack[T2])] Stack = new [typename T2, (Class : BaseStack[T2])](
+{
+	private () T2 list = new(32);
+
+	T2 Function Peek()
+	{
+		return list[^1];
+	}
+
+	T2 Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(T2 item)
+	{
+		list.Add(item);
+	}
+});
+
+BaseStack[int] intStack = new Stack[int]();
+intStack.Push(5);
+intStack.Push(10);
+var x = (intStack.Pop(), intStack.Peek());
+BaseStack[string] stringStack = new Stack[string]();
+stringStack.Push(""A"");
+stringStack.Push(""B"");
+var y = (stringStack.Pop(), stringStack.Peek());
+return (x, y);
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"const [typename T, (abstract Class)] BaseStack = new(
+{
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+
+const [typename T, (Class : BaseStack[T])] Stack = new(
+{
+	private () T list = new(32);
+
+	T Function Peek()
+	{
+		return list[^1];
+	}
+
+	T Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(T item)
+	{
+		list.Add(item);
+	}
+});
+
+BaseStack[int] intStack = new Stack[int]();
+intStack.Push(5);
+intStack.Push(10);
+var x = (intStack.Pop(), intStack.Peek());
+BaseStack[string] stringStack = new Stack[string]();
+stringStack.Push(""A"");
+stringStack.Push(""B"");
+var y = (stringStack.Pop(), stringStack.Peek());
+return (x, y);
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"const var BaseStack = new [typename T, (abstract Class)](
+{
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+
+const var Stack = new [typename T, (Class : BaseStack[T])](
+{
+	private () T list = new(32);
+
+	T Function Peek()
+	{
+		return list[^1];
+	}
+
+	T Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(T item)
+	{
+		list.Add(item);
+	}
+});
+
+BaseStack[int] intStack = new Stack[int]();
+intStack.Push(5);
+intStack.Push(10);
+var x = (intStack.Pop(), intStack.Peek());
+BaseStack[string] stringStack = new Stack[string]();
+stringStack.Push(""A"");
+stringStack.Push(""B"");
+var y = (stringStack.Pop(), stringStack.Peek());
+return (x, y);
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"const [typename T, (abstract Class)] BaseStack = new [typename T, (abstract Class)](
+{
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+
+const [typename T, (Class : BaseStack[T])] Stack = new [typename T, (Class : BaseStack[T])](
 {
 	private () T list = new(32);
 

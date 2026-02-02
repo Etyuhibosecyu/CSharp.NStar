@@ -136,9 +136,9 @@ public readonly struct BlockStack : IReadOnlyCollection<Block>
 	}
 }
 
-public sealed class BlockComparer : G.IComparer<Block>
+public readonly struct BlockComparer : G.IComparer<Block>
 {
-	public int Compare(Block? x, Block? y)
+	public readonly int Compare(Block? x, Block? y)
 	{
 		if (x is null || y is null)
 			return (x is null ? 1 : 0) - (y is null ? 1 : 0);
@@ -150,9 +150,9 @@ public sealed class BlockComparer : G.IComparer<Block>
 	}
 }
 
-public sealed class BlockStackComparer : G.IComparer<BlockStack>
+public readonly struct BlockStackComparer : G.IComparer<BlockStack>
 {
-	public int Compare(BlockStack x, BlockStack y)
+	public readonly int Compare(BlockStack x, BlockStack y)
 	{
 		for (var i = 0; i < x.Length && i < y.Length; i++)
 		{
@@ -168,9 +168,9 @@ public sealed class BlockStackComparer : G.IComparer<BlockStack>
 	}
 }
 
-public sealed class BlockStackAndStringComparer : G.IComparer<(BlockStack, String)>
+public readonly struct BlockStackAndStringComparer : G.IComparer<(BlockStack, String)>
 {
-	public int Compare((BlockStack, String) x, (BlockStack, String) y)
+	public readonly int Compare((BlockStack, String) x, (BlockStack, String) y)
 	{
 		var comp = new BlockStackComparer().Compare(x.Item1, y.Item1);
 		if (comp != 0)
@@ -180,16 +180,16 @@ public sealed class BlockStackAndStringComparer : G.IComparer<(BlockStack, Strin
 	}
 }
 
-public sealed class BlockStackEComparer : G.IEqualityComparer<BlockStack>
+public readonly struct BlockStackEComparer : G.IEqualityComparer<BlockStack>
 {
-	public bool Equals(BlockStack x, BlockStack y) => x.Equals(y);
+	public readonly bool Equals(BlockStack x, BlockStack y) => x.Equals(y);
 
-	public int GetHashCode(BlockStack x) => x.GetHashCode();
+	public readonly int GetHashCode(BlockStack x) => x.GetHashCode();
 }
 
-public sealed class BlockStackAndStringEComparer : G.IEqualityComparer<(BlockStack, String)>
+public readonly struct BlockStackAndStringEComparer : G.IEqualityComparer<(BlockStack, String)>
 {
-	public bool Equals((BlockStack, String) x, (BlockStack, String) y) => x.Item1.Equals(y.Item1) && x.Item2 == y.Item2;
+	public readonly bool Equals((BlockStack, String) x, (BlockStack, String) y) => x.Item1.Equals(y.Item1) && x.Item2 == y.Item2;
 
-	public int GetHashCode((BlockStack, String) x) => x.Item1.GetHashCode() ^ x.Item2.GetHashCode();
+	public readonly int GetHashCode((BlockStack, String) x) => x.Item1.GetHashCode() ^ x.Item2.GetHashCode();
 }
