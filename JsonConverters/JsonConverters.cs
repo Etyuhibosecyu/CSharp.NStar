@@ -81,7 +81,7 @@ public static class JsonConverters
 				return;
 			}
 			var netType = value.GetType();
-			writer.WriteRaw("new " + netType.Name + "(");
+			writer.WriteRaw("new " + ((String)netType.Name).GetBefore('`') + "(");
 			List<Type> types = [];
 			for (var baseType = netType; baseType != null; baseType = baseType.BaseType)
 				types.Add(baseType);

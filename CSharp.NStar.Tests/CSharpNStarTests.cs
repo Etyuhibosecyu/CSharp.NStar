@@ -7627,6 +7627,129 @@ stringStack.Push(""B"");
 var y = (stringStack.Pop(), stringStack.Peek());
 return (x, y);
 ", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"const [(typename T1, typename T2), (Class)] Pair = new(
+{
+	T1 First { get, set };
+	T2 Second { get, set };
+
+	Constructor(T1 first, T2 second)
+	{
+		First = first;
+		Second = second;
+	}
+});
+
+var pair = new Pair[int, string](100, ""Status"");
+return (pair, pair.First, pair.Second);
+", @"(new Pair(100, ""Status""), 100, ""Status"")", "Ошибок нет")]
+	[DataRow(@"const var Pair = new [(typename T1, typename T2), (Class)](
+{
+	T1 First { get, set };
+	T2 Second { get, set };
+
+	Constructor(T1 first, T2 second)
+	{
+		First = first;
+		Second = second;
+	}
+});
+
+var pair = new Pair[int, string](100, ""Status"");
+return (pair, pair.First, pair.Second);
+", @"(new Pair(100, ""Status""), 100, ""Status"")", "Ошибок нет")]
+	[DataRow(@"const [(typename T1, typename T2), (Class)] Pair = new [(typename T1, typename T2), (Class)](
+{
+	T1 First { get, set };
+	T2 Second { get, set };
+
+	Constructor(T1 first, T2 second)
+	{
+		First = first;
+		Second = second;
+	}
+});
+
+var pair = new Pair[int, string](100, ""Status"");
+return (pair, pair.First, pair.Second);
+", @"(new Pair(100, ""Status""), 100, ""Status"")", "Ошибок нет")]
+	[DataRow(@"using System;
+const [(typename T1, typename T2), (Class)] Pair = new(
+{
+	T1 First { get, set };
+	T2 Second { get, set };
+	() (T1, T2) List { get, set };
+
+	Constructor(T1 first, T2 second, () (T1, T2) list)
+	{
+		First = first;
+		Second = second;
+		List = list;
+	}
+});
+
+var pair = new Pair[int, string](100, ""Status"", ((5, ""A""), (10, ""B""), (15, ""C"")));
+var x = pair.First + "": "" + pair.Second + "" - ""
+	+ string.Join("", "", RedStarLinq.Convert(pair.List, x => x[1] + "", "" + x[2]));
+var pair2 = new Pair[string, string](""Name"", ""Status"", ((""A"", ""X""), (""B"", ""Y""), (""C"", ""Z"")));
+var y = pair2.First + "": "" + pair2.Second + "" - ""
+	+ string.Join("", "", RedStarLinq.Convert(pair2.List, x => x[1] + "", "" + x[2]));
+var pair3 = new Pair[int, int](100, 255, ((5, 8), (10, 16), (15, 24)));
+var z = pair3.First + "": "" + pair3.Second + "" - ""
+	+ string.Join("", "", RedStarLinq.Convert(pair3.List, x => x[1] + "", "" + x[2]));
+return (x, y, z);
+", @"(""100: Status - 5, A, 10, B, 15, C"", ""Name: Status - A, X, B, Y, C, Z"", ""100: 255 - 5, 8, 10, 16, 15, 24"")", "Ошибок нет")]
+	[DataRow(@"using System;
+const var Pair = new [(typename T1, typename T2), (Class)](
+{
+	T1 First { get, set };
+	T2 Second { get, set };
+	() (T1, T2) List { get, set };
+
+	Constructor(T1 first, T2 second, () (T1, T2) list)
+	{
+		First = first;
+		Second = second;
+		List = list;
+	}
+});
+
+var pair = new Pair[int, string](100, ""Status"", ((5, ""A""), (10, ""B""), (15, ""C"")));
+var x = pair.First + "": "" + pair.Second + "" - ""
+	+ string.Join("", "", RedStarLinq.Convert(pair.List, x => x[1] + "", "" + x[2]));
+var pair2 = new Pair[string, string](""Name"", ""Status"", ((""A"", ""X""), (""B"", ""Y""), (""C"", ""Z"")));
+var y = pair2.First + "": "" + pair2.Second + "" - ""
+	+ string.Join("", "", RedStarLinq.Convert(pair2.List, x => x[1] + "", "" + x[2]));
+var pair3 = new Pair[int, int](100, 255, ((5, 8), (10, 16), (15, 24)));
+var z = pair3.First + "": "" + pair3.Second + "" - ""
+	+ string.Join("", "", RedStarLinq.Convert(pair3.List, x => x[1] + "", "" + x[2]));
+return (x, y, z);
+", @"(""100: Status - 5, A, 10, B, 15, C"", ""Name: Status - A, X, B, Y, C, Z"", ""100: 255 - 5, 8, 10, 16, 15, 24"")", "Ошибок нет")]
+	[DataRow(@"using System;
+const [(typename T1, typename T2), (Class)] Pair = new [(typename T1, typename T2), (Class)](
+{
+	T1 First { get, set };
+	T2 Second { get, set };
+	() (T1, T2) List { get, set };
+
+	Constructor(T1 first, T2 second, () (T1, T2) list)
+	{
+		First = first;
+		Second = second;
+		List = list;
+	}
+});
+
+var pair = new Pair[int, string](100, ""Status"", ((5, ""A""), (10, ""B""), (15, ""C"")));
+var x = pair.First + "": "" + pair.Second + "" - ""
+	+ string.Join("", "", RedStarLinq.Convert(pair.List, x => x[1] + "", "" + x[2]));
+var pair2 = new Pair[string, string](""Name"", ""Status"", ((""A"", ""X""), (""B"", ""Y""), (""C"", ""Z"")));
+var y = pair2.First + "": "" + pair2.Second + "" - ""
+	+ string.Join("", "", RedStarLinq.Convert(pair2.List, x => x[1] + "", "" + x[2]));
+var pair3 = new Pair[int, int](100, 255, ((5, 8), (10, 16), (15, 24)));
+var z = pair3.First + "": "" + pair3.Second + "" - ""
+	+ string.Join("", "", RedStarLinq.Convert(pair3.List, x => x[1] + "", "" + x[2]));
+return (x, y, z);
+", @"(""100: Status - 5, A, 10, B, 15, C"", ""Name: Status - A, X, B, Y, C, Z"", ""100: 255 - 5, 8, 10, 16, 15, 24"")", "Ошибок нет")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());

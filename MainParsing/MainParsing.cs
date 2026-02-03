@@ -1750,15 +1750,7 @@ public partial class MainParsing : LexemStream
 	{
 		if (!success)
 			return _SuccessStack[_Stackpos] = false;
-		if (pos < end && IsCurrentLexemOperator("CombineWith"))
-		{
-			pos++;
-			_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
-			_TBStack[_Stackpos]?.Add(new("CombineWith", pos - 1, pos, container));
-		}
-		else
-			return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
-		return IncreaseStack("List", pos_: pos, applyPos: true, applyCurrentErl: true);
+		return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
 	}
 
 	private bool List2()
@@ -1768,7 +1760,8 @@ public partial class MainParsing : LexemStream
 		if (pos < end && IsCurrentLexemOperator(","))
 		{
 			if (_TaskStack[_Stackpos - 1] == nameof(HypernameCall)
-				|| _TaskStack[_Stackpos - 1] == nameof(Expr2) && _TaskStack[_Stackpos - 2] == nameof(BasicExpr2)
+				|| _TaskStack[_Stackpos - 1] == nameof(Expr2)
+				&& _TaskStack[_Stackpos - 2].AsSpan() is nameof(BasicExpr2) or nameof(TypeInt2)
 				|| _TaskStack[_Stackpos - 1] == nameof(TypeChainIteration2))
 			{
 				pos++;
@@ -1785,7 +1778,8 @@ public partial class MainParsing : LexemStream
 			_ErLStack[_Stackpos].AddRange(errors ?? []);
 			if (_TaskStack[_Stackpos - 1] == nameof(HypernameCall)
 				|| _TBStack[_Stackpos] != null && _TBStack[_Stackpos]?.Length != 0
-				&& _TaskStack[_Stackpos - 1] == nameof(Expr2) && _TaskStack[_Stackpos - 2] == nameof(BasicExpr2)
+				&& _TaskStack[_Stackpos - 1] == nameof(Expr2)
+				&& _TaskStack[_Stackpos - 2].AsSpan() is nameof(BasicExpr2) or nameof(TypeInt2)
 				|| _TaskStack[_Stackpos - 1] == nameof(TypeChainIteration2))
 				_TBStack[_Stackpos]?.Add(treeBranch ?? TreeBranch.DoNotAdd());
 			else
@@ -2080,11 +2074,13 @@ public partial class MainParsing : LexemStream
 
 	private void CloseTempTypes()
 	{
+		if (treeBranch == null)
+			return;
 		if (TempTypes.TryGetValue(container, out var containerTempTypes)
 			&& Variables.TryGetValue(container, out var containerVariables))
 		{
 			var wrongTempTypes = containerTempTypes.ToList((elem, index) => (elem, index))
-				.FilterInPlace(x => x.elem.EndPos < 0);
+				.FilterInPlace(x => treeBranch.Pos >= x.elem.StartPos && x.elem.EndPos < 0);
 			for (var i = 0; i < wrongTempTypes.Length; i++)
 			{
 				var x = wrongTempTypes[i].elem;
@@ -2702,6 +2698,7 @@ public partial class MainParsing : LexemStream
 	{
 		if (success)
 			_TBStack[_Stackpos]?[^1].AddRange(treeBranch?.Elements ?? []);
+		CloseTempTypes();
 		if (pos >= end)
 			return _SuccessStack[_Stackpos] = false;
 		else if (IsCurrentLexemOther(")"))
@@ -3023,7 +3020,7 @@ public partial class MainParsing : LexemStream
 				Variables.Add(mainContainer, containerVariables = []);
 			var name = lexems[pos].String;
 			containerVariables[name] = RecursiveType;
-			if (!containerTempTypes.Any(x => x.Name == name && x.StartPos == pos + 1))
+			if (!containerTempTypes.Any(x => x.Name == name && (x.StartPos == pos + 1 || x.EndPos == -1)))
 				containerTempTypes.Add(new(name, TypeAttributes.None, NullType, _PosStack[_Stackpos] = ++pos, -1));
 			outerResult = TypeSingularTuple(NStarType);
 			return false;
@@ -3868,7 +3865,7 @@ public partial class MainParsing : LexemStream
 		else
 		{
 			_ExtraStack[_Stackpos - 1] = NStarType;
-			return IncreaseStack("LambdaExpr", currentTask: nameof(TypeInt2), pos_: pos,
+			return IncreaseStack("Expr", currentTask: nameof(TypeInt2), pos_: pos,
 				applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
 		}
 	}
@@ -3887,39 +3884,38 @@ public partial class MainParsing : LexemStream
 			GenerateMessage(0x2017, pos, false);
 			return Default();
 		}
-		BlockStack matchingContainer;
-		if (targetBranch.Name == nameof(Hypername) && targetBranch.Length == 1)
+		foreach (var x in targetBranch.Name == "List" ? targetBranch.Elements : [targetBranch])
 		{
-			if (CheckContainer(container, stack => UserDefinedConstants.TryGetValue(stack, out var containerConstants),
-				out matchingContainer) && UserDefinedConstants[matchingContainer].ContainsKey(targetBranch[0].Name)) { }
-			else if (PrimitiveTypes.ContainsKey(targetBranch[0].Name))
-			{
-				var TargetNStarType = new NStarType(new(new Block(BlockType.Primitive, targetBranch[0].Name, 1)), NoBranches);
-				targetBranch[0].Replace(new("type", targetBranch[0].Pos, targetBranch[0].Container)
-				{
-					Extra = TargetNStarType
-				});
-				targetBranch.Replace(new("List", new(targetBranch.Name, targetBranch.Elements)));
-			}
+			if (!(x.Name == nameof(Hypername) && x.Length == 1))
+				continue;
+			if (CheckContainer(container, stack => UserDefinedConstants.TryGetValue(stack, out var containerConstants)
+				&& containerConstants.ContainsKey(x[0].Name), out _))
+				continue;
+			NStarType TargetNStarType;
+			if (PrimitiveTypes.ContainsKey(x[0].Name))
+				TargetNStarType = new NStarType(new(new Block(BlockType.Primitive, x[0].Name, 1)), NoBranches);
 			else if (CheckContainer(container, stack => TempTypes.TryGetValue(stack, out var containerTempTypes)
-					&& containerTempTypes.Any(x => x.Name == targetBranch[0].Name), out _))
+				&& containerTempTypes.Any(y => y.Name == x[0].Name), out _))
+				TargetNStarType = new NStarType(new(new Block(BlockType.Extra, x[0].Name, 1)), NoBranches);
+			else
+				continue;
+			x[0].Replace(new("type", x[0].Pos, x[0].Container)
 			{
-				var TargetNStarType = new NStarType(new(new Block(BlockType.Extra, targetBranch[0].Name, 1)), NoBranches);
-				targetBranch[0].Replace(new("type", targetBranch[0].Pos, targetBranch[0].Container)
-				{
-					Extra = TargetNStarType
-				});
+				Extra = TargetNStarType
+			});
+			if (targetBranch.Name != "List")
 				targetBranch.Replace(new("List", new(targetBranch.Name, targetBranch.Elements)));
-			}
 		}
 		if (OuterNStarType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Class
 			&& CheckContainer(container, stack => UserDefinedConstants.TryGetValue(stack, out var containerConstants)
-			&& containerConstants.ContainsKey(block.Name), out matchingContainer)
+			&& containerConstants.ContainsKey(block.Name), out var matchingContainer)
 			&& UserDefinedConstants[matchingContainer][block.Name] is var constant
 			&& constant.NStarType.MainType.Equals(DictionaryBlockStack)
 			&& constant.NStarType.ExtraTypes.Length == 2 && constant.NStarType.ExtraTypes[0].Name == "type"
 			&& constant.NStarType.ExtraTypes[0].Extra is NStarType KeyNStarType
-			&& KeyNStarType.Equals(RecursiveType) && constant.NStarType.ExtraTypes[1].Name == "type"
+			&& (KeyNStarType.Equals(RecursiveType) || KeyNStarType.MainType.Equals(TupleBlockStack)
+			&& KeyNStarType.ExtraTypes.Values.All(x => x.Name == "type" && x.Extra is NStarType NStarType
+			&& NStarType.Equals(RecursiveType))) && constant.NStarType.ExtraTypes[1].Name == "type"
 			&& constant.NStarType.ExtraTypes[1].Extra is NStarType ValueNStarType
 			&& ValueNStarType.MainType.TryPeek(out block) && block.BlockType == BlockType.Other && block.Name == nameof(Class))
 			return TypeClosing(new(OuterNStarType.MainType, new([.. OuterNStarType.ExtraTypes.Values, targetBranch])));
@@ -4204,8 +4200,8 @@ public partial class MainParsing : LexemStream
 		if (addError)
 			_ErLStack[_Stackpos].AddRange(errors ?? []);
 		if (_TBStack[_Stackpos] == null || _TBStack[_Stackpos]?.Length == 0
-			&& !(task == nameof(Expr2) && _TaskStack[_Stackpos - 1] != nameof(BasicExpr2) && treeBranch != null
-			&& treeBranch.Name.AsSpan() is not ("Expr" or "Assignment" or "DeclarationAssignment")))
+			&& !(task == nameof(Expr2) && _TaskStack[_Stackpos - 1].AsSpan() is not (nameof(BasicExpr2) or nameof(TypeInt2))
+			&& treeBranch != null && treeBranch.Name.AsSpan() is not ("Expr" or "Assignment" or "DeclarationAssignment")))
 			_TBStack[_Stackpos] = treeBranch;
 		else
 			_TBStack[_Stackpos]?.Insert(posToInsert, treeBranch ?? TreeBranch.DoNotAdd());

@@ -5553,8 +5553,11 @@ public sealed partial class SemanticTree
 	private void ClassMainToPolymorphClass(TreeBranch branch, ref List<String>? errors, NStarType DictionaryNStarType)
 	{
 		var i = 0;
-		var KeyNStarType = RecursiveType;
-		String restrictionName = default!;
+		if (!(DictionaryNStarType.MainType.Equals(DictionaryBlockStack) && DictionaryNStarType.ExtraTypes.Length == 2
+			&& DictionaryNStarType.ExtraTypes[0].Name == "type"
+			&& DictionaryNStarType.ExtraTypes[0].Extra is NStarType KeyNStarType))
+			throw new InvalidOperationException();
+		List<String> restrictionNames = default!;
 		if (branch.Length == 1 && DictionaryNStarType.ExtraTypes[1].Extra is NStarType ValueNStarType
 			&& ValueNStarType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Other
 			&& block.Name == nameof(Class) && branch.Parent != null && branch.Parent.Length == 3
@@ -5566,10 +5569,15 @@ public sealed partial class SemanticTree
 			&& otherUnnamedIndex == unnamedIndex) is var startIndex && startIndex != null
 			&& UserDefinedTypes.TryGetValue((branch.Container, startIndex), out var userDefinedType)
 			&& CheckContainer(branch.Container, stack => TempTypes.TryGetValue(stack, out var containerTempTypes)
-			&& containerTempTypes.Find(x => branch[i].Pos >= x.StartPos && branch[i].Pos < x.EndPos)
-			is var found && (restrictionName = found.Name) != null, out _) && branch[i].Name == "ClassMain")
+			&& containerTempTypes.FindAll(x => branch[i].Pos >= x.StartPos && branch[i].Pos < x.EndPos) is var found
+			&& found.Length != 0 && (restrictionNames = found.ToList(x => x.Name)) != null, out _)
+			&& branch[i].Name == "ClassMain")
 		{
-			userDefinedType.Restrictions.Insert(0, new ExtendedRestriction(false, KeyNStarType, restrictionName));
+			userDefinedType.Restrictions.Insert(0, KeyNStarType.MainType.Equals(TupleBlockStack)
+				? restrictionNames.Combine(KeyNStarType.ExtraTypes
+				.Filter(x => x.Value.Name == "type" && x.Value.Extra is NStarType))
+				.Convert(x => new ExtendedRestriction(false, (NStarType)x.Item2.Value.Extra!, x.Item1))
+				: [new ExtendedRestriction(false, KeyNStarType, restrictionNames[0])]);
 			startIndex.Replace(className);
 			branch.Parent.Replace(new(nameof(Class),
 				new(className, branch.Parent[1][1].Pos, branch.Parent[1][1].Container)));
