@@ -983,12 +983,17 @@ public sealed partial class SemanticTree
 		errors = null;
 		if (!(branch.Length == 2 && branch[0].Name == nameof(Declaration)))
 			return [];
+		var parsedCollection = ParseAction(branch[1].Name)(branch[1], out var innerErrors);
+		AddRange(ref errors, innerErrors);
+		if (branch[1].Extra is NStarType CollectionNStarType && branch[0].Name == nameof(Declaration)
+			&& branch[0].Length == 2 && branch[0][0].Name == "type" && branch[0][0].Extra is NStarType NStarType
+			&& NStarType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Primitive && block.Name == "var")
+			branch[0][0].Extra = GetSubtype(CollectionNStarType);
 		if (branch[0].Length == 2 && VariableExists(branch[0], branch[0][1].Name, ref errors))
 			return [];
-		var result = ((String)"foreach (").AddRange(Declaration(branch[0], out var innerErrors));
+		var result = ((String)"foreach (").AddRange(Declaration(branch[0], out innerErrors));
 		AddRange(ref errors, innerErrors);
-		result.AddRange(" in ").AddRange(ParseAction(branch[1].Name)(branch[1], out innerErrors)).Add(')');
-		AddRange(ref errors, innerErrors);
+		result.AddRange(" in ").AddRange(parsedCollection).Add(')');
 		return result;
 	}
 
@@ -2121,9 +2126,11 @@ public sealed partial class SemanticTree
 			branch.Extra = BitListType;
 			extra = new List<object> { (String)nameof(Expr), branch.Extra, parameters };
 		}
-		else if (!processingWay.StartsWith("user") && branch.Parent?[0].Extra is NStarType ContainerNStarType)
+		else if (!processingWay.StartsWith("user"))
 		{
 			UnwrapParameters();
+			if (branch.Parent?[0].Extra is not NStarType ContainerNStarType)
+				ContainerNStarType = NullType;
 			if (MethodExists(ContainerNStarType, FunctionMapping(name, parameterTypes, null), parameterTypes, out var functions)
 				&& functions.Length != 0
 				|| ExtendedMethodExists(ContainerNStarType.MainType, name, branch[index].Elements

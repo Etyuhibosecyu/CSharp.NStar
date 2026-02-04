@@ -1636,7 +1636,10 @@ public partial class MainParsing : LexemStream
 	private bool For2()
 	{
 		if (!success || treeBranch == null || treeBranch.Name != "type" || treeBranch.Extra is not NStarType NStarType)
-			return EndWithEmpty(true);
+		{
+			NStarType = GetPrimitiveType("var");
+			treeBranch = new("type", pos, pos + 1, container) { Extra = NStarType };
+		}
 		if (pos >= end)
 		{
 			GenerateUnexpectedEndError(true);
@@ -1665,7 +1668,7 @@ public partial class MainParsing : LexemStream
 			GenerateMessage(0x2013, pos, true);
 			return EndWithEmpty();
 		}
-		return IncreaseStack("Expr", currentTask: "For3", pos_: pos, applyPos: true, applyCurrentTask: true);
+		return IncreaseStack("LambdaExpr", currentTask: "For3", pos_: pos, applyPos: true, applyCurrentTask: true);
 	}
 
 	private bool SpecialAction()
