@@ -110,7 +110,7 @@ public class LexemStream
 			Using();
 		else if (IsCurrentLexemKeyword(nameof(Namespace)))
 			Namespace();
-		else if (IsLexemKeyword(lexems[pos], [nameof(Class), "Megaclass"]))
+		else if (IsLexemKeyword(pos, [nameof(Class), "Megaclass"]))
 			Class();
 		else if (IsCurrentLexemKeyword(nameof(Function)))
 			Function();
@@ -204,7 +204,7 @@ public class LexemStream
 			GenerateMessage(0x900F, pos, name);
 			return;
 		}
-		else if (!IsCurrentLexemOther(";"))
+		else if (!IsCurrentLexemTerminator())
 		{
 			GenerateMessage(0x9010, pos);
 			return;
@@ -259,7 +259,7 @@ public class LexemStream
 		GetClassStart(out var roundBracketAtStart);
 		var blockStart = prevPos;
 		attributes = (TypeAttributes)GetAccessMethod((int)attributes);
-		if (IsLexemKeyword(lexems[classKeywordPos], "Megaclass"))
+		if (IsLexemKeyword(classKeywordPos, "Megaclass"))
 		{
 			attributes |= TypeAttributes.Static;
 			if (lexems[prevPos].String == "static")
@@ -339,7 +339,7 @@ public class LexemStream
 			pos++;
 			var pos3 = pos;
 			while (pos < lexems.Length && (lexems[pos].Type == LexemType.Identifier
-				|| IsLexemOperator(lexems[pos], [".", ","]) || IsLexemOther(lexems[pos], ["(", ")", "[", "]"])))
+				|| IsLexemOperator(pos, [".", ","]) || IsLexemOther(pos, ["(", ")", "[", "]"])))
 				pos++;
 			registeredTypes.Add((container, name, pos3, pos));
 		}
@@ -636,7 +636,7 @@ public class LexemStream
 		while (prevPos > 0)
 		{
 			prevPos--;
-			if (lexems[prevPos].Type == LexemType.Other && StopLexemsList.Contains(lexems[prevPos].String.ToString()))
+			if (lexems[prevPos].Type == LexemType.Other && IsStopLexem(prevPos))
 			{
 				prevPos++;
 				break;
@@ -649,7 +649,7 @@ public class LexemStream
 		while (prevPos > 0)
 		{
 			prevPos--;
-			if (lexems[prevPos].Type == LexemType.Other && ClassStartLexemsList.Contains(lexems[prevPos].String.ToString()))
+			if (lexems[prevPos].Type == LexemType.Other && (IsStopLexem(prevPos) || lexems[prevPos].String == "("))
 			{
 				roundBracket = lexems[prevPos].String == "(";
 				prevPos++;
@@ -661,7 +661,7 @@ public class LexemStream
 
 	private int GetAccessMethod(int attributes)
 	{
-		if (IsLexemKeyword(lexems[prevPos], ["private", "protected"]))
+		if (IsLexemKeyword(prevPos, ["private", "protected"]))
 		{
 			if (nestedBlocksChain.Length != 0 && nestedBlocksChain.Peek().BlockType == BlockType.Class)
 				attributes |= (lexems[prevPos].String == "private") ? 2 : 4;
@@ -755,66 +755,64 @@ public class LexemStream
 		return false;
 	}
 
-	public static bool IsLexemKeyword(Lexem lexem, String @string) =>
-		lexem.Type == LexemType.Keyword && lexem.String == @string;
+	public bool IsLexemKeyword(int pos, String @string) =>
+		lexems[pos].Type == LexemType.Keyword && lexems[pos].String == @string;
 
-	public static bool IsLexemOperator(Lexem lexem, String @string) =>
-		lexem.Type == LexemType.Operator && lexem.String == @string;
+	public bool IsLexemOperator(int pos, String @string) =>
+		lexems[pos].Type == LexemType.Operator && lexems[pos].String == @string;
 
-	public static bool IsLexemOther(Lexem lexem, String @string) => lexem.Type == LexemType.Other && lexem.String == @string;
+	public bool IsLexemOther(int pos, String @string) => lexems[pos].Type == LexemType.Other && lexems[pos].String == @string;
 
-	public static bool IsLexemKeyword(Lexem lexem, G.IEnumerable<string> strings) =>
-		lexem.Type == LexemType.Keyword && strings.Contains(lexem.String.ToString());
+	public bool IsLexemKeyword(int pos, G.IEnumerable<string> strings) =>
+		lexems[pos].Type == LexemType.Keyword && strings.Contains(lexems[pos].String.ToString());
 
-	public static bool IsLexemOperator(Lexem lexem, G.IEnumerable<string> strings) =>
-		lexem.Type == LexemType.Operator && strings.Contains(lexem.String.ToString());
+	public bool IsLexemOperator(int pos, G.IEnumerable<string> strings) =>
+		lexems[pos].Type == LexemType.Operator && strings.Contains(lexems[pos].String.ToString());
 
-	public static bool IsLexemOther(Lexem lexem, G.IEnumerable<string> strings) =>
-		lexem.Type == LexemType.Other && strings.Contains(lexem.String.ToString());
+	public bool IsLexemOther(int pos, G.IEnumerable<string> strings) =>
+		lexems[pos].Type == LexemType.Other && strings.Contains(lexems[pos].String.ToString());
 
-	public bool IsLexemKeywordNoEnd(String @string) => pos < lexems.Length && IsLexemKeyword(lexems[pos], @string);
+	public bool IsLexemOtherNoEnd(String @string) => pos < lexems.Length && IsLexemOther(pos, @string);
 
-	public bool IsLexemOperatorNoEnd(String @string) => pos < lexems.Length && IsLexemOperator(lexems[pos], @string);
+	public bool IsCurrentLexemKeyword(String @string) => IsLexemKeyword(pos, @string);
 
-	public bool IsLexemOtherNoEnd(String @string) => pos < lexems.Length && IsLexemOther(lexems[pos], @string);
+	public bool IsCurrentLexemOperator(String @string) => IsLexemOperator(pos, @string);
 
-	public bool IsCurrentLexemKeyword(String @string) => IsLexemKeyword(lexems[pos], @string);
+	public bool IsCurrentLexemOther(String @string) => IsLexemOther(pos, @string);
 
-	public bool IsCurrentLexemOperator(String @string) => IsLexemOperator(lexems[pos], @string);
-
-	public bool IsCurrentLexemOther(String @string) => IsLexemOther(lexems[pos], @string);
-
-	public bool ValidateKeywordLexem(String @string)
+	public bool IsCurrentLexemTerminator()
 	{
-		if (IsCurrentLexemKeyword(@string))
-		{
-			pos++;
+
+		if (IsLexemOther(pos, ";"))
 			return true;
-		}
+		//if (pos != 0 && lexems[pos].LineN != lexems[pos - 1].LineN)
+		//{
+		//	pos--;
+		//	return true;
+		//}
 		return false;
 	}
 
-	public bool ValidateOperatorLexem(String @string)
+	public bool IsStopLexem(int localPos = int.MinValue)
 	{
-		if (IsCurrentLexemOperator(@string))
+		//var defaultPos = false;
+		if (localPos == int.MinValue)
 		{
-			pos++;
-			return true;
+			//defaultPos = true;
+			localPos = pos;
 		}
+		if (IsLexemOther(localPos, StopLexemsList))
+			return true;
+		//if (localPos != 0 && lexems[localPos].LineN != lexems[localPos - 1].LineN)
+		//{
+		//	if (defaultPos)
+		//		pos--;
+		//	return true;
+		//}
 		return false;
 	}
 
-	public bool ValidateOtherLexem(String @string)
-	{
-		if (IsCurrentLexemOther(@string))
-		{
-			pos++;
-			return true;
-		}
-		return false;
-	}
-
-	private bool IsPos2LexemKeyword(String string_) => IsLexemKeyword(lexems[prevPos], string_);
+	private bool IsPos2LexemKeyword(String string_) => IsLexemKeyword(prevPos, string_);
 
 	private protected static bool IsValidBaseClass(TypeAttributes attributes)
 		=> (attributes & (TypeAttributes.Sealed | TypeAttributes.Abstract

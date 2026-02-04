@@ -846,7 +846,7 @@ public partial class MainParsing : LexemStream
 		return Default();
 	}
 
-	private bool IsParameterModifier() => IsLexemKeyword(lexems[pos], ["ref", "out", "params"]);
+	private bool IsParameterModifier() => IsLexemKeyword(pos, ["ref", "out", "params"]);
 
 	private void CheckParameters3(bool expectIdentifier = false, bool skipParameterName = false)
 	{
@@ -985,7 +985,7 @@ public partial class MainParsing : LexemStream
 	private bool Property()
 	{
 		var oldPos = pos;
-		if (IsLexemKeyword(lexems[pos], ["private", "protected", "internal", "public"]))
+		if (IsLexemKeyword(pos, ["private", "protected", "internal", "public"]))
 		{
 			AddPropertyAttribute(attributesMapping[lexems[pos].String], nameof(Property));
 			if (lexems[pos].String == "public")
@@ -1061,11 +1061,13 @@ public partial class MainParsing : LexemStream
 			if (((PropertyAttributes)l![0] & PropertyAttributes.Const) == PropertyAttributes.Const)
 			{
 				GenerateMessage(0x203D, pos, false);
-				for (; !IsLexemOther(lexems[pos++], ";");) ;
+				while (!IsCurrentLexemTerminator())
+					pos++;
 				return EndWithEmpty();
 			}
-			if (!ValidateLexemOrEndWithError(";", true))
-				return false;
+			if (!IsCurrentLexemTerminator())
+				return EndWithError(0x2002, pos, false);
+			pos++;
 			_ErLStack[_Stackpos].AddRange(errors ?? []);
 			_TBStack[_Stackpos]?.Add(new("null", pos - 1, container));
 			return AddUserDefinedProperty();
@@ -1078,7 +1080,8 @@ public partial class MainParsing : LexemStream
 			{
 				GenerateMessage(0x203C, pos - 1, false);
 				CloseBracket(ref pos, "}", ref errors, false);
-				for (; !IsLexemOther(lexems[pos++], ";");) ;
+				while (!IsCurrentLexemTerminator())
+					pos++;
 				return EndWithEmpty();
 			}
 			if (!CheckIdentifier("get"))
@@ -1088,34 +1091,29 @@ public partial class MainParsing : LexemStream
 			else
 			{
 				AddPropertyAttribute2(PropertyAttributes.NoSet);
-				if (!ValidateLexemOrEndWithError("}"))
-				{
-					CloseBracket(ref pos, "}", ref errors, false);
-					for (; !IsLexemOther(lexems[pos++], ";");) ;
-					return EndWithEmpty();
-				}
-				return true;
+				if (ValidateLexemOrEndWithError("}"))
+					return true;
+				CloseBracket(ref pos, "}", ref errors, false);
+				while (!IsCurrentLexemTerminator())
+					pos++;
+				return EndWithEmpty();
 			}
-			if (IsLexemKeyword(lexems[pos], ["private", "protected"]))
+			if (IsLexemKeyword(pos, ["private", "protected"]))
 			{
 				AddPropertyAttribute2(lexems[pos].String == "private" ? PropertyAttributes.PrivateSet
 					: PropertyAttributes.ProtectedSet);
 				pos++;
 			}
-			if (pos < end && lexems[pos].Type == LexemType.Identifier && lexems[pos].String == "init")
-			{
-				AddPropertyAttribute2(PropertyAttributes.SetOnce);
+			if (pos >= end || lexems[pos].Type != LexemType.Identifier || lexems[pos].String != "init")
+				return CheckIdentifier("set") && ValidateLexemOrEndWithError("}");
+			AddPropertyAttribute2(PropertyAttributes.SetOnce);
+			pos++;
+			if (ValidateLexemOrEndWithError("}"))
+				return true;
+			CloseBracket(ref pos, "}", ref errors, false);
+			while (!IsCurrentLexemTerminator())
 				pos++;
-				if (!ValidateLexemOrEndWithError("}"))
-				{
-					CloseBracket(ref pos, "}", ref errors, false);
-					for (; !IsLexemOther(lexems[pos++], ";");) ;
-					return EndWithEmpty();
-				}
-			}
-			else if (!CheckIdentifier("set") || !ValidateLexemOrEndWithError("}"))
-				return false;
-			return true;
+			return EndWithEmpty();
 		}
 		bool CheckIdentifier(String string_)
 		{
@@ -1134,7 +1132,7 @@ public partial class MainParsing : LexemStream
 		if (!success)
 			return _SuccessStack[_Stackpos] = false;
 		CreateObjectList(out var l);
-		if (IsCurrentLexemOther(";"))
+		if (IsCurrentLexemTerminator())
 			pos++;
 		else
 			return EndWithError(0x2002, pos, false);
@@ -1269,7 +1267,7 @@ public partial class MainParsing : LexemStream
 
 	private bool ValidateLexemOrEndWithError(String string_, bool addQuotes = false)
 	{
-		if (IsLexemOther(lexems[pos], string_))
+		if (IsLexemOther(pos, string_))
 		{
 			pos++;
 			return true;
@@ -1322,7 +1320,7 @@ public partial class MainParsing : LexemStream
 			"for" => nameof(For),
 			"continue" or "break" => nameof(SpecialAction),
 			"return" => nameof(Return),
-			"null" when pos + 1 < end && IsLexemKeyword(lexems[pos + 1], [nameof(Function), "Operator", "Extent"]) =>
+			"null" when pos + 1 < end && IsLexemKeyword(pos + 1, [nameof(Function), "Operator", "Extent"]) =>
 				nameof(Main),
 			_ => "Expr",
 		};
@@ -1366,7 +1364,7 @@ public partial class MainParsing : LexemStream
 			&& _TaskStack[_Stackpos - 3] == nameof(Main2) && _TBStack[_Stackpos - 3] != null
 			&& _TBStack[_Stackpos - 1]!.Length >= 1 && _TBStack[_Stackpos - 1]![^1].Name.AsSpan() is "repeat" or "for"
 			&& _TBStack[_Stackpos]!.Length >= 1 && _TBStack[_Stackpos]![0].Name.AsSpan() is "if" or "if!"
-			&& IsLexemKeyword(lexems[_TBStack[_Stackpos]![0].Pos], ["while", "while!"]))
+			&& IsLexemKeyword(_TBStack[_Stackpos]![0].Pos, ["while", "while!"]))
 		{
 			_TBStack[_Stackpos]?.Add(new("else", pos - 1, container));
 			_TBStack[_Stackpos]?.Add(new("break", pos - 1, container));
@@ -1394,24 +1392,26 @@ public partial class MainParsing : LexemStream
 			GenerateUnexpectedEndError();
 			return Default();
 		}
-		else if (IsLexemKeyword(lexems[pos], ["switch", "case", "delete"]))
+		else if (IsLexemKeyword(pos, ["switch", "case", "delete"]))
 			GenerateMessage(0x201E, pos, false, lexems[pos].String);
-		else if (!IsLexemOther(lexems[pos], StopLexemsList))
+		else if (!IsStopLexem(pos))
 			GenerateMessage(0x2007, pos, false);
 		return EndActionChain();
 	}
 
 	private bool EndActionChain()
 	{
-		if (pos >= 1 && IsLexemKeyword(lexems[pos - 1], ["else", "loop"])
-			|| pos >= 2 && IsLexemKeyword(lexems[pos - 2], ["continue", "break"]) && IsLexemOther(lexems[pos - 1], ";"))
+		pos--;
+		if (IsLexemKeyword(pos, ["else", "loop"])
+			|| pos >= 1 && IsLexemKeyword(pos - 1, ["continue", "break"]) && IsCurrentLexemTerminator())
 		{
-			_PosStack[_Stackpos] = pos;
+			_PosStack[_Stackpos] = ++pos;
 			_TaskStack[_Stackpos] = nameof(ActionChain);
 			AppendBranch(nameof(Main), treeBranch!);
 			return true;
 		}
-		while (!IsLexemOther(lexems[pos], StopLexemsList))
+		pos++;
+		while (!IsStopLexem(pos))
 		{
 			pos++;
 			if (pos >= end)
@@ -1420,7 +1420,7 @@ public partial class MainParsing : LexemStream
 				return EndWithEmpty();
 			}
 		}
-		if (!IsLexemOther(lexems[pos], ["{", "}"]))
+		if (!IsLexemOther(pos, ["{", "}"]))
 			pos++;
 		_ErLStack[_Stackpos].AddRange(errors ?? []);
 		return Default();
@@ -1524,7 +1524,7 @@ public partial class MainParsing : LexemStream
 				return EndWithEmpty();
 			}
 			pos++;
-			if (pos >= end || !IsCurrentLexemOther(";"))
+			if (pos >= end || !IsCurrentLexemTerminator())
 			{
 				GenerateMessage(0x2002, pos, false);
 				return EndWithEmpty();
@@ -1565,7 +1565,7 @@ public partial class MainParsing : LexemStream
 			GenerateUnexpectedEndError();
 			return true;
 		}
-		else if (IsLexemOther(lexems[pos], string_))
+		else if (IsLexemOther(pos, string_))
 		{
 			pos++;
 			return false;
@@ -1579,7 +1579,7 @@ public partial class MainParsing : LexemStream
 
 	private bool WhileRepeat()
 	{
-		if (IsLexemKeyword(lexems[pos], "while"))
+		if (IsLexemKeyword(pos, "while"))
 		{
 			pos++;
 			var reduceToCondition = _Stackpos >= 3 && _TaskStack[_Stackpos - 1] == nameof(ActionChain2)
@@ -1603,7 +1603,7 @@ public partial class MainParsing : LexemStream
 				_TBStack[_Stackpos]?.Add(new(reduceToCondition ? "if" : "while", pos - 1, pos, container));
 			}
 		}
-		else if (IsLexemKeyword(lexems[pos], "repeat"))
+		else if (IsLexemKeyword(pos, "repeat"))
 		{
 			pos++;
 			_TBStack[_Stackpos] ??= new(nameof(Main), pos - 1, container);
@@ -1619,7 +1619,7 @@ public partial class MainParsing : LexemStream
 
 	private bool For()
 	{
-		if (IsLexemKeyword(lexems[pos], ["for", "foreach"]))
+		if (IsLexemKeyword(pos, ["for", "foreach"]))
 		{
 			pos++;
 			_TBStack[_Stackpos] ??= new(nameof(Main), pos - 1, container);
@@ -1686,7 +1686,7 @@ public partial class MainParsing : LexemStream
 				GenerateUnexpectedEndError(true);
 				return EndWithEmpty();
 			}
-			else if (IsCurrentLexemOther(";"))
+			else if (IsCurrentLexemTerminator())
 			{
 				pos++;
 				_TBStack[_Stackpos] = new(lexems[pos - 2].String, pos - 2, pos, container);
@@ -1721,7 +1721,7 @@ public partial class MainParsing : LexemStream
 			GenerateUnexpectedEndError();
 			return EndWithEmpty();
 		}
-		else if (IsCurrentLexemOther(";"))
+		else if (IsCurrentLexemTerminator())
 		{
 			GenerateMessage(0x8002, pos, false);
 			pos++;
@@ -1737,7 +1737,7 @@ public partial class MainParsing : LexemStream
 			return _SuccessStack[_Stackpos] = false;
 		if (pos >= end)
 			return _SuccessStack[_Stackpos] = false;
-		else if (IsCurrentLexemOther(";"))
+		else if (IsCurrentLexemTerminator())
 		{
 			pos++;
 			return EndWithAdding(true);
@@ -1991,7 +1991,7 @@ public partial class MainParsing : LexemStream
 	{
 		if (!success)
 			return _SuccessStack[_Stackpos] = false;
-		if (pos >= end || !IsLexemOperator(lexems[pos], AssignmentOperators))
+		if (pos >= end || !IsLexemOperator(pos, AssignmentOperators))
 		{
 			if (!IsCurrentLexemOther(")"))
 				CloseTempTypes();
@@ -2001,7 +2001,7 @@ public partial class MainParsing : LexemStream
 		{
 			GenerateMessage(0x201D, pos, false);
 			_TBStack[_Stackpos]?.Insert(0, new TreeBranch("null", pos, pos + 1, container));
-			while (!IsLexemOther(lexems[pos], StopLexemsList))
+			while (!IsStopLexem())
 				pos++;
 			return Default();
 		}
@@ -2019,13 +2019,13 @@ public partial class MainParsing : LexemStream
 				return IncreaseStack("QuestionExpr", pos_: pos, applyPos: true, applyCurrentErl: true);
 			if (pos + 1 >= end)
 				return EndWithAddingOrAssigning(true, 0);
-			else if (IsLexemOther(lexems[pos + 1], "[") || lexems[pos + 1].Type == LexemType.Identifier
+			else if (IsLexemOther(pos + 1, "[") || lexems[pos + 1].Type == LexemType.Identifier
 				&& !(UserDefinedNamespaces.Contains(lexems[pos + 1].String)
 				|| CheckContainer(container, stack => ExtraTypeExists(stack, lexems[pos + 1].String, out _), out _))
 				&& (lexems[pos + 1].String == nameof(Dictionary<,>)
-				|| pos + 5 < end && lexems[pos + 1].String == "System" && IsLexemOperator(lexems[pos + 2], ".")
+				|| pos + 5 < end && lexems[pos + 1].String == "System" && IsLexemOperator(pos + 2, ".")
 				&& lexems[pos + 1].Type == LexemType.Identifier && lexems[pos + 3].String == "Collections"
-				&& IsLexemOperator(lexems[pos + 4], ".")
+				&& IsLexemOperator(pos + 4, ".")
 				&& lexems[pos + 5].Type == LexemType.Identifier && lexems[pos + 5].String == nameof(Dictionary<,>)))
 				return IncreaseStack(nameof(Hypername), pos_: pos, applyPos: true, applyCurrentErl: true);
 			else
@@ -2048,7 +2048,7 @@ public partial class MainParsing : LexemStream
 		}
 		if (!IsCurrentLexemKeyword("new"))
 			return IncreaseStack("QuestionExpr", pos_: pos, applyPos: true, applyCurrentErl: true);
-		if (pos + 1 < end && IsLexemOther(lexems[pos + 1], "("))
+		if (pos + 1 < end && IsLexemOther(pos + 1, "("))
 		{
 			pos += 2;
 			return IncreaseStack(nameof(DictionaryExpr), currentTask: nameof(AssignedExpr3),
@@ -2065,7 +2065,7 @@ public partial class MainParsing : LexemStream
 		{
 			GenerateMessage(0x200B, pos, false);
 			_TBStack[_Stackpos]?.Insert(0, new TreeBranch("null", pos, pos + 1, container));
-			while (!IsLexemOther(lexems[pos], StopLexemsList))
+			while (!IsStopLexem())
 				pos++;
 			return Default();
 		}
@@ -2133,7 +2133,7 @@ public partial class MainParsing : LexemStream
 			GenerateMessage(0x2008, pos, false, "\":\"");
 			_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1),
 				new TreeBranch("null", pos, pos + 1, container));
-			while (!IsLexemOther(lexems[pos], StopLexemsList))
+			while (!IsStopLexem())
 				pos++;
 			return Default();
 		}
@@ -2164,7 +2164,7 @@ public partial class MainParsing : LexemStream
 			GenerateMessage(0x2008, pos, false, "\":\"");
 			_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1),
 				new TreeBranch("null", pos, pos + 1, container));
-			while (!IsLexemOther(lexems[pos], StopLexemsList))
+			while (!IsStopLexem())
 				pos++;
 			return Default();
 		}
@@ -2221,7 +2221,7 @@ public partial class MainParsing : LexemStream
 			return IncreaseStack("XorExpr", currentTask: nameof(QuestionExpr4), pos_: pos,
 				applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
 		}
-		if (pos >= end || !IsLexemOperator(lexems[pos], TernaryOperators))
+		if (pos >= end || !IsLexemOperator(pos, TernaryOperators))
 			return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
 		_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
 		_TBStack[_Stackpos]?.Add(new(lexems[pos].String, pos, pos + 1, container));
@@ -2265,7 +2265,7 @@ public partial class MainParsing : LexemStream
 				return IncreaseStack("IsXorExpr", currentTask: "EquatedExpr3", applyCurrentTask: true,
 					pos_: pos, applyPos: true, applyCurrentErl: true);
 		}
-		else if (pos < end && IsLexemOperator(lexems[pos], ["==", "!="]))
+		else if (pos < end && IsLexemOperator(pos, ["==", "!="]))
 		{
 			_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
 			_TBStack[_Stackpos]?.Add(new(lexems[pos].String, pos, pos + 1, container));
@@ -2352,7 +2352,7 @@ public partial class MainParsing : LexemStream
 		if (pos >= end)
 			return _SuccessStack[_Stackpos] = false;
 		var isPrefix = false;
-		if (IsLexemOperator(lexems[pos], [">", "<", ">=", "<="]))
+		if (IsLexemOperator(pos, [">", "<", ">=", "<="]))
 		{
 			_TBStack[_Stackpos]?.Add(new(lexems[pos].String, pos, pos + 1, container));
 			pos++;
@@ -2477,7 +2477,7 @@ public partial class MainParsing : LexemStream
 	{
 		if (!success)
 			return _SuccessStack[_Stackpos] = false;
-		if (pos < end && IsLexemOperator(lexems[pos], ["++", "--", "!", "!!"]))
+		if (pos < end && IsLexemOperator(pos, ["++", "--", "!", "!!"]))
 		{
 			pos++;
 			_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch ?? TreeBranch.DoNotAdd());
@@ -2516,7 +2516,7 @@ public partial class MainParsing : LexemStream
 	{
 		if (pos >= end)
 			return _SuccessStack[_Stackpos] = false;
-		if (IsLexemKeyword(lexems[pos], ["ref", "out"]))
+		if (IsLexemKeyword(pos, ["ref", "out"]))
 		{
 			pos++;
 			if (pos >= end)
@@ -2548,11 +2548,23 @@ public partial class MainParsing : LexemStream
 		else if (IsCurrentLexemKeyword("const"))
 		{
 			pos++;
-			return IncreaseStack(nameof(Type),
-				currentTask: task == "HypernameNotCall" ? "HypernameNotCallConstType" : nameof(HypernameConstType),
-				applyCurrentTask: true, currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
+			var newTask = task == "HypernameNotCall" ? "HypernameNotCallConstType" : nameof(HypernameConstType);
+			if (pos + 1 < end && lexems[pos].Type == LexemType.Identifier && IsLexemOperator(pos + 1, "="))
+			{
+				_PosStack[_Stackpos] = pos;
+				_TaskStack[_Stackpos] = newTask;
+				_TBStack[_Stackpos] = new(nameof(Hypername), pos, container);
+				_TBStack[_Stackpos + 1] = new("type", pos, container)
+				{
+					Extra = _ExtraStack[_Stackpos] = GetPrimitiveType("var")
+				};
+				_SuccessStack[_Stackpos + 1] = true;
+				return true;
+			}
+			return IncreaseStack(nameof(Type), currentTask: newTask, applyCurrentTask: true,
+				currentBranch: new(nameof(Hypername), pos, container), assignCurrentBranch: true);
 		}
-		if (pos >= 1 && IsLexemOperator(lexems[pos - 1], "."))
+		if (pos >= 1 && IsLexemOperator(pos - 1, "."))
 		{
 			_TaskStack[_Stackpos] = nameof(HypernameType);
 			return true;
@@ -2660,7 +2672,7 @@ public partial class MainParsing : LexemStream
 		}
 		errors?.Clear();
 		var @ref = false;
-		if (IsLexemKeyword(lexems[pos], ["ref", "out"]))
+		if (IsLexemKeyword(pos, ["ref", "out"]))
 		{
 			pos++;
 			@ref = true;
@@ -3127,7 +3139,7 @@ public partial class MainParsing : LexemStream
 			UserDefinedTypes.TryGetValue((stack, s), out value2), out innerUserDefinedContainer))
 		{
 			if (constraints is TypeConstraints.BaseClassOrInterface or TypeConstraints.BaseInterface
-				&& !IsValidBaseClass(value2.Attributes) && !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
+				&& !IsValidBaseClass(value2.Attributes) && !(pos + 1 < end && IsLexemOperator(pos + 1, ".")))
 			{
 				NStarType = NullType;
 				_ExtraStack[_Stackpos - 1] = NStarType;
@@ -3139,13 +3151,13 @@ public partial class MainParsing : LexemStream
 			NStarType = (new(innerUserDefinedContainer.ToList().Append(new(BlockType.Class, s, 1))), NoBranches);
 			if (constraints == TypeConstraints.NotAbstract
 				&& (value2.Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) == TypeAttributes.Static
-				&& !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
+				&& !(pos + 1 < end && IsLexemOperator(pos + 1, ".")))
 			{
 				GenerateMessage(0x2024, pos, false, NStarType);
 			}
 			else if (constraints == TypeConstraints.NotAbstract
 				&& (value2.Attributes & (TypeAttributes.Struct | TypeAttributes.Static)) is not (0 or TypeAttributes.Sealed
-				or TypeAttributes.Struct or TypeAttributes.Enum) && !(pos + 1 < end && IsLexemOperator(lexems[pos + 1], ".")))
+				or TypeAttributes.Struct or TypeAttributes.Enum) && !(pos + 1 < end && IsLexemOperator(pos + 1, ".")))
 			{
 				GenerateMessage(0x2023, pos, false, NStarType);
 			}
@@ -3505,7 +3517,7 @@ public partial class MainParsing : LexemStream
 		}
 		else
 		{
-			if (IsLexemOther(lexems[start], "("))
+			if (IsLexemOther(start, "("))
 			{
 				_PosStack[_Stackpos] = pos = start;
 				return TupleType();
@@ -4238,16 +4250,11 @@ public partial class MainParsing : LexemStream
 	{
 		while (pos < (end == -1 ? lexems.Length : end))
 		{
-			if (CloseBracketIteration(ref pos, bracket, ref errors, produceWreck) is bool b)
-				return b;
-		}
-		return false;
-	}
-
-	private bool? CloseBracketIteration(ref int pos, String bracket, ref List<String>? errors, bool produceWreck)
-	{
-		if (lexems[pos].Type == LexemType.Other)
-		{
+			if (lexems[pos].Type != LexemType.Other)
+			{
+				pos++;
+				continue;
+			}
 			var s = lexems[pos].String;
 			if (s == bracket)
 			{
@@ -4259,7 +4266,7 @@ public partial class MainParsing : LexemStream
 				pos++;
 				CloseBracket(ref pos, s == "(" ? ")" : s == "[" ? "]" : "}", ref errors, produceWreck);
 			}
-			else if (s.Length == 1 && s[0] is ')' or ']' or '}' || bracket != "}" && (s == ";" || s == "\r\n"))
+			else if (s.Length == 1 && s[0] is ')' or ']' or '}' || bracket != "}" && s.AsSpan() is ";" or "\r\n")
 			{
 				if (produceWreck)
 					GenerateMessage(0x9011, pos, false, bracket);
@@ -4268,9 +4275,7 @@ public partial class MainParsing : LexemStream
 			else
 				pos++;
 		}
-		else
-			pos++;
-		return null;
+		return false;
 	}
 
 	private void ValidateLocalName(NStarType NStarType)

@@ -7913,6 +7913,197 @@ for (i in Chain(0, 10)) while! (i * i % 20 >= 10)
 }
 return list;
 ", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"using System;
+const n = 3;
+Func[list(n) int] list = () => 123;
+return list();
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System;
+const bool = 3;
+Func[list(bool) int] list = () => 123;
+return list();
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System;
+const n = 2;
+Func[list(n + 1) int] list = () => 123;
+return list();
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"using System;
+const bool = 2;
+Func[list(bool + 1) int] list = () => 123;
+return list();
+", @"(((123)))", "Ошибок нет")]
+	[DataRow(@"const Dic = new [string, int](""AAA"": 1, (""BBB"", 2), ""CCC"": 3, var x: x.Length);
+return Dic[""C#.NStar""];
+", "8", "Ошибок нет")]
+	[DataRow(@"const Dic = new [real, int](var T: 1, (typename, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4093 in line 1 at position 39: the recursive type in the pattern matching must contain the variable declaration
+")]
+	[DataRow(@"const Dic = new [real, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "1", @"Warning 801E in line 1 at position 39: the previous pattern has already processed all the possible variants of key; this one is redundant
+")]
+	[DataRow(@"const Dic = new [real, int](object obj: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "1", @"Warning 801E in line 1 at position 44: the previous pattern has already processed all the possible variants of key; this one is redundant
+")]
+	[DataRow(@"const Dic = new [typename, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4014 in line 2 at position 10: cannot convert from the type ""real"" to the type ""typename""
+")]
+	[DataRow(@"const Dic = new [typename, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[int];
+", "1", "Ошибок нет")]
+	[DataRow(@"const Dic = new [typename, int]((int, 2), var T: 1, var T2: 3, var T3: 4);
+return Dic[int];
+", "2", "Ошибок нет")]
+	[DataRow(@"const BaseStack = new [typename, (abstract Class)](var T:
+{
+	required typename T2 { get, init };
+
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+", "null", "Ошибок нет")]
+	[DataRow(@"const Dic = new [typename T, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[3.14159];
+", "null", @"Error 4014 in line 2 at position 10: cannot convert from the type ""real"" to the type ""typename""
+")]
+	[DataRow(@"const Dic = new [typename T, int](var T: 1, (int, 2), var T2: 3, var T3: 4);
+return Dic[int];
+", "1", "Ошибок нет")]
+	[DataRow(@"const Dic = new [typename T, int]((int, 2), var T: 1, var T2: 3, var T3: 4);
+return Dic[int];
+", "2", "Ошибок нет")]
+	[DataRow(@"const BaseStack = new [typename T, (abstract Class)](var T:
+{
+	required typename T2 { get, init };
+
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+", "null", "Ошибок нет")]
+	[DataRow(@"const Dic = new [typename T, int](5);
+return Dic[real];
+", "5", "Ошибок нет")]
+	[DataRow(@"abstract Class BaseStack
+{
+	required typename T { get, init };
+
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+}
+
+const Stack = new [typename T, (Class : BaseStack[T])](
+{
+	private () T list = new(32);
+
+	T Function Peek()
+	{
+		return list[^1];
+	}
+
+	T Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(T item)
+	{
+		list.Add(item);
+	}
+});
+
+BaseStack[int] intStack = new Stack[int]();
+intStack.Push(5);
+intStack.Push(10);
+var x = (intStack.Pop(), intStack.Peek());
+BaseStack[string] stringStack = new Stack[string]();
+stringStack.Push(""A"");
+stringStack.Push(""B"");
+var y = (stringStack.Pop(), stringStack.Peek());
+return (x, y);
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"const BaseStack = new [typename T, (abstract Class)](
+{
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+
+{
+	const Stack = new [typename T, (Class : BaseStack[T])](
+	{
+		private () T list = new(32);
+	
+		T Function Peek()
+		{
+			return list[^1];
+		}
+	
+		T Function Pop
+		{
+			return list.GetAndRemove(list.Length - 1);
+		}
+	
+		null Function Push(T item)
+		{
+			list.Add(item);
+		}
+	});
+	
+	BaseStack[int] intStack = new Stack[int]();
+	intStack.Push(5);
+	intStack.Push(10);
+	var x = (intStack.Pop(), intStack.Peek());
+	BaseStack[string] stringStack = new Stack[string]();
+	stringStack.Push(""A"");
+	stringStack.Push(""B"");
+	var y = (stringStack.Pop(), stringStack.Peek());
+	return (x, y);
+}
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"const BaseStack = new [typename T, (abstract Class)](
+{
+	abstract T Function Peek();
+	abstract T Function Pop();
+	abstract null Function Push(T item);
+});
+
+const Stack = new [typename T2, (Class : BaseStack[T2])](
+{
+	private () T2 list = new(32);
+
+	T2 Function Peek()
+	{
+		return list[^1];
+	}
+
+	T2 Function Pop
+	{
+		return list.GetAndRemove(list.Length - 1);
+	}
+
+	null Function Push(T2 item)
+	{
+		list.Add(item);
+	}
+});
+
+BaseStack[int] intStack = new Stack[int]();
+intStack.Push(5);
+intStack.Push(10);
+var x = (intStack.Pop(), intStack.Peek());
+BaseStack[string] stringStack = new Stack[string]();
+stringStack.Push(""A"");
+stringStack.Push(""B"");
+var y = (stringStack.Pop(), stringStack.Peek());
+return (x, y);
+", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());
