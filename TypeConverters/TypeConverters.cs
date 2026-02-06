@@ -58,17 +58,21 @@ public static class TypeConverters
 			return type;
 		else if (levels == 1)
 		{
-			if (TypeIsPrimitive(type.MainType))
+			if (type.MainType.TryPeek(out var block) && block.BlockType == BlockType.Primitive)
 			{
-				if (type.MainType.Peek().Name == "list")
+				if (block.Name == "list")
 					return GetListSubtype(type);
+				else if (block.Name == "range")
+					return IntType;
 				else
 					return NullType;
 			}
-			if (type.ExtraTypes.Length == 1 && TypesAreCompatible(type, new(IEnumerableBlockStack, type.ExtraTypes),
+			else if (type.ExtraTypes.Length == 1 && TypesAreCompatible(type, new(IEnumerableBlockStack, type.ExtraTypes),
 				out var warning, null, out _, out _) && !warning
 				&& type.ExtraTypes[0].Name == "type" && type.ExtraTypes[0].Extra is NStarType Subtype)
 				return Subtype;
+			else if (type.Equals(ChainType))
+				return IntType;
 			else
 				return NullType;
 		}
@@ -125,14 +129,16 @@ public static class TypeConverters
 				else
 					return (Depth, LeafType);
 			}
-			else if (LeafType.MainType.Length != 0
-				&& LeafType.MainType.Peek().BlockType is BlockType.Class or BlockType.Struct or BlockType.Interface
+			else if (LeafType.MainType.TryPeek(out var block)
+				&& block.BlockType is BlockType.Class or BlockType.Struct or BlockType.Interface
 				&& CollectionTypesList.Contains(LeafType.MainType.ToString().ToNString().GetAfterLast("."))
 					&& LeafType.ExtraTypes[^1].Name == "type" && LeafType.ExtraTypes[^1].Extra is NStarType Subtype)
 			{
 				Depth++;
 				LeafType = Subtype;
 			}
+			else if (LeafType.Equals(ChainType))
+				return (Depth + 1, IntType);
 			else
 				return (Depth, LeafType);
 		}
@@ -435,6 +441,23 @@ public static class TypeConverters
 				}
 				return true;
 			}
+			else if (SourceDepth <= DestinationDepth + 1 && SourceLeafType.Equals(RangeType)
+				&& DestinationLeafType.Equals(IntType) && TypesAreCompatible(ChainType,
+				new(IEnumerableBlockStack, [new("type", 0, []) { Extra = DestinationLeafType }]), out warning,
+				srcExpr?.Insert(0, nameof(Chain) + '(').Add(')'), out destExpr, out extraMessage))
+			{
+				var toInsert = ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(')
+					.Repeat(DestinationDepth - SourceDepth - 1);
+				if (srcExpr == null)
+					destExpr = null;
+				else
+				{
+					srcExpr.Insert(0, toInsert);
+					srcExpr.AddRange(((String)")").Repeat(DestinationDepth - SourceDepth - 1));
+					destExpr = srcExpr;
+				}
+				return true;
+			}
 			else
 			{
 				destExpr = "default!";
@@ -497,6 +520,11 @@ public static class TypeConverters
 				destExpr = "default!";
 				return false;
 			}
+		}
+		if (sourceType.Equals(RangeType) && destinationType.Equals(ChainType))
+		{
+			destExpr = srcExpr?.Insert(0, nameof(Chain) + '(').Add(')');
+			return true;
 		}
 		if (TaskBlockStacks.Contains(destinationType.MainType) && destinationType.ExtraTypes.Length == 1
 			&& destinationType.ExtraTypes[0].Name == "type" && destinationType.ExtraTypes[0].Extra is NStarType TaskNStarType

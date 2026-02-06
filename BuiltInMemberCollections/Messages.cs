@@ -214,6 +214,7 @@ public static class Messages
 			0x4070 => "the property \"" + parameters[0] + "\" is get-only and cannot be set",
 			0x4080 => "the operator \"" + parameters[0] + "\" cannot be used in this context",
 			0x4081 => "the second operand of the operator \"" + parameters[0] + "\" must be of the type, convertible to int",
+			0x4082 => "the index operator and the range operator work only with the positive numbers",
 			0x4090 => "the recursive type cannot be value of itself",
 			0x4091 => "cannot get type of the type",
 			0x4092 => "the recursive type variable, property or constant cannot have the name \"typename\"",

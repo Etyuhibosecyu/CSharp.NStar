@@ -23,6 +23,8 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 	public static readonly NStarType StringType = GetPrimitiveType("string");
 	public static readonly NStarType IndexType = GetPrimitiveType("index");
 	public static readonly NStarType RangeType = GetPrimitiveType("range");
+	public static readonly NStarType ChainType = new(new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Namespace, "Collections", 1), new(BlockType.Struct, nameof(Chain), 1)), NoBranches);
 	public static readonly NStarType UnsafeStringType = new(new(new(BlockType.Namespace, "System", 1),
 		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "UnsafeString", 1)), NoBranches);
 	public static readonly NStarType BitListType = GetListType(BoolType);

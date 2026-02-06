@@ -7913,6 +7913,112 @@ for (i in Chain(0, 10)) while! (i * i % 20 >= 10)
 }
 return list;
 ", "(0, 1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"int Function F(int x)
+{
+	if (x < 0)
+		if (x % 2 == 0)
+			return 0;
+		else
+			return 1;
+	else
+	{
+		x++;
+		if (x > 1)
+			for (x in 1..20)
+			{
+				x++;
+				return x;
+			}
+	}
+	return x * ++x;
+}
+return (F(-5), F(3), F(0));
+", "(1, 5, 2)", @"Error 4013 in line 12 at position 8: the variable ""x"" is already defined in this location or in the location that contains this in line 1 at position 15
+")]
+	[DataRow(@"int Function ForLoopFunction(list() int list)
+{
+	for (i in 1..list.Length)
+		if (list[i] > 0)
+			return list[i];
+}
+", "null", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
+")]
+	[DataRow(@"int Function ComplexFunction(int x, list() int list)
+{
+	if (x > 0)
+	{
+		for (i in 1..list.Length)
+			if (list[i] > x)
+				return list[i];
+	}
+	else
+		while (x < 10)
+			x++;
+	if (x % 2 == 0)
+		return x;
+}
+", "null", @"Error 402A in line 3 at position 1: this function or lambda must return the value on all execution paths
+")]
+	[DataRow(@"int n = 0;
+for (i in 1..1000)
+{
+	n++;
+}
+return n;
+", "1000", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+for (i in 1..10) while (i * i < 10)
+{
+	list.Add(i);
+}
+return list;
+", "(1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+for (i in 1..10) while! (i * i >= 10)
+{
+	list.Add(i);
+}
+return list;
+", "(1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+for (i in 1..10) while (i * i % 20 < 10)
+{
+	list.Add(i);
+}
+return list;
+", "(1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+for (i in 1..10) while! (i * i % 20 >= 10)
+{
+	list.Add(i);
+}
+return list;
+", "(1, 2, 3)", "Ошибок нет")]
+	[DataRow(@"() int list = new();
+for (i in 0..10)
+{
+	list.Add(i);
+}
+return list;
+", "()", @"Error 4082 in line 2 at position 11: the index operator and the range operator work only with the positive numbers
+")]
+	[DataRow(@"() int list = new();
+for (i in ^10..^0)
+{
+	list.Add(i);
+}
+return list;
+", "()", @"Error 4082 in line 2 at position 15: the index operator and the range operator work only with the positive numbers
+")]
+	[DataRow(@"() int list = new();
+for (i in 0..^0)
+{
+	list.Add(i);
+}
+return list;
+", "()", @"Error 4082 in line 2 at position 13: the index operator and the range operator work only with the positive numbers
+Error 4082 in line 2 at position 11: the index operator and the range operator work only with the positive numbers
+")]
 	[DataRow(@"using System;
 const n = 3;
 Func[list(n) int] list = () => 123;

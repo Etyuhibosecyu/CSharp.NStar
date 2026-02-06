@@ -13,7 +13,22 @@ public static class NStarUtilityFunctions
 	private static readonly double random_initializer = DateTime.Now.ToBinary() / 1E+9;
 	private static BitList? primes;
 
-	public static List<int> Chain(int start, int end) => new Chain(start, end - start + 1).ToList();
+	public static Chain Chain(int start, int end) => new(start, end - start + 1);
+
+	public static Chain Chain(Range range)
+	{
+		int index = range.Start.Value, index2 = range.End.Value;
+		if (!range.Start.IsFromEnd && !range.End.IsFromEnd)
+			return Chain(index + 1, index2);
+		else if (!range.Start.IsFromEnd && range.End.IsFromEnd)
+			return Chain(index + 1, int.MaxValue - index2);
+		else if (range.Start.IsFromEnd && !range.End.IsFromEnd)
+			return Chain(int.MaxValue - index + 1, index2);
+		else if (range.Start.IsFromEnd && range.End.IsFromEnd)
+			return Chain(int.MaxValue - index + 1, int.MaxValue - index2);
+		else
+			return new();
+	}
 
 	public static T Choose<T>(params List<T> variants) => variants.Random();
 

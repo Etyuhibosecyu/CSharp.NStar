@@ -985,10 +985,24 @@ public sealed partial class SemanticTree
 			return [];
 		var parsedCollection = ParseAction(branch[1].Name)(branch[1], out var innerErrors);
 		AddRange(ref errors, innerErrors);
-		if (branch[1].Extra is NStarType CollectionNStarType && branch[0].Name == nameof(Declaration)
+		if (parsedCollection.AsSpan() is "_" or "default" or "default!" or "_ = default" or "_ = default!")
+			parsedCollection = "Array.Empty<int>()";
+		if (branch[1].Extra is not NStarType CollectionNStarType)
+			return "default!";
+		if (branch[0].Name == nameof(Declaration)
 			&& branch[0].Length == 2 && branch[0][0].Name == "type" && branch[0][0].Extra is NStarType NStarType
 			&& NStarType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Primitive && block.Name == "var")
 			branch[0][0].Extra = GetSubtype(CollectionNStarType);
+		if (branch[0][0].Extra is not NStarType ItemNStarType || ItemNStarType.Equals(NullType))
+			branch[0][0].Extra = ItemNStarType = IntType;
+		NStarType TargetNStarType = new(IEnumerableBlockStack, [new("type", 0, []) { Extra = ItemNStarType }]);
+		if (!TypesAreCompatible(CollectionNStarType, TargetNStarType,
+			out var warning, parsedCollection, out var destExpr, out var extraMessage) || warning)
+		{
+			var otherPos = branch[0][0].Pos;
+			GenerateMessage(ref errors, 0x4014, otherPos, extraMessage!, CollectionNStarType, TargetNStarType);
+			return "default!";
+		}
 		if (branch[0].Length == 2 && VariableExists(branch[0], branch[0][1].Name, ref errors))
 			return [];
 		var result = ((String)"foreach (").AddRange(Declaration(branch[0], out innerErrors));
@@ -3646,6 +3660,11 @@ public sealed partial class SemanticTree
 		if (valueString.Length == 0)
 			return "default!";
 		AddRange(ref errors, innerErrors);
+		if (branch[i].Name == "^" && TryReadValue(valueString, out var value) && value.ToReal() <= 0)
+		{
+			GenerateMessage(ref errors, 0x4082, branch[i].Pos);
+			return "default!";
+		}
 		branch.Extra = branch[i].Name.ToString() switch
 		{
 			"+" or "-" or "~" => TypeEqualsToPrimitive(NStarType, "bool") || TypeEqualsToPrimitive(NStarType, "string")
@@ -3951,6 +3970,15 @@ public sealed partial class SemanticTree
 			LeftNStarType = NullType;
 		if (branch[i - 1].Extra is not NStarType RightNStarType)
 			RightNStarType = NullType;
+		if (TryReadValue(subbranchValues[^2], out var value) && value.ToReal() <= 0
+			|| TryReadValue(subbranchValues[^1], out value) && value.ToReal() <= 0)
+		{
+			GenerateMessage(ref errors, 0x4082, branch[i].Pos);
+			return "default!";
+		}
+		if (subbranchValues[^2].AsSpan() is "_" or "default" or "default!" or "_ = default" or "_ = default!"
+			|| subbranchValues[^1].AsSpan() is "_" or "default" or "default!" or "_ = default" or "_ = default!")
+			return "default!";
 		if (!(TypeIsPrimitive(LeftNStarType.MainType) && LeftNStarType.MainType.Peek().Name.AsSpan() is "byte"
 			or "short int" or "unsigned short int" or "int" or "index"
 			&& TypeIsPrimitive(RightNStarType.MainType) && RightNStarType.MainType.Peek().Name.AsSpan() is "byte"
