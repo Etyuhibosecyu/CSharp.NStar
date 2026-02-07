@@ -80,7 +80,7 @@ internal abstract class RichTextWriter : TextWriter
 	/// <summary>
 	/// Begin a highlighted span.
 	/// </summary>
-	public virtual void BeginSpan(Highlighting.HighlightingColor highlightingColor) => BeginUnhandledSpan();
+	public virtual void BeginSpan(HighlightingColor highlightingColor) => BeginUnhandledSpan();
 
 	/// <summary>
 	/// Begin a span that links to the specified URI.

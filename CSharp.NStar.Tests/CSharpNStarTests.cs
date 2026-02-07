@@ -8210,6 +8210,104 @@ stringStack.Push(""B"");
 var y = (stringStack.Pop(), stringStack.Peek());
 return (x, y);
 ", @"((10, 5), (""B"", ""A""))", "Ошибок нет")]
+	[DataRow(@"Record Chain(int Start, int End);
+Chain chain = new(101, 200);
+return chain.End - chain.Start + 1;
+", "100", "Ошибок нет")]
+	[DataRow(@"Record Pair(string Name, int Value);
+Pair pair = new(""Status"", 100);
+return pair;
+", @"(""Status"", 100)", "Ошибок нет")]
+	[DataRow(@"Record Empty();
+Empty obj = new();
+return obj;
+", "()", "Ошибок нет")]
+	[DataRow(@"Record Pair(string Name, int Value);
+Pair pair = new(""Status"", 100);
+Pair pair2 = new(""Status"", 100);
+Pair pair3 = new(""Status"", 200);
+return (pair.Equals(pair2), pair.Equals(pair3));
+", "(true, false)", "Ошибок нет")]
+	[DataRow(@"Record Pair(string Name, int Value);
+Pair pair = new(""Status"", 100);
+pair.Value = 200;
+return pair;
+", @"(""Status"", 100)", @"Error 4070 in line 3 at position 5: the property ""Pair.Value"" is get-only and cannot be set
+")]
+	[DataRow(@"Record Pair(string Name, int Value);
+Pair pair = new(""Status"", 100);
+pair.Value++;
+return pair;
+", @"(""Status"", 100)", @"Error 4070 in line 3 at position 5: the property ""Pair.Value"" is get-only and cannot be set
+")]
+	[DataRow(@"abstract Record Pair(string Name, int Value);
+Pair pair = new(""Status"", 100);
+return pair;
+", @"(""Status"", 100)", @"Error 0005 in line 1 at position 0: incorrect word or order of words in construction declaration
+")]
+	[DataRow(@"static Record Pair(string Name, int Value);
+Pair pair = new(""Status"", 100);
+return pair;
+", @"(""Status"", 100)", @"Error 0005 in line 1 at position 0: incorrect word or order of words in construction declaration
+")]
+	[DataRow(@"Struct Rectangle
+{
+	int Width;
+	int Height;
+
+	int Function Area()
+	{
+		return Width * Height;
+	}
+
+	Constructor(int width, int height)
+	{
+		Width = width;
+		Height = height;
+	}
+}
+
+var rect = new Rectangle(5, 3);
+return rect.Area();
+", "15", "Ошибок нет")]
+	[DataRow(@"Struct Book
+{
+	string Title { get, init };
+	string Author { get, init };
+	int Pages { get, init };
+
+	Constructor(string title, string author, int pages)
+	{
+		Title = title;
+		Author = author;
+		Pages = pages;
+	}
+}
+
+var book = new Book(""C# in Depth"", ""Jon Skeet"", 600);
+return book;
+", @"(""C# in Depth"", ""Jon Skeet"", 600)", "Ошибок нет")]
+	[DataRow(@"Struct Point
+{
+	int X;
+	int Y;
+}
+
+Point p1 = new(1, 2);
+Point p2 = p1;
+p2.X = 100;
+return p1;
+", "(1, 2)", "Ошибок нет")]
+	[DataRow(@"Class Base { }
+Struct Derived : Base { }
+", "null", @"Error 203E in line 2 at position 17: the struct can be derived only from the interfaces
+")]
+	[DataRow(@"Struct Point
+{
+	abstract null Function Move() { }
+}
+", "null", @"Error 0017 in line 3 at position 1: the struct members cannot be abstract
+")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());
@@ -8412,7 +8510,7 @@ Warning 8006 in line 18 at position 2: at present time the word ""internal"" doe
 	private static void TestInternal(string Key, string TargetResult, string TargetErrors)
 	{
 		String result;
-		if ((result = ExecuteProgram(Key, out var errors)) == TargetResult
+		if ((result = ExecuteProgram(Key, [], out var errors)) == TargetResult
 			&& (TargetErrors == null || errors == TargetErrors))
 			return;
 		throw new Exception("Error: @\"" + Key.Replace("\"", "\"\"") + "\"" + (result == TargetResult ? ""

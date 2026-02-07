@@ -1,0 +1,131 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+						 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+						 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+						 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+						 xmlns:views="clr-namespace:CSharp.NStar.Views"
+						 xmlns:vm="clr-namespace:CSharp.NStar.ViewModels"
+						 xmlns:ae="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+						 mc:Ignorable="d" d:DesignWidth="1024" d:DesignHeight="768"
+						 x:Class="CSharp.NStar.Views.SettingsView"
+						 x:DataType="vm:MainViewModel">
+	<Design.DataContext>
+		<!-- This only sets the DataContext for the previewer in an IDE,
+				 to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+		<vm:MainViewModel />
+	</Design.DataContext>
+
+	<Canvas
+		Background="#FFFFFF"
+		HorizontalAlignment="Stretch"
+		VerticalAlignment="Stretch">
+		<ScrollViewer
+			x:Name="ScrollViewerMain"
+			Width="1024"
+			Height="768">
+			<StackPanel
+				Orientation="Vertical">
+				<Grid>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+					</Grid.RowDefinitions>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto"/>
+						<ColumnDefinition Width="Auto"/>
+					</Grid.ColumnDefinitions>
+					<TextBlock
+						Text="Characters in line: "
+						FontSize="16" />
+					<ComboBox
+						x:Name="ComboCharactersInLine"
+						Grid.Column="1"
+						SelectionChanged="ComboCharactersInLine_SelectionChanged">
+						<ComboBox.Items>
+							<x:String>Strict - 80</x:String>
+							<x:String>Normal - 100</x:String>
+							<x:String>Lite - 128</x:String>
+							<x:String>Ultra-lite - 200</x:String>
+							<x:String>Disable</x:String>
+						</ComboBox.Items>
+						<ComboBox.SelectedIndex>2</ComboBox.SelectedIndex>
+					</ComboBox>
+					<TextBlock
+						Grid.Row="1"
+						Text="Lines in function: "
+						FontSize="16" />
+					<ComboBox
+						x:Name="ComboLinesInFunction"
+						Grid.Column="1"
+						Grid.Row="1"
+						SelectionChanged="ComboLinesInFunction_SelectionChanged">
+						<ComboBox.Items>
+							<x:String>Strict - 32</x:String>
+							<x:String>Normal - 64</x:String>
+							<x:String>Lite - 128</x:String>
+							<x:String>Ultra-lite - 256</x:String>
+							<x:String>Disable</x:String>
+						</ComboBox.Items>
+						<ComboBox.SelectedIndex>2</ComboBox.SelectedIndex>
+					</ComboBox>
+					<TextBlock
+						Grid.Row="2"
+						Text="Functions in class: "
+						FontSize="16" />
+					<ComboBox
+						x:Name="ComboFunctionsInClass"
+						Grid.Column="1"
+						Grid.Row="2"
+						SelectionChanged="ComboFunctionsInClass_SelectionChanged">
+						<ComboBox.Items>
+							<x:String>Strict - 10</x:String>
+							<x:String>Normal - 16</x:String>
+							<x:String>Lite - 25</x:String>
+							<x:String>Ultra-lite - 50</x:String>
+							<x:String>Disable</x:String>
+						</ComboBox.Items>
+						<ComboBox.SelectedIndex>1</ComboBox.SelectedIndex>
+					</ComboBox>
+					<CheckBox
+						Grid.ColumnSpan="2"
+						Grid.Row="3"
+						x:Name="CheckBoxTestEnvironment"
+						IsChecked="False"
+						IsCheckedChanged="CheckBoxTestEnvironment_CheckedChanged">
+						<TextBlock
+							Text="Test environment" />
+					</CheckBox>
+					<TextBlock
+						Grid.ColumnSpan="2"
+						Grid.Row="4"
+						Text="Add NuGet packages here (one per line):"
+						FontSize="16" />
+					<TextBox
+						x:Name="TextBoxNuGet"
+						Text=""
+						AcceptsReturn="True"
+						FontFamily="Arial Narrow"
+						FontSize="16"
+						Grid.ColumnSpan="2"
+						Grid.Row="5"
+						Height="128"
+						HorizontalAlignment="Stretch"
+						MaxLength="0"
+						Width="1024"/>
+					<Button
+						Background="Red"
+						Grid.ColumnSpan="2"
+						Grid.Row="6"
+						HorizontalAlignment="Center"
+						Click="Close_Click">
+						<TextBlock Text="Close"/>
+					</Button>
+				</Grid>
+			</StackPanel>
+		</ScrollViewer>
+	</Canvas>
+</UserControl>

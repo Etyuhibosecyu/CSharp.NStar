@@ -36,6 +36,11 @@ public static class Messages
 			0x0010 => parameters[0] + "\" is reserved for next versions of C#.NStar and cannot be used",
 			0x0011 => "expected: {",
 			0x0012 => "the megaclass cannot be abstract or sealed",
+			0x0013 => "the record cannot be derived",
+			0x0014 => "the record must have the parameter list, at least empty one",
+			0x0015 => "\";\" must follow the record declaration",
+			0x0016 => "the struct declaration cannot contain the keywords \"abstract\", \"sealed\" or \"static\"",
+			0x0017 => "the struct members cannot be abstract",
 			0x2000 => "unexpected end of code reached",
 			0x2001 => "expected: identifier",
 			0x2002 => "expected: \";\"",
@@ -97,6 +102,7 @@ public static class Messages
 				" and cannot be used",
 			0x203C => "the constants cannot have getters or setters",
 			0x203D => "the constant must have a value",
+			0x203E => "the struct can be derived only from the interfaces",
 			0x2048 => "goto is a bad operator, it worsens the organization of the code;" +
 				" C#.NStar refused from its using intentionally",
 			0x4000 => "internal compiler error",
@@ -294,6 +300,7 @@ public static class Messages
 			0x9016 => "spaces instead of tabs at the line start",
 			0x9017 => "too many indentation units (both present and missing indents) (only 5 are supported)",
 			0xF000 => "compilation failed because of internal compiler error",
+			0xF010 => "the NuGet package " + parameters[0] + " does not exist (see under the \"Settings\" button)",
 			_ => throw new InvalidOperationException(),
 		});
 	}

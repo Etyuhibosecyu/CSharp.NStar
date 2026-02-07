@@ -18,8 +18,8 @@
 	  <None Update="packages\dotnet.7z">
 	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	  </None>
-		<PackageReference Include="AvaloniaEdit.TextMate" Version="11.3.0" />
-		<PackageReference Include="MessageBox.Avalonia" Version="3.3.0" />
+		<PackageReference Include="AvaloniaEdit.TextMate" Version="11.4.1" />
+		<PackageReference Include="MessageBox.Avalonia" Version="3.3.1.1" />
 		<ProjectReference Include="..\AvaloniaEdit\AvaloniaEdit.csproj" />
 		<ProjectReference Include="..\SemanticTree\SemanticTree.csproj" />
 		<Compile Update="Resources.Designer.cs">

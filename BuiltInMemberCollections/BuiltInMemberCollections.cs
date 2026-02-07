@@ -24,10 +24,15 @@ using NStar.RemoveDoubles;
 using NStar.SortedSets;
 using NStar.SumCollections;
 using NStar.TreeSets;
+using NuGet.Common;
+using NuGet.Configuration;
+using NuGet.Protocol.Core.Types;
 using ReactiveUI;
 using System.Collections.Immutable;
 using System.IO;
+using System.IO.Compression;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -108,6 +113,8 @@ public static class BuiltInMemberCollections
 	public static TypeSortedList<TypeVariables> Variables { get; } = [];
 
 	public static SortedSet<String> Namespaces { get; } = new("System", "System.Collections", "System.GUI", "System.IO", "System.Threading");
+
+	public static G.HashSet<String> ImportedNamespaces { get; } = [];
 
 	public static G.HashSet<String> UserDefinedNamespaces { get; } = [];
 
@@ -218,6 +225,7 @@ public static class BuiltInMemberCollections
 		{ ("System.GUI", nameof(ItemsControl)), typeof(ItemsControl) },
 		{ ("System.GUI", nameof(KeyEventArgs)), typeof(KeyEventArgs) },
 		{ ("System.GUI", nameof(Panel)), typeof(Panel) },
+		{ ("System.GUI", nameof(Point)), typeof(Point) },
 		{ ("System.GUI", nameof(PointerEventArgs)), typeof(PointerEventArgs) },
 		{ ("System.GUI", nameof(PointerPressedEventArgs)), typeof(PointerPressedEventArgs) },
 		{ ("System.GUI", nameof(PointerReleasedEventArgs)), typeof(PointerReleasedEventArgs) },
@@ -279,6 +287,11 @@ public static class BuiltInMemberCollections
 		{ ("System.Unsafe", "UnsafeString"), typeof(string) },
 		{ ("System.Unsafe", "ValueEmptyTask"), typeof(ValueTask) },
 	};
+
+	/// <summary>
+	/// Sorted by tuple, contains Namespace and Type.
+	/// </summary>
+	public static Mirror<(String Namespace, String Type), Type> ImportedTypes { get; } = [];
 
 	/// <summary>
 	/// Sorted by Container and Type, also contains RestrictionPackage modifiers, RestrictionTypes, RestrictionNames and Attributes.
@@ -1155,7 +1168,8 @@ public static class BuiltInMemberCollections
 		var split = namespace_.Split('.');
 		if (PrimitiveTypes.ContainsKey(basic))
 			return GetPrimitiveBlockStack(basic);
-		else if (ExtraTypes.TryGetValue((namespace_, typeName), out var netType))
+		else if (ExtraTypes.TryGetValue((namespace_, typeName), out var netType)
+			|| ImportedTypes.TryGetValue((namespace_, typeName), out netType))
 			return new([.. split.Convert(x => new Block(BlockType.Namespace, x, 1)),
 				new(typeof(Delegate).IsAssignableFrom(netType) ? BlockType.Delegate
 				: netType.IsInterface ? BlockType.Interface
@@ -1169,6 +1183,72 @@ public static class BuiltInMemberCollections
 		else
 			return new([new(BlockType.Extra, basic, 1)]);
 	}
+
+	public static async Task<List<string>> DownloadPackage(string packageId)
+	{
+		var downloadDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Downloaded");
+		var extractDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extracted");
+		if (Directory.Exists(extractDir))
+			Directory.Delete(extractDir, true);
+		var source = new PackageSource("https://api.nuget.org/v3/index.json");
+		var sourceRepository = new SourceRepository(source, Repository.Provider.GetCoreV3());
+		var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>();
+		var metadata = await metadataResource.GetMetadataAsync(packageId, includePrerelease: false, includeUnlisted: false,
+			new(), new NullLogger(), CancellationToken.None);
+		var maxVersion = metadata.Max(x => x.Identity.Version);
+		var packageIdentity = metadata.FindAll(x => x.Identity.Version == maxVersion).Convert(x => x.Identity).FirstOrDefault()
+			?? throw new NonExistentPackageException();
+		var downloadResource = await sourceRepository.GetResourceAsync<DownloadResource>();
+		using var downloadResult = await downloadResource.GetDownloadResourceResultAsync(packageIdentity,
+			new PackageDownloadContext(new SourceCacheContext()), downloadDir, new NullLogger(), CancellationToken.None);
+		if (downloadResult.Status != DownloadResourceResultStatus.Available)
+			throw new NonExistentPackageException();
+		var nupkgStream = downloadResult.PackageStream;
+		Directory.CreateDirectory(extractDir);
+		ZipFile.ExtractToDirectory(nupkgStream, extractDir, true);
+		var dllFiles = Directory.GetFiles(extractDir, "*.dll", SearchOption.AllDirectories)
+			.Filter(f => f.Contains("/lib/") || f.Contains(@"\lib\")).ToList();
+		if (!dllFiles.Any())
+			throw new NonExistentPackageException();
+		var loadedAssemblies = new ParallelHashSet<Assembly>(new EComparer<Assembly>((x, y) => x.FullName == y.FullName,
+			x => x.FullName?.GetHashCode() ?? 0));
+		Parallel.ForEach(dllFiles, dllPath =>
+		{
+			try
+			{
+				var assembly = Assembly.LoadFrom(dllPath);
+				loadedAssemblies.Add(assembly);
+			}
+			catch
+			{
+			}
+		});
+		foreach (var assembly in loadedAssemblies)
+		{
+			try
+			{
+				loadedAssemblies.Add(assembly);
+				foreach (var type in assembly.GetTypes())
+				{
+					ImportedNamespaces.Add(type.Namespace);
+					ImportedTypes.TryAdd((type.Namespace, ((String)type.Name).GetBefore('`')), type);
+				}
+			}
+			catch
+			{
+			}
+		}
+		return loadedAssemblies.ToList(a => a.FullName ?? "netstandard");
+	}
+}
+
+public class NonExistentPackageException : Exception
+{
+	public NonExistentPackageException() : base("Ошибка, такой NuGet-пакет не существует.") { }
+
+	public NonExistentPackageException(string? message) : base(message) { }
+
+	public NonExistentPackageException(string? message, Exception? innerException) : base(message, innerException) { }
 }
 
 public class ViewModelBase : ReactiveObject

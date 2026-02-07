@@ -401,12 +401,12 @@ namespace AvaloniaEdit;
 		public static readonly StyledProperty<bool> IsReadOnlyProperty =
 			AvaloniaProperty.Register<TextEditor, bool>("IsReadOnly");
 
-		/// <summary>
-		/// Specifies whether the user can change the text editor content.
-		/// Setting this property will replace the
-		/// <see cref="Editing.TextArea.ReadOnlySectionProvider">TextArea.ReadOnlySectionProvider</see>.
-		/// </summary>
-		public bool IsReadOnly
+	/// <summary>
+	/// Specifies whether the user can change the text editor content.
+	/// Setting this property will replace the
+	/// <see cref="TextArea.ReadOnlySectionProvider">TextArea.ReadOnlySectionProvider</see>.
+	/// </summary>
+	public bool IsReadOnly
 		{
 			get => GetValue(IsReadOnlyProperty);
 			set => SetValue(IsReadOnlyProperty, value);

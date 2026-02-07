@@ -173,13 +173,16 @@ public static class TypeChecks
 	{
 		if (PrimitiveTypes.TryGetValue(containerType.Type, out netType))
 			return true;
-		if (ExtraTypes.TryGetValue((containerType.Container.ToString(), containerType.Type), out netType))
+		if (ExtraTypes.TryGetValue((containerType.Container.ToString(), containerType.Type), out netType)
+			|| ImportedTypes.TryGetValue((containerType.Container.ToString(), containerType.Type), out netType))
 			return true;
 		Type? preservedNetType = null;
 		if (containerType.Container.Length != 0)
 			return false;
 		if (ExplicitlyConnectedNamespaces
-			.FindIndex(x => ExtraTypes.TryGetValue((x, containerType.Type), out preservedNetType)) < 0)
+			.FindIndex(x => ExtraTypes.TryGetValue((x, containerType.Type), out preservedNetType)) < 0
+			&& ExplicitlyConnectedNamespaces
+			.FindIndex(x => ImportedTypes.TryGetValue((x, containerType.Type), out preservedNetType)) < 0)
 			return false;
 		if (preservedNetType == null)
 			return false;

@@ -170,6 +170,15 @@
 						FontSize="16"
 						Width="128"/>
 					<Button
+						Click="Settings_Click">
+						<TextBlock
+							HorizontalAlignment="Center"
+							Text="Настройки"
+							FontFamily="Arial Narrow"
+							FontSize="16"
+							TextAlignment="Center"/>
+					</Button>
+					<Button
 						Click="Copyrights_Click">
 						<TextBlock
 							HorizontalAlignment="Center"
@@ -181,6 +190,11 @@
 				</StackPanel>
 			</Grid>
 		</ScrollViewer>
+		<views:SettingsView
+			x:Name="SettingsView"
+			Width="1024"
+			Height="768"
+			IsVisible="False"/>
 		<views:CopyrightsView
 			x:Name="CopyrightsView"
 			Width="1024"

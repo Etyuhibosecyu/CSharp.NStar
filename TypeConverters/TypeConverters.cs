@@ -540,11 +540,15 @@ public static class TypeConverters
 		if (sourceType.MainType.TryPeek(out var sourceBlock)
 			&& (PrimitiveTypes.TryGetValue(sourceBlock.Name, out var sourceNetType)
 			|| ExtraTypes.TryGetValue((new BlockStack(sourceType.MainType.SkipLast(1)).ToString(),
+			 sourceBlock.Name), out sourceNetType)
+			|| ImportedTypes.TryGetValue((new BlockStack(sourceType.MainType.SkipLast(1)).ToString(),
 			 sourceBlock.Name), out sourceNetType))
 			&& sourceNetType.GetGenericArguments().Length == 0
 			&& destinationType.MainType.TryPeek(out var destinationBlock)
 			&& (PrimitiveTypes.TryGetValue(destinationBlock.Name, out var destinationNetType)
 			|| ExtraTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToString(),
+			 destinationBlock.Name), out destinationNetType)
+			|| ImportedTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToString(),
 			 destinationBlock.Name), out destinationNetType))
 			&& (destinationNetType.GetGenericArguments().Length == 0
 			&& destinationNetType.IsAssignableFrom(sourceNetType)
@@ -552,12 +556,15 @@ public static class TypeConverters
 			&& destinationNetType.GetGenericArguments()[0].Name == "TSelf"
 			&& destinationNetType.TryWrap(x => x.MakeGenericType(sourceNetType), out var genericType)
 			&& genericType.IsAssignableFrom(sourceNetType))
-			|| ExplicitlyConnectedNamespaces.FindIndex(x =>
-			ExtraTypes.TryGetValue((x,
+			|| ExplicitlyConnectedNamespaces.FindIndex(x => (ExtraTypes.TryGetValue((x,
 			sourceType.MainType.TryPeek(out var sourceBlock) ? sourceBlock.Name : ""), out var sourceNetType)
+			|| ImportedTypes.TryGetValue((x,
+			sourceType.MainType.TryPeek(out sourceBlock) ? sourceBlock.Name : ""), out sourceNetType))
 			&& sourceNetType.GetGenericArguments().Length == 0
-			&& ExtraTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToString(),
+			&& (ExtraTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToString(),
 			sourceType.MainType.TryPeek(out var destinationBlock) ? destinationBlock.Name : ""), out var destinationNetType)
+			|| ImportedTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToString(),
+			sourceType.MainType.TryPeek(out destinationBlock) ? destinationBlock.Name : ""), out destinationNetType))
 			&& (destinationNetType.GetGenericArguments().Length == 0
 			&& destinationNetType.IsAssignableFrom(sourceNetType)
 			|| destinationNetType.GetGenericArguments()[0].Name == "TSelf"
@@ -960,7 +967,7 @@ public static class TypeConverters
 				return new(TaskBlockStack, [new("type", 0, []) { Extra = NullType }]);
 			else if (netType == typeof(ValueTask))
 				return new(ValueTaskBlockStack, [new("type", 0, []) { Extra = NullType }]);
-			else if (ExtraTypes.TryGetKey(netType, out var type2))
+			else if (ExtraTypes.TryGetKey(netType, out var type2) || ImportedTypes.TryGetKey(netType, out type2))
 				return new(GetBlockStack(type2.Namespace + "." + type2.Type),
 					new([.. typeGenericArguments.Convert((x, index) =>
 					new TreeBranch("type", 0, []) { Extra = TypeMappingBack(x, genericArguments, extraTypes) })]));

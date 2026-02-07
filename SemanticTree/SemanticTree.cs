@@ -139,7 +139,8 @@ public sealed partial class SemanticTree
 	private ParseActionDelegate ParseAction(String branchName) => wreckOccurred ? Wreck : branchName.ToString() switch
 	{
 		nameof(Main) => Main,
-		nameof(Class) => Class,
+		nameof(Class) or nameof(BlockType.Struct) => Class,
+		nameof(Record) => Record,
 		nameof(Function) => Function,
 		nameof(Constructor) => Constructor,
 		nameof(Members) => Members,
@@ -298,6 +299,8 @@ public sealed partial class SemanticTree
 	private String Class(TreeBranch branch, out List<String>? errors)
 	{
 		errors = null;
+		if (!Enum.TryParse<BlockType>(branch.Name.ToString(), out var blockType))
+			return [];
 		var name = branch[0].Name;
 		if (prepassClasses.TryGetValue(name, out var pass) && pass.StartsWith("UNPASSED"))
 		{
@@ -330,7 +333,12 @@ public sealed partial class SemanticTree
 			result.AddRange("abstract ");
 		else if ((Attributes & TypeAttributes.Sealed) != 0)
 			result.AddRange("sealed ");
-		result.AddRange("class ");
+		result.AddRange(blockType switch
+		{
+			BlockType.Class => "class ",
+			BlockType.Struct => "struct ",
+			_ => throw new NotImplementedException(),
+		});
 		if (EscapedKeywords.Contains(name))
 			result.Add('@');
 		result.AddRange(name);
@@ -342,7 +350,7 @@ public sealed partial class SemanticTree
 		{
 			result.AddRange(" : ");
 			if (TypeIsPrimitive(BaseType.MainType))
-				result.AddRange((String)"IClass");
+				result.AddRange(nameof(IClass));
 			else
 				result.AddRange(Type(ref BaseType, branch[0], ref errors));
 		}
@@ -354,7 +362,7 @@ public sealed partial class SemanticTree
 			result.AddRange("public ").AddRange(Type(ref RestrictionType, branch[0], ref errors));
 			result.Add(' ').AddRange(Restrictions[x].Name).AddRange(" { get; init; }");
 		}
-		BlockStack fullContainer = new(branch.Container.Append(new(BlockType.Class, name, 1)));
+		BlockStack fullContainer = new(branch.Container.Append(new(blockType, name, 1)));
 		var properties = GetAllProperties(branch[^1].Container);
 		var UnsetRequiredProperties = UserDefinedConstructors[fullContainer]
 			.FindLast(x => x.Parameters.Equals(properties,
@@ -483,6 +491,42 @@ public sealed partial class SemanticTree
 		coreResult.AddRange(property.Key);
 	}
 
+	private String Record(TreeBranch branch, out List<String>? errors)
+	{
+		errors = null;
+		var name = branch[0].Name;
+		String result = [];
+		var (Restrictions, Attributes, BaseType, Decomposition) = UserDefinedTypes[(branch.Container, name)];
+		if ((Attributes & TypeAttributes.Private) != 0)
+			result.AddRange("private ");
+		if ((Attributes & TypeAttributes.Protected) != 0)
+			result.AddRange("protected ");
+		if ((Attributes & TypeAttributes.Internal) != 0)
+		{
+			result.AddRange("internal ");
+			GenerateMessage(ref errors, 0x8006, branch.Pos);
+		}
+		if ((Attributes & (TypeAttributes.Private | TypeAttributes.Protected | TypeAttributes.Internal)) == 0)
+			result.AddRange("public ");
+		result.AddRange("readonly record struct ");
+		if (EscapedKeywords.Contains(name))
+			result.Add('@');
+		result.AddRange(name);
+		var (TypeIndexes, OtherIndexes) = new Chain(Restrictions.Length).BreakFilter(index =>
+			!Restrictions[index].Package && Restrictions[index].RestrictionType.Equals(RecursiveType));
+		if (TypeIndexes.Length != 0)
+			result.Add('<').AddRange(String.Join(", ", TypeIndexes.ToArray(x => Restrictions[x].Name))).Add('>');
+		var Parameters = UserDefinedConstructors[new(branch.Container.Append(new(BlockType.Struct, name, 1)))][0].Parameters;
+		result.Add('(').AddRange(this.Parameters(branch[^1], Parameters, out var parametersErrors)).AddRange(");");
+		if (IsTypeContext(branch))
+			return result;
+		else
+		{
+			compiledClasses.AddRange(result);
+			return [];
+		}
+	}
+
 	private String Function(TreeBranch branch, out List<String>? errors)
 	{
 		String result = [];
@@ -509,6 +553,7 @@ public sealed partial class SemanticTree
 			result.AddRange("public ");
 		if ((Attributes & FunctionAttributes.Static) != 0)
 			result.AddRange("static ");
+		else if (container.TryPeek(out var block) && block.BlockType == BlockType.Struct) { }
 		else if ((Attributes & FunctionAttributes.New) == FunctionAttributes.Abstract)
 		{
 			if (UserDefinedTypes.TryGetValue(SplitType(branch.Container), out var userDefinedType)
@@ -1342,7 +1387,7 @@ public sealed partial class SemanticTree
 			}
 			else if (IsConstantDeclared(branch, branchName, out var constantErrors, out var constant))
 			{
-				if (branch.Parent != null && branch.Parent.Name == nameof(Assignment))
+				if (branch.Parent != null && branch.Parent.Name.AsSpan() is nameof(Assignment) or "UnaryAssignment")
 				{
 					GenerateMessage(ref errors, 0x4052, branch.Parent[Max(prevIndex + 1, 2)].Pos);
 					branch.Parent.Name = "null";
@@ -3657,9 +3702,10 @@ public sealed partial class SemanticTree
 		}
 		branch[i].Extra = NStarType;
 		var valueString = ParseAction(branch[i - 1].Name)(branch[i - 1], out var innerErrors);
-		if (valueString.Length == 0)
-			return "default!";
 		AddRange(ref errors, innerErrors);
+		if (valueString.Length == 0
+			|| valueString.AsSpan() is "_" or "default" or "default!" or "_ = default" or "_ = default!")
+			return "default!";
 		if (branch[i].Name == "^" && TryReadValue(valueString, out var value) && value.ToReal() <= 0)
 		{
 			GenerateMessage(ref errors, 0x4082, branch[i].Pos);
@@ -6076,7 +6122,7 @@ public sealed partial class SemanticTree
 		var parent = branch.Parent;
 		while (parent != null)
 		{
-			if (parent.Name.AsSpan() is nameof(Assignment) or "DeclarationAssignment" or nameof(List))
+			if (parent.Name.AsSpan() is nameof(Assignment) or "DeclarationAssignment" or "UnaryAssignment" or nameof(List))
 			{
 				var prevIndex = parent.Elements.FindIndex(x => ReferenceEquals(branch, x));
 				assignmentBranch = parent;
@@ -6096,10 +6142,10 @@ public sealed partial class SemanticTree
 		var parent = branch.Parent;
 		while (parent != null)
 		{
-			if (parent.Name == nameof(Assignment))
+			if (parent.Name.AsSpan() is nameof(Assignment) or "UnaryAssignment")
 			{
 				var prevIndex = parent.Elements.FindIndex(x => ReferenceEquals(branch, x));
-				assignmentBranch = parent;
+				assignmentBranch = parent.Name == "UnaryAssignment" ? new("", 0, []) : parent;
 				assignmentIndex = Max(prevIndex + 1, 2);
 				return true;
 			}
@@ -6241,19 +6287,19 @@ public sealed partial class SemanticTree
 		branch.Container.TryPeek(out var nearestBlock)
 		&& nearestBlock.BlockType is BlockType.Namespace or BlockType.Class or BlockType.Struct or BlockType.Interface;
 
-	public static String ExecuteProgram(String program, out String errors, params dynamic?[] args) =>
-		TranslateAndExecuteProgram(program, out errors, out _, args);
+	public static String ExecuteProgram(String program, List<string> packages, out String errors, params dynamic?[] args) =>
+		TranslateAndExecuteProgram(program, packages, out errors, out _, args);
 
-	public static String TranslateAndExecuteProgram(String program, out String errors,
+	public static String TranslateAndExecuteProgram(String program, List<string> packages, out String errors,
 		out Assembly? assembly, params dynamic?[] args)
 	{
 		List<String>? errorsInListForm = null;
 		try
 		{
 			ClearUserDefinedLists();
-			var translated = TranslateProgram(program);
+			var translated = AsyncContext.Run(async () => await TranslateProgram(program, packages));
 			AddRange(ref errorsInListForm, translated.errors);
-			return ExecuteProgram(translated, out errors, out assembly, args);
+			return ExecuteProgram(translated, packages, out errors, out assembly, args);
 		}
 		catch (OutOfMemoryException)
 		{
@@ -6294,6 +6340,8 @@ public sealed partial class SemanticTree
 	private static void ClearUserDefinedLists()
 	{
 		ExplicitlyConnectedNamespaces.Clear();
+		ImportedNamespaces.Clear();
+		ImportedTypes.Clear();
 		TempTypes.Clear();
 		UnnamedTypeStartIndexes.Clear();
 		UserDefinedConstants.Clear();
@@ -6311,16 +6359,34 @@ public sealed partial class SemanticTree
 		Variables.Clear();
 	}
 
-	public static (String s, List<String>? errors, String translatedClasses) TranslateProgram(String program)
+	public static async Task<(String s, List<String>? errors, String translatedClasses)> TranslateProgram(String program,
+		List<string> packages)
 	{
+		List<String>? packageErrors = null;
+		foreach (var package in packages)
+		{
+			try
+			{
+				await DownloadPackage(package);
+			}
+			catch (NonExistentPackageException)
+			{
+				Messages.GenerateMessage(ref packageErrors, 0xF010, 0, 0, package);
+			}
+		}
+		if (packageErrors is not null)
+		{
+			packages.Clear();
+			return ([], packageErrors, []);
+		}
 		var s = new SemanticTree((LexemStream)new CodeSample(program)).Parse(out var errors, out var translatedClasses);
 		return (s, errors, translatedClasses);
 	}
 
 	public static String ExecuteProgram((String s, List<String>? errors, String translatedClasses) translated,
-		out String errors, out Assembly? assembly, params dynamic?[] args)
+		List<string> packages, out String errors, out Assembly? assembly, params dynamic?[] args)
 	{
-		var (bytes, errorsInListForm) = CompileProgram(translated);
+		var (bytes, errorsInListForm) = CompileProgram(translated, packages.ToArray(RedStarLinq.ToNString));
 		assembly = EasyEval.GetAssembly(bytes);
 		var result = (Task<object>?)assembly?.GetType("Program")?.GetMethod("F")?.Invoke(null, [args]);
 		errors = errorsInListForm == null || errorsInListForm.Length == 0 ? "Ошибок нет" :
@@ -6328,12 +6394,12 @@ public sealed partial class SemanticTree
 		return result is null ? "null" : JsonConvert.SerializeObject(AsyncContext.Run(async () => await result), JsonConverters.SerializerSettings);
 	}
 
-	public static String CompileProgram(String program)
+	public static async Task<String> CompileProgram(String program, List<string> packages)
 	{
 		try
 		{
 			ClearUserDefinedLists();
-			var (s, _, translatedClasses) = TranslateProgram(program);
+			var (s, _, translatedClasses) = await TranslateProgram(program, packages);
 			return GetSourceCode(s, translatedClasses);
 		}
 		catch
@@ -6371,7 +6437,7 @@ using System.Dynamic;
 using System.IO;
 using System.Numerics;
 using System.Threading;
-using System.Threading.Tasks;
+using System.Threading.Tasks;").AddRange(ImportedNamespaces.Filter(x => x.Length != 0).Convert(x => "using " + x + ";\r\n").ConvertAndJoin(x => x)).AddRange(@"
 using static ").AddRange(nameof(NStar)).Add('.').AddRange(nameof(global::NStar.Core)).Add('.').AddRange(nameof(Extents)).AddRange(@";
 using static ").AddRange(nameof(NStar)).Add('.').AddRange(nameof(global::NStar.EasyEvalLib)).Add('.').AddRange(nameof(EasyEval)).AddRange(@";
 using static CSharp.NStar.").AddRange(nameof(BuiltInMemberCollections)).AddRange(@";
@@ -6451,10 +6517,10 @@ public static async Task<dynamic?> F(params dynamic?[] args)
 			"""");
 
 	private static (byte[] Bytes, List<String> ErrorsList) CompileProgram((String s, List<String>? errors,
-		String translatedClasses) translated)
+		String translatedClasses) translated, String[] packages)
 	{
 		var (s, errors, translatedClasses) = translated;
-		var bytes = EasyEval.Compile(GetSourceCode(s, translatedClasses), GetExtraAssemblies(), out var compileErrors);
+		var bytes = EasyEval.Compile(GetSourceCode(s, translatedClasses), [.. GetExtraAssemblies(), .. packages], out var compileErrors);
 		if (bytes == null || bytes.Length <= 2 || compileErrors != "Compilation done without any error.\r\n")
 			throw new EvaluationFailedException();
 		return (bytes, errors ?? []);

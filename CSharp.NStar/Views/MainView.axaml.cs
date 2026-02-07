@@ -77,7 +77,6 @@ public partial class MainView : UserControl
 	}
 
 	private void UserControl_Loaded(object? sender, RoutedEventArgs e) => Task.Factory.StartNew(async () =>
-	{
 		await Dispatcher.UIThread.InvokeAsync(() =>
 		{
 			TextBoxInput.Text = "return \"Hello, world!\";\r\n";
@@ -85,8 +84,7 @@ public partial class MainView : UserControl
 			ButtonOpenCode.IsEnabled = true;
 			ButtonSaveCode.IsEnabled = true;
 			ButtonSaveExe.IsEnabled = true;
-		});
-	}).Wait();
+		})).Wait();
 
 	private void UserControl_SizeChanged(object? sender, SizeChangedEventArgs e)
 	{
@@ -241,11 +239,15 @@ public partial class MainView : UserControl
 
 	private void ButtonSaveExe_Click(object? sender, RoutedEventArgs e) => SaveExe();
 
+	private void Settings_Click(object? sender, RoutedEventArgs e) => SettingsView.IsVisible = true;
+
 	private void Copyrights_Click(object? sender, RoutedEventArgs e) => CopyrightsView.IsVisible = true;
 
 	private void Execute()
 	{
-		TextBoxOutput.Text = TranslateAndExecuteProgram(TextBoxInput.Text, out var errors, out compiledAssembly).ToString();
+		TextBoxOutput.Text = TranslateAndExecuteProgram(TextBoxInput.Text, SettingsView.TextBoxNuGet.Text
+			?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [],
+			out var errors, out compiledAssembly).ToString();
 		TextBoxErrors.Text = errors.ToString();
 	}
 
@@ -344,6 +346,43 @@ public partial class MainView : UserControl
 				"Ошибка! Файл не является кодом .NStar Pre-Pre-I совместимой ревизии на совместимом языке или поврежден.",
 				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
 			return;
+		}
+		XmlDocument doc = new();
+		doc.LoadXml(((String)"<Project>\n").AddRange(settings).AddRange(prefix).ToString());
+		var root = doc.DocumentElement;
+		if (root != null)
+		{
+			var properties = root.ChildNodes.OfType<XmlElement>()
+				.Filter(x => x.NodeType == XmlNodeType.Element && x.Name == "Properties");
+			var codeStyle = properties.ConvertAndJoin(x => x.ChildNodes.OfType<XmlElement>()
+				.Filter(x => x.NodeType == XmlNodeType.Element && x.Name == "CodeStyle"));
+			var CharactersInLine = codeStyle.ConvertAndJoin(x => x.ChildNodes.OfType<XmlElement>()
+				.Filter(x => x.NodeType == XmlNodeType.Element && x.Name == "CharactersInLine")
+				.ConvertAndJoin(x => x.ChildNodes.OfType<XmlText>()
+				.Filter(y => y.NodeType == XmlNodeType.Text))).LastOrDefault();
+			var LinesInFunction = codeStyle.ConvertAndJoin(x => x.ChildNodes.OfType<XmlElement>()
+				.Filter(x => x.NodeType == XmlNodeType.Element && x.Name == "LinesInFunction")
+				.ConvertAndJoin(x => x.ChildNodes.OfType<XmlText>()
+				.Filter(y => y.NodeType == XmlNodeType.Text))).LastOrDefault();
+			var FunctionsInClass = codeStyle.ConvertAndJoin(x => x.ChildNodes.OfType<XmlElement>()
+				.Filter(x => x.NodeType == XmlNodeType.Element && x.Name == "FunctionsInClass")
+				.ConvertAndJoin(x => x.ChildNodes.OfType<XmlText>()
+				.Filter(y => y.NodeType == XmlNodeType.Text))).LastOrDefault();
+			var TestEnvironment = codeStyle.ConvertAndJoin(x => x.ChildNodes.OfType<XmlElement>()
+				.Filter(x => x.NodeType == XmlNodeType.Element && x.Name == "TestEnvironment")
+				.ConvertAndJoin(x => x.ChildNodes.OfType<XmlText>()
+				.Filter(y => y.NodeType == XmlNodeType.Text))).LastOrDefault();
+			if (Enum.TryParse(typeof(RuleStrictness), CharactersInLine?.Value, out var strictness)
+				&& strictness is RuleStrictness CharactersInLineStrictness)
+				CodeStyleRules.CharactersInLineStrictness = CharactersInLineStrictness;
+			if (Enum.TryParse(typeof(RuleStrictness), LinesInFunction?.Value, out strictness)
+				&& strictness is RuleStrictness LinesInFunctionStrictness)
+				CodeStyleRules.LinesInFunctionStrictness = LinesInFunctionStrictness;
+			if (Enum.TryParse(typeof(RuleStrictness), FunctionsInClass?.Value, out strictness)
+				&& strictness is RuleStrictness FunctionsInClassStrictness)
+				CodeStyleRules.FunctionsInClassStrictness = FunctionsInClassStrictness;
+			if (bool.TryParse(TestEnvironment?.Value, out var enable))
+				CodeStyleRules.TestEnvironment = enable;
 		}
 		TextBoxInput.Text = content.Remove(0, settings.Length + prefix.Length).ToString();
 		Execute();

@@ -63,7 +63,7 @@ You can enter C#.NStar code here. Write empty line to finish and execute.");
 				program.AddRange(readLine).Add('\n');
 				continue;
 			}
-			Console.WriteLine(TranslateAndExecuteProgram(program, out var errors, out _).ToString());
+			Console.WriteLine(TranslateAndExecuteProgram(program, [], out var errors, out _).ToString());
 			if (errors != "Ошибок нет")
 				Console.WriteLine("=====ERRORS=====");
 			Console.WriteLine(errors.ToString());
