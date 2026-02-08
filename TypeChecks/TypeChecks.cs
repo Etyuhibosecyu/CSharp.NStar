@@ -1,4 +1,5 @@
-﻿global using System;
+﻿global using NStar.Core;
+global using System;
 global using System.Diagnostics.CodeAnalysis;
 global using static CSharp.NStar.BuiltInMemberCollections;
 global using static CSharp.NStar.NStarType;
@@ -8,6 +9,28 @@ namespace CSharp.NStar;
 
 public static class TypeChecks
 {
+	public static bool CheckContainer(BlockStack container, Func<BlockStack, bool> check, out BlockStack matchingContainer)
+	{
+		if (check(container))
+		{
+			matchingContainer = container;
+			return true;
+		}
+		var containerPart = container.ToList().GetSlice();
+		BlockStack stack;
+		while (containerPart.Any())
+		{
+			containerPart = containerPart.SkipLast(1);
+			if (check(stack = new(containerPart)))
+			{
+				matchingContainer = stack;
+				return true;
+			}
+		}
+		matchingContainer = new();
+		return false;
+	}
+
 	public static bool ExtraTypeExists(BlockStack container, String typeName, out bool @class)
 	{
 		@class = false;
@@ -31,8 +54,7 @@ public static class TypeChecks
 		}
 		if (Variables.TryGetValue(container, out var containerVariables)
 			&& containerVariables.TryGetValue(typeName, out var variableName))
-			return TypeIsPrimitive(variableName.MainType) && variableName.MainType.Peek().Name == "typename"
-				&& variableName.ExtraTypes.Length == 0;
+			return TypeIsPrimitive(variableName.MainType) && variableName.MainType.Peek().Name == "typename";
 		if (UserDefinedProperties.TryGetValue(container, out var containerProperties)
 			&& containerProperties.TryGetValue(typeName, out var a))
 			return TypeIsPrimitive(a.NStarType.MainType) && a.NStarType.MainType.Peek().Name == "typename"
@@ -43,6 +65,19 @@ public static class TypeChecks
 	public static bool IsEqualOrDerived(NStarType derived, NStarType @base)
 	{
 		if (derived.Equals(@base) || @base.Equals(ObjectType))
+			return true;
+		String foundName = default!;
+		if (@base.MainType.TryPeek(out var block) && block.BlockType == BlockType.Extra
+			&& CheckContainer(@base.MainType, stack => TempTypes.TryGetValue(stack, out var containerTempTypes)
+			&& containerTempTypes.Find(x => x.Name == block.Name) is var found && (foundName = found.Name) != null, out _)
+			&& derived.MainType.TryPeek(out block) && block.BlockType == BlockType.Extra
+			&& CheckContainer(derived.MainType, stack => TempTypes.TryGetValue(stack, out var containerTempTypes)
+			&& containerTempTypes.Any(x => x.Name == block.Name && Variables.TryGetValue(stack, out var containerVariables)
+			&& containerVariables.TryGetValue(x.Name, out var VariableNStarType)
+			&& VariableNStarType.MainType.Equals(RecursiveBlockStack) && VariableNStarType.ExtraTypes.Length == 1
+			&& VariableNStarType.ExtraTypes[0].Name == "type"
+			&& VariableNStarType.ExtraTypes[0].Extra is NStarType BaseNStarType
+			&& BaseNStarType.Equals(@base)), out _))
 			return true;
 		var type = derived;
 		while (!type.Equals(NullType))
@@ -176,6 +211,21 @@ public static class TypeChecks
 		if (ExtraTypes.TryGetValue((containerType.Container.ToString(), containerType.Type), out netType)
 			|| ImportedTypes.TryGetValue((containerType.Container.ToString(), containerType.Type), out netType))
 			return true;
+		if (Interfaces.TryGetValue((containerType.Container.ToString(), containerType.Type), out var @interface))
+		{
+			netType = @interface.DotNetType;
+			return true;
+		}
+		if (ExtendedTypes.TryGetValue((containerType.Container, containerType.Type), out var extendedType))
+		{
+			netType = containerType.Type.ToString() switch
+			{
+				nameof(Action) => typeof(Action),
+				nameof(Func<>) => typeof(Func<>),
+				_ => throw new InvalidOperationException(),
+			};
+			return true;
+		}
 		Type? preservedNetType = null;
 		if (containerType.Container.Length != 0)
 			return false;

@@ -20,28 +20,6 @@ namespace CSharp.NStar;
 
 public static class MemberChecks
 {
-	public static bool CheckContainer(BlockStack container, Func<BlockStack, bool> check, out BlockStack matchingContainer)
-	{
-		if (check(container))
-		{
-			matchingContainer = container;
-			return true;
-		}
-		var containerPart = container.ToList().GetSlice();
-		BlockStack stack;
-		while (containerPart.Any())
-		{
-			containerPart = containerPart.SkipLast(1);
-			if (check(stack = new(containerPart)))
-			{
-				matchingContainer = stack;
-				return true;
-			}
-		}
-		matchingContainer = new();
-		return false;
-	}
-
 	public static bool PropertyExists(NStarType container, String name, bool @static, [MaybeNullWhen(false)]
 		out UserDefinedProperty? property)
 	{
@@ -233,7 +211,7 @@ public static class MemberChecks
 			out matchingContainer))
 		{
 			var foundIndex = userDefinedType.Restrictions
-				.FindIndex(x => x.RestrictionType.Equals(RecursiveType) && x.Name == name);
+				.FindIndex(x => x.RestrictionType.MainType.Equals(RecursiveBlockStack) && x.Name == name);
 			if (foundIndex >= 0)
 				return true;
 		}
@@ -410,7 +388,8 @@ public static class MemberChecks
 					NStarType = new(GetBlockStack(x.Type), new(x.ExtraTypes.Convert(GetTypeAsBranch)));
 				return new ExtendedMethodParameter(NStarType, x.Name, x.Attributes, x.DefaultValue);
 			})];
-			var functionParameterTypes = parameters.ToList(x => x.Type);
+			var functionParameterTypes = parameters.ToList((x, index) => index == callParameterTypes.Length - 1
+				&& (x.Attributes & ParameterAttributes.Params) == ParameterAttributes.Params ? GetListType(x.Type) : x.Type);
 			if (parameters.Length != 0 && (parameters[^1].Attributes & ParameterAttributes.Params) == ParameterAttributes.Params
 				&& callParameterTypes.Length > functionParameterTypes.Length)
 			{
@@ -418,10 +397,11 @@ public static class MemberChecks
 				functionParameterTypes.AddSeries(parameters[^1].Type,
 					callParameterTypes.Length - functionParameterTypes.Length);
 			}
-			var patterns = GetNStarReplacementPatterns(functionOverload.ExtraTypes,
-				callParameterTypes, functionParameterTypes)
-				.AddRange(GetNStarReplacementPatterns(functionOverload.ExtraTypes,
-				functionParameterTypes, callParameterTypes));
+			var patterns = GetNStarReplacementPatterns(functionOverload.ExtraTypes, callParameterTypes, functionParameterTypes)
+				.AddRange(GetNStarReplacementPatterns(functionOverload.ExtraTypes, functionParameterTypes, callParameterTypes))
+				.FilterInPlace(x => !x.TypeToInsert.ExtraTypes.Values
+				.Any(y => y.Name == "type" && y.Extra is NStarType NStarType && NStarType.MainType.TryPeek(out var block)
+				&& block.Name.Equals(x.ExtraType)));
 			for (var j = 0; j < patterns.Length; j++)
 			{
 				ReturnNStarType = ReplaceExtraType(ReturnNStarType, patterns[j]);
@@ -468,8 +448,16 @@ public static class MemberChecks
 		}
 		user = true;
 		return true;
-		NStarType FindParameter(String typeName) => callParameterTypes[functionOverload.Parameters.FindIndex(x =>
-			typeName == x.Type || x.ExtraTypes.Contains(typeName))];
+		NStarType FindParameter(String typeName)
+		{
+			var foundIndex = functionOverload.Parameters.FindIndex(x => typeName == x.Type || x.ExtraTypes.Contains(typeName));
+			return foundIndex != callParameterTypes.Length - 1
+				|| (functionOverload.Parameters[foundIndex].Attributes & ParameterAttributes.Params)
+				!= ParameterAttributes.Params ? callParameterTypes[foundIndex]
+				: GetSubtype(callParameterTypes[foundIndex]) is var subtype && !subtype.Equals(NullType)
+				? subtype : callParameterTypes[foundIndex];
+		}
+
 		TreeBranch GetTypeAsBranch(String typeName) => new("type", 0, [])
 		{
 			Extra = functionOverload.ExtraTypes.Contains(typeName)

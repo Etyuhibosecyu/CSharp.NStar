@@ -26,6 +26,7 @@ using NStar.SumCollections;
 using NStar.TreeSets;
 using NuGet.Common;
 using NuGet.Configuration;
+using NuGet.Packaging;
 using NuGet.Protocol.Core.Types;
 using ReactiveUI;
 using System.Collections.Immutable;
@@ -34,6 +35,8 @@ using System.IO.Compression;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Security.Cryptography.Pkcs;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -137,6 +140,8 @@ public static class BuiltInMemberCollections
 	/// </summary>
 	public static Mirror<(String Namespace, String Type), Type> ExtraTypes { get; } = new()
 	{
+		{ ("", nameof(IComparable<>)), typeof(IComparable<>) },
+		{ ("", nameof(IEquatable<>)), typeof(IEquatable<>) },
 		{ ("Environment", nameof(Environment.SpecialFolder)), typeof(Environment.SpecialFolder) },
 		{ ("Environment", nameof(Environment.SpecialFolderOption)), typeof(Environment.SpecialFolderOption) },
 		{ ("System", nameof(Convert)), typeof(Convert) },
@@ -326,19 +331,25 @@ public static class BuiltInMemberCollections
 	public static SortedDictionary<(String Namespace, String Interface), (List<String> ExtraTypes, Type DotNetType)> Interfaces { get; } = new()
 	{
 		{
-			([], "IBase"), (ExtraTypesT, typeof(void))
-		},
-		{
 			([], "IChar"), (ExtraTypesT, typeof(void))
 		},
 		{
-			([], nameof(IComparable<>)), (ExtraTypesT, typeof(IComparable<>)) }, { ([], "IComparableRaw"), (NoExtraTypes, typeof(void))
+			([], nameof(IComparable<>)), (ExtraTypesT, typeof(IComparable<>))
 		},
 		{
-			([], nameof(IConvertible)), (NoExtraTypes, typeof(IConvertible)) }, { ([], nameof(IEquatable<>)), (ExtraTypesT, typeof(IEquatable<>))
+			([], "IComparableRaw"), (NoExtraTypes, typeof(IComparable))
 		},
 		{
-			([], "IIncreasable"), (ExtraTypesT, typeof(IIncrementOperators<>)) }, { ([], "IIntegerNumber"), (ExtraTypesT, typeof(IBinaryInteger<>))
+			([], nameof(IConvertible)), (NoExtraTypes, typeof(IConvertible))
+		},
+		{
+			([], nameof(IEquatable<>)), (ExtraTypesT, typeof(IEquatable<>))
+		},
+		{
+			([], "IIncreasable"), (ExtraTypesT, typeof(IIncrementOperators<>))
+		},
+		{
+			([], "IIntegerNumber"), (ExtraTypesT, typeof(IBinaryInteger<>))
 		},
 		{
 			([], "INumber"), (ExtraTypesT, typeof(INumber<>))
@@ -356,7 +367,7 @@ public static class BuiltInMemberCollections
 			("System.Collections", nameof(ICollection)), (ExtraTypesT, typeof(ICollection<>)) 
 		}, 
 		{
-			("System.Collections", "ICollectionRaw"), (NoExtraTypes, typeof(void))
+			("System.Collections", "ICollectionRaw"), (NoExtraTypes, typeof(System.Collections.ICollection))
 		},
 		{
 			("System.Collections", "IComparer"), (ExtraTypesT, typeof(G.IComparer<>))
@@ -365,13 +376,13 @@ public static class BuiltInMemberCollections
 			("System.Collections", nameof(IDictionary)), (["TKey", "TValue"], typeof(G.IDictionary<,>))
 		},
 		{
-			("System.Collections", "IDictionaryRaw"), (NoExtraTypes, typeof(void))
+			("System.Collections", "IDictionaryRaw"), (NoExtraTypes, typeof(System.Collections.IDictionary))
 		},
 		{
 			("System.Collections", nameof(G.IEnumerable<>)), (ExtraTypesT, typeof(G.IEnumerable<>)) 
 		}, 
 		{ 
-			("System.Collections", "IEnumerableRaw"), (NoExtraTypes, typeof(void)) 
+			("System.Collections", "IEnumerableRaw"), (NoExtraTypes, typeof(System.Collections.IEnumerable)) 
 		}, 
 		{ 
 			("System.Collections", "IEqualityComparer"), (ExtraTypesT, typeof(G.IEqualityComparer<>))
@@ -481,7 +492,7 @@ public static class BuiltInMemberCollections
 		},
 		{
 			"Max", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
-				[new("System.INumber", "source", ExtraTypesT, ParameterAttributes.Params, [])])
+				[new("IComparable", "source", ExtraTypesT, ParameterAttributes.Params, [])])
 		},
 		{
 			"Mean", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
@@ -489,7 +500,7 @@ public static class BuiltInMemberCollections
 		},
 		{
 			"Min", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
-				[new("System.INumber", "source", ExtraTypesT, ParameterAttributes.Params, [])])
+				[new("IComparable", "source", ExtraTypesT, ParameterAttributes.Params, [])])
 		},
 		{
 			"Q", new(NoExtraTypes, "string", NoExtraTypes, FunctionAttributes.None, [])
@@ -1203,6 +1214,7 @@ public static class BuiltInMemberCollections
 			new PackageDownloadContext(new SourceCacheContext()), downloadDir, new NullLogger(), CancellationToken.None);
 		if (downloadResult.Status != DownloadResourceResultStatus.Available)
 			throw new NonExistentPackageException();
+		await VerifyPackageSignature(downloadResult.PackageStream);
 		var nupkgStream = downloadResult.PackageStream;
 		Directory.CreateDirectory(extractDir);
 		ZipFile.ExtractToDirectory(nupkgStream, extractDir, true);
@@ -1240,6 +1252,29 @@ public static class BuiltInMemberCollections
 		}
 		return loadedAssemblies.ToList(a => a.FullName ?? "netstandard");
 	}
+
+	private static async Task VerifyPackageSignature(Stream packageStream)
+	{
+		using var package = new PackageArchiveReader(packageStream);
+		var signaturePath = package.GetFiles()
+			.Find(f => f.EndsWith(".signature.p7s"));
+		if (string.IsNullOrEmpty(signaturePath))
+			throw new WrongSignatureException();
+		var signature = File.ReadAllBytes(signaturePath) ?? throw new WrongSignatureException();
+		try
+		{
+			SignedCms signedCms = new();
+			signedCms.Decode(signature);
+			signedCms.CheckSignature(true);
+			var certificates = signedCms.SignerInfos[0].Certificate;
+			if (!(certificates?.Verify() ?? false))
+				throw new WrongSignatureException();
+		}
+		catch (CryptographicException)
+		{
+			throw new WrongSignatureException();
+		}
+	}
 }
 
 public class NonExistentPackageException : Exception
@@ -1249,6 +1284,15 @@ public class NonExistentPackageException : Exception
 	public NonExistentPackageException(string? message) : base(message) { }
 
 	public NonExistentPackageException(string? message, Exception? innerException) : base(message, innerException) { }
+}
+
+public class WrongSignatureException : Exception
+{
+	public WrongSignatureException() : base("Ошибка, нельзя использовать этот пакет из-за неправильной подписи.") { }
+
+	public WrongSignatureException(string? message) : base(message) { }
+
+	public WrongSignatureException(string? message, Exception? innerException) : base(message, innerException) { }
 }
 
 public class ViewModelBase : ReactiveObject

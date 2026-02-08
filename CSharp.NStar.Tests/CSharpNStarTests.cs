@@ -8300,13 +8300,126 @@ return p1;
 ", "(1, 2)", "Ошибок нет")]
 	[DataRow(@"Class Base { }
 Struct Derived : Base { }
-", "null", @"Error 203E in line 2 at position 17: the struct can be derived only from the interfaces
+", "null", @"Error 2036 in line 2 at position 17: the struct can be derived only from the interfaces
 ")]
 	[DataRow(@"Struct Point
 {
 	abstract null Function Move() { }
 }
 ", "null", @"Error 0017 in line 3 at position 1: the struct members cannot be abstract
+")]
+	[DataRow(@"const [typename T : IComparableRaw, (Class)] Repository = new(
+{
+	private () T items = new();
+
+	null Function Add(T item)
+	{
+		items.Add(item);
+	}
+
+	T Function GetMax()
+	{
+		if (items.Length == 0)
+			return null;
+		return Max(items);
+	}
+});
+
+Class Product : IComparableRaw
+{
+	int Id;
+	int Function CompareTo(object obj)
+	{
+		return obj is Product product ? Id.CompareTo(product.Id) : 1;
+	}
+}
+
+var repo = new Repository[Product]();
+repo.Add(new Product[1]());
+repo.Add(new Product[5]());
+return repo.GetMax().Id;
+", "5", "Ошибок нет")]
+	[DataRow(@"const [typename T : IComparable[T], (Class)] Repository = new(
+{
+	private () T items = new();
+
+	null Function Add(T item)
+	{
+		items.Add(item);
+	}
+
+	T Function GetMax()
+	{
+		if (items.Length == 0)
+			return null;
+		return Max(items);
+	}
+});
+
+Class Product : IComparable[Product]
+{
+	int Id;
+	int Function CompareTo(Product product)
+	{
+		return Id.CompareTo(product.Id);
+	}
+}
+
+var repo = new Repository[Product]();
+repo.Add(new Product[1]());
+repo.Add(new Product[5]());
+return repo.GetMax().Id;
+", "5", "Ошибок нет")]
+	[DataRow(@"using System.Collections;
+const [(typename T1, typename T2 : T1), (Class)] Converter = new(
+{
+	T1 Function Convert(T2 x)
+	{
+		return x;
+	}
+});
+
+var converter = new Converter[IEnumerable[int], () int]();
+return converter.Convert((5, 10, 15));
+", "(5, 10, 15)", "Ошибок нет")]
+	[DataRow(@"const [typename T, (Class)] Container = new(
+{
+	public T Item;
+});
+
+Class BadClass : Container
+{
+}
+", "null", @"Error 2037 in line 7 at position 0: the type ""Container"" is polymorph and requires the parameters
+")]
+	[DataRow(@"const [typename T, (Class)] Factory = new(
+{
+	T Function Create()
+	{
+		return T;
+	}
+});
+", "null", @"Error 402B in line 5 at position 9: incompatibility between the type of the returning value ""typename"" and the function return type ""T""
+")]
+	[DataRow(@"sealed Class FinalClass { }
+
+const [typename T : FinalClass, (Class)] SealedTest = new(
+{
+	T property;
+});
+", "null", @"Error 2038 in line 3 at position 20: expected: non-sealed class except ""object"" or interface
+")]
+	[DataRow(@"const [typename T : object, (Class)] ObjectTest = new(
+{
+	T property;
+});
+", "null", @"Error 2038 in line 1 at position 20: expected: non-sealed class except ""object"" or interface
+")]
+	[DataRow(@"const [typename T : System.Func[int], (Class)] ObjectTest = new(
+{
+	T property;
+});
+", "null", @"Error 2038 in line 1 at position 35: expected: non-sealed class except ""object"" or interface
 ")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """

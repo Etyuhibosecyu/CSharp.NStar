@@ -97,12 +97,14 @@ public static class Messages
 			0x2033 => "the switch expression cannot be empty",
 			0x2034 => "the switch expression cannot contain cases after \"_\"",
 			0x2035 => "the property cannot be static and required at the same time",
+			0x2036 => "the struct can be derived only from the interfaces",
+			0x2037 => "the type \"" + parameters[0] + "\" is polymorph and requires the parameters",
+			0x2038 => "expected: non-sealed class except \"object\" or interface",
 			0x203A => "the identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar and cannot be used",
 			0x203B => "the end of identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar" +
 				" and cannot be used",
 			0x203C => "the constants cannot have getters or setters",
 			0x203D => "the constant must have a value",
-			0x203E => "the struct can be derived only from the interfaces",
 			0x2048 => "goto is a bad operator, it worsens the organization of the code;" +
 				" C#.NStar refused from its using intentionally",
 			0x4000 => "internal compiler error",
@@ -225,6 +227,7 @@ public static class Messages
 			0x4091 => "cannot get type of the type",
 			0x4092 => "the recursive type variable, property or constant cannot have the name \"typename\"",
 			0x4093 => "the recursive type in the pattern matching must contain the variable declaration",
+			0x4094 => "the wrong value \"" + parameters[0] + "\" of the recursive type \"" + parameters[1] + "\"",
 			0x40A0 => "the relational pattern matching can be only applied to the numbers",
 			0x40A1 => "the expression of the type \"" + parameters[0] + "\" cannot be matched with the pattern of the type \""
 				+ parameters[1] + "\"",
@@ -301,6 +304,7 @@ public static class Messages
 			0x9017 => "too many indentation units (both present and missing indents) (only 5 are supported)",
 			0xF000 => "compilation failed because of internal compiler error",
 			0xF010 => "the NuGet package " + parameters[0] + " does not exist (see under the \"Settings\" button)",
+			0xF011 => "the NuGet package " + parameters[0] + " has the wrong signature (see under the \"Settings\" button)",
 			_ => throw new InvalidOperationException(),
 		});
 	}
