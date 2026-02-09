@@ -83,7 +83,7 @@ public static class Messages
 			0x2026 => "the type \"" + parameters[0] + "\" is not defined in this location",
 			0x2027 => "incorrect type with \"short\" or \"long\" word",
 			0x2028 => "incorrect type with \"unsigned\" word",
-			0x2029 => throw new InvalidOperationException(),
+			0x2029 => "only the exception types can be caught - the type \"" + parameters[0] + "\" is not an exception type",
 			0x202A => "the identifier \"" + parameters[0] + "\" is still not implemented, wait for next versions",
 			0x202B => "the end of identifier \"" + parameters[0] + "\" is still not implemented, wait for next versions",
 			0x202C => "the namespace \"" + parameters[0] + "\" is outdated, consider using " + parameters[1] + " instead",

@@ -8,9 +8,10 @@
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+		<ApplicationIcon>CSharp.NStar.ico</ApplicationIcon>
 	</PropertyGroup>
-
 	<ItemGroup>
+		<Content Include="CSharp.NStar.ico" />
 		<ProjectReference Include="..\CSharp.NStar\CSharp.NStar.csproj" />
 	</ItemGroup>
 

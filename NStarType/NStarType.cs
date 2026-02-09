@@ -23,6 +23,8 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 	public static readonly NStarType StringType = GetPrimitiveType("string");
 	public static readonly NStarType IndexType = GetPrimitiveType("index");
 	public static readonly NStarType RangeType = GetPrimitiveType("range");
+	public static readonly NStarType ExceptionType = new(new(new(BlockType.Namespace, "System", 1),
+		new(BlockType.Class, nameof(Exception), 1)), NoBranches);
 	public static readonly NStarType ChainType = new(new(new(BlockType.Namespace, "System", 1),
 		new(BlockType.Namespace, "Collections", 1), new(BlockType.Struct, nameof(Chain), 1)), NoBranches);
 	public static readonly NStarType UnsafeStringType = new(new(new(BlockType.Namespace, "System", 1),
@@ -47,19 +49,16 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, nameof(FuncDictionary<,>), 1));
 	public static readonly BlockStack ListHashSetBlockStack = new(new(BlockType.Namespace, "System", 1),
 		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(ListHashSet<>), 1));
-	public static readonly BlockStack TaskBlockStack = new(new Block(BlockType.Class, "Task", 1));
-	public static readonly BlockStack ValueTaskBlockStack = new(new Block(BlockType.Struct, "ValueTask", 1));
-	public static readonly BlockStack TaskBlockStackNamespace = new(new(BlockType.Namespace, "System", 1),
+	public static readonly BlockStack TaskBlockStack = new(new(BlockType.Namespace, "System", 1),
 		new(BlockType.Namespace, "Threading", 1), new(BlockType.Class, "Task", 1));
-	public static readonly BlockStack ValueTaskBlockStackNamespace = new(new(BlockType.Namespace, "System", 1),
+	public static readonly BlockStack ValueTaskBlockStack = new(new(BlockType.Namespace, "System", 1),
 		new(BlockType.Namespace, "Threading", 1), new(BlockType.Struct, "ValueTask", 1));
 	public static readonly BlockStack EmptyTaskBlockStack = new(new(BlockType.Namespace, "System", 1),
 		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "EmptyTask", 1));
 	public static readonly BlockStack ValueEmptyTaskBlockStack = new(new(BlockType.Namespace, "System", 1),
 		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Struct, "ValueEmptyTask", 1));
 	public static readonly ImmutableArray<BlockStack> TaskBlockStacks = [
-		TaskBlockStack, ValueTaskBlockStack, TaskBlockStackNamespace, ValueTaskBlockStackNamespace,
-		EmptyTaskBlockStack, ValueEmptyTaskBlockStack
+		TaskBlockStack, ValueTaskBlockStack, EmptyTaskBlockStack, ValueEmptyTaskBlockStack
 	];
 
 	public NStarType Copy() => new(new(MainType), new(ExtraTypes.Values.Convert(x =>

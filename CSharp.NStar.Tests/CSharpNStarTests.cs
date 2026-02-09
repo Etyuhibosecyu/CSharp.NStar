@@ -1080,7 +1080,7 @@ hs.Add(""2"");
 hs.Add(""3"");
 hs.Add(""2"");
 return hs.remove(2);
-", "null", @"Error 4033 in line 7 at position 10: the type ""ListHashSet"" does not contain member ""remove""
+", "null", @"Error 4033 in line 7 at position 10: the type ""System.Collections.ListHashSet"" does not contain member ""remove""
 ")]
 	[DataRow(@"using System.Collections;
 var dic = new Dictionary[string, int]();
@@ -8420,6 +8420,274 @@ const [typename T : FinalClass, (Class)] SealedTest = new(
 	T property;
 });
 ", "null", @"Error 2038 in line 1 at position 35: expected: non-sealed class except ""object"" or interface
+")]
+	[DataRow(@"using System.IO;
+try
+{
+	File.ReadAllBytes(@""C:\"");
+}
+", "null", "Ошибок нет")]
+	[DataRow(@"using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+return true;
+", "true", "Ошибок нет")]
+	[DataRow(@"using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch
+{
+	return false;
+}
+return true;
+", "false", "Ошибок нет")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch (Exception)
+{
+	return false;
+}
+return true;
+", "false", "Ошибок нет")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch (Exception ex)
+{
+	return false;
+}
+return true;
+", "false", "Ошибок нет")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch (ex)
+{
+	return false;
+}
+return true;
+", "false", "Ошибок нет")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch (Exception ex) if (ex is not IOException)
+{
+	return 1;
+}
+catch
+{
+	return 2;
+}
+return 3;
+", "1", "Ошибок нет")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch (ex) if (ex is not IOException)
+{
+	return 1;
+}
+catch
+{
+	return 2;
+}
+return 3;
+", "1", "Ошибок нет")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	() int list = (1, 2, 3);
+	return list.IndexOf(1, 5);
+}
+catch (Exception ex) if (ex is not ArgumentException)
+{
+	return 1;
+}
+catch (Exception ex)
+{
+	return """" + ex.Message;
+}
+return 2;
+", @"""length ('-1') must be a non-negative value. (Parameter 'length')\r\nActual value was -1.""", "Ошибок нет")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	() int list = (1, 2, 3);
+	return list.IndexOf(1, 5);
+}
+catch (ex) if (ex is not ArgumentException)
+{
+	return 1;
+}
+catch (ex)
+{
+	return """" + ex.Message;
+}
+return 2;
+", @"""length ('-1') must be a non-negative value. (Parameter 'length')\r\nActual value was -1.""", "Ошибок нет")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	() int list = (1, 2, 3);
+	return list.IndexOf(1, 5);
+}
+catch (Exception ex) if (ex is not ArgumentException)
+{
+	return 1;
+}
+catch (Exception ex)
+{
+	return """" + ex.Message;
+}
+catch
+{
+	return 2;
+}
+return 3;
+", @"""length ('-1') must be a non-negative value. (Parameter 'length')\r\nActual value was -1.""", @"Error 2008 in line 17 at position 0: expected: "";""
+Warning 8005 in line 20 at position 0: the unreachable code has been detected
+")]
+	[DataRow(@"using System;
+using System.IO;
+try
+	return File.ReadAllBytes(@""C:\"");
+catch (Exception ex) if (ex is not IOException)
+{
+	return 1;
+}
+catch
+{
+	return 2;
+}
+return 3;
+", "1", @"Error 2003 in line 4 at position 1: expected: {
+Error 2003 in line 4 at position 1: expected: {
+Error 2008 in line 5 at position 21: expected: "";""
+Error 2007 in line 5 at position 21: unrecognized construction
+Error 2008 in line 10 at position 0: expected: "";""
+Warning 800E in line 7 at position 1: redundant indent(s) detected
+Warning 8005 in line 11 at position 1: the unreachable code has been detected
+")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch
+	return 2;
+return 3;
+", "2", @"Error 2008 in line 8 at position 1: expected: ""("" or ""{""
+Warning 800E in line 8 at position 1: redundant indent(s) detected
+Warning 8005 in line 9 at position 0: the unreachable code has been detected
+")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch (Exception)
+	return 2;
+return 3;
+", "2", @"Error 2008 in line 8 at position 1: expected: ""if"" or ""{""
+Warning 800E in line 8 at position 1: redundant indent(s) detected
+Warning 8005 in line 9 at position 0: the unreachable code has been detected
+")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch (Exception) if (5 > 3)
+	return 2;
+return 3;
+", "2", @"Error 2003 in line 8 at position 1: expected: {
+Warning 800E in line 8 at position 1: redundant indent(s) detected
+Warning 8005 in line 9 at position 0: the unreachable code has been detected
+")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch (5)
+	return 2;
+return 3;
+", "3", @"Error 2008 in line 7 at position 7: expected: exception type and/or identifier
+Error 2008 in line 7 at position 8: expected: "";""
+Error 2007 in line 7 at position 8: unrecognized construction
+")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch (Exception 5)
+{
+	return 2;
+}
+return 3;
+", "2", @"Error 2008 in line 7 at position 17: expected: identifier or "")""
+Error 2008 in line 7 at position 18: expected: "";""
+Error 2007 in line 7 at position 18: unrecognized construction
+Warning 8005 in line 11 at position 0: the unreachable code has been detected
+")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch (Exception) when (5 > 3)
+{
+	return 2;
+}
+return 3;
+", "2", @"Error 2008 in line 7 at position 18: expected: ""if"" or ""{""
+Error 2008 in line 8 at position 0: expected: "";""
+Warning 8005 in line 11 at position 0: the unreachable code has been detected
+")]
+	[DataRow(@"using System;
+using System.IO;
+try
+{
+	return File.ReadAllBytes(@""C:\"");
+}
+catch (Exception) if 5 > 3
+{
+	return 2;
+}
+return 3;
+", "2", @"Error 200A in line 7 at position 21: expected: (
+Error 2008 in line 8 at position 0: expected: "";""
+Warning 8005 in line 11 at position 0: the unreachable code has been detected
 ")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """

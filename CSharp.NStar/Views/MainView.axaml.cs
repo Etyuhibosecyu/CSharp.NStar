@@ -12,10 +12,10 @@ using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
 using AvaloniaEdit.Utils;
 using MsBox.Avalonia;
-using NStar.EasyEvalLib;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Reflection;
+using System.Xml;
 using static CSharp.NStar.SemanticTree;
 
 namespace CSharp.NStar.Views;
@@ -27,17 +27,17 @@ public partial class MainView : UserControl
 	private readonly String enteredText = [];
 	private readonly Random random = new();
 
-	private static readonly ImmutableArray<string> minorVersions = ["2o", "2o1", "2o2", "3"];
+	private static readonly ImmutableArray<string> minorVersions = ["0.9"];
 	private static readonly ImmutableArray<string> langs = ["C#"];
 	private static readonly string AlphanumericCharactersWithoutDot
 		= "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	private static readonly G.SortedSet<String> AutoCompletionList = [.. new List<String>("abstract", "break", "case", "Class",
 		"const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent",
-		"extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "multiconst",
-		"Namespace", "new", "null", "Operator", "out", "override", "params", "private", "protected", "public", "readonly",
-		"ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while", "and",
-		"or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln", "Infty", "Uncty", "Pi", "E",
-		"CombineWith", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypes.Keys)
+		"extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "Megaclass",
+		"multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "private", "protected",
+		"public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true",
+		"using", "while", "and", "or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln",
+		"Infty", "Uncty", "Pi", "E", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypes.Keys)
 		.AddRange(ExtraTypes.Convert(x => x.Key.Namespace.Concat(".").AddRange(x.Key.Type)))
 		.AddRange(PublicFunctions.Keys)];
 	private static readonly G.SortedSet<string> AutoCompletionAfterDotList = [.. PrimitiveTypes.Values.ToList()
@@ -57,7 +57,7 @@ public partial class MainView : UserControl
 		TextBoxInput.TextArea.TextEntered += TextBoxInput_TextArea_TextEntered;
 		using (var stream = new MemoryStream(NStar.Resources.SyntaxHighlighting))
 		{
-			using var reader = new System.Xml.XmlTextReader(stream);
+			using var reader = new XmlTextReader(stream);
 			TextBoxInput.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
 			var spans = TextBoxInput.SyntaxHighlighting.MainRuleSet.Spans;
 			var nestedCommentSpans = spans.FindAll(x => x.SpanColor.Foreground.ToString()?.Contains("#ffbfbf00") ?? false);
@@ -76,7 +76,7 @@ public partial class MainView : UserControl
 		TextBoxInput.Text = $"Loading ({0:F2}%)\r\n";
 	}
 
-	private void UserControl_Loaded(object? sender, RoutedEventArgs e) => Task.Factory.StartNew(async () =>
+	private async void UserControl_Loaded(object? sender, RoutedEventArgs e) => await Task.Factory.StartNew(async () =>
 		await Dispatcher.UIThread.InvokeAsync(() =>
 		{
 			TextBoxInput.Text = "return \"Hello, world!\";\r\n";
@@ -84,7 +84,7 @@ public partial class MainView : UserControl
 			ButtonOpenCode.IsEnabled = true;
 			ButtonSaveCode.IsEnabled = true;
 			ButtonSaveExe.IsEnabled = true;
-		})).Wait();
+		}));
 
 	private void UserControl_SizeChanged(object? sender, SizeChangedEventArgs e)
 	{
@@ -173,9 +173,9 @@ public partial class MainView : UserControl
 		compiledAssembly = null;
 	}
 
-	CompletionWindow? completionWindow;
+	private CompletionWindow? completionWindow;
 
-	void TextBoxInput_TextArea_TextEntered(object? sender, TextInputEventArgs e)
+	private void TextBoxInput_TextArea_TextEntered(object? sender, TextInputEventArgs e)
 	{
 		// Open code completion after the user has pressed dot:
 		completionWindow = new CompletionWindow(TextBoxInput.TextArea);
@@ -194,7 +194,7 @@ public partial class MainView : UserControl
 		completionWindow.Closed += (_, _) => completionWindow = null;
 	}
 
-	void TextBoxInput_TextArea_TextEntering(object? sender, TextInputEventArgs e)
+	private void TextBoxInput_TextArea_TextEntering(object? sender, TextInputEventArgs e)
 	{
 		if (e.Text?.Length > 0 && completionWindow != null)
 		{
@@ -257,11 +257,7 @@ public partial class MainView : UserControl
 			await TopLevel.GetTopLevel(this)?.StorageProvider.OpenFilePickerAsync(new()
 			{
 				Title = "Select the C#.NStar code file",
-				FileTypeFilter = [new("C#.NStar code files")
-				{
-					Patterns = ["*.n-star-pre-pre-i"], AppleUniformTypeIdentifiers = ["UTType.Item"],
-					MimeTypes = ["multipart/mixed"]
-				}],
+				FileTypeFilter = ViewModels.MainViewModel.NStarFileTypeFiter,
 			})!);
 		if (fileResult?.Count == 0)
 			return;
@@ -281,12 +277,12 @@ public partial class MainView : UserControl
 				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
 			return;
 		}
-		var prefix = ".NStar Pre-Pre-I-";
+		var prefix = ".NStar Alpha-";
 		if (!content.StartsWith(prefix))
 		{
 			await Dispatcher.UIThread.InvokeAsync(async () =>
 				await MessageBoxManager.GetMessageBoxStandard("",
-				"Ошибка! Файл не является кодом .NStar Pre-Pre-I или поврежден.",
+				"Ошибка! Файл не является кодом .NStar Alpha или поврежден.",
 				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
 			return;
 		}
@@ -305,7 +301,7 @@ public partial class MainView : UserControl
 		{
 			await Dispatcher.UIThread.InvokeAsync(async () =>
 				await MessageBoxManager.GetMessageBoxStandard("",
-				"Ошибка! Файл не является кодом .NStar Pre-Pre-I совместимой ревизии или поврежден.",
+				"Ошибка! Файл не является кодом .NStar Alpha совместимой ревизии или поврежден.",
 				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
 			return;
 		}
@@ -323,7 +319,7 @@ public partial class MainView : UserControl
 		{
 			await Dispatcher.UIThread.InvokeAsync(async () =>
 				await MessageBoxManager.GetMessageBoxStandard("",
-				"Ошибка! Файл не является кодом .NStar Pre-Pre-I совместимой ревизии на совместимом языке или поврежден.",
+				"Ошибка! Файл не является кодом .NStar Alpha совместимой ревизии на совместимом языке или поврежден.",
 				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
 			return;
 		}
@@ -332,7 +328,7 @@ public partial class MainView : UserControl
 		{
 			await Dispatcher.UIThread.InvokeAsync(async () =>
 				await MessageBoxManager.GetMessageBoxStandard("",
-				"Ошибка! Файл не является кодом .NStar Pre-Pre-I совместимой ревизии на совместимом языке или поврежден.",
+				"Ошибка! Файл не является кодом .NStar Alpha совместимой ревизии на совместимом языке или поврежден.",
 				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
 			return;
 		}
@@ -343,7 +339,7 @@ public partial class MainView : UserControl
 		{
 			await Dispatcher.UIThread.InvokeAsync(async () =>
 				await MessageBoxManager.GetMessageBoxStandard("",
-				"Ошибка! Файл не является кодом .NStar Pre-Pre-I совместимой ревизии на совместимом языке или поврежден.",
+				"Ошибка! Файл не является кодом .NStar Alpha совместимой ревизии на совместимом языке или поврежден.",
 				MsBox.Avalonia.Enums.ButtonEnum.Ok).ShowAsPopupAsync(this));
 			return;
 		}
@@ -399,7 +395,8 @@ public partial class MainView : UserControl
 			await TopLevel.GetTopLevel(this)?.StorageProvider.SaveFilePickerAsync(new()
 			{
 				Title = "Select the path to save a C#.NStar code file",
-				DefaultExtension = "n-star-pre-pre-i",
+				FileTypeChoices = ViewModels.MainViewModel.NStarFileTypeFiter,
+				DefaultExtension = "n-star-alpha",
 				SuggestedFileName = "Program",
 			})!);
 		var filename = fileResult?.TryGetLocalPath() ?? "";
@@ -407,7 +404,13 @@ public partial class MainView : UserControl
 			return;
 		try
 		{
-			File.WriteAllText(filename, ".NStar Pre-Pre-I-" + minorVersions[^1] + "\nC#\n<Project>\n\n</Project>\n"
+			File.WriteAllText(filename, ".NStar Alpha-" + minorVersions[^1]
+				+ "\nC#\n<Project>\n\t<Properties>\n\t\t<CodeStyle>\n"
+				+ "\t\t\t<CharactersInLine>" + CodeStyleRules.CharactersInLineStrictness + "</CharactersInLine>\n"
+				+ "\t\t\t<LinesInFunction>" + CodeStyleRules.LinesInFunctionStrictness + "</LinesInFunction>\n"
+				+ "\t\t\t<FunctionsInClass>" + CodeStyleRules.FunctionsInClassStrictness + "</FunctionsInClass>\n"
+				+ "\t\t\t<TestEnvironment>" + CodeStyleRules.TestEnvironment + "</TestEnvironment>\n"
+				+ "\t\t</CodeStyle>\n\t</Properties>\n</Project>\n"
 				+ TextBoxInput.Text);
 		}
 		catch
@@ -439,7 +442,8 @@ public partial class MainView : UserControl
 		if (string.IsNullOrEmpty(outputPath))
 			return;
 		var outputDir = Path.GetDirectoryName(outputPath);
-		var code = CompileProgram(TextBoxInput.Text);
+		var code = CompileProgram(TextBoxInput.Text, SettingsView.TextBoxNuGet.Text
+			?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? []);
 		var tempDir = Environment.GetEnvironmentVariable("temp") ?? throw new IOException();
 		tempDir += @"\Program";
 		if (!Directory.Exists(tempDir))

@@ -1,4 +1,5 @@
 ﻿global using NStar.Core;
+global using NStar.Linq;
 global using System;
 global using System.Diagnostics.CodeAnalysis;
 global using static CSharp.NStar.BuiltInMemberCollections;
@@ -79,6 +80,8 @@ public static class TypeChecks
 			&& VariableNStarType.ExtraTypes[0].Extra is NStarType BaseNStarType
 			&& BaseNStarType.Equals(@base)), out _))
 			return true;
+		if (IsEqualOrDerivedNetType(derived, @base))
+			return true;
 		var type = derived;
 		while (!type.Equals(NullType))
 		{
@@ -90,6 +93,51 @@ public static class TypeChecks
 		}
 		return false;
 	}
+
+	private static bool IsEqualOrDerivedNetType(NStarType sourceType, NStarType destinationType) =>
+		sourceType.MainType.TryPeek(out var sourceBlock)
+		&& (PrimitiveTypes.TryGetValue(sourceBlock.Name, out var sourceNetType)
+		|| ExtraTypes.TryGetValue((new BlockStack(sourceType.MainType.SkipLast(1)).ToString(),
+		sourceBlock.Name), out sourceNetType)
+		|| ImportedTypes.TryGetValue((new BlockStack(sourceType.MainType.SkipLast(1)).ToString(),
+		sourceBlock.Name), out sourceNetType))
+		&& sourceNetType.GetGenericArguments().Length == 0
+		&& destinationType.MainType.TryPeek(out var destinationBlock)
+		&& (PrimitiveTypes.TryGetValue(destinationBlock.Name, out var destinationNetType)
+		|| ExtraTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToString(),
+		destinationBlock.Name), out destinationNetType)
+		|| ImportedTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToString(),
+		destinationBlock.Name), out destinationNetType))
+		&& (destinationNetType.GetGenericArguments().Length == 0
+		&& destinationNetType.IsAssignableFrom(sourceNetType)
+		|| destinationNetType.GetGenericArguments().Length == 1
+		&& destinationNetType.GetGenericArguments()[0].Name is "T" or "TSelf"
+		&& destinationNetType.TryWrap(x => x.MakeGenericType(sourceNetType), out var genericType)
+		&& genericType.IsAssignableFrom(sourceNetType))
+		|| ExplicitlyConnectedNamespaces.FindIndex(x => (ExtraTypes.TryGetValue((x,
+		sourceType.MainType.TryPeek(out var sourceBlock) ? sourceBlock.Name : ""), out var sourceNetType)
+		|| ImportedTypes.TryGetValue((x,
+		sourceType.MainType.TryPeek(out sourceBlock) ? sourceBlock.Name : ""), out sourceNetType))
+		&& sourceNetType.GetGenericArguments().Length == 0
+		&& (ExtraTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToString(),
+		sourceType.MainType.TryPeek(out var destinationBlock) ? destinationBlock.Name : ""), out var destinationNetType)
+		|| ImportedTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToString(),
+		sourceType.MainType.TryPeek(out destinationBlock) ? destinationBlock.Name : ""), out destinationNetType))
+		&& (destinationNetType.GetGenericArguments().Length == 0
+		&& destinationNetType.IsAssignableFrom(sourceNetType)
+		|| destinationNetType.GetGenericArguments()[0].Name is "T" or "TSelf"
+		&& destinationNetType.TryWrap(x => x.MakeGenericType(sourceNetType), out var genericType)
+		&& genericType.IsAssignableFrom(sourceNetType))) >= 0
+		|| destinationType.MainType.TryPeek(out destinationBlock)
+		&& (PrimitiveTypes.TryGetValue(destinationBlock.Name, out destinationNetType)
+		|| ExtraTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToString(),
+		destinationBlock.Name), out destinationNetType)
+		|| ImportedTypes.TryGetValue((new BlockStack(destinationType.MainType.SkipLast(1)).ToString(),
+		destinationBlock.Name), out destinationNetType))
+		&& destinationNetType.GetGenericArguments().Length == 1
+		&& destinationNetType.GetGenericArguments()[0].Name is "T"
+		&& destinationType.ExtraTypes.Length == 1 && destinationType.ExtraTypes[0].Name == "type"
+		&& destinationType.ExtraTypes[0].Extra is NStarType ClosureNStarType && ClosureNStarType.Equals(sourceType);
 
 	public static bool IsNotImplementedNamespace(String @namespace)
 	{

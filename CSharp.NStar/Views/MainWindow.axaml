@@ -6,7 +6,7 @@
 		xmlns:views="clr-namespace:CSharp.NStar.Views"
 		mc:Ignorable="d" d:DesignWidth="1024" d:DesignHeight="768"
 		x:Class="CSharp.NStar.Views.MainWindow"
-		Icon="/Assets/avalonia-logo.ico"
+		Icon="/Assets/CSharp.NStar.ico"
 		Title="CSharp.NStar"
 				Width="1024"
 				Height="768"
