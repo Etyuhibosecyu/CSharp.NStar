@@ -32,7 +32,7 @@ public abstract class HighlightingBrush
 	/// </summary>
 	/// <param name="context">The construction context. context can be null!</param>
 	public abstract IBrush GetBrush(ITextRunConstructionContext context);
-
+	
 	/// <summary>
 	/// Gets the color of the brush.
 	/// </summary>
@@ -40,7 +40,7 @@ public abstract class HighlightingBrush
 	public virtual Color? GetColor(ITextRunConstructionContext context)
 	{
 		if (GetBrush(context) is ISolidColorBrush scb)
-				return scb.Color;
+			return scb.Color;
 		return null;
 	}
 }

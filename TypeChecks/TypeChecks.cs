@@ -36,7 +36,7 @@ public static class TypeChecks
 	{
 		@class = false;
 		if (container.Length != 0 && UserDefinedTypes.TryGetValue(SplitType(container), out var userDefinedType)
-			&& userDefinedType.Restrictions.Exists(x => x.Name == typeName))
+			&& (userDefinedType.Restrictions?.Exists(x => x.Name == typeName) ?? false))
 			return true;
 		if (UserDefinedConstants.TryGetValue(container, out var containerConstants)
 			&& containerConstants.TryGetValue(typeName, out var constant))
@@ -282,7 +282,7 @@ public static class TypeChecks
 			&& ExplicitlyConnectedNamespaces
 			.FindIndex(x => ImportedTypes.TryGetValue((x, containerType.Type), out preservedNetType)) < 0)
 			return false;
-		if (preservedNetType == null)
+		if (preservedNetType is null)
 			return false;
 		netType = preservedNetType;
 		return true;

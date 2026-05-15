@@ -21,243 +21,243 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Avalonia;
-using AvaloniaEdit.Document;
-using Avalonia.Input;
-using AvaloniaEdit.Utils;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using AvaloniaEdit.Document;
+using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Editing;
 
+/// <summary>
+/// We re-use the CommandBinding and InputBinding instances between multiple text areas,
+/// so this class is static.
+/// </summary>
+internal static class EditingCommandHandler
+{
 	/// <summary>
-	/// We re-use the CommandBinding and InputBinding instances between multiple text areas,
-	/// so this class is static.
+	/// Creates a new <see cref="TextAreaInputHandler"/> for the text area.
 	/// </summary>
-	internal class EditingCommandHandler
+	public static TextAreaInputHandler Create(TextArea textArea)
 	{
-		/// <summary>
-		/// Creates a new <see cref="TextAreaInputHandler"/> for the text area.
-		/// </summary>
-		public static TextAreaInputHandler Create(TextArea textArea)
-		{
-			var handler = new TextAreaInputHandler(textArea);
-			handler.CommandBindings.AddRange(CommandBindings);
-			handler.KeyBindings.AddRange(KeyBindings);
-			return handler;
-		}
+		var handler = new TextAreaInputHandler(textArea);
+		handler.CommandBindings.AddRange(CommandBindings);
+		handler.KeyBindings.AddRange(KeyBindings);
+		return handler;
+	}
 
-		private static readonly List<RoutedCommandBinding> CommandBindings = [];
-		private static readonly List<KeyBinding> KeyBindings = [];
+	private static readonly List<RoutedCommandBinding> CommandBindings = [];
+	private static readonly List<KeyBinding> KeyBindings = [];
 
-		private static void AddBinding(RoutedCommand command, KeyModifiers modifiers, Key key,
-			EventHandler<ExecutedRoutedEventArgs> handler)
-		{
-			CommandBindings.Add(new RoutedCommandBinding(command, handler));
-			KeyBindings.Add(TextAreaDefaultInputHandler.CreateKeyBinding(command, modifiers, key));
-		}
+	private static void AddBinding(RoutedCommand command, KeyModifiers modifiers, Key key,
+		EventHandler<ExecutedRoutedEventArgs> handler)
+	{
+		CommandBindings.Add(new RoutedCommandBinding(command, handler));
+		KeyBindings.Add(TextAreaDefaultInputHandler.CreateKeyBinding(command, modifiers, key));
+	}
 
 	private static void AddBinding(RoutedCommand command, EventHandler<ExecutedRoutedEventArgs> handler, EventHandler<CanExecuteRoutedEventArgs> canExecuteHandler = null) => CommandBindings.Add(new RoutedCommandBinding(command, handler, canExecuteHandler));
 
 	static EditingCommandHandler()
-		{			
-			AddBinding(EditingCommands.Delete, KeyModifiers.None, Key.Delete, OnDelete(CaretMovementType.CharRight));
-			AddBinding(EditingCommands.DeleteNextWord, KeyModifiers.Control, Key.Delete,
-				OnDelete(CaretMovementType.WordRight));
-			AddBinding(EditingCommands.Backspace, KeyModifiers.None, Key.Back, OnDelete(CaretMovementType.Backspace));
-			KeyBindings.Add(
-				TextAreaDefaultInputHandler.CreateKeyBinding(EditingCommands.Backspace, KeyModifiers.Shift,
-					Key.Back)); // make Shift-Backspace do the same as plain backspace
-			AddBinding(EditingCommands.DeletePreviousWord, KeyModifiers.Control, Key.Back,
-				OnDelete(CaretMovementType.WordLeft));
-			AddBinding(EditingCommands.EnterParagraphBreak, KeyModifiers.None, Key.Enter, OnEnter);
-			AddBinding(EditingCommands.EnterLineBreak, KeyModifiers.Shift, Key.Enter, OnEnter);
+	{
+		AddBinding(EditingCommands.Delete, KeyModifiers.None, Key.Delete, OnDelete(CaretMovementType.CharRight));
+		AddBinding(EditingCommands.DeleteNextWord, KeyModifiers.Control, Key.Delete,
+			OnDelete(CaretMovementType.WordRight));
+		AddBinding(EditingCommands.Backspace, KeyModifiers.None, Key.Back, OnDelete(CaretMovementType.Backspace));
+		KeyBindings.Add(
+			TextAreaDefaultInputHandler.CreateKeyBinding(EditingCommands.Backspace, KeyModifiers.Shift,
+				Key.Back)); // make Shift-Backspace do the same as plain backspace
+		AddBinding(EditingCommands.DeletePreviousWord, KeyModifiers.Control, Key.Back,
+			OnDelete(CaretMovementType.WordLeft));
+		AddBinding(EditingCommands.EnterParagraphBreak, KeyModifiers.None, Key.Enter, OnEnter);
+		AddBinding(EditingCommands.EnterLineBreak, KeyModifiers.Shift, Key.Enter, OnEnter);
 
-			AddBinding(ApplicationCommands.Delete, OnDelete(CaretMovementType.None), CanDelete);
-			AddBinding(ApplicationCommands.Copy, OnCopy, CanCopy);
-			AddBinding(ApplicationCommands.Cut, OnCut, CanCut);
-			AddBinding(ApplicationCommands.Paste, OnPaste, CanPaste);
+		AddBinding(ApplicationCommands.Delete, OnDelete(CaretMovementType.None), CanDelete);
+		AddBinding(ApplicationCommands.Copy, OnCopy, CanCopy);
+		AddBinding(ApplicationCommands.Cut, OnCut, CanCut);
+		AddBinding(ApplicationCommands.Paste, OnPaste, CanPaste);
 
-			AddBinding(AvaloniaEditCommands.ToggleOverstrike, OnToggleOverstrike);
-			AddBinding(AvaloniaEditCommands.DeleteLine, OnDeleteLine);
+		AddBinding(AvaloniaEditCommands.ToggleOverstrike, OnToggleOverstrike);
+		AddBinding(AvaloniaEditCommands.DeleteLine, OnDeleteLine);
 
-			AddBinding(AvaloniaEditCommands.RemoveLeadingWhitespace, OnRemoveLeadingWhitespace);
-			AddBinding(AvaloniaEditCommands.RemoveTrailingWhitespace, OnRemoveTrailingWhitespace);
-			AddBinding(AvaloniaEditCommands.ConvertToUppercase, OnConvertToUpperCase);
-			AddBinding(AvaloniaEditCommands.ConvertToLowercase, OnConvertToLowerCase);
-			AddBinding(AvaloniaEditCommands.ConvertToTitleCase, OnConvertToTitleCase);
-			AddBinding(AvaloniaEditCommands.InvertCase, OnInvertCase);
-			AddBinding(AvaloniaEditCommands.ConvertTabsToSpaces, OnConvertTabsToSpaces);
-			AddBinding(AvaloniaEditCommands.ConvertSpacesToTabs, OnConvertSpacesToTabs);
-			AddBinding(AvaloniaEditCommands.ConvertLeadingTabsToSpaces, OnConvertLeadingTabsToSpaces);
-			AddBinding(AvaloniaEditCommands.ConvertLeadingSpacesToTabs, OnConvertLeadingSpacesToTabs);
-			AddBinding(AvaloniaEditCommands.IndentSelection, OnIndentSelection);
-		}
+		AddBinding(AvaloniaEditCommands.RemoveLeadingWhitespace, OnRemoveLeadingWhitespace);
+		AddBinding(AvaloniaEditCommands.RemoveTrailingWhitespace, OnRemoveTrailingWhitespace);
+		AddBinding(AvaloniaEditCommands.ConvertToUppercase, OnConvertToUpperCase);
+		AddBinding(AvaloniaEditCommands.ConvertToLowercase, OnConvertToLowerCase);
+		AddBinding(AvaloniaEditCommands.ConvertToTitleCase, OnConvertToTitleCase);
+		AddBinding(AvaloniaEditCommands.InvertCase, OnInvertCase);
+		AddBinding(AvaloniaEditCommands.ConvertTabsToSpaces, OnConvertTabsToSpaces);
+		AddBinding(AvaloniaEditCommands.ConvertSpacesToTabs, OnConvertSpacesToTabs);
+		AddBinding(AvaloniaEditCommands.ConvertLeadingTabsToSpaces, OnConvertLeadingTabsToSpaces);
+		AddBinding(AvaloniaEditCommands.ConvertLeadingSpacesToTabs, OnConvertLeadingSpacesToTabs);
+		AddBinding(AvaloniaEditCommands.IndentSelection, OnIndentSelection);
+	}
 
 	private static TextArea GetTextArea(object target) => target as TextArea;
 
 	#region Text Transformation Helpers
 
 	private enum DefaultSegmentType
-		{
-			WholeDocument,
-			CurrentLine
-		}
+	{
+		WholeDocument,
+		CurrentLine
+	}
 
-		/// <summary>
-		/// Calls transformLine on all lines in the selected range.
-		/// transformLine needs to handle read-only segments!
-		/// </summary>
-		private static void TransformSelectedLines(Action<TextArea, DocumentLine> transformLine, object target,
-			RoutedEventArgs args, DefaultSegmentType defaultSegmentType)
+	/// <summary>
+	/// Calls transformLine on all lines in the selected range.
+	/// transformLine needs to handle read-only segments!
+	/// </summary>
+	private static void TransformSelectedLines(Action<TextArea, DocumentLine> transformLine, object target,
+		RoutedEventArgs args, DefaultSegmentType defaultSegmentType)
+	{
+		var textArea = GetTextArea(target);
+		if (textArea?.Document != null)
 		{
-			var textArea = GetTextArea(target);
-			if (textArea?.Document != null)
+			using (textArea.Document.RunUpdate())
 			{
-				using (textArea.Document.RunUpdate())
+				DocumentLine start, end;
+				if (textArea.Selection.IsEmpty)
 				{
-					DocumentLine start, end;
-					if (textArea.Selection.IsEmpty)
+					if (defaultSegmentType == DefaultSegmentType.CurrentLine)
 					{
-						if (defaultSegmentType == DefaultSegmentType.CurrentLine)
-						{
-							start = end = textArea.Document.GetLineByNumber(textArea.Caret.Line);
-						}
-						else if (defaultSegmentType == DefaultSegmentType.WholeDocument)
-						{
-							start = textArea.Document.Lines.First();
-							end = textArea.Document.Lines.Last();
-						}
-						else
-						{
-							start = end = null;
-						}
+						start = end = textArea.Document.GetLineByNumber(textArea.Caret.Line);
+					}
+					else if (defaultSegmentType == DefaultSegmentType.WholeDocument)
+					{
+						start = textArea.Document.Lines[0];
+						end = textArea.Document.Lines[^1];
 					}
 					else
 					{
-						var segment = textArea.Selection.SurroundingSegment;
-						start = textArea.Document.GetLineByOffset(segment.Offset);
-						end = textArea.Document.GetLineByOffset(segment.EndOffset);
-						// don't include the last line if no characters on it are selected
-						if (start != end && end.Offset == segment.EndOffset)
-							end = end.PreviousLine;
+						start = end = null;
 					}
-					if (start != null)
+				}
+				else
+				{
+					var segment = textArea.Selection.SurroundingSegment;
+					start = textArea.Document.GetLineByOffset(segment.Offset);
+					end = textArea.Document.GetLineByOffset(segment.EndOffset);
+					// don't include the last line if no characters on it are selected
+					if (start != end && end.Offset == segment.EndOffset)
+						end = end.PreviousLine;
+				}
+				if (start != null)
+				{
+					transformLine(textArea, start);
+					while (start != end)
 					{
+						start = start.NextLine;
 						transformLine(textArea, start);
-						while (start != end)
-						{
-							start = start.NextLine;
-							transformLine(textArea, start);
-						}
 					}
 				}
-				textArea.Caret.BringCaretToView();
-				args.Handled = true;
 			}
+			textArea.Caret.BringCaretToView();
+			args.Handled = true;
 		}
+	}
 
-		/// <summary>
-		/// Calls transformLine on all writable segment in the selected range.
-		/// </summary>
-		private static void TransformSelectedSegments(Action<TextArea, ISegment> transformSegment, object target,
-			ExecutedRoutedEventArgs args, DefaultSegmentType defaultSegmentType)
+	/// <summary>
+	/// Calls transformLine on all writable segment in the selected range.
+	/// </summary>
+	private static void TransformSelectedSegments(Action<TextArea, ISegment> transformSegment, object target,
+		ExecutedRoutedEventArgs args, DefaultSegmentType defaultSegmentType)
+	{
+		var textArea = GetTextArea(target);
+		if (textArea?.Document != null)
 		{
-			var textArea = GetTextArea(target);
-			if (textArea?.Document != null)
+			using (textArea.Document.RunUpdate())
 			{
-				using (textArea.Document.RunUpdate())
+				IEnumerable<ISegment> segments;
+				if (textArea.Selection.IsEmpty)
 				{
-					IEnumerable<ISegment> segments;
-					if (textArea.Selection.IsEmpty)
+					if (defaultSegmentType == DefaultSegmentType.CurrentLine)
 					{
-						if (defaultSegmentType == DefaultSegmentType.CurrentLine)
-						{
-							segments = new ISegment[] { textArea.Document.GetLineByNumber(textArea.Caret.Line) };
-						}
-						else if (defaultSegmentType == DefaultSegmentType.WholeDocument)
-						{
-							segments = textArea.Document.Lines;
-						}
-						else
-						{
-							segments = null;
-						}
+						segments = new ISegment[] { textArea.Document.GetLineByNumber(textArea.Caret.Line) };
+					}
+					else if (defaultSegmentType == DefaultSegmentType.WholeDocument)
+					{
+						segments = textArea.Document.Lines;
 					}
 					else
 					{
-						segments = textArea.Selection.Segments;
-					}
-					if (segments != null)
-					{
-						foreach (var segment in segments.Reverse())
-						{
-							foreach (var writableSegment in textArea.GetDeletableSegments(segment).Reverse())
-							{
-								transformSegment(textArea, writableSegment);
-							}
-						}
+						segments = null;
 					}
 				}
-				textArea.Caret.BringCaretToView();
-				args.Handled = true;
-			}
-		}
-
-		#endregion
-
-		#region EnterLineBreak
-
-		private static void OnEnter(object target, ExecutedRoutedEventArgs args)
-		{
-			var textArea = GetTextArea(target);
-			if (textArea != null && textArea.IsFocused)
-			{
-				textArea.PerformTextInput("\n");
-				args.Handled = true;
-			}
-		}
-
-		#endregion
-
-		#region Tab
-
-		public static void OnTab(object target, RoutedEventArgs args)
-		{
-			var textArea = GetTextArea(target);
-			if (textArea?.Document != null)
-			{
-				using (textArea.Document.RunUpdate())
+				else
 				{
-					if (textArea.Selection.IsMultiline)
+					segments = textArea.Selection.Segments;
+				}
+				if (segments != null)
+				{
+					foreach (var segment in segments.Reverse())
 					{
-						var segment = textArea.Selection.SurroundingSegment;
-						var start = textArea.Document.GetLineByOffset(segment.Offset);
-						var end = textArea.Document.GetLineByOffset(segment.EndOffset);
-						// don't include the last line if no characters on it are selected
-						if (start != end && end.Offset == segment.EndOffset)
-							end = end.PreviousLine;
-						var current = start;
-						while (true)
+						foreach (var writableSegment in System.Linq.Enumerable.Reverse(textArea.GetDeletableSegments(segment)))
 						{
-							var offset = current.Offset;
-							if (textArea.ReadOnlySectionProvider.CanInsert(offset))
-								textArea.Document.Replace(offset, 0, textArea.Options.IndentationString,
-									OffsetChangeMappingType.KeepAnchorBeforeInsertion);
-							if (current == end)
-								break;
-							current = current.NextLine;
+							transformSegment(textArea, writableSegment);
 						}
 					}
-					else
+				}
+			}
+			textArea.Caret.BringCaretToView();
+			args.Handled = true;
+		}
+	}
+
+	#endregion
+
+	#region EnterLineBreak
+
+	private static void OnEnter(object target, ExecutedRoutedEventArgs args)
+	{
+		var textArea = GetTextArea(target);
+		if (textArea != null && textArea.IsFocused)
+		{
+			textArea.PerformTextInput("\n");
+			args.Handled = true;
+		}
+	}
+
+	#endregion
+
+	#region Tab
+
+	public static void OnTab(object target, RoutedEventArgs args)
+	{
+		var textArea = GetTextArea(target);
+		if (textArea?.Document != null)
+		{
+			using (textArea.Document.RunUpdate())
+			{
+				if (textArea.Selection.IsMultiline)
+				{
+					var segment = textArea.Selection.SurroundingSegment;
+					var start = textArea.Document.GetLineByOffset(segment.Offset);
+					var end = textArea.Document.GetLineByOffset(segment.EndOffset);
+					// don't include the last line if no characters on it are selected
+					if (start != end && end.Offset == segment.EndOffset)
+						end = end.PreviousLine;
+					var current = start;
+					while (true)
 					{
-						var indentationString = textArea.Options.GetIndentationString(textArea.Caret.Column);
-						textArea.ReplaceSelectionWithText(indentationString);
+						var offset = current.Offset;
+						if (textArea.ReadOnlySectionProvider.CanInsert(offset))
+							textArea.Document.Replace(offset, 0, textArea.Options.IndentationString,
+								OffsetChangeMappingType.KeepAnchorBeforeInsertion);
+						if (current == end)
+							break;
+						current = current.NextLine;
 					}
 				}
-				textArea.Caret.BringCaretToView();
-				args.Handled = true;
+				else
+				{
+					var indentationString = textArea.Options.GetIndentationString(textArea.Caret.Column);
+					textArea.ReplaceSelectionWithText(indentationString);
+				}
 			}
+			textArea.Caret.BringCaretToView();
+			args.Handled = true;
 		}
+	}
 
 	public static void OnShiftTab(object target, RoutedEventArgs args) => TransformSelectedLines(
 			delegate (TextArea textArea, DocumentLine line)
@@ -316,290 +316,300 @@ namespace AvaloniaEdit.Editing;
 																											   };
 
 	private static void CanDelete(object target, CanExecuteRoutedEventArgs args)
+	{
+		var textArea = GetTextArea(target);
+		if (textArea is { Document: not null })
 		{
-			var textArea = GetTextArea(target);
-			if (textArea is { Document: not null })
-			{
-				args.CanExecute = true;
-				args.Handled = true;
-			}
+			args.CanExecute = true;
+			args.Handled = true;
 		}
+	}
 
-		#endregion
+	#endregion
 
-		#region Clipboard commands
+	#region Clipboard commands
 
-		private static void CanCut(object target, CanExecuteRoutedEventArgs args)
+	private static void CanCut(object target, CanExecuteRoutedEventArgs args)
+	{
+		// HasSomethingSelected for copy and cut commands
+		var textArea = GetTextArea(target);
+		if (textArea is { Document: not null })
 		{
-			// HasSomethingSelected for copy and cut commands
-			var textArea = GetTextArea(target);
-			if (textArea is { Document: not null })
-			{
-				args.CanExecute = (textArea.Options.CutCopyWholeLine || !textArea.Selection.IsEmpty) && !textArea.IsReadOnly;
-				args.Handled = true;
-			}
+			args.CanExecute = (textArea.Options.CutCopyWholeLine || !textArea.Selection.IsEmpty) && !textArea.IsReadOnly;
+			args.Handled = true;
 		}
+	}
 
-		private static void CanCopy(object target, CanExecuteRoutedEventArgs args)
+	private static void CanCopy(object target, CanExecuteRoutedEventArgs args)
+	{
+		// HasSomethingSelected for copy and cut commands
+		var textArea = GetTextArea(target);
+		if (textArea is { Document: not null })
 		{
-			// HasSomethingSelected for copy and cut commands
-			var textArea = GetTextArea(target);
-			if (textArea is { Document: not null })
-			{
-				args.CanExecute = textArea.Options.CutCopyWholeLine || !textArea.Selection.IsEmpty;
-				args.Handled = true;
-			}
+			args.CanExecute = textArea.Options.CutCopyWholeLine || !textArea.Selection.IsEmpty;
+			args.Handled = true;
 		}
+	}
 
-		private static void OnCopy(object target, ExecutedRoutedEventArgs args)
+	private static void OnCopy(object target, ExecutedRoutedEventArgs args)
+	{
+		var textArea = GetTextArea(target);
+		if (textArea?.Document != null)
 		{
-			var textArea = GetTextArea(target);
-			if (textArea?.Document != null)
+			if (textArea.Selection.IsEmpty && textArea.Options.CutCopyWholeLine)
 			{
-				if (textArea.Selection.IsEmpty && textArea.Options.CutCopyWholeLine)
+				var currentLine = textArea.Document.GetLineByNumber(textArea.Caret.Line);
+				CopyWholeLine(textArea, currentLine);
+			}
+			else
+			{
+				CopySelectedText(textArea);
+			}
+			args.Handled = true;
+		}
+	}
+
+	private static void OnCut(object target, ExecutedRoutedEventArgs args)
+	{
+		var textArea = GetTextArea(target);
+		if (textArea?.Document != null)
+		{
+			if (textArea.Selection.IsEmpty && textArea.Options.CutCopyWholeLine)
+			{
+				var currentLine = textArea.Document.GetLineByNumber(textArea.Caret.Line);
+				if (CopyWholeLine(textArea, currentLine))
 				{
-					var currentLine = textArea.Document.GetLineByNumber(textArea.Caret.Line);
-					CopyWholeLine(textArea, currentLine);
-				}
-				else
-				{
-					CopySelectedText(textArea);
-				}
-				args.Handled = true;
-			}
-		}
-
-		private static void OnCut(object target, ExecutedRoutedEventArgs args)
-		{
-			var textArea = GetTextArea(target);
-			if (textArea?.Document != null)
-			{
-				if (textArea.Selection.IsEmpty && textArea.Options.CutCopyWholeLine)
-				{
-					var currentLine = textArea.Document.GetLineByNumber(textArea.Caret.Line);
-					if (CopyWholeLine(textArea, currentLine))
+					var segmentsToDelete =
+						textArea.GetDeletableSegments(
+							new SimpleSegment(currentLine.Offset, currentLine.TotalLength));
+					for (var i = segmentsToDelete.Length - 1; i >= 0; i--)
 					{
-						var segmentsToDelete =
-							textArea.GetDeletableSegments(
-								new SimpleSegment(currentLine.Offset, currentLine.TotalLength));
-						for (var i = segmentsToDelete.Length - 1; i >= 0; i--)
-						{
-							textArea.Document.Remove(segmentsToDelete[i]);
-						}
+						textArea.Document.Remove(segmentsToDelete[i]);
 					}
 				}
-				else
-				{
-					if (CopySelectedText(textArea))
-						textArea.RemoveSelectedText();
-				}
-				textArea.Caret.BringCaretToView();
-				args.Handled = true;
 			}
+			else
+			{
+				if (CopySelectedText(textArea))
+					textArea.RemoveSelectedText();
+			}
+			textArea.Caret.BringCaretToView();
+			args.Handled = true;
 		}
+	}
 
-		private static bool CopySelectedText(TextArea textArea)
+	private static bool CopySelectedText(TextArea textArea)
+	{
+		var text = textArea.Selection.GetText();
+		text = TextUtilities.NormalizeNewLines(text, Environment.NewLine);
+
+		var df = new DataTransfer();
+		var item = new DataTransferItem();
+		item.Set(DataFormat.Text, text);
+		df.Add(item);
+		SetClipboardText(df, textArea);
+
+		textArea.OnTextCopied(new TextEventArgs(text));
+		return true;
+	}
+
+	public static bool ConfirmDataFormat<T>(TextArea textArea, DataTransfer dataObject, DataFormat<T> format) where T : class => true;////var e = new DataObjectSettingDataEventArgs(dataObject, format);////textArea.RaiseEvent(e);////return !e.CommandCancelled;
+
+	private static void SetClipboardText(DataTransfer text, Visual visual)
+	{
+		try
 		{
-			var text = textArea.Selection.GetText();
-			text = TextUtilities.NormalizeNewLines(text, Environment.NewLine);
-
-			SetClipboardText(text, textArea);
-
-			textArea.OnTextCopied(new TextEventArgs(text));
-			return true;
+			TopLevel.GetTopLevel(visual)?.Clipboard?.SetDataAsync(text);
 		}
-
-	public static bool ConfirmDataFormat(TextArea textArea, DataObject dataObject, string format) => true;////var e = new DataObjectSettingDataEventArgs(dataObject, format);////textArea.RaiseEvent(e);////return !e.CommandCancelled;
-
-	private static void SetClipboardText(string text, Visual visual)
+		catch (Exception)
 		{
+			// Apparently this exception sometimes happens randomly.
+			// The MS controls just ignore it, so we'll do the same.
+		}
+	}
+
+	private static bool CopyWholeLine(TextArea textArea, DocumentLine line)
+	{
+		ISegment wholeLine = new SimpleSegment(line.Offset, line.TotalLength);
+		var text = textArea.Document.GetText(wholeLine);
+		// Ignore empty line copy
+		if (string.IsNullOrEmpty(text)) return false;
+		// Ensure we use the appropriate newline sequence for the OS
+		text = TextUtilities.NormalizeNewLines(text, Environment.NewLine);
+
+		// TODO: formats
+		//DataObject data = new DataObject();
+		//if (ConfirmDataFormat(textArea, data, DataFormats.UnicodeText))
+		//	data.SetText(text);
+
+		//// Also copy text in HTML format to clipboard - good for pasting text into Word
+		//// or to the SharpDevelop forums.
+		//if (ConfirmDataFormat(textArea, data, DataFormats.Html))
+		//{
+		//	IHighlighter highlighter = textArea.GetService(typeof(IHighlighter)) as IHighlighter;
+		//	HtmlClipboard.SetHtml(data,
+		//		HtmlClipboard.CreateHtmlFragment(textArea.Document, highlighter, wholeLine,
+		//			new HtmlOptions(textArea.Options)));
+		//}
+
+		//if (ConfirmDataFormat(textArea, data, LineSelectedType))
+		//{
+		//	var lineSelected = new MemoryStream(1);
+		//	lineSelected.WriteByte(1);
+		//	data.SetData(LineSelectedType, lineSelected, false);
+		//}
+
+		//var copyingEventArgs = new DataObjectCopyingEventArgs(data, false);
+		//textArea.RaiseEvent(copyingEventArgs);
+		//if (copyingEventArgs.CommandCancelled)
+		//	return false;
+		var df = new DataTransfer();
+		var item = new DataTransferItem();
+		item.Set(DataFormat.Text, text);
+		df.Add(item);
+		SetClipboardText(df, textArea);
+
+		textArea.OnTextCopied(new TextEventArgs(text));
+		return true;
+	}
+
+	private static void CanPaste(object target, CanExecuteRoutedEventArgs args)
+	{
+		var textArea = GetTextArea(target);
+		if (textArea is { Document: not null })
+		{
+			args.CanExecute = textArea.ReadOnlySectionProvider.CanInsert(textArea.Caret.Offset);
+			args.Handled = true;
+		}
+	}
+
+	private static async void OnPaste(object target, ExecutedRoutedEventArgs args)
+	{
+		var textArea = GetTextArea(target);
+		if (textArea?.Document != null)
+		{
+			textArea.Document.BeginUpdate();
+
+			string text = null;
 			try
 			{
-				TopLevel.GetTopLevel(visual)?.Clipboard?.SetTextAsync(text);
+				var data = await TopLevel.GetTopLevel(textArea)?.Clipboard?.TryGetDataAsync();
+				text = await data?.TryGetTextAsync() ?? "";
 			}
 			catch (Exception)
 			{
-				// Apparently this exception sometimes happens randomly.
-				// The MS controls just ignore it, so we'll do the same.
-			}
-		}
-
-		private static bool CopyWholeLine(TextArea textArea, DocumentLine line)
-		{
-			ISegment wholeLine = new SimpleSegment(line.Offset, line.TotalLength);
-			var text = textArea.Document.GetText(wholeLine);
-			// Ignore empty line copy
-			if(string.IsNullOrEmpty(text)) return false;
-			// Ensure we use the appropriate newline sequence for the OS
-			text = TextUtilities.NormalizeNewLines(text, Environment.NewLine);
-
-			// TODO: formats
-			//DataObject data = new DataObject();
-			//if (ConfirmDataFormat(textArea, data, DataFormats.UnicodeText))
-			//	data.SetText(text);
-
-			//// Also copy text in HTML format to clipboard - good for pasting text into Word
-			//// or to the SharpDevelop forums.
-			//if (ConfirmDataFormat(textArea, data, DataFormats.Html))
-			//{
-			//	IHighlighter highlighter = textArea.GetService(typeof(IHighlighter)) as IHighlighter;
-			//	HtmlClipboard.SetHtml(data,
-			//		HtmlClipboard.CreateHtmlFragment(textArea.Document, highlighter, wholeLine,
-			//			new HtmlOptions(textArea.Options)));
-			//}
-
-			//if (ConfirmDataFormat(textArea, data, LineSelectedType))
-			//{
-			//	var lineSelected = new MemoryStream(1);
-			//	lineSelected.WriteByte(1);
-			//	data.SetData(LineSelectedType, lineSelected, false);
-			//}
-
-			//var copyingEventArgs = new DataObjectCopyingEventArgs(data, false);
-			//textArea.RaiseEvent(copyingEventArgs);
-			//if (copyingEventArgs.CommandCancelled)
-			//	return false;
-
-			SetClipboardText(text, textArea);
-
-			textArea.OnTextCopied(new TextEventArgs(text));
-			return true;
-		}
-
-		private static void CanPaste(object target, CanExecuteRoutedEventArgs args)
-		{
-			var textArea = GetTextArea(target);
-			if (textArea is { Document: not null })
-			{
-				args.CanExecute = textArea.ReadOnlySectionProvider.CanInsert(textArea.Caret.Offset);
-				args.Handled = true;
-			}
-		}
-
-		private static async void OnPaste(object target, ExecutedRoutedEventArgs args)
-		{
-			var textArea = GetTextArea(target);
-			if (textArea?.Document != null)
-			{
-				textArea.Document.BeginUpdate();
-
-				string text;
-				try
-				{
-					text = await TopLevel.GetTopLevel(textArea)?.Clipboard?.GetTextAsync();
-				}
-				catch (Exception)
-				{
-					textArea.Document.EndUpdate();
-					return;
-				}
-
-				if (text == null)
-				{
-					textArea.Document.EndUpdate();
-					return;
-				}
-
-				text = GetTextToPaste(text, textArea);
-
-				if (!string.IsNullOrEmpty(text))
-				{
-					textArea.ReplaceSelectionWithText(text);
-				}
-
-				textArea.Caret.BringCaretToView();
-				args.Handled = true;
-
 				textArea.Document.EndUpdate();
+				return;
 			}
+
+			if (text is null)
+			{
+				textArea.Document.EndUpdate();
+				return;
+			}
+
+			text = GetTextToPaste(text, textArea);
+
+			if (!string.IsNullOrEmpty(text))
+			{
+				textArea.ReplaceSelectionWithText(text);
+			}
+
+			textArea.Caret.BringCaretToView();
+			args.Handled = true;
+
+			textArea.Document.EndUpdate();
+
+			textArea.OnTextPasted(new TextEventArgs(text));
+		}
+	}
+
+	internal static string GetTextToPaste(IDataTransfer dataObject, TextArea textArea)
+	{
+		if (dataObject.Contains(DataFormat.Text))
+		{
+			return GetTextToPaste((string)dataObject.TryGetText() ?? "", textArea);
 		}
 
-		internal static string GetTextToPaste(IDataObject dataObject, TextArea textArea)
-		{
-			if (dataObject.Contains(DataFormats.Text))
-			{
-				return GetTextToPaste((string)dataObject.Get(DataFormats.Text), textArea);
-			}
+		return null;
+	}
 
+	internal static string GetTextToPaste(string text, TextArea textArea)
+	{
+		try
+		{
+			// Try retrieving the text as one of:
+			//  - the FormatToApply
+			//  - UnicodeText
+			//  - Text
+			// (but don't try the same format twice)
+			//if (pastingEventArgs.FormatToApply != null && dataObject.GetDataPresent(pastingEventArgs.FormatToApply))
+			//	text = (string)dataObject.GetData(pastingEventArgs.FormatToApply);
+			//else if (pastingEventArgs.FormatToApply != DataFormats.UnicodeText &&
+			//		 dataObject.GetDataPresent(DataFormats.UnicodeText))
+			//	text = (string)dataObject.GetData(DataFormats.UnicodeText);
+			//else if (pastingEventArgs.FormatToApply != DataFormats.Text &&
+			//		 dataObject.GetDataPresent(DataFormats.Text))
+			//	text = (string)dataObject.GetData(DataFormats.Text);
+			//else
+			//	return null; // no text data format
+			// convert text back to correct newlines for this document
+			var newLine = TextUtilities.GetNewLineFromDocument(textArea.Document, textArea.Caret.Line);
+			text = TextUtilities.NormalizeNewLines(text, newLine);
+			text = textArea.Options.ConvertTabsToSpaces
+				? text.Replace("\t", new String(' ', textArea.Options.IndentationSize))
+				: text;
+			return text;
+		}
+		catch (OutOfMemoryException)
+		{
+			// may happen when trying to paste a huge string
 			return null;
 		}
+	}
 
-		internal static string GetTextToPaste(string text, TextArea textArea)
+	#endregion
+
+	#region Toggle Overstrike
+
+	private static void OnToggleOverstrike(object target, ExecutedRoutedEventArgs args)
+	{
+		var textArea = GetTextArea(target);
+		if (textArea != null && textArea.Options.AllowToggleOverstrikeMode)
+			textArea.OverstrikeMode = !textArea.OverstrikeMode;
+	}
+
+	#endregion
+
+	#region DeleteLine
+
+	private static void OnDeleteLine(object target, ExecutedRoutedEventArgs args)
+	{
+		var textArea = GetTextArea(target);
+		if (textArea?.Document != null)
 		{
-			try
+			int firstLineIndex, lastLineIndex;
+			if (textArea.Selection.Length == 0)
 			{
-				// Try retrieving the text as one of:
-				//  - the FormatToApply
-				//  - UnicodeText
-				//  - Text
-				// (but don't try the same format twice)
-				//if (pastingEventArgs.FormatToApply != null && dataObject.GetDataPresent(pastingEventArgs.FormatToApply))
-				//	text = (string)dataObject.GetData(pastingEventArgs.FormatToApply);
-				//else if (pastingEventArgs.FormatToApply != DataFormats.UnicodeText &&
-				//		 dataObject.GetDataPresent(DataFormats.UnicodeText))
-				//	text = (string)dataObject.GetData(DataFormats.UnicodeText);
-				//else if (pastingEventArgs.FormatToApply != DataFormats.Text &&
-				//		 dataObject.GetDataPresent(DataFormats.Text))
-				//	text = (string)dataObject.GetData(DataFormats.Text);
-				//else
-				//	return null; // no text data format
-				// convert text back to correct newlines for this document
-				var newLine = TextUtilities.GetNewLineFromDocument(textArea.Document, textArea.Caret.Line);
-				text = TextUtilities.NormalizeNewLines(text, newLine);
-				text = textArea.Options.ConvertTabsToSpaces
-					? text.Replace("\t", new string(' ', textArea.Options.IndentationSize))
-					: text;
-				return text;
+				// There is no selection, simply delete current line
+				firstLineIndex = lastLineIndex = textArea.Caret.Line;
 			}
-			catch (OutOfMemoryException)
+			else
 			{
-				// may happen when trying to paste a huge string
-				return null;
+				// There is a selection, remove all lines affected by it (use Min/Max to be independent from selection direction)
+				firstLineIndex = Math.Min(textArea.Selection.StartPosition.Line,
+					textArea.Selection.EndPosition.Line);
+				lastLineIndex = Math.Max(textArea.Selection.StartPosition.Line,
+					textArea.Selection.EndPosition.Line);
 			}
+			var startLine = textArea.Document.GetLineByNumber(firstLineIndex);
+			var endLine = textArea.Document.GetLineByNumber(lastLineIndex);
+			textArea.Selection = Selection.Create(textArea, startLine.Offset,
+				endLine.Offset + endLine.TotalLength);
+			textArea.RemoveSelectedText();
+			args.Handled = true;
 		}
-
-		#endregion
-
-		#region Toggle Overstrike
-
-		private static void OnToggleOverstrike(object target, ExecutedRoutedEventArgs args)
-		{
-			var textArea = GetTextArea(target);
-			if (textArea != null && textArea.Options.AllowToggleOverstrikeMode)
-				textArea.OverstrikeMode = !textArea.OverstrikeMode;
-		}
-
-		#endregion
-
-		#region DeleteLine
-
-		private static void OnDeleteLine(object target, ExecutedRoutedEventArgs args)
-		{
-			var textArea = GetTextArea(target);
-			if (textArea?.Document != null)
-			{
-				int firstLineIndex, lastLineIndex;
-				if (textArea.Selection.Length == 0)
-				{
-					// There is no selection, simply delete current line
-					firstLineIndex = lastLineIndex = textArea.Caret.Line;
-				}
-				else
-				{
-					// There is a selection, remove all lines affected by it (use Min/Max to be independent from selection direction)
-					firstLineIndex = Math.Min(textArea.Selection.StartPosition.Line,
-						textArea.Selection.EndPosition.Line);
-					lastLineIndex = Math.Max(textArea.Selection.StartPosition.Line,
-						textArea.Selection.EndPosition.Line);
-				}
-				var startLine = textArea.Document.GetLineByNumber(firstLineIndex);
-				var endLine = textArea.Document.GetLineByNumber(lastLineIndex);
-				textArea.Selection = Selection.Create(textArea, startLine.Offset,
-					endLine.Offset + endLine.TotalLength);
-				textArea.RemoveSelectedText();
-				args.Handled = true;
-			}
-		}
+	}
 
 	#endregion
 
@@ -626,19 +636,19 @@ namespace AvaloniaEdit.Editing;
 			}, target, args, DefaultSegmentType.WholeDocument);
 
 	private static void ConvertTabsToSpaces(TextArea textArea, ISegment segment)
+	{
+		var document = textArea.Document;
+		var endOffset = segment.EndOffset;
+		var indentationString = new string(' ', textArea.Options.IndentationSize);
+		for (var offset = segment.Offset; offset < endOffset; offset++)
 		{
-			var document = textArea.Document;
-			var endOffset = segment.EndOffset;
-			var indentationString = new string(' ', textArea.Options.IndentationSize);
-			for (var offset = segment.Offset; offset < endOffset; offset++)
+			if (document.GetCharAt(offset) == '\t')
 			{
-				if (document.GetCharAt(offset) == '\t')
-				{
-					document.Replace(offset, 1, indentationString, OffsetChangeMappingType.CharacterReplace);
-					endOffset += indentationString.Length - 1;
-				}
+				document.Replace(offset, 1, indentationString, OffsetChangeMappingType.CharacterReplace);
+				endOffset += indentationString.Length - 1;
 			}
 		}
+	}
 
 	private static void OnConvertSpacesToTabs(object target, ExecutedRoutedEventArgs args) => TransformSelectedSegments(ConvertSpacesToTabs, target, args, DefaultSegmentType.WholeDocument);
 
@@ -649,31 +659,31 @@ namespace AvaloniaEdit.Editing;
 			}, target, args, DefaultSegmentType.WholeDocument);
 
 	private static void ConvertSpacesToTabs(TextArea textArea, ISegment segment)
+	{
+		var document = textArea.Document;
+		var endOffset = segment.EndOffset;
+		var indentationSize = textArea.Options.IndentationSize;
+		var spacesCount = 0;
+		for (var offset = segment.Offset; offset < endOffset; offset++)
 		{
-			var document = textArea.Document;
-			var endOffset = segment.EndOffset;
-			var indentationSize = textArea.Options.IndentationSize;
-			var spacesCount = 0;
-			for (var offset = segment.Offset; offset < endOffset; offset++)
+			if (document.GetCharAt(offset) == ' ')
 			{
-				if (document.GetCharAt(offset) == ' ')
+				spacesCount++;
+				if (spacesCount == indentationSize)
 				{
-					spacesCount++;
-					if (spacesCount == indentationSize)
-					{
-						document.Replace(offset - (indentationSize - 1), indentationSize, "\t",
-							OffsetChangeMappingType.CharacterReplace);
-						spacesCount = 0;
-						offset -= indentationSize - 1;
-						endOffset -= indentationSize - 1;
-					}
-				}
-				else
-				{
+					document.Replace(offset - (indentationSize - 1), indentationSize, "\t",
+						OffsetChangeMappingType.CharacterReplace);
 					spacesCount = 0;
+					offset -= indentationSize - 1;
+					endOffset -= indentationSize - 1;
 				}
 			}
+			else
+			{
+				spacesCount = 0;
+			}
 		}
+	}
 
 	#endregion
 
@@ -697,44 +707,44 @@ namespace AvaloniaEdit.Editing;
 	private static void OnInvertCase(object target, ExecutedRoutedEventArgs args) => ConvertCase(InvertCase, target, args);
 
 	private static string InvertCase(string text)
+	{
+		// TODO: culture
+		//var culture = CultureInfo.CurrentCulture;
+		var buffer = text.ToCharArray();
+		for (var i = 0; i < buffer.Length; ++i)
 		{
-			// TODO: culture
-			//var culture = CultureInfo.CurrentCulture;
-			var buffer = text.ToCharArray();
-			for (var i = 0; i < buffer.Length; ++i)
-			{
-				var c = buffer[i];
-				buffer[i] = char.IsUpper(c) ? char.ToLower(c) : char.ToUpper(c);
-			}
-			return new string(buffer);
+			var c = buffer[i];
+			buffer[i] = char.IsUpper(c) ? char.ToLower(c) : char.ToUpper(c);
 		}
+		return new string(buffer);
+	}
 
-		#endregion
+	#endregion
 
-		private static void OnIndentSelection(object target, ExecutedRoutedEventArgs args)
+	private static void OnIndentSelection(object target, ExecutedRoutedEventArgs args)
+	{
+		var textArea = GetTextArea(target);
+		if (textArea?.Document != null && textArea.IndentationStrategy != null)
 		{
-			var textArea = GetTextArea(target);
-			if (textArea?.Document != null && textArea.IndentationStrategy != null)
+			using (textArea.Document.RunUpdate())
 			{
-				using (textArea.Document.RunUpdate())
+				int start, end;
+				if (textArea.Selection.IsEmpty)
 				{
-					int start, end;
-					if (textArea.Selection.IsEmpty)
-					{
-						start = 1;
-						end = textArea.Document.LineCount;
-					}
-					else
-					{
-						start = textArea.Document.GetLineByOffset(textArea.Selection.SurroundingSegment.Offset)
-							.LineNumber;
-						end = textArea.Document.GetLineByOffset(textArea.Selection.SurroundingSegment.EndOffset)
-							.LineNumber;
-					}
-					textArea.IndentationStrategy.IndentLines(textArea.Document, start, end);
+					start = 1;
+					end = textArea.Document.LineCount;
 				}
-				textArea.Caret.BringCaretToView();
-				args.Handled = true;
+				else
+				{
+					start = textArea.Document.GetLineByOffset(textArea.Selection.SurroundingSegment.Offset)
+						.LineNumber;
+					end = textArea.Document.GetLineByOffset(textArea.Selection.SurroundingSegment.EndOffset)
+						.LineNumber;
+				}
+				textArea.IndentationStrategy.IndentLines(textArea.Document, start, end);
 			}
+			textArea.Caret.BringCaretToView();
+			args.Handled = true;
 		}
 	}
+}

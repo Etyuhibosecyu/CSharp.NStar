@@ -17,7 +17,9 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 	public static readonly NStarType LongIntType = GetPrimitiveType("long int");
 	public static readonly NStarType UnsignedLongIntType = GetPrimitiveType("unsigned long int");
 	public static readonly NStarType RealType = GetPrimitiveType("real");
+	public static readonly NStarType DecimalType = GetPrimitiveType("decimal");
 	public static readonly NStarType LongLongType = GetPrimitiveType("long long");
+	public static readonly NStarType UnsignedLongLongType = GetPrimitiveType("unsigned long long");
 	public static readonly NStarType ComplexType = GetPrimitiveType("complex");
 	public static readonly NStarType RecursiveType = GetPrimitiveType("typename");
 	public static readonly NStarType StringType = GetPrimitiveType("string");

@@ -3,20 +3,17 @@ using Avalonia.Controls.Primitives;
 
 namespace AvaloniaEdit.CodeCompletion;
 
-	internal class PopupWithCustomPosition : Popup
+internal class PopupWithCustomPosition : Popup
+{
+	public Point Offset
 	{
-		public Point Offset
+		get => new(HorizontalOffset, VerticalOffset);
+		set
 		{
-			get
-			{
-				return new Point(HorizontalOffset, VerticalOffset);
-			}
-			set
-			{
-				HorizontalOffset = value.X;
-				VerticalOffset = value.Y;
+			HorizontalOffset = value.X;
+			VerticalOffset = value.Y;
 
-				//this.Revalidate(VerticalOffsetProperty);
-			}
+			//this.Revalidate(VerticalOffsetProperty);
 		}
 	}
+}

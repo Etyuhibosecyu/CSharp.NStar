@@ -17,6 +17,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 using System;
+using System.Globalization;
 
 namespace AvaloniaEdit.Document;
 
@@ -29,10 +30,10 @@ internal sealed class TextAnchorNode(TextAnchor anchor) : WeakReference(anchor)
 {
 	internal TextAnchorNode Left { get; set; }
 	internal TextAnchorNode Right { get; set; }
-		internal TextAnchorNode Parent { get; set; }
-		internal bool Color { get; set; }
-		internal int Length { get; set; }
-		internal int TotalLength { get; set; } // totalLength = length + left.totalLength + right.totalLength
+	internal TextAnchorNode Parent { get; set; }
+	internal bool Color { get; set; }
+	internal int Length { get; set; }
+	internal int TotalLength { get; set; } // totalLength = length + left.totalLength + right.totalLength
 
 	internal TextAnchorNode LeftMost {
 		get {
@@ -42,7 +43,7 @@ internal sealed class TextAnchorNode(TextAnchor anchor) : WeakReference(anchor)
 			return node;
 		}
 	}
-
+	
 	internal TextAnchorNode RightMost {
 		get {
 			var node = this;
@@ -51,7 +52,7 @@ internal sealed class TextAnchorNode(TextAnchor anchor) : WeakReference(anchor)
 			return node;
 		}
 	}
-
+	
 	/// <summary>
 	/// Gets the inorder successor of the node.
 	/// </summary>
@@ -71,7 +72,7 @@ internal sealed class TextAnchorNode(TextAnchor anchor) : WeakReference(anchor)
 			}
 		}
 	}
-
+	
 	/// <summary>
 	/// Gets the inorder predecessor of the node.
 	/// </summary>
@@ -92,5 +93,5 @@ internal sealed class TextAnchorNode(TextAnchor anchor) : WeakReference(anchor)
 		}
 	}
 
-	public override string ToString() => "[TextAnchorNode Length=" + Length + " TotalLength=" + TotalLength + " Target=" + Target + "]";
+	public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"[{nameof(TextAnchorNode)} {nameof(Length)}={Length}, {nameof(TotalLength)}={TotalLength}, {nameof(Target)}={Target}]");
 }

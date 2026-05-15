@@ -22,45 +22,50 @@ using Avalonia.Media;
 
 namespace AvaloniaEdit.Editing;
 
-	internal sealed class SelectionLayer : Layer
+internal sealed class SelectionLayer : Layer
+{
+	private readonly TextArea _textArea;
+
+	public SelectionLayer(TextArea textArea) : base(textArea.TextView, KnownLayer.Selection)
 	{
-		private readonly TextArea _textArea;
+		IsHitTestVisible = false;
 
-		public SelectionLayer(TextArea textArea) : base(textArea.TextView, KnownLayer.Selection)
-		{
-			IsHitTestVisible = false;
+		_textArea = textArea;
 
-			_textArea = textArea;
-
-			TextViewWeakEventManager.VisualLinesChanged.AddHandler(TextView, ReceiveWeakEvent);
-			TextViewWeakEventManager.ScrollOffsetChanged.AddHandler(TextView, ReceiveWeakEvent);
-		}
+		TextViewWeakEventManager.VisualLinesChanged.AddHandler(TextView, ReceiveWeakEvent);
+		TextViewWeakEventManager.ScrollOffsetChanged.AddHandler(TextView, ReceiveWeakEvent);
+	}
 
 	private void ReceiveWeakEvent(object sender, EventArgs e) => InvalidateVisual();
 
 	public override void Render(DrawingContext drawingContext)
+	{
+		if (!_textArea.TextView.VisualLinesValid)
 		{
-			base.Render(drawingContext);
+			return;
+		}
 
-			var selectionBorder = _textArea.SelectionBorder;
+		base.Render(drawingContext);
 
-			var geoBuilder = new BackgroundGeometryBuilder
-			{
-				AlignToWholePixels = true,
-				BorderThickness = selectionBorder?.Thickness ?? 0,
-				ExtendToFullWidthAtLineEnd = _textArea.Selection.EnableVirtualSpace,
-				CornerRadius = _textArea.SelectionCornerRadius
-			};
+		var selectionBorder = _textArea.SelectionBorder;
 
-			foreach (var segment in _textArea.Selection.Segments)
-			{
-				geoBuilder.AddSegment(TextView, segment);
-			}
+		var geoBuilder = new BackgroundGeometryBuilder
+		{
+			AlignToWholePixels = true,
+			BorderThickness = selectionBorder?.Thickness ?? 0,
+			ExtendToFullWidthAtLineEnd = _textArea.Selection.EnableVirtualSpace,
+			CornerRadius = _textArea.SelectionCornerRadius
+		};
 
-			var geometry = geoBuilder.CreateGeometry();
-			if (geometry != null)
-			{
-				drawingContext.DrawGeometry(_textArea.SelectionBrush, selectionBorder, geometry);
-			}
+		foreach (var segment in _textArea.Selection.Segments)
+		{
+			geoBuilder.AddSegment(TextView, segment);
+		}
+
+		var geometry = geoBuilder.CreateGeometry();
+		if (geometry != null)
+		{
+			drawingContext.DrawGeometry(_textArea.SelectionBrush, selectionBorder, geometry);
 		}
 	}
+}

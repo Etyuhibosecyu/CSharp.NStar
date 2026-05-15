@@ -31,15 +31,15 @@ namespace AvaloniaEdit.Highlighting;
 /// <summary>
 /// RichTextWriter implementation that produces HTML.
 /// </summary>
-internal class HtmlRichTextWriter : RichTextWriter
+class HtmlRichTextWriter : RichTextWriter
 {
-	private readonly TextWriter htmlWriter;
-	private readonly HtmlOptions options;
-	private Stack<string> endTagStack = new();
-	private bool spaceNeedsEscaping = true;
-	private bool hasSpace;
-	private bool needIndentation = true;
-	private int indentationLevel;
+	readonly TextWriter htmlWriter;
+	readonly HtmlOptions options;
+	Stack<string> endTagStack = new();
+	bool spaceNeedsEscaping = true;
+	bool hasSpace;
+	bool needIndentation = true;
+	int indentationLevel;
 
 	/// <summary>
 	/// Creates a new HtmlRichTextWriter instance.
@@ -76,7 +76,7 @@ internal class HtmlRichTextWriter : RichTextWriter
 		base.Dispose(disposing);
 	}
 
-	private void FlushSpace(bool nextIsWhitespace)
+	void FlushSpace(bool nextIsWhitespace)
 	{
 		if (hasSpace) {
 			if (spaceNeedsEscaping || nextIsWhitespace)
@@ -88,7 +88,7 @@ internal class HtmlRichTextWriter : RichTextWriter
 		}
 	}
 
-	private void WriteIndentation()
+	void WriteIndentation()
 	{
 		if (needIndentation) {
 			for (var i = 0; i < indentationLevel; i++) {
@@ -105,9 +105,9 @@ internal class HtmlRichTextWriter : RichTextWriter
 		WriteChar(value);
 	}
 
-	private static readonly char[] specialChars = { ' ', '\t', '\r', '\n' };
+	static readonly char[] specialChars = { ' ', '\t', '\r', '\n' };
 
-	private void WriteChar(char c)
+	void WriteChar(char c)
 	{
 		var isWhitespace = char.IsWhiteSpace(c);
 		FlushSpace(isWhitespace);
@@ -150,6 +150,8 @@ internal class HtmlRichTextWriter : RichTextWriter
 	/// <inheritdoc/>
 	public override void Write(string value)
 	{
+		if (value is null)
+			return;
 		var pos = 0;
 		do {
 			var endPos = value.IndexOfAny(specialChars, pos);
@@ -164,13 +166,13 @@ internal class HtmlRichTextWriter : RichTextWriter
 		} while (pos < value.Length);
 	}
 
-	private void WriteIndentationAndSpace()
+	void WriteIndentationAndSpace()
 	{
 		WriteIndentation();
 		FlushSpace(false);
 	}
 
-	private void WriteSimpleString(string value)
+	void WriteSimpleString(string value)
 	{
 		if (value.Length == 0)
 			return;

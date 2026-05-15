@@ -64,7 +64,7 @@ public class VisualLineElementTextRunProperties : TextRunProperties, ICloneable
 		_foregroundBrush = textRunProperties.ForegroundBrush;
 		_typeface = textRunProperties.Typeface;
 		_textDecorations = textRunProperties.TextDecorations;
-
+		
 		/*if (textDecorations != null && !textDecorations.IsFrozen) {
 			textDecorations = textDecorations.Clone();
 		}*/
@@ -158,7 +158,7 @@ public class VisualLineElementTextRunProperties : TextRunProperties, ICloneable
 	public void SetTextDecorations(TextDecorationCollection value)
 	{
 		ExtensionMethods.CheckIsFrozen(value);
-		if (_textDecorations == null)
+		if (_textDecorations is null)
 			_textDecorations = value;
 		else
 			_textDecorations = new TextDecorationCollection(_textDecorations.Union(value));

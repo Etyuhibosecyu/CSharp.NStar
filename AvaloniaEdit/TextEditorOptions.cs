@@ -24,50 +24,50 @@ using AvaloniaEdit.CodeCompletion;
 
 namespace AvaloniaEdit;
 
+/// <summary>
+/// A container for the text editor options.
+/// </summary>
+public class TextEditorOptions : INotifyPropertyChanged
+{
+	#region ctor
 	/// <summary>
-	/// A container for the text editor options.
+	/// Initializes an empty instance of TextEditorOptions.
 	/// </summary>
-	public class TextEditorOptions : INotifyPropertyChanged
+	public TextEditorOptions()
 	{
-		#region ctor
-		/// <summary>
-		/// Initializes an empty instance of TextEditorOptions.
-		/// </summary>
-		public TextEditorOptions()
+	}
+
+	/// <summary>
+	/// Initializes a new instance of TextEditorOptions by copying all values
+	/// from <paramref name="options"/> to the new instance.
+	/// </summary>
+	public TextEditorOptions(TextEditorOptions options)
+	{
+		// get all the fields in the class
+		var fields = typeof(TextEditorOptions).GetRuntimeFields();
+
+		// copy each value over to 'this'
+		foreach (var fi in fields)
 		{
+			if (!fi.IsStatic)
+				fi.SetValue(this, fi.GetValue(options));
 		}
+	}
+	#endregion
 
-		/// <summary>
-		/// Initializes a new instance of TextEditorOptions by copying all values
-		/// from <paramref name="options"/> to the new instance.
-		/// </summary>
-		public TextEditorOptions(TextEditorOptions options)
-		{
-			// get all the fields in the class
-			var fields = typeof(TextEditorOptions).GetRuntimeFields();
+	#region PropertyChanged handling
+	/// <inheritdoc/>
+	public event PropertyChangedEventHandler PropertyChanged;
 
-			// copy each value over to 'this'
-			foreach (var fi in fields)
-			{
-				if (!fi.IsStatic)
-					fi.SetValue(this, fi.GetValue(options));
-			}
-		}
-		#endregion
-
-		#region PropertyChanged handling
-		/// <inheritdoc/>
-		public event PropertyChangedEventHandler PropertyChanged;
-
-		/// <summary>
-		/// Raises the PropertyChanged event.
-		/// </summary>
-		/// <param name="propertyName">The name of the changed property.</param>
-		protected void OnPropertyChanged(string propertyName)
-		{
-			var args = new PropertyChangedEventArgs(propertyName);
-			OnPropertyChanged(args);
-		}
+	/// <summary>
+	/// Raises the PropertyChanged event.
+	/// </summary>
+	/// <param name="propertyName">The name of the changed property.</param>
+	protected void OnPropertyChanged(string propertyName)
+	{
+		var args = new PropertyChangedEventArgs(propertyName);
+		OnPropertyChanged(args);
+	}
 
 	/// <summary>
 	/// Raises the PropertyChanged event.
@@ -77,632 +77,584 @@ namespace AvaloniaEdit;
 
 	#region AccepsTab
 
-	private bool _acceptsTab = true;
-		[DefaultValue(true)]
-		public virtual bool AcceptsTab
+	[DefaultValue(true)]
+	public virtual bool AcceptsTab
+	{
+		get => field;
+		set
 		{
-			get
+			if (field != value)
 			{
-				return _acceptsTab;
-			}
-			set
-			{
-				if (_acceptsTab != value)
-				{
-					_acceptsTab = value;
-					OnPropertyChanged(nameof(AcceptsTab));
-				}
+				field = value;
+				OnPropertyChanged(nameof(AcceptsTab));
 			}
 		}
+	} = true;
 
-		#endregion
+	#endregion
 
-		#region ShowSpaces / ShowTabs / ShowEndOfLine / ShowBoxForControlCharacters
+	#region ShowSpaces / ShowTabs / ShowEndOfLine / ShowBoxForControlCharacters
 
-		private bool _showSpaces;
-
-		/// <summary>
-		/// Gets/Sets whether to show a visible glyph for spaces. The glyph displayed can be set via <see cref="ShowSpacesGlyph" />
-		/// </summary>
-		/// <remarks>The default value is <c>false</c>.</remarks>
-		[DefaultValue(false)]
-		public virtual bool ShowSpaces
+	/// <summary>
+	/// Gets/Sets whether to show a visible glyph for spaces. The glyph displayed can be set via <see cref="ShowSpacesGlyph" />
+	/// </summary>
+	/// <remarks>The default value is <c>false</c>.</remarks>
+	[DefaultValue(false)]
+	public virtual bool ShowSpaces
+	{
+		get => field;
+		set
 		{
-			get { return _showSpaces; }
-			set
+			if (field != value)
 			{
-				if (_showSpaces != value)
-				{
-					_showSpaces = value;
-					OnPropertyChanged(nameof(ShowSpaces));
-				}
+				field = value;
+				OnPropertyChanged(nameof(ShowSpaces));
 			}
 		}
+	}
 
-		private string _showSpacesGlyph = "\u00B7";
-
-		/// <summary>
-		/// Gets/Sets the char to show when ShowSpaces option is enabled
-		/// </summary>
-		/// <remarks>The default value is <c>·</c>.</remarks>
-		[DefaultValue("\u00B7")]
-		public virtual string ShowSpacesGlyph
+	/// <summary>
+	/// Gets/Sets the char to show when ShowSpaces option is enabled
+	/// </summary>
+	/// <remarks>The default value is <c>·</c>.</remarks>
+	[DefaultValue("\u00B7")]
+	public virtual string ShowSpacesGlyph
+	{
+		get => field;
+		set
 		{
-			get { return _showSpacesGlyph; }
-			set
+			if (field != value)
 			{
-				if (_showSpacesGlyph != value)
-				{
-					_showSpacesGlyph = value;
-					OnPropertyChanged(nameof(ShowSpacesGlyph));
-				}
+				field = value;
+				OnPropertyChanged(nameof(ShowSpacesGlyph));
 			}
 		}
+	} = "\u00B7";
 
-		private bool _showTabs;
-
-		/// <summary>
-		/// Gets/Sets whether to show a visible glyph for tab. The glyph displayed can be set via <see cref="ShowTabsGlyph" />
-		/// </summary>
-		/// <remarks>The default value is <c>false</c>.</remarks>
-		[DefaultValue(false)]
-		public virtual bool ShowTabs
+	/// <summary>
+	/// Gets/Sets whether to show a visible glyph for tab. The glyph displayed can be set via <see cref="ShowTabsGlyph" />
+	/// </summary>
+	/// <remarks>The default value is <c>false</c>.</remarks>
+	[DefaultValue(false)]
+	public virtual bool ShowTabs
+	{
+		get => field;
+		set
 		{
-			get { return _showTabs; }
-			set
+			if (field != value)
 			{
-				if (_showTabs != value)
-				{
-					_showTabs = value;
-					OnPropertyChanged(nameof(ShowTabs));
-				}
+				field = value;
+				OnPropertyChanged(nameof(ShowTabs));
 			}
 		}
+	}
 
-		private string _showTabsGlyph = "\u2192";
-
-		/// <summary>
-		/// Gets/Sets the char to show when ShowTabs option is enabled
-		/// </summary>
-		/// <remarks>The default value is <c>→</c>.</remarks>
-		[DefaultValue("\u2192")]
-		public virtual string ShowTabsGlyph
+	/// <summary>
+	/// Gets/Sets the char to show when ShowTabs option is enabled
+	/// </summary>
+	/// <remarks>The default value is <c>→</c>.</remarks>
+	[DefaultValue("\u2192")]
+	public virtual string ShowTabsGlyph
+	{
+		get => field;
+		set
 		{
-			get { return _showTabsGlyph; }
-			set
+			if (field != value)
 			{
-				if (_showTabsGlyph != value)
-				{
-					_showTabsGlyph = value;
-					OnPropertyChanged(nameof(ShowTabsGlyph));
-				}
+				field = value;
+				OnPropertyChanged(nameof(ShowTabsGlyph));
 			}
 		}
+	} = "\u2192";
 
-		private bool _showEndOfLine;
-
-		/// <summary>
-		/// Gets/Sets whether to show EOL char at the end of lines. The glyphs displayed can be set via <see cref="EndOfLineCRLFGlyph" />, <see cref="EndOfLineCRGlyph" /> and <see cref="EndOfLineLFGlyph" />.
-		/// </summary>
-		/// <remarks>The default value is <c>false</c>.</remarks>
-		[DefaultValue(false)]
-		public virtual bool ShowEndOfLine
+	/// <summary>
+	/// Gets/Sets whether to show EOL char at the end of lines. The glyphs displayed can be set via <see cref="EndOfLineCRLFGlyph" />, <see cref="EndOfLineCRGlyph" /> and <see cref="EndOfLineLFGlyph" />.
+	/// </summary>
+	/// <remarks>The default value is <c>false</c>.</remarks>
+	[DefaultValue(false)]
+	public virtual bool ShowEndOfLine
+	{
+		get => field;
+		set
 		{
-			get { return _showEndOfLine; }
-			set
+			if (field != value)
 			{
-				if (_showEndOfLine != value)
-				{
-					_showEndOfLine = value;
-					OnPropertyChanged(nameof(ShowEndOfLine));
-				}
+				field = value;
+				OnPropertyChanged(nameof(ShowEndOfLine));
 			}
 		}
+	}
 
-		private string _endOfLineCRLFGlyph = "¶";
-
-		/// <summary>
-		/// Gets/Sets the char to show for CRLF (\r\n) when ShowEndOfLine option is enabled
-		/// </summary>
-		/// <remarks>The default value is <c>¶</c>.</remarks>
-		[DefaultValue("¶")]
-		public virtual string EndOfLineCRLFGlyph
+	/// <summary>
+	/// Gets/Sets the char to show for CRLF (\r\n) when ShowEndOfLine option is enabled
+	/// </summary>
+	/// <remarks>The default value is <c>¶</c>.</remarks>
+	[DefaultValue("¶")]
+	public virtual string EndOfLineCRLFGlyph
+	{
+		get => field;
+		set
 		{
-			get { return _endOfLineCRLFGlyph; }
-			set
+			if (field != value)
 			{
-				if (_endOfLineCRLFGlyph != value)
-				{
-					_endOfLineCRLFGlyph = value;
-					OnPropertyChanged(nameof(EndOfLineCRLFGlyph));
-				}
+				field = value;
+				OnPropertyChanged(nameof(EndOfLineCRLFGlyph));
 			}
 		}
+	} = "¶";
 
-		private string _endOfLineCRGlyph = "\\r";
-
-		/// <summary>
-		/// Gets/Sets the char to show for CR (\r) when ShowEndOfLine option is enabled
-		/// </summary>
-		/// <remarks>The default value is <c>\r</c>.</remarks>
-		[DefaultValue("\\r")]
-		public virtual string EndOfLineCRGlyph
+	/// <summary>
+	/// Gets/Sets the char to show for CR (\r) when ShowEndOfLine option is enabled
+	/// </summary>
+	/// <remarks>The default value is <c>\r</c>.</remarks>
+	[DefaultValue("\\r")]
+	public virtual string EndOfLineCRGlyph
+	{
+		get => field;
+		set
 		{
-			get { return _endOfLineCRGlyph; }
-			set
+			if (field != value)
 			{
-				if (_endOfLineCRGlyph != value)
-				{
-					_endOfLineCRGlyph = value;
-					OnPropertyChanged(nameof(EndOfLineCRGlyph));
-				}
+				field = value;
+				OnPropertyChanged(nameof(EndOfLineCRGlyph));
 			}
 		}
+	} = "\\r";
 
-		private string _endOfLineLFGlyph = "\\n";
-
-		/// <summary>
-		/// Gets/Sets the char to show for LF (\n) when ShowEndOfLine option is enabled
-		/// </summary>
-		/// <remarks>The default value is <c>\n</c>.</remarks>
-		[DefaultValue("\\n")]
-		public virtual string EndOfLineLFGlyph
+	/// <summary>
+	/// Gets/Sets the char to show for LF (\n) when ShowEndOfLine option is enabled
+	/// </summary>
+	/// <remarks>The default value is <c>\n</c>.</remarks>
+	[DefaultValue("\\n")]
+	public virtual string EndOfLineLFGlyph
+	{
+		get => field;
+		set
 		{
-			get { return _endOfLineLFGlyph; }
-			set
+			if (field != value)
 			{
-				if (_endOfLineLFGlyph != value)
-				{
-					_endOfLineLFGlyph = value;
-					OnPropertyChanged(nameof(EndOfLineLFGlyph));
-				}
+				field = value;
+				OnPropertyChanged(nameof(EndOfLineLFGlyph));
 			}
 		}
+	} = "\\n";
 
-		private bool _showBoxForControlCharacters = true;
-
-		/// <summary>
-		/// Gets/Sets whether to show a box with the hex code for control characters.
-		/// </summary>
-		/// <remarks>The default value is <c>true</c>.</remarks>
-		[DefaultValue(true)]
-		public virtual bool ShowBoxForControlCharacters
+	/// <summary>
+	/// Gets/Sets whether to show a box with the hex code for control characters.
+	/// </summary>
+	/// <remarks>The default value is <c>true</c>.</remarks>
+	[DefaultValue(true)]
+	public virtual bool ShowBoxForControlCharacters
+	{
+		get => field;
+		set
 		{
-			get { return _showBoxForControlCharacters; }
-			set
+			if (field != value)
 			{
-				if (_showBoxForControlCharacters != value)
-				{
-					_showBoxForControlCharacters = value;
-					OnPropertyChanged(nameof(ShowBoxForControlCharacters));
-				}
+				field = value;
+				OnPropertyChanged(nameof(ShowBoxForControlCharacters));
 			}
 		}
-		#endregion
+	} = true;
 
-		#region EnableHyperlinks
+	#endregion
 
-		private bool _enableHyperlinks = true;
+	#region EnableHyperlinks
 
-		/// <summary>
-		/// Gets/Sets whether to enable clickable hyperlinks in the editor.
-		/// </summary>
-		/// <remarks>The default value is <c>true</c>.</remarks>
-		[DefaultValue(true)]
-		public virtual bool EnableHyperlinks
+	/// <summary>
+	/// Gets/Sets whether to enable clickable hyperlinks in the editor.
+	/// </summary>
+	/// <remarks>The default value is <c>true</c>.</remarks>
+	[DefaultValue(true)]
+	public virtual bool EnableHyperlinks
+	{
+		get => field;
+		set
 		{
-			get { return _enableHyperlinks; }
-			set
+			if (field != value)
 			{
-				if (_enableHyperlinks != value)
-				{
-					_enableHyperlinks = value;
-					OnPropertyChanged(nameof(EnableHyperlinks));
-				}
+				field = value;
+				OnPropertyChanged(nameof(EnableHyperlinks));
 			}
 		}
+	} = true;
 
-		private bool _enableEmailHyperlinks = true;
-
-		/// <summary>
-		/// Gets/Sets whether to enable clickable hyperlinks for e-mail addresses in the editor.
-		/// </summary>
-		/// <remarks>The default value is <c>true</c>.</remarks>
-		[DefaultValue(true)]
-		public virtual bool EnableEmailHyperlinks
+	/// <summary>
+	/// Gets/Sets whether to enable clickable hyperlinks for e-mail addresses in the editor.
+	/// </summary>
+	/// <remarks>The default value is <c>true</c>.</remarks>
+	[DefaultValue(true)]
+	public virtual bool EnableEmailHyperlinks
+	{
+		get => field;
+		set
 		{
-			get { return _enableEmailHyperlinks; }
-			set
+			if (field != value)
 			{
-				if (_enableEmailHyperlinks != value)
-				{
-					_enableEmailHyperlinks = value;
-					OnPropertyChanged(nameof(EnableEmailHyperlinks));
-				}
+				field = value;
+				OnPropertyChanged(nameof(EnableEmailHyperlinks));
 			}
 		}
+	} = true;
 
-		private bool _requireControlModifierForHyperlinkClick = true;
-
-		/// <summary>
-		/// Gets/Sets whether the user needs to press Control to click hyperlinks.
-		/// The default value is true.
-		/// </summary>
-		/// <remarks>The default value is <c>true</c>.</remarks>
-		[DefaultValue(true)]
-		public virtual bool RequireControlModifierForHyperlinkClick
+	/// <summary>
+	/// Gets/Sets whether the user needs to press Control to click hyperlinks.
+	/// The default value is true.
+	/// </summary>
+	/// <remarks>The default value is <c>true</c>.</remarks>
+	[DefaultValue(true)]
+	public virtual bool RequireControlModifierForHyperlinkClick
+	{
+		get => field;
+		set
 		{
-			get { return _requireControlModifierForHyperlinkClick; }
-			set
+			if (field != value)
 			{
-				if (_requireControlModifierForHyperlinkClick != value)
-				{
-					_requireControlModifierForHyperlinkClick = value;
-					OnPropertyChanged(nameof(RequireControlModifierForHyperlinkClick));
-				}
+				field = value;
+				OnPropertyChanged(nameof(RequireControlModifierForHyperlinkClick));
 			}
 		}
-		#endregion
+	} = true;
 
-		#region TabSize / IndentationSize / ConvertTabsToSpaces / GetIndentationString
-		// I'm using '_' prefixes for the fields here to avoid confusion with the local variables
-		// in the methods below.
-		// The fields should be accessed only by their property - the fields might not be used
-		// if someone overrides the property.
+	#endregion
 
-		private int _indentationSize = 4;
+	#region TabSize / IndentationSize / ConvertTabsToSpaces / GetIndentationString
+	// I'm using '_' prefixes for the fields here to avoid confusion with the local variables
+	// in the methods below.
+	// The fields should be accessed only by their property - the fields might not be used
+	// if someone overrides the property.
 
-		/// <summary>
-		/// Gets/Sets the width of one indentation unit.
-		/// </summary>
-		/// <remarks>The default value is 4.</remarks>
-		[DefaultValue(4)]
-		public virtual int IndentationSize
+	/// <summary>
+	/// Gets/Sets the width of one indentation unit.
+	/// </summary>
+	/// <remarks>The default value is 4.</remarks>
+	[DefaultValue(4)]
+	public virtual int IndentationSize
+	{
+		get;
+		set
 		{
-			get => _indentationSize;
-			set
+			if (value < 1)
+				throw new ArgumentOutOfRangeException(nameof(value), value, "value must be positive");
+			// sanity check; a too large value might cause a crash internally much later
+			// (it only crashed in the hundred thousands for me; but might crash earlier with larger fonts)
+			if (value > 1000)
+				throw new ArgumentOutOfRangeException(nameof(value), value, "indentation size is too large");
+			if (field != value)
 			{
-				if (value < 1)
-					throw new ArgumentOutOfRangeException(nameof(value), value, "value must be positive");
-				// sanity check; a too large value might cause a crash internally much later
-				// (it only crashed in the hundred thousands for me; but might crash earlier with larger fonts)
-				if (value > 1000)
-					throw new ArgumentOutOfRangeException(nameof(value), value, "indentation size is too large");
-				if (_indentationSize != value)
-				{
-					_indentationSize = value;
-					OnPropertyChanged(nameof(IndentationSize));
-					OnPropertyChanged(nameof(IndentationString));
-				}
+				field = value;
+				OnPropertyChanged(nameof(IndentationSize));
+				OnPropertyChanged(nameof(IndentationString));
 			}
 		}
+	} = 4;
 
-		private bool _convertTabsToSpaces;
-
-		/// <summary>
-		/// Gets/Sets whether to use spaces for indentation instead of tabs.
-		/// </summary>
-		/// <remarks>The default value is <c>false</c>.</remarks>
-		[DefaultValue(false)]
-		public virtual bool ConvertTabsToSpaces
+	/// <summary>
+	/// Gets/Sets whether to use spaces for indentation instead of tabs.
+	/// </summary>
+	/// <remarks>The default value is <c>false</c>.</remarks>
+	[DefaultValue(false)]
+	public virtual bool ConvertTabsToSpaces
+	{
+		get => field;
+		set
 		{
-			get { return _convertTabsToSpaces; }
-			set
+			if (field != value)
 			{
-				if (_convertTabsToSpaces != value)
-				{
-					_convertTabsToSpaces = value;
-					OnPropertyChanged(nameof(ConvertTabsToSpaces));
-					OnPropertyChanged(nameof(IndentationString));
-				}
+				field = value;
+				OnPropertyChanged(nameof(ConvertTabsToSpaces));
+				OnPropertyChanged(nameof(IndentationString));
 			}
 		}
+	}
 
 	/// <summary>
 	/// Gets the text used for indentation.
 	/// </summary>
 	public string IndentationString => GetIndentationString(1);
 
-		/// <summary>
-		/// Gets text required to indent from the specified <paramref name="column"/> to the next indentation level.
-		/// </summary>
-		public virtual string GetIndentationString(int column)
+	/// <summary>
+	/// Gets text required to indent from the specified <paramref name="column"/> to the next indentation level.
+	/// </summary>
+	public virtual string GetIndentationString(int column)
+	{
+		if (column < 1)
+			throw new ArgumentOutOfRangeException(nameof(column), column, "Value must be at least 1.");
+		var indentationSize = IndentationSize;
+		if (ConvertTabsToSpaces)
 		{
-			if (column < 1)
-				throw new ArgumentOutOfRangeException(nameof(column), column, "Value must be at least 1.");
-			var indentationSize = IndentationSize;
-			if (ConvertTabsToSpaces)
+			return new string(' ', indentationSize - (column - 1) % indentationSize);
+		}
+		else
+		{
+			return "\t";
+		}
+	}
+	#endregion
+
+	/// <summary>
+	/// Gets/Sets whether copying without a selection copies the whole current line.
+	/// </summary>
+	[DefaultValue(true)]
+	public virtual bool CutCopyWholeLine
+	{
+		get => field;
+		set
+		{
+			if (field != value)
 			{
-				return new string(' ', indentationSize - (column - 1) % indentationSize);
-			}
-			else
-			{
-				return "\t";
+				field = value;
+				OnPropertyChanged(nameof(CutCopyWholeLine));
 			}
 		}
-		#endregion
+	} = true;
 
-		private bool _cutCopyWholeLine = true;
-
-		/// <summary>
-		/// Gets/Sets whether copying without a selection copies the whole current line.
-		/// </summary>
-		[DefaultValue(true)]
-		public virtual bool CutCopyWholeLine
+	/// <summary>
+	/// Gets/Sets whether the user can scroll below the bottom of the document.
+	/// The default value is true; but it a good idea to set this property to true when using folding.
+	/// </summary>
+	[DefaultValue(true)]
+	public virtual bool AllowScrollBelowDocument
+	{
+		get => field;
+		set
 		{
-			get { return _cutCopyWholeLine; }
-			set
+			if (field != value)
 			{
-				if (_cutCopyWholeLine != value)
-				{
-					_cutCopyWholeLine = value;
-					OnPropertyChanged(nameof(CutCopyWholeLine));
-				}
+				field = value;
+				OnPropertyChanged(nameof(AllowScrollBelowDocument));
 			}
 		}
+	} = true;
 
-		private bool _allowScrollBelowDocument = true;
-
-		/// <summary>
-		/// Gets/Sets whether the user can scroll below the bottom of the document.
-		/// The default value is true; but it a good idea to set this property to true when using folding.
-		/// </summary>
-		[DefaultValue(true)]
-		public virtual bool AllowScrollBelowDocument
+	/// <summary>
+	/// Gets/Sets the indentation used for all lines except the first when word-wrapping.
+	/// The default value is 0.
+	/// </summary>
+	[DefaultValue(0.0)]
+	public virtual double WordWrapIndentation
+	{
+		get;
+		set
 		{
-			get { return _allowScrollBelowDocument; }
-			set
+			if (double.IsNaN(value) || double.IsInfinity(value))
+				throw new ArgumentOutOfRangeException(nameof(value), value, "value must not be NaN/infinity");
+			if (value != field)
 			{
-				if (_allowScrollBelowDocument != value)
-				{
-					_allowScrollBelowDocument = value;
-					OnPropertyChanged(nameof(AllowScrollBelowDocument));
-				}
+				field = value;
+				OnPropertyChanged(nameof(WordWrapIndentation));
 			}
 		}
+	}
 
-		private double _wordWrapIndentation;
-
-		/// <summary>
-		/// Gets/Sets the indentation used for all lines except the first when word-wrapping.
-		/// The default value is 0.
-		/// </summary>
-		[DefaultValue(0.0)]
-		public virtual double WordWrapIndentation
+	/// <summary>
+	/// Gets/Sets whether the indentation is inherited from the first line when word-wrapping.
+	/// The default value is true.
+	/// </summary>
+	/// <remarks>When combined with <see cref="WordWrapIndentation"/>, the inherited indentation is added to the word wrap indentation.</remarks>
+	[DefaultValue(true)]
+	public virtual bool InheritWordWrapIndentation
+	{
+		get => field;
+		set
 		{
-			get => _wordWrapIndentation;
-			set
+			if (value != field)
 			{
-				if (double.IsNaN(value) || double.IsInfinity(value))
-					throw new ArgumentOutOfRangeException(nameof(value), value, "value must not be NaN/infinity");
-				if (value != _wordWrapIndentation)
-				{
-					_wordWrapIndentation = value;
-					OnPropertyChanged(nameof(WordWrapIndentation));
-				}
+				field = value;
+				OnPropertyChanged(nameof(InheritWordWrapIndentation));
 			}
 		}
-
-		private bool _inheritWordWrapIndentation = true;
-
-		/// <summary>
-		/// Gets/Sets whether the indentation is inherited from the first line when word-wrapping.
-		/// The default value is true.
-		/// </summary>
-		/// <remarks>When combined with <see cref="WordWrapIndentation"/>, the inherited indentation is added to the word wrap indentation.</remarks>
-		[DefaultValue(true)]
-		public virtual bool InheritWordWrapIndentation
-		{
-			get { return _inheritWordWrapIndentation; }
-			set
-			{
-				if (value != _inheritWordWrapIndentation)
-				{
-					_inheritWordWrapIndentation = value;
-					OnPropertyChanged(nameof(InheritWordWrapIndentation));
-				}
-			}
-		}
+	} = true;
 
 	/// <summary>
 	/// Enables rectangular selection (press ALT and select a rectangle)
 	/// </summary>
 	[DefaultValue(true)]
-		public bool EnableRectangularSelection
-		{
-			get;
+	public bool EnableRectangularSelection
+	{
+		get => field;
 		set
+		{
+			if (field != value)
 			{
-				if (field != value)
-				{
-					field = value;
-					OnPropertyChanged(nameof(EnableRectangularSelection));
-				}
+				field = value;
+				OnPropertyChanged(nameof(EnableRectangularSelection));
 			}
-		} = true;
+		}
+	} = true;
 
 	/// <summary>
 	/// Enable dragging text within the text area.
 	/// </summary>
 	[DefaultValue(true)]
-		public bool EnableTextDragDrop
-		{
-			get;
+	public bool EnableTextDragDrop
+	{
+		get => field;
 		set
-			{
-				if (field != value)
-				{
-					field = value;
-					OnPropertyChanged(nameof(EnableTextDragDrop));
-				}
-			}
-		} = true;
-
-	private bool _enableVirtualSpace;
-
-		/// <summary>
-		/// Gets/Sets whether the user can set the caret behind the line ending
-		/// (into "virtual space").
-		/// Note that virtual space is always used (independent from this setting)
-		/// when doing rectangle selections.
-		/// </summary>
-		[DefaultValue(false)]
-		public virtual bool EnableVirtualSpace
 		{
-			get { return _enableVirtualSpace; }
-			set
+			if (field != value)
 			{
-				if (_enableVirtualSpace != value)
-				{
-					_enableVirtualSpace = value;
-					OnPropertyChanged(nameof(EnableVirtualSpace));
-				}
+				field = value;
+				OnPropertyChanged(nameof(EnableTextDragDrop));
 			}
 		}
+	} = true;
 
-		private bool _enableImeSupport = true;
-
-		/// <summary>
-		/// Gets/Sets whether the support for Input Method Editors (IME)
-		/// for non-alphanumeric scripts (Chinese, Japanese, Korean, ...) is enabled.
-		/// </summary>
-		[DefaultValue(true)]
-		public virtual bool EnableImeSupport
+	/// <summary>
+	/// Gets/Sets whether the user can set the caret behind the line ending
+	/// (into "virtual space").
+	/// Note that virtual space is always used (independent from this setting)
+	/// when doing rectangle selections.
+	/// </summary>
+	[DefaultValue(false)]
+	public virtual bool EnableVirtualSpace
+	{
+		get => field;
+		set
 		{
-			get { return _enableImeSupport; }
-			set
+			if (field != value)
 			{
-				if (_enableImeSupport != value)
-				{
-					_enableImeSupport = value;
-					OnPropertyChanged(nameof(EnableImeSupport));
-				}
+				field = value;
+				OnPropertyChanged(nameof(EnableVirtualSpace));
 			}
 		}
+	}
 
-		private bool _showColumnRulers;
-
-		/// <summary>
-		/// Gets/Sets whether the column rulers should be shown.
-		/// </summary>
-		[DefaultValue(false)]
-		public virtual bool ShowColumnRulers
+	/// <summary>
+	/// Gets/Sets whether the support for Input Method Editors (IME)
+	/// for non-alphanumeric scripts (Chinese, Japanese, Korean, ...) is enabled.
+	/// </summary>
+	[DefaultValue(true)]
+	public virtual bool EnableImeSupport
+	{
+		get => field;
+		set
 		{
-			get { return _showColumnRulers; }
-			set
+			if (field != value)
 			{
-				if (_showColumnRulers != value)
-				{
-					_showColumnRulers = value;
-					OnPropertyChanged(nameof(ShowColumnRulers));
-				}
+				field = value;
+				OnPropertyChanged(nameof(EnableImeSupport));
 			}
 		}
+	} = true;
 
-		private IEnumerable<int> _columnRulerPositions = new List<int>() { 80 };
-
-		/// <summary>
-		/// Gets/Sets the positions the column rulers should be shown.
-		/// </summary>
-		public virtual IEnumerable<int> ColumnRulerPositions
+	/// <summary>
+	/// Gets/Sets whether the column rulers should be shown.
+	/// </summary>
+	[DefaultValue(false)]
+	public virtual bool ShowColumnRulers
+	{
+		get => field;
+		set
 		{
-			get { return _columnRulerPositions; }
-			set
+			if (field != value)
 			{
-				if (_columnRulerPositions != value)
-				{
-					_columnRulerPositions = value;
-					OnPropertyChanged(nameof(ColumnRulerPositions));
-				}
+				field = value;
+				OnPropertyChanged(nameof(ShowColumnRulers));
 			}
 		}
+	}
 
-		private bool _highlightCurrentLine;
-
-		/// <summary>
-		/// Gets/Sets if current line should be shown.
-		/// </summary>
-		[DefaultValue(false)]
-		public virtual bool HighlightCurrentLine
+	/// <summary>
+	/// Gets/Sets the positions the column rulers should be shown.
+	/// </summary>
+	public virtual IEnumerable<int> ColumnRulerPositions
+	{
+		get => field;
+		set
 		{
-			get { return _highlightCurrentLine; }
-			set
+			if (field != value)
 			{
-				if (_highlightCurrentLine != value)
-				{
-					_highlightCurrentLine = value;
-					OnPropertyChanged(nameof(HighlightCurrentLine));
-				}
+				field = value;
+				OnPropertyChanged(nameof(ColumnRulerPositions));
 			}
 		}
+	} = new List<int>() { 80 };
+
+	/// <summary>
+	/// Gets/Sets if current line should be shown.
+	/// </summary>
+	[DefaultValue(false)]
+	public virtual bool HighlightCurrentLine
+	{
+		get => field;
+		set
+		{
+			if (field != value)
+			{
+				field = value;
+				OnPropertyChanged(nameof(HighlightCurrentLine));
+			}
+		}
+	}
 
 	/// <summary>
 	/// Gets/Sets if mouse cursor should be hidden while user is typing.
 	/// </summary>
 	[DefaultValue(true)]
-		public bool HideCursorWhileTyping
-		{
-			get;
+	public bool HideCursorWhileTyping
+	{
+		get => field;
 		set
+		{
+			if (field != value)
 			{
-				if (field != value)
-				{
-					field = value;
-					OnPropertyChanged(nameof(HideCursorWhileTyping));
-				}
+				field = value;
+				OnPropertyChanged(nameof(HideCursorWhileTyping));
 			}
-		} = true;
+		}
+	} = true;
 
 	/// <summary>
 	/// Gets/Sets if the user is allowed to enable/disable overstrike mode.
 	/// </summary>
 	[DefaultValue(false)]
-		public bool AllowToggleOverstrikeMode
-		{
-			get;
+	public bool AllowToggleOverstrikeMode
+	{
+		get => field;
 		set
+		{
+			if (field != value)
 			{
-				if (field != value)
-				{
-					field = value;
-					OnPropertyChanged(nameof(AllowToggleOverstrikeMode));
-				}
+				field = value;
+				OnPropertyChanged(nameof(AllowToggleOverstrikeMode));
 			}
 		}
+	}
 
 	/// <summary>
 	/// Gets/Sets if the mouse up event should extend the editor selection to the mouse position.
 	/// </summary>
 	[DefaultValue(true)]
-		public bool ExtendSelectionOnMouseUp
-		{
-			get;
+	public bool ExtendSelectionOnMouseUp
+	{
+		get => field;
 		set
+		{
+			if (field != value)
 			{
-				if (field != value)
-				{
-					field = value;
-					OnPropertyChanged(nameof(ExtendSelectionOnMouseUp));
-				}
+				field = value;
+				OnPropertyChanged(nameof(ExtendSelectionOnMouseUp));
 			}
-		} = true;
+		}
+	} = true;
 
 	/// <summary>
 	/// Gets/Sets the pointer action used to request the insertion of a completion item.
 	/// </summary>
 	[DefaultValue(CompletionAcceptAction.PointerPressed)]
-		public CompletionAcceptAction CompletionAcceptAction
-		{
-			get;
+	public CompletionAcceptAction CompletionAcceptAction
+	{
+		get => field;
 		set
+		{
+			if (field != value)
 			{
-				if (field != value)
-				{
-					field = value;
-					OnPropertyChanged(nameof(CompletionAcceptAction));
-				}
+				field = value;
+				OnPropertyChanged(nameof(CompletionAcceptAction));
 			}
-		} = CompletionAcceptAction.PointerPressed;
+		}
+	} = CompletionAcceptAction.PointerPressed;
 
 	// The default LineHeightFactor matches the line height in the Visual Studio text editor.
 	private const double DefaultLineHeightFactor = 1.16;
@@ -712,19 +664,19 @@ namespace AvaloniaEdit;
 	/// (Does not affect the font size.)
 	/// </summary>
 	[DefaultValue(DefaultLineHeightFactor)]
-		public double LineHeightFactor
-		{
-			get;
+	public double LineHeightFactor
+	{
+		get => field;
 		set
-			{
-				if (value <= 0 || double.IsNaN(value) || double.IsInfinity(value))
-					throw new ArgumentOutOfRangeException(nameof(value), value, "value must be a positive number");
+		{
+			if (value <= 0 || double.IsNaN(value) || double.IsInfinity(value))
+				throw new ArgumentOutOfRangeException(nameof(value), value, "value must be a positive number");
 
-				if (field != value)
-				{
-					field = value;
-					OnPropertyChanged(nameof(LineHeightFactor));
-				}
+			if (field != value)
+			{
+				field = value;
+				OnPropertyChanged(nameof(LineHeightFactor));
 			}
-		} = DefaultLineHeightFactor;
+		}
+	} = DefaultLineHeightFactor;
 }

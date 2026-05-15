@@ -25,32 +25,29 @@ namespace AvaloniaEdit.Document;
 /// </summary>
 internal sealed class DocumentChangeOperation(TextDocument document, DocumentChangeEventArgs change) : IUndoableOperationWithContext
 {
-	private readonly TextDocument _document = document;
-	private readonly DocumentChangeEventArgs _change = change;
-
 	public void Undo(UndoStack stack)
 	{
 		Debug.Assert(stack.State == UndoStack.StatePlayback);
-		stack.RegisterAffectedDocument(_document);
+		stack.RegisterAffectedDocument(document);
 		stack.State = UndoStack.StatePlaybackModifyDocument;
 		Undo();
 		stack.State = UndoStack.StatePlayback;
 	}
-
+	
 	public void Redo(UndoStack stack)
 	{
 		Debug.Assert(stack.State == UndoStack.StatePlayback);
-		stack.RegisterAffectedDocument(_document);
+		stack.RegisterAffectedDocument(document);
 		stack.State = UndoStack.StatePlaybackModifyDocument;
 		Redo();
 		stack.State = UndoStack.StatePlayback;
 	}
-
+	
 	public void Undo()
 	{
-		var map = _change.OffsetChangeMapOrNull;
-		_document.Replace(_change.Offset, _change.InsertionLength, _change.RemovedText, map?.Invert());
+		var map = change.OffsetChangeMapOrNull;
+		document.Replace(change.Offset, change.InsertionLength, change.RemovedText, map?.Invert());
 	}
 
-	public void Redo() => _document.Replace(_change.Offset, _change.RemovalLength, _change.InsertedText, _change.OffsetChangeMapOrNull);
+	public void Redo() => document.Replace(change.Offset, change.RemovalLength, change.InsertedText, change.OffsetChangeMapOrNull);
 }

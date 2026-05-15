@@ -21,42 +21,45 @@ using AvaloniaEdit.Rendering;
 
 namespace AvaloniaEdit.Editing;
 
-	internal sealed class SelectionColorizer(TextArea textArea) : ColorizingTransformer
-	{
-		private readonly TextArea _textArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
+internal sealed class SelectionColorizer(TextArea textArea) : ColorizingTransformer
+{
+	private readonly TextArea _textArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
 	protected override void Colorize(ITextRunConstructionContext context)
+	{
+		// if SelectionForeground is null, keep the existing foreground color
+		if (_textArea.SelectionForeground is null)
+			return;
+
+		var lineStartOffset = context.VisualLine.FirstDocumentLine.Offset;
+		var lineEndOffset = context.VisualLine.LastDocumentLine.Offset + context.VisualLine.LastDocumentLine.TotalLength;
+
+		foreach (var segment in _textArea.Selection.Segments)
 		{
-			// if SelectionForeground is null, keep the existing foreground color
-			if (_textArea.SelectionForeground == null)
-				return;
+			var segmentStart = segment.StartOffset;
+			var segmentEnd = segment.EndOffset;
+			if (segmentEnd <= lineStartOffset)
+				continue;
+			if (segmentStart >= lineEndOffset)
+				continue;
+			int startColumn;
+			startColumn = segmentStart < lineStartOffset
+				? 0
+				: context.VisualLine.ValidateVisualColumn(segment.StartOffset, segment.StartVisualColumn,
+					_textArea.Selection.EnableVirtualSpace);
 
-			var lineStartOffset = context.VisualLine.FirstDocumentLine.Offset;
-			var lineEndOffset = context.VisualLine.LastDocumentLine.Offset + context.VisualLine.LastDocumentLine.TotalLength;
+			int endColumn;
+			if (segmentEnd > lineEndOffset)
+				endColumn = _textArea.Selection.EnableVirtualSpace ? int.MaxValue : context.VisualLine.VisualLengthWithEndOfLineMarker;
+			else
+				endColumn = context.VisualLine.ValidateVisualColumn(segment.EndOffset, segment.EndVisualColumn, _textArea.Selection.EnableVirtualSpace);
 
-			foreach (var segment in _textArea.Selection.Segments)
-			{
-				var segmentStart = segment.StartOffset;
-				var segmentEnd = segment.EndOffset;
-				if (segmentEnd <= lineStartOffset)
-					continue;
-				if (segmentStart >= lineEndOffset)
-					continue;
-				int startColumn;
-				startColumn = segmentStart < lineStartOffset
-					? 0
-					: context.VisualLine.ValidateVisualColumn(segment.StartOffset, segment.StartVisualColumn,
-						_textArea.Selection.EnableVirtualSpace);
-
-				int endColumn;
-				if (segmentEnd > lineEndOffset)
-					endColumn = _textArea.Selection.EnableVirtualSpace ? int.MaxValue : context.VisualLine.VisualLengthWithEndOfLineMarker;
-				else
-					endColumn = context.VisualLine.ValidateVisualColumn(segment.EndOffset, segment.EndVisualColumn, _textArea.Selection.EnableVirtualSpace);
-
-				ChangeVisualElements(
-					startColumn, endColumn,
-					element => element.TextRunProperties.SetForegroundBrush(_textArea.SelectionForeground));
-			}
+			ChangeVisualElements(
+				startColumn, endColumn,
+				element =>
+				{
+					element.TextRunProperties.SetForegroundBrush(_textArea.SelectionForeground);
+				});
 		}
 	}
+}

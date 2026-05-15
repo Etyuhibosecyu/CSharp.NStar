@@ -35,7 +35,7 @@ namespace AvaloniaEdit.Rendering;
 /// <see cref="VisualLineElement.RelativeTextOffset"/> to find the actual text string.
 /// </remarks>
 public class VisualLineLinkText(VisualLine parentVisualLine, int length) : VisualLineText(parentVisualLine, length)
-	{
+{
 	static VisualLineLinkText() => OpenUriEvent.AddClassHandler<Window>(ExecuteOpenUriEventHandler);
 
 	/// <summary>
@@ -43,15 +43,15 @@ public class VisualLineLinkText(VisualLine parentVisualLine, int length) : Visua
 	/// </summary>
 	public static RoutedEvent<OpenUriRoutedEventArgs> OpenUriEvent { get; } = RoutedEvent.Register<VisualLineText,OpenUriRoutedEventArgs>(nameof(OpenUriEvent), RoutingStrategies.Bubble);
 
-		/// <summary>
-		/// Gets/Sets the URL that is navigated to when the link is clicked.
-		/// </summary>
-		public Uri NavigateUri { get; set; }
+	/// <summary>
+	/// Gets/Sets the URL that is navigated to when the link is clicked.
+	/// </summary>
+	public Uri NavigateUri { get; set; }
 
-		/// <summary>
-		/// Gets/Sets the window name where the URL will be opened.
-		/// </summary>
-		public string TargetName { get; set; }
+	/// <summary>
+	/// Gets/Sets the window name where the URL will be opened.
+	/// </summary>
+	public string TargetName { get; set; }
 
 	/// <summary>
 	/// Gets/Sets whether the user needs to press Control to click the link.
@@ -62,55 +62,55 @@ public class VisualLineLinkText(VisualLine parentVisualLine, int length) : Visua
 	/// <inheritdoc/>
 	public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)
 	{
-		this.TextRunProperties.SetForegroundBrush(context.TextView.LinkTextForegroundBrush);
-		this.TextRunProperties.SetBackgroundBrush(context.TextView.LinkTextBackgroundBrush);
+		TextRunProperties.SetForegroundBrush(context.TextView.LinkTextForegroundBrush);
+		TextRunProperties.SetBackgroundBrush(context.TextView.LinkTextBackgroundBrush);
 		if (context.TextView.LinkTextUnderline)
-			this.TextRunProperties.SetTextDecorations(TextDecorations.Underline);
+			TextRunProperties.SetTextDecorations(TextDecorations.Underline);
 		return base.CreateTextRun(startVisualColumn, context);
 	}
 
-		/// <summary>
-		/// Gets whether the link is currently clickable.
-		/// </summary>
-		/// <remarks>Returns true when control is pressed; or when
-		/// <see cref="RequireControlModifierForClick"/> is disabled.</remarks>
-		protected virtual bool LinkIsClickable(KeyModifiers modifiers)
-		{
-			if (NavigateUri == null)
-				return false;
-			if (RequireControlModifierForClick)
-				return modifiers.HasFlag(KeyModifiers.Control);
-			return true;
-		}
+	/// <summary>
+	/// Gets whether the link is currently clickable.
+	/// </summary>
+	/// <remarks>Returns true when control is pressed; or when
+	/// <see cref="RequireControlModifierForClick"/> is disabled.</remarks>
+	protected virtual bool LinkIsClickable(KeyModifiers modifiers)
+	{
+		if (NavigateUri is null)
+			return false;
+		if (RequireControlModifierForClick)
+			return modifiers.HasFlag(KeyModifiers.Control);
+		return true;
+	}
 
-		/// <inheritdoc/>
-		protected internal override void OnQueryCursor(PointerEventArgs e)
+	/// <inheritdoc/>
+	protected internal override void OnQueryCursor(PointerEventArgs e)
+	{
+		if (LinkIsClickable(e.KeyModifiers))
 		{
-			if (LinkIsClickable(e.KeyModifiers))
+			if(e.Source is InputElement inputElement)
 			{
-				if(e.Source is InputElement inputElement)
-				{
-					inputElement.Cursor = new Cursor(StandardCursorType.Hand);
-				}
-				e.Handled = true;
+				inputElement.Cursor = new Cursor(StandardCursorType.Hand);
 			}
+			e.Handled = true;
 		}
+	}
 
-		/// <inheritdoc/>
-		protected internal override void OnPointerPressed(PointerPressedEventArgs e)
+	/// <inheritdoc/>
+	protected internal override void OnPointerPressed(PointerPressedEventArgs e)
+	{
+		if (!e.Handled && LinkIsClickable(e.KeyModifiers))
 		{
-			if (!e.Handled && LinkIsClickable(e.KeyModifiers))
+			var eventArgs = new OpenUriRoutedEventArgs(NavigateUri) { RoutedEvent = OpenUriEvent };
+
+			if(e.Source is Interactive interactive)
 			{
-				var eventArgs = new OpenUriRoutedEventArgs(NavigateUri) { RoutedEvent = OpenUriEvent };
-
-				if(e.Source is Interactive interactive)
-				{
-					interactive.RaiseEvent(eventArgs);
-				}
-
-				e.Handled = true;
+				interactive.RaiseEvent(eventArgs);
 			}
+
+			e.Handled = true;
 		}
+	}
 
 	/// <inheritdoc/>
 	protected override VisualLineText CreateInstance(int length) => new VisualLineLinkText(ParentVisualLine, length)
@@ -121,25 +121,25 @@ public class VisualLineLinkText(VisualLine parentVisualLine, int length) : Visua
 	};
 
 	private static void ExecuteOpenUriEventHandler(Window window, OpenUriRoutedEventArgs arg)
+	{
+		var url = arg.Uri.ToString();
+		try
 		{
-			var url = arg.Uri.ToString();
-			try
+			Process.Start(new ProcessStartInfo
 			{
-				Process.Start(new ProcessStartInfo
-				{
-					FileName = url,
-					UseShellExecute = true
-				});
-			}
-			catch (Exception)
-			{
-				// Process.Start can throw several errors (not all of them documented),
-				// just ignore all of them.
-			}
+				FileName = url,
+				UseShellExecute = true
+			});
+		}
+		catch (Exception)
+		{
+			// Process.Start can throw several errors (not all of them documented),
+			// just ignore all of them.
 		}
 	}
+}
 
-	public sealed class OpenUriRoutedEventArgs(Uri uri) : RoutedEventArgs
-	{
+public sealed class OpenUriRoutedEventArgs(Uri uri) : RoutedEventArgs
+{
 	public Uri Uri { get; } = uri ?? throw new ArgumentNullException(nameof(uri));
 }

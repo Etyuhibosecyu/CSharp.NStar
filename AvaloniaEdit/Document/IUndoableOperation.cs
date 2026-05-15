@@ -28,14 +28,14 @@ public interface IUndoableOperation
 	/// Undo the last operation
 	/// </summary>
 	void Undo();
-
+	
 	/// <summary>
 	/// Redo the last operation
 	/// </summary>
 	void Redo();
 }
 
-internal interface IUndoableOperationWithContext : IUndoableOperation
+interface IUndoableOperationWithContext : IUndoableOperation
 {
 	void Undo(UndoStack stack);
 	void Redo(UndoStack stack);

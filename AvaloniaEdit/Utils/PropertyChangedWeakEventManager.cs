@@ -28,4 +28,4 @@ internal sealed class PropertyChangedWeakEventManager : WeakEventManagerBase<Pro
 	protected override void StartListening(INotifyPropertyChanged source) => source.PropertyChanged += DeliverEvent;
 
 	protected override void StopListening(INotifyPropertyChanged source) => source.PropertyChanged -= DeliverEvent;
-	}
+}

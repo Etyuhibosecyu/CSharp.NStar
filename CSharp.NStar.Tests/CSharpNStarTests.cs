@@ -1,6 +1,6 @@
 ﻿global using System;
 global using String = NStar.Core.String;
-using Mpir.NET;
+using NStar.Mpir;
 using NStar.Core;
 using NStar.RemoveDoubles;
 using System.Globalization;
@@ -131,6 +131,66 @@ var c = x > y && x < y + 2;
 var d = x > y || x < y + 2;
 return (a, b, c, d);
 ", @"(true, false, false, true)", "Ошибок нет")]
+	[DataRow(@"var a = 1_0_0_00000_0_00_0;
+return a;
+", "100000000000", "Ошибок нет")]
+	[DataRow(@"var a = 0x1_0_0_00000_0_00_0;
+return a;
+", "17592186044416", "Ошибок нет")]
+	[DataRow(@"var a = 0X1_0_0_00000_0_00_0;
+return a;
+", "17592186044416", "Ошибок нет")]
+	[DataRow(@"var a = 0b1_0_0_00000_0_00_0;
+return a;
+", "2048", "Ошибок нет")]
+	[DataRow(@"var a = 0B1_0_0_00000_0_00_0;
+return a;
+", "2048", "Ошибок нет")]
+	[DataRow(@"var a = 12_34_56_78_90;
+return a;
+", "1234567890", "Ошибок нет")]
+	[DataRow(@"var a = 12_34_56_78_9A;
+return a;
+", "null", @"Error 2008 in line 1 at position 21: expected: "";""
+Error 2007 in line 1 at position 21: unrecognized construction
+Error 4001 in line 2 at position 7: the identifier ""a"" is not defined in this location
+")]
+	[DataRow(@"var a = 12_34_56_78_9a;
+return a;
+", "null", @"Error 2008 in line 1 at position 21: expected: "";""
+Error 2007 in line 1 at position 21: unrecognized construction
+Error 4001 in line 2 at position 7: the identifier ""a"" is not defined in this location
+")]
+	[DataRow(@"var a = 0x12_34_56_78_9A;
+return a;
+", "78187493530", "Ошибок нет")]
+	[DataRow(@"var a = 0X12_34_56_78_9a;
+return a;
+", "78187493530", "Ошибок нет")]
+	[DataRow(@"var a = 0x12_34_56_78_9a_bc_de_f0_12_34_56_78_9a_bc_de_f0_;
+return a;
+", "24197857203266734864793317670504947440", "Ошибок нет")]
+	[DataRow(@"var a = 0x_12_34_56_78_9a_bc_de_f0_12_34_56_78_9a_bc_de_f0;
+return a;
+", "24197857203266734864793317670504947440", "Ошибок нет")]
+	[DataRow(@"var a = 0x12_34_56_78_9G;
+return a;
+", "null", @"Error 2008 in line 1 at position 23: expected: "";""
+Error 2007 in line 1 at position 23: unrecognized construction
+Error 4001 in line 2 at position 7: the identifier ""a"" is not defined in this location
+")]
+	[DataRow(@"var a = 0x12_34_56_78_9w;
+return a;
+", "null", @"Error 2008 in line 1 at position 23: expected: "";""
+Error 2007 in line 1 at position 23: unrecognized construction
+Error 4001 in line 2 at position 7: the identifier ""a"" is not defined in this location
+")]
+	[DataRow(@"var a = 0b1030;
+return a;
+", "null", @"Error 2008 in line 1 at position 12: expected: "";""
+Error 2007 in line 1 at position 12: unrecognized construction
+Error 4001 in line 2 at position 7: the identifier ""a"" is not defined in this location
+")]
 	[DataRow(@"return Max(3);
 ", "3", "Ошибок нет")]
 	[DataRow(@"return Max(3, 1);
@@ -441,7 +501,7 @@ return F(-5);
 			return x;
 		}
 	}
-	return x * ++x;
+	return x * (x += 1);
 }
 return (F(-5), F(3), F(0));
 ", "(1, 5, 2)", "Ошибок нет")]
@@ -462,7 +522,7 @@ return (F(-5), F(3), F(0));
 				return x;
 			}
 	}
-	return x * ++x;
+	return x * (x += 1);
 }
 return (F(-5), F(3), F(0));
 ", "(1, 5, 2)", @"Error 4013 in line 12 at position 8: the variable ""x"" is already defined in this location or in the location that contains this in line 1 at position 15
@@ -5737,124 +5797,124 @@ Stack[string] stringStack = new Stack[string]();
 stringStack.Push(""Hello"");
 return (intStack.Pop(), intStack.Pop(), intStack.Pop(), stringStack.Pop());
 ", @"(2, 1, 0, ""Hello"")", "Ошибок нет")]
-	[DataRow(@"return Sqrt(I);
-", "0.7071067811865476+0.7071067811865475I", "Ошибок нет")]
-	[DataRow(@"return Sqrt(-I);
-", "0.7071067811865476-0.7071067811865475I", "Ошибок нет")]
-	[DataRow(@"return Exp(I);
-", "0.5403023058681398+0.8414709848078965I", "Ошибок нет")]
-	[DataRow(@"return Exp(-I);
-", "0.5403023058681398-0.8414709848078965I", "Ошибок нет")]
-	[DataRow(@"return ln I;
-", "0+1.5707963267948966I", "Ошибок нет")]
-	[DataRow(@"return ln (-I);
-", "0-1.5707963267948966I", "Ошибок нет")]
-	[DataRow(@"return Log(E, I);
-", "0+1.5707963267948966I", "Ошибок нет")]
-	[DataRow(@"return Log(E, -I);
-", "0-1.5707963267948966I", "Ошибок нет")]
-	[DataRow(@"return Log(I, I);
+	[DataRow(@"return Sqrt(i);
+", "0.7071067811865476+0.7071067811865475i", "Ошибок нет")]
+	[DataRow(@"return Sqrt(-i);
+", "0.7071067811865476-0.7071067811865475i", "Ошибок нет")]
+	[DataRow(@"return Exp(i);
+", "0.5403023058681398+0.8414709848078965i", "Ошибок нет")]
+	[DataRow(@"return Exp(-i);
+", "0.5403023058681398-0.8414709848078965i", "Ошибок нет")]
+	[DataRow(@"return ln i;
+", "0+1.5707963267948966i", "Ошибок нет")]
+	[DataRow(@"return ln (-i);
+", "0-1.5707963267948966i", "Ошибок нет")]
+	[DataRow(@"return Log(E, i);
+", "0+1.5707963267948966i", "Ошибок нет")]
+	[DataRow(@"return Log(E, -i);
+", "0-1.5707963267948966i", "Ошибок нет")]
+	[DataRow(@"return Log(i, i);
 ", "null", @"Error 4026 in line 1 at position 11: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
 ")]
-	[DataRow(@"return Log(I, -I);
+	[DataRow(@"return Log(i, -i);
 ", "null", @"Error 4026 in line 1 at position 11: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
 ")]
 	[DataRow(@"return ln (-5c);
-", "1.6094379124341003+3.141592653589793I", "Ошибок нет")]
+", "1.6094379124341003+3.141592653589793i", "Ошибок нет")]
 	[DataRow(@"return Log(E, -5c);
-", "1.6094379124341003+3.141592653589793I", "Ошибок нет")]
+", "1.6094379124341003+3.141592653589793i", "Ошибок нет")]
 	[DataRow(@"return ln (+5c);
-", "1.6094379124341003+0I", "Ошибок нет")]
+", "1.6094379124341003+0i", "Ошибок нет")]
 	[DataRow(@"return Log(E, +5c);
-", "1.6094379124341003+0I", "Ошибок нет")]
-	[DataRow(@"var x = Sqrt(I);
+", "1.6094379124341003+0i", "Ошибок нет")]
+	[DataRow(@"var x = Sqrt(i);
 return x;
-", "0.7071067811865476+0.7071067811865475I", "Ошибок нет")]
-	[DataRow(@"var x = Sqrt(-I);
+", "0.7071067811865476+0.7071067811865475i", "Ошибок нет")]
+	[DataRow(@"var x = Sqrt(-i);
 return x;
-", "0.7071067811865476-0.7071067811865475I", "Ошибок нет")]
-	[DataRow(@"var x = Exp(I);
+", "0.7071067811865476-0.7071067811865475i", "Ошибок нет")]
+	[DataRow(@"var x = Exp(i);
 return x;
-", "0.5403023058681398+0.8414709848078965I", "Ошибок нет")]
-	[DataRow(@"var x = Exp(-I);
+", "0.5403023058681398+0.8414709848078965i", "Ошибок нет")]
+	[DataRow(@"var x = Exp(-i);
 return x;
-", "0.5403023058681398-0.8414709848078965I", "Ошибок нет")]
-	[DataRow(@"var x = ln I;
+", "0.5403023058681398-0.8414709848078965i", "Ошибок нет")]
+	[DataRow(@"var x = ln i;
 return x;
-", "0+1.5707963267948966I", "Ошибок нет")]
-	[DataRow(@"var x = ln (-I);
+", "0+1.5707963267948966i", "Ошибок нет")]
+	[DataRow(@"var x = ln (-i);
 return x;
-", "0-1.5707963267948966I", "Ошибок нет")]
-	[DataRow(@"var x = Log(E, I);
+", "0-1.5707963267948966i", "Ошибок нет")]
+	[DataRow(@"var x = Log(E, i);
 return x;
-", "0+1.5707963267948966I", "Ошибок нет")]
-	[DataRow(@"var x = Log(E, -I);
+", "0+1.5707963267948966i", "Ошибок нет")]
+	[DataRow(@"var x = Log(E, -i);
 return x;
-", "0-1.5707963267948966I", "Ошибок нет")]
-	[DataRow(@"var x = Log(I, I);
+", "0-1.5707963267948966i", "Ошибок нет")]
+	[DataRow(@"var x = Log(i, i);
 return x;
 ", "null", @"Error 4026 in line 1 at position 12: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
 ")]
-	[DataRow(@"var x = Log(I, -I);
+	[DataRow(@"var x = Log(i, -i);
 return x;
 ", "null", @"Error 4026 in line 1 at position 12: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
 ")]
 	[DataRow(@"var x = ln (-5c);
 return x;
-", "1.6094379124341003+3.141592653589793I", "Ошибок нет")]
+", "1.6094379124341003+3.141592653589793i", "Ошибок нет")]
 	[DataRow(@"var x = Log(E, -5c);
 return x;
-", "1.6094379124341003+3.141592653589793I", "Ошибок нет")]
+", "1.6094379124341003+3.141592653589793i", "Ошибок нет")]
 	[DataRow(@"var x = ln (+5c);
 return x;
-", "1.6094379124341003+0I", "Ошибок нет")]
+", "1.6094379124341003+0i", "Ошибок нет")]
 	[DataRow(@"var x = Log(E, +5c);
 return x;
-", "1.6094379124341003+0I", "Ошибок нет")]
-	[DataRow(@"var x = I;
+", "1.6094379124341003+0i", "Ошибок нет")]
+	[DataRow(@"var x = i;
 return Sqrt(x);
-", "0.7071067811865476+0.7071067811865475I", "Ошибок нет")]
-	[DataRow(@"var x = -I;
+", "0.7071067811865476+0.7071067811865475i", "Ошибок нет")]
+	[DataRow(@"var x = -i;
 return Sqrt(x);
-", "0.7071067811865476-0.7071067811865475I", "Ошибок нет")]
-	[DataRow(@"var x = I;
+", "0.7071067811865476-0.7071067811865475i", "Ошибок нет")]
+	[DataRow(@"var x = i;
 return Exp(x);
-", "0.5403023058681398+0.8414709848078965I", "Ошибок нет")]
-	[DataRow(@"var x = -I;
+", "0.5403023058681398+0.8414709848078965i", "Ошибок нет")]
+	[DataRow(@"var x = -i;
 return Exp(x);
-", "0.5403023058681398-0.8414709848078965I", "Ошибок нет")]
-	[DataRow(@"var x = I;
+", "0.5403023058681398-0.8414709848078965i", "Ошибок нет")]
+	[DataRow(@"var x = i;
 return ln x;
-", "0+1.5707963267948966I", "Ошибок нет")]
-	[DataRow(@"var x = -I;
+", "0+1.5707963267948966i", "Ошибок нет")]
+	[DataRow(@"var x = -i;
 return ln x;
-", "0-1.5707963267948966I", "Ошибок нет")]
-	[DataRow(@"var x = I;
+", "0-1.5707963267948966i", "Ошибок нет")]
+	[DataRow(@"var x = i;
 return Log(E, x);
-", "0+1.5707963267948966I", "Ошибок нет")]
-	[DataRow(@"var x = -I;
+", "0+1.5707963267948966i", "Ошибок нет")]
+	[DataRow(@"var x = -i;
 return Log(E, x);
-", "0-1.5707963267948966I", "Ошибок нет")]
-	[DataRow(@"var x = I;
-return Log(I, x);
+", "0-1.5707963267948966i", "Ошибок нет")]
+	[DataRow(@"var x = i;
+return Log(i, x);
 ", "null", @"Error 4026 in line 2 at position 11: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
 ")]
-	[DataRow(@"var x = -I;
-return Log(I, x);
+	[DataRow(@"var x = -i;
+return Log(i, x);
 ", "null", @"Error 4026 in line 2 at position 11: incompatibility between the type of the parameter of the call ""complex"" and the type of the parameter of the function ""real""
 ")]
 	[DataRow(@"var x = -5c;
 return ln x;
-", "1.6094379124341003+3.141592653589793I", "Ошибок нет")]
+", "1.6094379124341003+3.141592653589793i", "Ошибок нет")]
 	[DataRow(@"var x = -5c;
 return Log(E, x);
-", "1.6094379124341003+3.141592653589793I", "Ошибок нет")]
+", "1.6094379124341003+3.141592653589793i", "Ошибок нет")]
 	[DataRow(@"var x = +5c;
 return ln x;
-", "1.6094379124341003+0I", "Ошибок нет")]
+", "1.6094379124341003+0i", "Ошибок нет")]
 	[DataRow(@"var x = +5c;
 return Log(E, x);
-", "1.6094379124341003+0I", "Ошибок нет")]
+", "1.6094379124341003+0i", "Ошибок нет")]
 	[DataRow(@"return 100000000000000000*100000000000000000000;
 ", "10000000000000000000000000000000000000", "Ошибок нет")]
 	[DataRow(@"var x = 100000000000000000*100000000000000000000;
@@ -5926,7 +5986,7 @@ return x;
 return x pow 100LL;
 ", "null", @"Error 4006 in line 2 at position 9: cannot apply the operator ""pow"" to the types ""long long"" and ""long long""
 ")]
-	[DataRow(@"complex c1 = 3.0+4.0I;
+	[DataRow(@"complex c1 = 3.0+4.0i;
 complex c2 = 5.0;
 complex sum = c1 + c2;
 complex diff = c1 - c2;
@@ -5942,9 +6002,9 @@ bool ne = c1 != c2;
 complex polar = complex.FromPolarCoordinates(5.0, Pi / 4);
 string str = """" + c1;
 return (c1, c2, sum, diff, prod, quot, conjugate, sqrt, log, abs, arg, eq, ne, polar, str);
-", "(3+4I, 5+0I, 8+4I, -2+4I, 15+20I, 0.6+0.8I, 3-4I, 2+1I, 1.6094379124341003+0.9272952180016122I, 5, 0.9272952180016122,"
-		+ @" false, true, 3.5355339059327378+3.5355339059327378I, ""3+4I"")", "Ошибок нет")]
-	[DataRow(@"complex c1 = 3.0+4.0I;
+", "(3+4i, 5+0i, 8+4i, -2+4i, 15+20i, 0.6+0.8i, 3-4i, 2+1i, 1.6094379124341003+0.9272952180016122i, 5, 0.9272952180016122,"
+		+ @" false, true, 3.5355339059327378+3.5355339059327378i, ""3+4i"")", "Ошибок нет")]
+	[DataRow(@"complex c1 = 3.0+4.0i;
 complex c2 = 5.0;
 complex zero = complex.Zero;
 complex divByZero = c1 / zero;
@@ -5959,11 +6019,51 @@ complex c4 = new complex(0.1 + 0.2, 0);
 complex c5 = new complex(0.3, 0);
 bool almostEqual = c4 == c5; // Может быть false из-за погрешностей FP!
 return (c1, c2, zero, divByZero, nan, inf, bad, i, r, pow_, badPolar, almostEqual);
-", @"(3+4I, 5+0I, 0+0I, Uncty+UnctyI, Uncty+0I, Infty+0I, Uncty+0I, 0, null, 0+0I, -1+0I, false)",
+", @"(3+4i, 5+0i, 0+0i, Uncty+Unctyi, Uncty+0i, Infty+0i, Uncty+0i, 0, null, 0+0i, -1+0i, false)",
 		@"Error 2012 in line 10 at position 19: expected: identifier or basic expression or expression in round brackets
-Error 4014 in line 8 at position 8: cannot convert from the type ""complex"" to the type ""int""
+Error 4006 in line 8 at position 11: cannot apply the operator ""%"" to the types ""complex"" and ""unsigned int""
 Error 4014 in line 9 at position 7: cannot convert from the type ""complex"" to the type ""real""
 Error 4001 in line 15 at position 51: the identifier ""r"" is not defined in this location
+")]
+	[DataRow(@"var x = 7c;
+var y = 2;
+return x % y;
+", "null", @"Error 4006 in line 3 at position 9: cannot apply the operator ""%"" to the types ""complex"" and ""byte""
+")]
+	[DataRow(@"var x = 7i;
+var y = 2;
+return x % y;
+", "null", @"Error 4006 in line 3 at position 9: cannot apply the operator ""%"" to the types ""complex"" and ""byte""
+")]
+	[DataRow(@"var x = 7c;
+var y = 2r;
+return x % y;
+", "null", @"Error 4006 in line 3 at position 9: cannot apply the operator ""%"" to the types ""complex"" and ""real""
+")]
+	[DataRow(@"var x = 7i;
+var y = 2r;
+return x % y;
+", "null", @"Error 4006 in line 3 at position 9: cannot apply the operator ""%"" to the types ""complex"" and ""real""
+")]
+	[DataRow(@"var x = 7c;
+var y = 2c;
+return x % y;
+", "null", @"Error 4006 in line 3 at position 9: cannot apply the operator ""%"" to the types ""complex"" and ""complex""
+")]
+	[DataRow(@"var x = 7i;
+var y = 2c;
+return x % y;
+", "null", @"Error 4006 in line 3 at position 9: cannot apply the operator ""%"" to the types ""complex"" and ""complex""
+")]
+	[DataRow(@"var x = 7c;
+var y = 2i;
+return x % y;
+", "null", @"Error 4006 in line 3 at position 9: cannot apply the operator ""%"" to the types ""complex"" and ""complex""
+")]
+	[DataRow(@"var x = 7i;
+var y = 2i;
+return x % y;
+", "null", @"Error 4006 in line 3 at position 9: cannot apply the operator ""%"" to the types ""complex"" and ""complex""
 ")]
 	[DataRow(@"var x = 200 >>> 3;
 return x;
@@ -5993,7 +6093,6 @@ return z;
 	[DataRow(@"unsigned int x = 100 >>> 2.5;
 return x;
 ", "0", @"Error 4081 in line 1 at position 21: the second operand of the operator "">>>"" must be of the type, convertible to int
-Error 4014 in line 1 at position 17: cannot convert from the type ""real"" to the type ""unsigned int""
 ")]
 	[DataRow(@"int a = 10;
 unsigned int b = 5;
@@ -6010,6 +6109,68 @@ return y;
 if (x >>> 3 > 10)
 	return x;
 ", "200", "Ошибок нет")]
+	[DataRow(@"using System;
+var a = 0b_1100_1010_0000_0000_0000_0000_0110_1001 <<< 4;
+return """" + Convert.ToUnsafeString(a, 2);
+", @"""10100000000000000000011010011100""", "Ошибок нет")]
+	[DataRow(@"using System;
+var a = 0b_0110_1001 <<< 26;
+return """" + Convert.ToUnsafeString(a, 2);
+", @"""10100101""", "Ошибок нет")]
+	[DataRow(@"using System;
+var a = 0b_0110_1001 <<< int.MaxValue;
+return """" + Convert.ToUnsafeString(a, 2);
+", @"""10110100""", "Ошибок нет")]
+	[DataRow(@"using System;
+var a = 0b_0110_1001 <<< -1;
+return """" + Convert.ToUnsafeString(a, 2);
+", @"""10110100""", "Ошибок нет")]
+	[DataRow(@"using System;
+var a = 0b_0110_1001 <<< -int.MaxValue;
+return """" + Convert.ToUnsafeString(a, 2);
+", @"""11010010""", "Ошибок нет")]
+	[DataRow(@"using System;
+var a = 0b_0110_1001_0110_1001 <<< 26;
+return """" + Convert.ToUnsafeString(a, 2);
+", @"""1010010110100101""", "Ошибок нет")]
+	[DataRow(@"using System;
+var a = 0b_1011_0100_1011_0100 <<< 26;
+return """" + Convert.ToUnsafeString(a, 2);
+", @"""1101001011010010""", "Ошибок нет")]
+	[DataRow(@"using System;
+long long a = 0b_1100_1010_0000_0000_0000_0000_0110_1001_1100_1010_0000_0000_0000_0000_0110_1001 <<< 4;
+return """" + a.ToUnsafeString(2);
+", @"""1010000000000000000001101001110010100000000000000000011010011100""", "Ошибок нет")]
+	[DataRow(@"using System;
+var a = 0b_1100_1010_0000_0000_0000_0000_0110_1001;
+var b = a <<< 4;
+return """" + Convert.ToUnsafeString(b, 2);
+", @"""10100000000000000000011010011100""", "Ошибок нет")]
+	[DataRow(@"using System;
+var a = 0b_0110_1001;
+var b = a <<< 26;
+return """" + Convert.ToUnsafeString(b, 2);
+", @"""10100101""", "Ошибок нет")]
+	[DataRow(@"using System;
+var a = 0b_0110_1001;
+var b = a <<< int.MaxValue;
+return """" + Convert.ToUnsafeString(b, 2);
+", @"""10110100""", "Ошибок нет")]
+	[DataRow(@"using System;
+var a = 0b_0110_1001;
+var b = a <<< -1;
+return """" + Convert.ToUnsafeString(b, 2);
+", @"""10110100""", "Ошибок нет")]
+	[DataRow(@"using System;
+var a = 0b_0110_1001;
+var b = a <<< -int.MaxValue;
+return """" + Convert.ToUnsafeString(b, 2);
+", @"""11010010""", "Ошибок нет")]
+	[DataRow(@"using System;
+long long a = 0b_1100_1010_0000_0000_0000_0000_0110_1001_1100_1010_0000_0000_0000_0000_0110_1001;
+var b = a <<< 4;
+return """" + b.ToUnsafeString(2);
+", @"""11001010000000000000000001101001110010100000000000000000011010010000""", "Ошибок нет")]
 	[DataRow(@"object obj1 = new System.Collections.Buffer[int](10);
 object obj2 = ""AAA"";
 object obj3 = 123;
@@ -7768,7 +7929,7 @@ return (x, y, z);
 				return x;
 			}
 	}
-	return x * ++x;
+	return x * (x += 1);
 }
 return (F(-5), F(3), F(0));
 ", "(1, 5, 2)", @"Error 4013 in line 12 at position 8: the variable ""x"" is already defined in this location or in the location that contains this in line 1 at position 15
@@ -7849,7 +8010,7 @@ return list;
 				return x;
 			}
 	}
-	return x * ++x;
+	return x * (x += 1);
 }
 return (F(-5), F(3), F(0));
 ", "(1, 5, 2)", @"Error 4013 in line 12 at position 8: the variable ""x"" is already defined in this location or in the location that contains this in line 1 at position 15
@@ -7930,7 +8091,7 @@ return list;
 				return x;
 			}
 	}
-	return x * ++x;
+	return x * (x += 1);
 }
 return (F(-5), F(3), F(0));
 ", "(1, 5, 2)", @"Error 4013 in line 12 at position 8: the variable ""x"" is already defined in this location or in the location that contains this in line 1 at position 15
@@ -8689,6 +8850,18 @@ return 3;
 Error 2008 in line 8 at position 0: expected: "";""
 Warning 8005 in line 11 at position 0: the unreachable code has been detected
 ")]
+	[DataRow(@"var x = 5;
+return ++x;
+", "5", "Error 2039 in line 2 at position 7: the prefix increment/decrement operators (\"++x\") were removed from C#.NStar"
+		+ " because of their obscurity and ability to produce the \"dirty\" code;"
+		+ " use either the postfix increment/decrement operators (\"x++\")"
+		+ " or the composite assignment operators (\"x += 1\")\r\n")]
+	[DataRow(@"var x = 5;
+return --x;
+", "5", "Error 2039 in line 2 at position 7: the prefix increment/decrement operators (\"++x\") were removed from C#.NStar"
+		+ " because of their obscurity and ability to produce the \"dirty\" code;"
+		+ " use either the postfix increment/decrement operators (\"x++\")"
+		+ " or the composite assignment operators (\"x += 1\")\r\n")]
 	[DataRow(@"return ExecuteString(""return args[1];"", Q());
 ", """
 /"return ExecuteString("return args[1];", Q());
@@ -8892,11 +9065,11 @@ Warning 8006 in line 18 at position 2: at present time the word ""internal"" doe
 	{
 		String result;
 		if ((result = ExecuteProgram(Key, [], out var errors)) == TargetResult
-			&& (TargetErrors == null || errors == TargetErrors))
+			&& (TargetErrors is null || errors == TargetErrors))
 			return;
 		throw new Exception("Error: @\"" + Key.Replace("\"", "\"\"") + "\"" + (result == TargetResult ? ""
 			: " returned @\"" + result.Replace("\"", "\"\"") + "\" instead of @\""
-			+ TargetResult.Replace("\"", "\"\"") + "\"") + (TargetErrors == null
+			+ TargetResult.Replace("\"", "\"\"") + "\"") + (TargetErrors is null
 			|| errors == TargetErrors ? "" : " and produced errors @\"" + errors.Replace("\"", "\"\"")
 			+ "\" instead of @\"" + TargetErrors.Replace("\"", "\"\"") + "\"") + "!");
 	}

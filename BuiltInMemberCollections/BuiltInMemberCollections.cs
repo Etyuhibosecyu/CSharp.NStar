@@ -17,7 +17,7 @@ using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Mpir.NET;
+using NStar.Mpir;
 using NStar.BufferLib;
 using NStar.ParallelHS;
 using NStar.RemoveDoubles;
@@ -85,10 +85,10 @@ public static class BuiltInMemberCollections
 	private static readonly ExtendedMethodParameter ExtendedParameterString3 = new(StringType, "string3", ParameterAttributes.None, []);
 
 	public static SortedSet<String> Keywords { get; } = new(
-		"_", "abstract", "break", "case", "Class", "const", "Constructor", "continue",
+		"_", "abstract", "break", "Class", "const", "Constructor", "continue",
 		"Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern",
-		"false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", 
-		"Megaclass", "multiconst", "Namespace", "new", "null", "Operator", "out", "override",
+		"false", "for", "Function", "if", "Interface", "internal", "lock", "loop", 
+		"Megaclass", "multiconst", "Namespace", "new", "null", "Operator", "out",
 		"params", "private", "protected", "public", "readonly", "ref", "repeat", "return",
 		"sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while"
 	);
@@ -127,12 +127,13 @@ public static class BuiltInMemberCollections
 	{
 		{ "null", typeof(void) }, { "object", typeof(object) }, { "bool", typeof(bool) }, { "byte", typeof(byte) },
 		{ "short char", typeof(byte) }, { "short int", typeof(short) }, { "unsigned short int", typeof(ushort) },
-		{ "char", typeof(char) }, { "int", typeof(int) }, { "unsigned int", typeof(uint) }, 
-		{ "long char", typeof(uint) }, { "long int", typeof(long) }, 
+		{ "char", typeof(char) }, { "int", typeof(int) }, { "unsigned int", typeof(uint) },
+		{ "long char", typeof(uint) }, { "long int", typeof(long) },
 		{ "DateTime", typeof(DateTime) }, { "TimeSpan", typeof(TimeSpan) }, { "unsigned long int", typeof(long) },
-		{ "real", typeof(double) }, { "long long", typeof(MpzT) }, { "complex", typeof(Complex) },
+		{ "real", typeof(double) }, { "long long", typeof(MpzT) }, { "unsigned long long", typeof(MpuT) },
+		{ "decimal", typeof(decimal) }, { "complex", typeof(Complex) },
 		{ "typename", typeof(Type) }, { "string", typeof(String) }, { "index", typeof(Index) }, { "range", typeof(Range) },
-		{ "nint", typeof(nint) }, { "list", typeof(List<>) }, { "dynamic", typeof(void) }, { "var", typeof(void) }
+		{ "nint", typeof(nint) }, { "list", typeof(List<>) }, { "dynamic", typeof(void) }, { "var", typeof(void) },
 	};
 
 	/// <summary>
@@ -160,6 +161,7 @@ public static class BuiltInMemberCollections
 		{ ("System", nameof(ISignedNumber<>)), typeof(ISignedNumber<>) },
 		{ ("System", nameof(IUnsignedNumber<>)), typeof(IUnsignedNumber<>) },
 		{ ("System", nameof(NullReferenceException)), typeof(NullReferenceException) },
+		{ ("System", nameof(OverflowException)), typeof(OverflowException) },
 		{ ("System", nameof(Predicate<>)), typeof(Predicate<>) },
 		{ ("System", nameof(ReadOnlySpan<>)), typeof(ReadOnlySpan<>) },
 		{ ("System", nameof(RedStarLinq)), typeof(RedStarLinq) },
@@ -834,7 +836,13 @@ public static class BuiltInMemberCollections
 		{
 			GetPrimitiveBlockStack("long long"), new()
 			{
-				{ NoBranches, new() { (BoolType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (UnsignedLongIntType, true), (RealType, true) } }
+				{ NoBranches, new() { (BoolType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (UnsignedLongIntType, true), (UnsignedLongLongType, true), (RealType, true) } }
+			}
+		},
+		{
+			GetPrimitiveBlockStack("unsigned long long"), new()
+			{
+				{ NoBranches, new() { (LongLongType, false), (BoolType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (UnsignedLongIntType, true), (RealType, true) } }
 			}
 		},
 		{
@@ -870,7 +878,7 @@ public static class BuiltInMemberCollections
 		{
 			GetPrimitiveBlockStack("unsigned long int"), new()
 			{
-				{ NoBranches, new() { (BoolType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (LongIntType, true), (RealType, true) } }
+				{ NoBranches, new() { (UnsignedLongLongType, false), (BoolType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (LongIntType, true), (RealType, true) } }
 			}
 		},
 		{
@@ -1175,7 +1183,7 @@ public static class BuiltInMemberCollections
 	/// </summary>
 	public static SortedDictionary<String, String> OutdatedOperators { get; } = [];
 
-	public static G.SortedSet<String> ReservedOperators { get; } = ["#", "G", "I", "K", "_", "g", "hexa", "hexa=", "penta", "penta=", "tetra", "tetra="];
+	public static G.SortedSet<String> ReservedOperators { get; } = ["#", "G", "K", "_", "g", "hexa", "hexa=", "penta", "penta=", "tetra", "tetra="];
 	// To specify non-associative N-ary operator, set OperandsCount to -1. To specify postfix unary operator, set it to -2.
 
 	public static BlockStack GetBlockStack(String basic)
@@ -1216,7 +1224,7 @@ public static class BuiltInMemberCollections
 		var packageIdentity = metadata.FindAll(x => x.Identity.Version == maxVersion).Convert(x => x.Identity).FirstOrDefault()
 			?? throw new NonExistentPackageException();
 		var downloadResource = await sourceRepository.GetResourceAsync<DownloadResource>();
-		using var downloadResult = await downloadResource.GetDownloadResourceResultAsync(packageIdentity,
+		var downloadResult = await downloadResource.GetDownloadResourceResultAsync(packageIdentity,
 			new PackageDownloadContext(new SourceCacheContext()), downloadDir, new NullLogger(), CancellationToken.None);
 		if (downloadResult.Status != DownloadResourceResultStatus.Available)
 			throw new NonExistentPackageException();
@@ -1261,16 +1269,18 @@ public static class BuiltInMemberCollections
 
 	private static async Task VerifyPackageSignature(Stream packageStream)
 	{
-		using var package = new PackageArchiveReader(packageStream);
+		var package = new PackageArchiveReader(packageStream);
 		var signaturePath = package.GetFiles()
 			.Find(f => f.EndsWith(".signature.p7s"));
 		if (string.IsNullOrEmpty(signaturePath))
 			throw new WrongSignatureException();
-		var signature = File.ReadAllBytes(signaturePath) ?? throw new WrongSignatureException();
+		var signature = package.GetStream(signaturePath) ?? throw new WrongSignatureException();
 		try
 		{
 			SignedCms signedCms = new();
-			signedCms.Decode(signature);
+			var signatureBytes = GC.AllocateUninitializedArray<byte>(checked((int)signature.Length));
+			signature.ReadExactly(signatureBytes);
+			signedCms.Decode(signatureBytes);
 			signedCms.CheckSignature(true);
 			var certificates = signedCms.SignerInfos[0].Certificate;
 			if (!(certificates?.Verify() ?? false))

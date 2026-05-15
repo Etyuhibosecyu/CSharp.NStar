@@ -26,7 +26,7 @@ namespace AvaloniaEdit.Utils;
 /// </summary>
 internal sealed class Deque<T> : ICollection<T>
 {
-	private T[] _arr = Empty<T>.Array;
+	private T[] _arr = Array.Empty<T>();
 	private int _head;
 	private int _tail;
 
@@ -36,12 +36,12 @@ internal sealed class Deque<T> : ICollection<T>
 	/// <inheritdoc/>
 	public void Clear()
 	{
-		_arr = Empty<T>.Array;
+		_arr = Array.Empty<T>();
 		Count = 0;
 		_head = 0;
 		_tail = 0;
 	}
-
+	
 	/// <summary>
 	/// Gets/Sets an element inside the deque.
 	/// </summary>
@@ -67,7 +67,7 @@ internal sealed class Deque<T> : ICollection<T>
 		if (_tail == _arr.Length) _tail = 0;
 		Count++;
 	}
-
+	
 	/// <summary>
 	/// Pops an element from the end of the deque.
 	/// </summary>
@@ -80,11 +80,11 @@ internal sealed class Deque<T> : ICollection<T>
 		else
 			_tail--;
 		var val = _arr[_tail];
-		_arr[_tail] = default(T); // allow GC to collect the element
+		_arr[_tail] = default; // allow GC to collect the element
 		Count--;
 		return val;
 	}
-
+	
 	/// <summary>
 	/// Adds an element to the front of the deque.
 	/// </summary>
@@ -99,7 +99,7 @@ internal sealed class Deque<T> : ICollection<T>
 		_arr[_head] = item;
 		Count++;
 	}
-
+	
 	/// <summary>
 	/// Pops an element from the end of the deque.
 	/// </summary>
@@ -108,7 +108,7 @@ internal sealed class Deque<T> : ICollection<T>
 		if (Count == 0)
 			throw new InvalidOperationException();
 		var val = _arr[_head];
-		_arr[_head] = default(T); // allow GC to collect the element
+		_arr[_head] = default; // allow GC to collect the element
 		_head++;
 		if (_head == _arr.Length) _head = 0;
 		Count--;
@@ -117,13 +117,13 @@ internal sealed class Deque<T> : ICollection<T>
 
 	private void SetCapacity(int capacity)
 	{
-		T[] newArr = new T[capacity];
+		var newArr = new T[capacity];
 		CopyTo(newArr, 0);
 		_head = 0;
 		_tail = (Count == capacity) ? 0 : Count;
 		_arr = newArr;
 	}
-
+	
 	/// <inheritdoc/>
 	public IEnumerator<T> GetEnumerator()
 	{
@@ -153,7 +153,7 @@ internal sealed class Deque<T> : ICollection<T>
 				return true;
 		return false;
 	}
-
+	
 	/// <inheritdoc/>
 	public void CopyTo(T[] array, int arrayIndex)
 	{

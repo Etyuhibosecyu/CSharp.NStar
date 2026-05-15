@@ -16,6 +16,7 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace AvaloniaEdit.Highlighting;
@@ -36,5 +37,5 @@ public class HighlightingRule
 	public HighlightingColor Color { get; set; }
 
 	/// <inheritdoc/>
-	public override string ToString() => "[" + GetType().Name + " " + Regex + "]";
+	public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"[{nameof(HighlightingRule)} {Regex}]");
 }

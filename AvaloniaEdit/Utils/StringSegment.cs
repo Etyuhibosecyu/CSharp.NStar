@@ -24,7 +24,7 @@ namespace AvaloniaEdit.Utils;
 /// Represents a string with a segment.
 /// Similar to System.ArraySegment&lt;T&gt;, but for strings instead of arrays.
 /// </summary>
-public struct StringSegment : IEquatable<StringSegment>
+public readonly struct StringSegment : IEquatable<StringSegment>
 {
 	/// <summary>
 	/// Creates a new StringSegment.
@@ -70,14 +70,14 @@ public struct StringSegment : IEquatable<StringSegment>
 	/// <inheritdoc/>
 	public override bool Equals(object obj)
 	{
-		if (obj is StringSegment)
-			return Equals((StringSegment)obj); // use Equals method below
+		if (obj is StringSegment segment)
+			return Equals(segment); // use Equals method below
 		return false;
 	}
 
 	/// <inheritdoc/>
 	public bool Equals(StringSegment other) =>
-		// add comparisions for all members here
+		// add comparisons for all members here
 		ReferenceEquals(Text, other.Text) && Offset == other.Offset && Count == other.Count;
 
 	/// <inheritdoc/>
@@ -86,17 +86,11 @@ public struct StringSegment : IEquatable<StringSegment>
 	/// <summary>
 	/// Equality operator.
 	/// </summary>
-	public static bool operator ==(StringSegment left, StringSegment right)
-	{
-		return left.Equals(right);
-	}
+	public static bool operator ==(StringSegment left, StringSegment right) => left.Equals(right);
 
 	/// <summary>
 	/// Inequality operator.
 	/// </summary>
-	public static bool operator !=(StringSegment left, StringSegment right)
-	{
-		return !left.Equals(right);
-	}
+	public static bool operator !=(StringSegment left, StringSegment right) => !left.Equals(right);
 	#endregion
 }

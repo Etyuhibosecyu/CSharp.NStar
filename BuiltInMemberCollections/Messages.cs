@@ -100,6 +100,10 @@ public static class Messages
 			0x2036 => "the struct can be derived only from the interfaces",
 			0x2037 => "the type \"" + parameters[0] + "\" is polymorph and requires the parameters",
 			0x2038 => "expected: non-sealed class except \"object\" or interface",
+			0x2039 => "the prefix increment/decrement operators (\"++x\") were removed from C#.NStar" +
+				" because of their obscurity and ability to produce the \"dirty\" code;" +
+				" use either the postfix increment/decrement operators (\"x++\")" +
+				" or the composite assignment operators (\"x += 1\")",
 			0x203A => "the identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar and cannot be used",
 			0x203B => "the end of identifier \"" + parameters[0] + "\" is reserved for next versions of C#.NStar" +
 				" and cannot be used",

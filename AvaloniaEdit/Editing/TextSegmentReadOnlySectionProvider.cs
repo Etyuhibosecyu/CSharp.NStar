@@ -23,16 +23,16 @@ using AvaloniaEdit.Document;
 
 namespace AvaloniaEdit.Editing;
 
+/// <summary>
+/// Implementation for <see cref="IReadOnlySectionProvider"/> that stores the segments
+/// in a <see cref="TextSegmentCollection{T}"/>.
+/// </summary>
+public class TextSegmentReadOnlySectionProvider<T> : IReadOnlySectionProvider where T : TextSegment
+{
 	/// <summary>
-	/// Implementation for <see cref="IReadOnlySectionProvider"/> that stores the segments
-	/// in a <see cref="TextSegmentCollection{T}"/>.
+	/// Gets the collection storing the read-only segments.
 	/// </summary>
-	public class TextSegmentReadOnlySectionProvider<T> : IReadOnlySectionProvider where T : TextSegment
-	{
-		/// <summary>
-		/// Gets the collection storing the read-only segments.
-		/// </summary>
-		public TextSegmentCollection<T> Segments { get; }
+	public TextSegmentCollection<T> Segments { get; }
 
 	/// <summary>
 	/// Creates a new TextSegmentReadOnlySectionProvider instance for the specified document.
@@ -48,39 +48,39 @@ namespace AvaloniaEdit.Editing;
 	/// Gets whether insertion is possible at the specified offset.
 	/// </summary>
 	public virtual bool CanInsert(int offset) => Segments.FindSegmentsContaining(offset)
-				.All(segment => segment.StartOffset >= offset || offset >= segment.EndOffset);
+			.All(segment => segment.StartOffset >= offset || offset >= segment.EndOffset);
 
 	/// <summary>
 	/// Gets the deletable segments inside the given segment.
 	/// </summary>
 	public virtual IEnumerable<ISegment> GetDeletableSegments(ISegment segment)
-		{
+	{
 		ArgumentNullException.ThrowIfNull(segment);
 
 		if (segment.Length == 0 && CanInsert(segment.Offset))
-			{
-				yield return segment;
-				yield break;
-			}
+		{
+			yield return segment;
+			yield break;
+		}
 
-			var readonlyUntil = segment.Offset;
-			foreach (var ts in Segments.FindOverlappingSegments(segment))
+		var readonlyUntil = segment.Offset;
+		foreach (var ts in Segments.FindOverlappingSegments(segment))
+		{
+			var start = ts.StartOffset;
+			var end = start + ts.Length;
+			if (start > readonlyUntil)
 			{
-				var start = ts.StartOffset;
-				var end = start + ts.Length;
-				if (start > readonlyUntil)
-				{
-					yield return new SimpleSegment(readonlyUntil, start - readonlyUntil);
-				}
-				if (end > readonlyUntil)
-				{
-					readonlyUntil = end;
-				}
+				yield return new SimpleSegment(readonlyUntil, start - readonlyUntil);
 			}
-			var endOffset = segment.EndOffset;
-			if (readonlyUntil < endOffset)
+			if (end > readonlyUntil)
 			{
-				yield return new SimpleSegment(readonlyUntil, endOffset - readonlyUntil);
+				readonlyUntil = end;
 			}
 		}
+		var endOffset = segment.EndOffset;
+		if (readonlyUntil < endOffset)
+		{
+			yield return new SimpleSegment(readonlyUntil, endOffset - readonlyUntil);
+		}
 	}
+}

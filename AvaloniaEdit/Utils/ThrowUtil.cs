@@ -39,18 +39,18 @@ internal static class ThrowUtil
 	/// </example>
 	public static T CheckNotNull<T>(T val, string parameterName) where T : class
 	{
-		if (val == null)
+		if (val is null)
 			throw new ArgumentNullException(parameterName);
 		return val;
 	}
-
+	
 	public static int CheckNotNegative(int val, string parameterName)
 	{
 		if (val < 0)
 			throw new ArgumentOutOfRangeException(parameterName, val, "value must not be negative");
 		return val;
 	}
-
+	
 	public static int CheckInRangeInclusive(int val, string parameterName, int lower, int upper)
 	{
 		if (val < lower || val > upper)

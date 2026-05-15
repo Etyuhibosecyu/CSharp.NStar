@@ -16,80 +16,94 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using AvaloniaEdit.Editing;
 using Avalonia.Input;
+using AvaloniaEdit.Editing;
 
 namespace AvaloniaEdit.Snippets;
 
-	internal sealed class SnippetInputHandler(InsertionContext context) : TextAreaStackedInputHandler(context.TextArea)
-	{
-		private readonly InsertionContext _context = context;
-
+internal sealed class SnippetInputHandler(InsertionContext context) : TextAreaStackedInputHandler(context.TextArea)
+{
 	public override void Attach()
-		{
-			base.Attach();
+	{
+		base.Attach();
 
-			SelectElement(FindNextEditableElement(-1, false));
-		}
+		SelectElement(FindNextEditableElement(-1, false));
+	}
 
-		public override void Detach()
-		{
-			base.Detach();
-			_context.Deactivate(new SnippetEventArgs(DeactivateReason.InputHandlerDetached));
-		}
+	public override void Detach()
+	{
+		base.Detach();
+		context.Deactivate(new SnippetEventArgs(DeactivateReason.InputHandlerDetached));
+	}
 
-		public override void OnPreviewKeyDown(KeyEventArgs e)
+	public override void OnPreviewKeyDown(KeyEventArgs e)
+	{
+		base.OnPreviewKeyDown(e);
+		if (e.Key == Key.Escape)
 		{
-			base.OnPreviewKeyDown(e);
-			if (e.Key == Key.Escape)
-			{
-				_context.Deactivate(new SnippetEventArgs(DeactivateReason.EscapePressed));
-				e.Handled = true;
-			}
-			else if (e.Key == Key.Return)
-			{
-				_context.Deactivate(new SnippetEventArgs(DeactivateReason.ReturnPressed));
-				e.Handled = true;
-			}
-			else if (e.Key == Key.Tab)
-			{
-				var backwards = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
-				SelectElement(FindNextEditableElement(TextArea.Caret.Offset, backwards));
-				e.Handled = true;
-			}
+			context.Deactivate(new SnippetEventArgs(DeactivateReason.EscapePressed));
+			e.Handled = true;
 		}
+		else if (e.Key == Key.Return)
+		{
+			context.Deactivate(new SnippetEventArgs(DeactivateReason.ReturnPressed));
+			e.Handled = true;
+		}
+		else if (e.Key == Key.Tab)
+		{
+			var backwards = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+			SelectElement(FindNextEditableElement(TextArea.Caret.Offset, backwards));
+			e.Handled = true;
+		}
+	}
 
-		private void SelectElement(IActiveElement element)
+	private void SelectElement(IActiveElement element)
+	{
+		if (element != null)
 		{
-			if (element != null)
-			{
-				TextArea.Selection = Selection.Create(TextArea, element.Segment);
-				TextArea.Caret.Offset = element.Segment.EndOffset;
-			}
+			TextArea.Selection = Selection.Create(TextArea, element.Segment);
+			TextArea.Caret.Offset = element.Segment.EndOffset;
 		}
+	}
 
 	private IActiveElement FindNextEditableElement(int offset, bool backwards)
+	{
+		IActiveElement firstEditableElement = null;
+		IActiveElement lastEditableElement = null;
+		IActiveElement previousEditableElement = null;
+
+		foreach (var element in context.ActiveElements)
 		{
-			var elements = _context.ActiveElements.Where(e => e.IsEditable && e.Segment != null);
+			if (!element.IsEditable || element.Segment is null)
+			{
+				continue;
+			}
+
+			firstEditableElement ??= element;
+
+			lastEditableElement = element;
+
 			if (backwards)
 			{
-				elements = elements.Reverse();
-				foreach (var element in elements)
+				if (offset > element.Segment.EndOffset)
 				{
-					if (offset > element.Segment.EndOffset)
-						return element;
+					previousEditableElement = element;
 				}
 			}
 			else
 			{
-				foreach (var element in elements)
+				if (offset < element.Segment.Offset)
 				{
-					if (offset < element.Segment.Offset)
-						return element;
+					return element;
 				}
 			}
-			return elements.FirstOrDefault();
 		}
+
+		if (backwards)
+		{
+			return previousEditableElement ?? lastEditableElement;
+		}
+
+		return firstEditableElement;
 	}
+}

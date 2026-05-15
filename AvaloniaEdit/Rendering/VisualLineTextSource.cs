@@ -19,7 +19,6 @@
 using System;
 using System.Diagnostics;
 using Avalonia.Media.TextFormatting;
-using Avalonia.Utilities;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Utils;
 using ITextSource = Avalonia.Media.TextFormatting.ITextSource;
@@ -43,7 +42,9 @@ internal sealed class VisualLineTextSource(VisualLine visualLine) : ITextSource,
 				if (textSourceCharacterIndex >= element.VisualColumn
 					&& textSourceCharacterIndex < element.VisualColumn + element.VisualLength) {
 					var relativeOffset = textSourceCharacterIndex - element.VisualColumn;
-					var run = element.CreateTextRun(textSourceCharacterIndex, this) ?? throw new ArgumentNullException(element.GetType().Name + ".CreateTextRun");
+					var run = element.CreateTextRun(textSourceCharacterIndex, this);
+					if (run is null)
+						throw new ArgumentNullException(element.GetType().Name + ".CreateTextRun");
 					if (run.Length == 0)
 						throw new ArgumentException("The returned TextRun must not have length 0.", element.GetType().Name + ".Length");
 					if (relativeOffset + run.Length > element.VisualLength)
@@ -66,37 +67,37 @@ internal sealed class VisualLineTextSource(VisualLine visualLine) : ITextSource,
 		}
 	}
 
-		private TextRun CreateTextRunForNewLine()
+	private TextRun CreateTextRunForNewLine()
+	{
+		var newlineText = "";
+		var lastDocumentLine = VisualLine.LastDocumentLine;
+		if (lastDocumentLine.DelimiterLength == 2)
 		{
-			var newlineText = "";
-			var lastDocumentLine = VisualLine.LastDocumentLine;
-			if (lastDocumentLine.DelimiterLength == 2)
-			{
-				newlineText = TextView.Options.EndOfLineCRLFGlyph;
-			}
-			else if (lastDocumentLine.DelimiterLength == 1)
-			{
-				var newlineChar = Document.GetCharAt(lastDocumentLine.Offset + lastDocumentLine.Length);
-				if (newlineChar == '\r')
-					newlineText = TextView.Options.EndOfLineCRGlyph;
-				else if (newlineChar == '\n')
-					newlineText = TextView.Options.EndOfLineLFGlyph;
-				else
-					newlineText = "?";
-			}
+			newlineText = TextView.Options.EndOfLineCRLFGlyph;
+		}
+		else if (lastDocumentLine.DelimiterLength == 1)
+		{
+			var newlineChar = Document.GetCharAt(lastDocumentLine.Offset + lastDocumentLine.Length);
+			if (newlineChar == '\r')
+				newlineText = TextView.Options.EndOfLineCRGlyph;
+			else if (newlineChar == '\n')
+				newlineText = TextView.Options.EndOfLineLFGlyph;
+			else
+				newlineText = "?";
+		}
 
-			var p = new VisualLineElementTextRunProperties(GlobalTextRunProperties);
-			p.SetForegroundBrush(TextView.NonPrintableCharacterBrush);
-			p.SetFontRenderingEmSize(GlobalTextRunProperties.FontRenderingEmSize - 2);
+		var p = new VisualLineElementTextRunProperties(GlobalTextRunProperties);
+		p.SetForegroundBrush(TextView.NonPrintableCharacterBrush);
+		p.SetFontRenderingEmSize(GlobalTextRunProperties.FontRenderingEmSize - 2);
 		var textElement = new FormattedTextElement(TextView.CachedElements.GetTextForNonPrintableCharacter(newlineText, p), 0)
 		{
 			RelativeTextOffset = lastDocumentLine.Offset + lastDocumentLine.Length
 		};
 
 		return new FormattedTextRun(textElement, GlobalTextRunProperties);
-		}
+	}
 
-		public ReadOnlyMemory<char> GetPrecedingText(int textSourceCharacterIndexLimit)
+	public ReadOnlyMemory<char> GetPrecedingText(int textSourceCharacterIndexLimit)
 	{
 		try {
 			foreach (var element in VisualLine.Elements) {
@@ -111,7 +112,7 @@ internal sealed class VisualLineTextSource(VisualLine visualLine) : ITextSource,
 					return span;
 				}
 			}
-
+			
 			return ReadOnlyMemory<char>.Empty;
 		} catch (Exception ex) {
 			Debug.WriteLine(ex.ToString());

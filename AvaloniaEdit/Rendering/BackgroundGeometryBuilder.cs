@@ -130,11 +130,13 @@ public sealed class BackgroundGeometryBuilder
 		TextViewPosition start;
 		TextViewPosition end;
 
-		if (segment is SelectionSegment) {
-			SelectionSegment sel = (SelectionSegment)segment;
+		if (segment is SelectionSegment sel)
+		{
 			start = new TextViewPosition(textView.Document.GetLocation(sel.StartOffset), sel.StartVisualColumn);
 			end = new TextViewPosition(textView.Document.GetLocation(sel.EndOffset), sel.EndVisualColumn);
-		} else {
+		}
+		else
+		{
 			start = new TextViewPosition(textView.Document.GetLocation(segmentStart));
 			end = new TextViewPosition(textView.Document.GetLocation(segmentEnd));
 		}
@@ -183,7 +185,7 @@ public sealed class BackgroundGeometryBuilder
 		for (var i = 0; i < visualLine.TextLines.Count; i++) {
 			var line = visualLine.TextLines[i];
 			var y = visualLine.GetTextLineVisualYPosition(line, VisualYPosition.LineTop);
-				var lineHeight = Math.Max(line.Height, textView.DefaultLineHeight);
+			var lineHeight = Math.Max(line.Height, textView.DefaultLineHeight);
 			var visualStartCol = visualLine.GetTextLineVisualStartColumn(line);
 			var visualEndCol = visualStartCol + line.Length;
 			if (line == lastTextLine)
@@ -252,7 +254,7 @@ public sealed class BackgroundGeometryBuilder
 
 				left -= scrollOffset.X;
 				right -= scrollOffset.X;
-				Rect extendSelection = new Rect(Math.Min(left, right), y, Math.Abs(right - left), lineHeight);
+				var extendSelection = new Rect(Math.Min(left, right), y, Math.Abs(right - left), lineHeight);
 				if (lastRect != default) {
 					if (extendSelection.Intersects(lastRect)) {
 						lastRect = lastRect.Union(extendSelection);
@@ -288,43 +290,43 @@ public sealed class BackgroundGeometryBuilder
 		if (!top.IsClose(_lastBottom)) {
 			CloseFigure();
 		}
-		if (_figure == null) {
+		if (_figure is null) {
 			_figure = new PathFigure
 			{
 				StartPoint = new Point(left, top + CornerRadius)
 			};
 			if (Math.Abs(left - right) > CornerRadius) {
-				_figure.Segments.Add(MakeArc(left + CornerRadius, top, SweepDirection.Clockwise));
-				_figure.Segments.Add(MakeLineSegment(right - CornerRadius, top));
-				_figure.Segments.Add(MakeArc(right, top + CornerRadius, SweepDirection.Clockwise));
+				_figure.Segments?.Add(MakeArc(left + CornerRadius, top, SweepDirection.Clockwise));
+				_figure.Segments?.Add(MakeLineSegment(right - CornerRadius, top));
+				_figure.Segments?.Add(MakeArc(right, top + CornerRadius, SweepDirection.Clockwise));
 			}
-			_figure.Segments.Add(MakeLineSegment(right, bottom - CornerRadius));
-			_insertionIndex = _figure.Segments.Count;
+			_figure.Segments?.Add(MakeLineSegment(right, bottom - CornerRadius));
+			_insertionIndex = _figure.Segments?.Count ?? 0;
 			//figure.Segments.Add(MakeArc(left, bottom - cornerRadius, SweepDirection.Clockwise));
 		} else {
 			if (!_lastRight.IsClose(right)) {
 				var cr = right < _lastRight ? -CornerRadius : CornerRadius;
 				var dir1 = right < _lastRight ? SweepDirection.Clockwise : SweepDirection.CounterClockwise;
 				var dir2 = right < _lastRight ? SweepDirection.CounterClockwise : SweepDirection.Clockwise;
-				_figure.Segments.Insert(_insertionIndex++, MakeArc(_lastRight + cr, _lastBottom, dir1));
-				_figure.Segments.Insert(_insertionIndex++, MakeLineSegment(right - cr, top));
-				_figure.Segments.Insert(_insertionIndex++, MakeArc(right, top + CornerRadius, dir2));
+				_figure.Segments?.Insert(_insertionIndex++, MakeArc(_lastRight + cr, _lastBottom, dir1));
+				_figure.Segments?.Insert(_insertionIndex++, MakeLineSegment(right - cr, top));
+				_figure.Segments?.Insert(_insertionIndex++, MakeArc(right, top + CornerRadius, dir2));
 			}
-			_figure.Segments.Insert(_insertionIndex++, MakeLineSegment(right, bottom - CornerRadius));
-			_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft, _lastTop + CornerRadius));
+			_figure.Segments?.Insert(_insertionIndex++, MakeLineSegment(right, bottom - CornerRadius));
+			_figure.Segments?.Insert(_insertionIndex, MakeLineSegment(_lastLeft, _lastTop + CornerRadius));
 			if (!_lastLeft.IsClose(left)) {
 				var cr = left < _lastLeft ? CornerRadius : -CornerRadius;
 				var dir1 = left < _lastLeft ? SweepDirection.CounterClockwise : SweepDirection.Clockwise;
 				var dir2 = left < _lastLeft ? SweepDirection.Clockwise : SweepDirection.CounterClockwise;
-				_figure.Segments.Insert(_insertionIndex, MakeArc(_lastLeft, _lastBottom - CornerRadius, dir1));
-				_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft - cr, _lastBottom));
-				_figure.Segments.Insert(_insertionIndex, MakeArc(left + cr, _lastBottom, dir2));
+				_figure.Segments?.Insert(_insertionIndex, MakeArc(_lastLeft, _lastBottom - CornerRadius, dir1));
+				_figure.Segments?.Insert(_insertionIndex, MakeLineSegment(_lastLeft - cr, _lastBottom));
+				_figure.Segments?.Insert(_insertionIndex, MakeArc(left + cr, _lastBottom, dir2));
 			}
 		}
-		this._lastTop = top;
-		this._lastBottom = bottom;
-		this._lastLeft = left;
-		this._lastRight = right;
+		_lastTop = top;
+		_lastBottom = bottom;
+		_lastLeft = left;
+		_lastRight = right;
 	}
 
 	private ArcSegment MakeArc(double x, double y, SweepDirection dir)
@@ -346,11 +348,11 @@ public sealed class BackgroundGeometryBuilder
 	public void CloseFigure()
 	{
 		if (_figure != null) {
-			_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft, _lastTop + CornerRadius));
+			_figure.Segments?.Insert(_insertionIndex, MakeLineSegment(_lastLeft, _lastTop + CornerRadius));
 			if (Math.Abs(_lastLeft - _lastRight) > CornerRadius) {
-				_figure.Segments.Insert(_insertionIndex, MakeArc(_lastLeft, _lastBottom - CornerRadius, SweepDirection.Clockwise));
-				_figure.Segments.Insert(_insertionIndex, MakeLineSegment(_lastLeft + CornerRadius, _lastBottom));
-				_figure.Segments.Insert(_insertionIndex, MakeArc(_lastRight - CornerRadius, _lastBottom, SweepDirection.Clockwise));
+				_figure.Segments?.Insert(_insertionIndex, MakeArc(_lastLeft, _lastBottom - CornerRadius, SweepDirection.Clockwise));
+				_figure.Segments?.Insert(_insertionIndex, MakeLineSegment(_lastLeft + CornerRadius, _lastBottom));
+				_figure.Segments?.Insert(_insertionIndex, MakeArc(_lastRight - CornerRadius, _lastBottom, SweepDirection.Clockwise));
 			}
 
 			_figure.IsClosed = true;

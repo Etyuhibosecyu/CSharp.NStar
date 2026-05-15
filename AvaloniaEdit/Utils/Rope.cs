@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2014 AlphaSierraPapa for the SharpDevelop Team
+// Copyright (c) 2014 AlphaSierraPapa for the SharpDevelop Team
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this
 // software and associated documentation files (the "Software"), to deal in the Software
@@ -38,77 +38,77 @@ namespace AvaloniaEdit.Utils;
 /// However, clones of a rope are safe to use on other threads even though they share data with the original rope.
 /// </remarks>
 public sealed class Rope<T> : IList<T>, ICloneable
+{
+	internal RopeNode<T> Root { get; set; }
+
+	internal Rope(RopeNode<T> root)
 	{
-		internal RopeNode<T> Root { get; set; }
+		Root = root;
+		root.CheckInvariants();
+	}
 
-		internal Rope(RopeNode<T> root)
-		{
-			Root = root;
-			root.CheckInvariants();
-		}
+	/// <summary>
+	/// Creates a new rope representing the empty string.
+	/// </summary>
+	public Rope()
+	{
+		// we'll construct the empty rope as a clone of an imaginary static empty rope
+		Root = RopeNode<T>.EmptyRopeNode;
+		Root.CheckInvariants();
+	}
 
-		/// <summary>
-		/// Creates a new rope representing the empty string.
-		/// </summary>
-		public Rope()
-		{
-			// we'll construct the empty rope as a clone of an imaginary static empty rope
-			Root = RopeNode<T>.EmptyRopeNode;
-			Root.CheckInvariants();
-		}
-
-		/// <summary>
-		/// Creates a rope from the specified input.
-		/// This operation runs in O(N).
-		/// </summary>
-		/// <exception cref="ArgumentNullException">input is null.</exception>
-		public Rope(IEnumerable<T> input)
-		{
+	/// <summary>
+	/// Creates a rope from the specified input.
+	/// This operation runs in O(N).
+	/// </summary>
+	/// <exception cref="ArgumentNullException">input is null.</exception>
+	public Rope(IEnumerable<T> input)
+	{
 		ArgumentNullException.ThrowIfNull(input);
 		if (input is Rope<T> inputRope)
+		{
+			// clone ropes instead of copying them
+			inputRope.Root.Publish();
+			Root = inputRope.Root;
+		}
+		else
+		{
+			// ReSharper disable ConditionIsAlwaysTrueOrFalse
+			// ReSharper disable ExpressionIsAlwaysNull
+			// ReSharper disable SuspiciousTypeConversion.Global
+#pragma warning disable IDE0019 // Use pattern matching
+			var text = input as string;
+#pragma warning restore IDE0019 // Use pattern matching
+			// ReSharper restore SuspiciousTypeConversion.Global
+			if (text != null)
+			// ReSharper restore ConditionIsAlwaysTrueOrFalse
+			// ReSharper restore ExpressionIsAlwaysNull
+			// ReSharper disable HeuristicUnreachableCode
 			{
-				// clone ropes instead of copying them
-				inputRope.Root.Publish();
-				Root = inputRope.Root;
+				// if a string is IEnumerable<T>, then T must be char
+				((Rope<char>)(object)this).Root = CharRope.InitFromString(text);
 			}
+			// ReSharper restore HeuristicUnreachableCode
 			else
 			{
-				// ReSharper disable ConditionIsAlwaysTrueOrFalse
-				// ReSharper disable ExpressionIsAlwaysNull
-				// ReSharper disable SuspiciousTypeConversion.Global
-#pragma warning disable IDE0019 // Use pattern matching
-				var text = input as string;
-#pragma warning restore IDE0019 // Use pattern matching
-				// ReSharper restore SuspiciousTypeConversion.Global
-				if (text != null)
-				// ReSharper restore ConditionIsAlwaysTrueOrFalse
-				// ReSharper restore ExpressionIsAlwaysNull
-				// ReSharper disable HeuristicUnreachableCode
-				{
-					// if a string is IEnumerable<T>, then T must be char
-					((Rope<char>)(object)this).Root = CharRope.InitFromString(text);
-				}
-				// ReSharper restore HeuristicUnreachableCode
-				else
-				{
-					var arr = ToArray(input);
-					Root = RopeNode<T>.CreateFromArray(arr, 0, arr.Length);
-				}
+				var arr = ToArray(input);
+				Root = RopeNode<T>.CreateFromArray(arr, 0, arr.Length);
 			}
-			Root.CheckInvariants();
 		}
+		Root.CheckInvariants();
+	}
 
-		/// <summary>
-		/// Creates a rope from a part of the array.
-		/// This operation runs in O(N).
-		/// </summary>
-		/// <exception cref="ArgumentNullException">input is null.</exception>
-		public Rope(T[] array, int arrayIndex, int count)
-		{
-			VerifyArrayWithRange(array, arrayIndex, count);
-			Root = RopeNode<T>.CreateFromArray(array, arrayIndex, count);
-			Root.CheckInvariants();
-		}
+	/// <summary>
+	/// Creates a rope from a part of the array.
+	/// This operation runs in O(N).
+	/// </summary>
+	/// <exception cref="ArgumentNullException">input is null.</exception>
+	public Rope(T[] array, int arrayIndex, int count)
+	{
+		VerifyArrayWithRange(array, arrayIndex, count);
+		Root = RopeNode<T>.CreateFromArray(array, arrayIndex, count);
+		Root.CheckInvariants();
+	}
 
 	/// <summary>
 	/// Creates a new rope that lazily initalizes its content.
@@ -130,36 +130,36 @@ public sealed class Rope<T> : IList<T>, ICloneable
 	/// two short ropes are concatenated.
 	/// </remarks>
 	public Rope(int length, Func<Rope<T>> initializer)
-		{
+	{
 		ArgumentNullException.ThrowIfNull(initializer);
 		if (length < 0)
-				throw new ArgumentOutOfRangeException(nameof(length), length, "Length must not be negative");
-			Root = length == 0 ? RopeNode<T>.EmptyRopeNode : new FunctionNode<T>(length, initializer);
-			Root.CheckInvariants();
-		}
+			throw new ArgumentOutOfRangeException(nameof(length), length, "Length must not be negative");
+		Root = length == 0 ? RopeNode<T>.EmptyRopeNode : new FunctionNode<T>(length, initializer);
+		Root.CheckInvariants();
+	}
 
-		private static T[] ToArray(IEnumerable<T> input)
-		{
-			var arr = input as T[];
-			return arr ?? input.ToArray();
-		}
+	private static T[] ToArray(IEnumerable<T> input)
+	{
+		var arr = input as T[];
+		return arr ?? [.. input];
+	}
 
-		/// <summary>
-		/// Clones the rope.
-		/// This operation runs in linear time to the number of rope nodes touched since the last clone was created.
-		/// If you count the per-node cost to the operation modifying the rope (doing this doesn't increase the complexity of the modification operations);
-		/// the remainder of Clone() runs in O(1).
-		/// </summary>
-		/// <remarks>
-		/// This method counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		public Rope<T> Clone()
-		{
-			// The Publish() call actually modifies this rope instance; but this modification is thread-safe
-			// as long as the tree structure doesn't change during the operation.
-			Root.Publish();
-			return new Rope<T>(Root);
-		}
+	/// <summary>
+	/// Clones the rope.
+	/// This operation runs in linear time to the number of rope nodes touched since the last clone was created.
+	/// If you count the per-node cost to the operation modifying the rope (doing this doesn't increase the complexity of the modification operations);
+	/// the remainder of Clone() runs in O(1).
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public Rope<T> Clone()
+	{
+		// The Publish() call actually modifies this rope instance; but this modification is thread-safe
+		// as long as the tree structure doesn't change during the operation.
+		Root.Publish();
+		return new Rope<T>(Root);
+	}
 
 	object ICloneable.Clone() => Clone();
 
@@ -168,86 +168,86 @@ public sealed class Rope<T> : IList<T>, ICloneable
 	/// Runs in O(1).
 	/// </summary>
 	public void Clear()
+	{
+		Root = RopeNode<T>.EmptyRopeNode;
+		OnChanged();
+	}
+
+	/// <summary>
+	/// Gets the length of the rope.
+	/// Runs in O(1).
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public int Length => Root.Length;
+
+	/// <summary>
+	/// Gets the length of the rope.
+	/// Runs in O(1).
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public int Count => Root.Length;
+
+	/// <summary>
+	/// Inserts another rope into this rope.
+	/// Runs in O(lg N + lg M), plus a per-node cost as if <c>newElements.Clone()</c> was called.
+	/// </summary>
+	/// <exception cref="ArgumentNullException">newElements is null.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">index or length is outside the valid range.</exception>
+	public void InsertRange(int index, Rope<T> newElements)
+	{
+		if (index < 0 || index > Length)
 		{
-			Root = RopeNode<T>.EmptyRopeNode;
-			OnChanged();
+			throw new ArgumentOutOfRangeException(nameof(index), index, "0 <= index <= " + Length.ToString(CultureInfo.InvariantCulture));
 		}
-
-		/// <summary>
-		/// Gets the length of the rope.
-		/// Runs in O(1).
-		/// </summary>
-		/// <remarks>
-		/// This method counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		public int Length => Root.Length;
-
-		/// <summary>
-		/// Gets the length of the rope.
-		/// Runs in O(1).
-		/// </summary>
-		/// <remarks>
-		/// This method counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		public int Count => Root.Length;
-
-		/// <summary>
-		/// Inserts another rope into this rope.
-		/// Runs in O(lg N + lg M), plus a per-node cost as if <c>newElements.Clone()</c> was called.
-		/// </summary>
-		/// <exception cref="ArgumentNullException">newElements is null.</exception>
-		/// <exception cref="ArgumentOutOfRangeException">index or length is outside the valid range.</exception>
-		public void InsertRange(int index, Rope<T> newElements)
-		{
-			if (index < 0 || index > Length)
-			{
-				throw new ArgumentOutOfRangeException(nameof(index), index, "0 <= index <= " + Length.ToString(CultureInfo.InvariantCulture));
-			}
 		ArgumentNullException.ThrowIfNull(newElements);
 		newElements.Root.Publish();
-			Root = Root.Insert(index, newElements.Root);
-			OnChanged();
-		}
+		Root = Root.Insert(index, newElements.Root);
+		OnChanged();
+	}
 
-		/// <summary>
-		/// Inserts new elemetns into this rope.
-		/// Runs in O(lg N + M), where N is the length of this rope and M is the number of new elements.
-		/// </summary>
-		/// <exception cref="ArgumentNullException">newElements is null.</exception>
-		/// <exception cref="ArgumentOutOfRangeException">index or length is outside the valid range.</exception>
-		public void InsertRange(int index, IEnumerable<T> newElements)
-		{
+	/// <summary>
+	/// Inserts new elemetns into this rope.
+	/// Runs in O(lg N + M), where N is the length of this rope and M is the number of new elements.
+	/// </summary>
+	/// <exception cref="ArgumentNullException">newElements is null.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">index or length is outside the valid range.</exception>
+	public void InsertRange(int index, IEnumerable<T> newElements)
+	{
 		ArgumentNullException.ThrowIfNull(newElements);
 		if (newElements is Rope<T> newElementsRope)
-			{
-				InsertRange(index, newElementsRope);
-			}
-			else
-			{
-				var arr = ToArray(newElements);
-				InsertRange(index, arr, 0, arr.Length);
-			}
-		}
-
-		/// <summary>
-		/// Inserts new elements into this rope.
-		/// Runs in O(lg N + M), where N is the length of this rope and M is the number of new elements.
-		/// </summary>
-		/// <exception cref="ArgumentNullException">newElements is null.</exception>
-		/// <exception cref="ArgumentOutOfRangeException">index or length is outside the valid range.</exception>
-		public void InsertRange(int index, T[] array, int arrayIndex, int count)
 		{
-			if (index < 0 || index > Length)
-			{
-				throw new ArgumentOutOfRangeException(nameof(index), index, "0 <= index <= " + Length.ToString(CultureInfo.InvariantCulture));
-			}
-			VerifyArrayWithRange(array, arrayIndex, count);
-			if (count > 0)
-			{
-				Root = Root.Insert(index, array, arrayIndex, count);
-				OnChanged();
-			}
+			InsertRange(index, newElementsRope);
 		}
+		else
+		{
+			var arr = ToArray(newElements);
+			InsertRange(index, arr, 0, arr.Length);
+		}
+	}
+
+	/// <summary>
+	/// Inserts new elements into this rope.
+	/// Runs in O(lg N + M), where N is the length of this rope and M is the number of new elements.
+	/// </summary>
+	/// <exception cref="ArgumentNullException">newElements is null.</exception>
+	/// <exception cref="ArgumentOutOfRangeException">index or length is outside the valid range.</exception>
+	public void InsertRange(int index, T[] array, int arrayIndex, int count)
+	{
+		if (index < 0 || index > Length)
+		{
+			throw new ArgumentOutOfRangeException(nameof(index), index, "0 <= index <= " + Length.ToString(CultureInfo.InvariantCulture));
+		}
+		VerifyArrayWithRange(array, arrayIndex, count);
+		if (count > 0)
+		{
+			Root = Root.Insert(index, array, arrayIndex, count);
+			OnChanged();
+		}
+	}
 
 	/// <summary>
 	/// Appends multiple elements to the end of this rope.
@@ -276,49 +276,49 @@ public sealed class Rope<T> : IList<T>, ICloneable
 	/// </summary>
 	/// <exception cref="ArgumentOutOfRangeException">offset or length is outside the valid range.</exception>
 	public void RemoveRange(int index, int count)
+	{
+		VerifyRange(index, count);
+		if (count > 0)
 		{
-			VerifyRange(index, count);
-			if (count > 0)
-			{
-				Root = Root.RemoveRange(index, count);
-				OnChanged();
-			}
+			Root = Root.RemoveRange(index, count);
+			OnChanged();
 		}
+	}
 
-		/// <summary>
-		/// Copies a range of the specified array into the rope, overwriting existing elements.
-		/// Runs in O(lg N + M).
-		/// </summary>
-		public void SetRange(int index, T[] array, int arrayIndex, int count)
+	/// <summary>
+	/// Copies a range of the specified array into the rope, overwriting existing elements.
+	/// Runs in O(lg N + M).
+	/// </summary>
+	public void SetRange(int index, T[] array, int arrayIndex, int count)
+	{
+		VerifyRange(index, count);
+		VerifyArrayWithRange(array, arrayIndex, count);
+		if (count > 0)
 		{
-			VerifyRange(index, count);
-			VerifyArrayWithRange(array, arrayIndex, count);
-			if (count > 0)
-			{
-				Root = Root.StoreElements(index, array, arrayIndex, count);
-				OnChanged();
-			}
+			Root = Root.StoreElements(index, array, arrayIndex, count);
+			OnChanged();
 		}
+	}
 
-		/// <summary>
-		/// Creates a new rope and initializes it with a part of this rope.
-		/// Runs in O(lg N) plus a per-node cost as if <c>this.Clone()</c> was called.
-		/// </summary>
-		/// <exception cref="ArgumentOutOfRangeException">offset or length is outside the valid range.</exception>
-		/// <remarks>
-		/// This method counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		public Rope<T> GetRange(int index, int count)
-		{
-			VerifyRange(index, count);
-			var newRope = Clone();
-			var endIndex = index + count;
-			newRope.RemoveRange(endIndex, newRope.Length - endIndex);
-			newRope.RemoveRange(0, index);
-			return newRope;
-		}
+	/// <summary>
+	/// Creates a new rope and initializes it with a part of this rope.
+	/// Runs in O(lg N) plus a per-node cost as if <c>this.Clone()</c> was called.
+	/// </summary>
+	/// <exception cref="ArgumentOutOfRangeException">offset or length is outside the valid range.</exception>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public Rope<T> GetRange(int index, int count)
+	{
+		VerifyRange(index, count);
+		var newRope = Clone();
+		var endIndex = index + count;
+		newRope.RemoveRange(endIndex, newRope.Length - endIndex);
+		newRope.RemoveRange(0, index);
+		return newRope;
+	}
 
-		/*
+	/*
 	#region Equality
 	/// <summary>
 	/// Gets whether the two ropes have the same content.
@@ -329,7 +329,7 @@ public sealed class Rope<T> : IList<T>, ICloneable
 	/// </remarks>
 	public bool Equals(Rope other)
 	{
-		if (other == null)
+		if (other is null)
 			return false;
 		// quick detection for ropes that are clones of each other:
 		if (other.root == this.root)
@@ -349,7 +349,7 @@ public sealed class Rope<T> : IList<T>, ICloneable
 			}
 		}
 	}
-
+	
 	/// <summary>
 	/// Gets whether two ropes have the same content.
 	/// Runs in O(N + M).
@@ -358,7 +358,7 @@ public sealed class Rope<T> : IList<T>, ICloneable
 	{
 		return Equals(obj as Rope);
 	}
-
+	
 	/// <summary>
 	/// Calculates the hash code of the rope's content.
 	/// Runs in O(N).
@@ -382,95 +382,95 @@ public sealed class Rope<T> : IList<T>, ICloneable
 	#endregion
 	 */
 
-		/// <summary>
-		/// Concatenates two ropes. The input ropes are not modified.
-		/// Runs in O(lg N + lg M).
-		/// </summary>
-		/// <remarks>
-		/// This method counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		[SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
-		public static Rope<T> Concat(Rope<T> left, Rope<T> right)
-		{
+	/// <summary>
+	/// Concatenates two ropes. The input ropes are not modified.
+	/// Runs in O(lg N + lg M).
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	[SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
+	public static Rope<T> Concat(Rope<T> left, Rope<T> right)
+	{
 		ArgumentNullException.ThrowIfNull(left);
 		ArgumentNullException.ThrowIfNull(right);
 		left.Root.Publish();
-			right.Root.Publish();
-			return new Rope<T>(RopeNode<T>.Concat(left.Root, right.Root));
-		}
+		right.Root.Publish();
+		return new Rope<T>(RopeNode<T>.Concat(left.Root, right.Root));
+	}
 
-		/// <summary>
-		/// Concatenates multiple ropes. The input ropes are not modified.
-		/// </summary>
-		/// <remarks>
-		/// This method counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		[SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
-		public static Rope<T> Concat(params Rope<T>[] ropes)
-		{
+	/// <summary>
+	/// Concatenates multiple ropes. The input ropes are not modified.
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	[SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
+	public static Rope<T> Concat(params Rope<T>[] ropes)
+	{
 		ArgumentNullException.ThrowIfNull(ropes);
 		var result = new Rope<T>();
-			foreach (var r in ropes)
-				result.AddRange(r);
-			return result;
-		}
+		foreach (var r in ropes)
+			result.AddRange(r);
+		return result;
+	}
 
-		#region Caches / Changed event
-		internal struct RopeCacheEntry
+	#region Caches / Changed event
+	internal readonly struct RopeCacheEntry
+	{
+		internal RopeNode<T> Node { get; }
+		internal int NodeStartIndex { get; }
+
+		internal RopeCacheEntry(RopeNode<T> node, int nodeStartOffset)
 		{
-			internal RopeNode<T> Node { get; }
-			internal int NodeStartIndex { get; }
-
-			internal RopeCacheEntry(RopeNode<T> node, int nodeStartOffset)
-			{
-				Node = node;
-				NodeStartIndex = nodeStartOffset;
-			}
+			Node = node;
+			NodeStartIndex = nodeStartOffset;
+		}
 
 		internal bool IsInside(int offset) => offset >= NodeStartIndex && offset < NodeStartIndex + Node.Length;
 	}
 
-		// cached pointer to 'last used node', used to speed up accesses by index that are close together
-		private volatile ImmutableStack<RopeCacheEntry> _lastUsedNodeStack;
+	// cached pointer to 'last used node', used to speed up accesses by index that are close together
+	private volatile ImmutableStack<RopeCacheEntry> _lastUsedNodeStack;
 
-		internal void OnChanged()
+	internal void OnChanged()
+	{
+		_lastUsedNodeStack = null;
+
+		Root.CheckInvariants();
+	}
+	#endregion
+
+	#region GetChar / SetChar
+	/// <summary>
+	/// Gets/Sets a single character.
+	/// Runs in O(lg N) for random access. Sequential read-only access benefits from a special optimization and runs in amortized O(1).
+	/// </summary>
+	/// <exception cref="ArgumentOutOfRangeException">Offset is outside the valid range (0 to Length-1).</exception>
+	/// <remarks>
+	/// The getter counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public T this[int index]
+	{
+		get
 		{
-			_lastUsedNodeStack = null;
-
-			Root.CheckInvariants();
-		}
-		#endregion
-
-		#region GetChar / SetChar
-		/// <summary>
-		/// Gets/Sets a single character.
-		/// Runs in O(lg N) for random access. Sequential read-only access benefits from a special optimization and runs in amortized O(1).
-		/// </summary>
-		/// <exception cref="ArgumentOutOfRangeException">Offset is outside the valid range (0 to Length-1).</exception>
-		/// <remarks>
-		/// The getter counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		public T this[int index]
-		{
-			get
+			// use unsigned integers - this way negative values for index overflow and can be tested for with the same check
+			if (unchecked((uint)index >= (uint)Length))
 			{
-				// use unsigned integers - this way negative values for index overflow and can be tested for with the same check
-				if (unchecked((uint)index >= (uint)Length))
-				{
-					throw new ArgumentOutOfRangeException(nameof(index), index, "0 <= index < " + Length.ToString(CultureInfo.InvariantCulture));
-				}
-				var entry = FindNodeUsingCache(index).PeekOrDefault();
-				return entry.Node.Contents[index - entry.NodeStartIndex];
+				throw new ArgumentOutOfRangeException(nameof(index), index, "0 <= index < " + Length.ToString(CultureInfo.InvariantCulture));
 			}
-			set
+			var entry = FindNodeUsingCache(index).PeekOrDefault();
+			return entry.Node.Contents[index - entry.NodeStartIndex];
+		}
+		set
+		{
+			if (index < 0 || index >= Length)
 			{
-				if (index < 0 || index >= Length)
-				{
-					throw new ArgumentOutOfRangeException(nameof(index), index, "0 <= index < " + Length.ToString(CultureInfo.InvariantCulture));
-				}
-				Root = Root.SetElement(index, value);
-				OnChanged();
-				/* Here's a try at implementing the setter using the cached node stack (UNTESTED code!).
+				throw new ArgumentOutOfRangeException(nameof(index), index, "0 <= index < " + Length.ToString(CultureInfo.InvariantCulture));
+			}
+			Root = Root.SetElement(index, value);
+			OnChanged();
+			/* Here's a try at implementing the setter using the cached node stack (UNTESTED code!).
 			 * However I don't use the code because it's complicated and doesn't integrate correctly with change notifications.
 			 * Instead, I'll use the much easier to understand recursive solution.
 			 * Oh, and it also doesn't work correctly with function nodes.
@@ -507,120 +507,120 @@ public sealed class Rope<T> : IList<T>, ICloneable
 				root = newNode;
 				ClearCacheOnModification();
 			}*/
-			}
 		}
+	}
 
-		internal ImmutableStack<RopeCacheEntry> FindNodeUsingCache(int index)
+	internal ImmutableStack<RopeCacheEntry> FindNodeUsingCache(int index)
+	{
+		Debug.Assert(index >= 0 && index < Length);
+
+		// thread safety: fetch stack into local variable
+		var stack = _lastUsedNodeStack;
+		var oldStack = stack;
+
+		stack ??= ImmutableStack<RopeCacheEntry>.Empty.Push(new RopeCacheEntry(Root, 0));
+		while (!stack.PeekOrDefault().IsInside(index))
+			stack = stack.Pop();
+		while (true)
 		{
-			Debug.Assert(index >= 0 && index < Length);
-
-			// thread safety: fetch stack into local variable
-			var stack = _lastUsedNodeStack;
-			var oldStack = stack;
-
-			stack ??= ImmutableStack<RopeCacheEntry>.Empty.Push(new RopeCacheEntry(Root, 0));
-			while (!stack.PeekOrDefault().IsInside(index))
-				stack = stack.Pop();
-			while (true)
+			var entry = stack.PeekOrDefault();
+			// check if we've reached a leaf or function node
+			if (entry.Node.Height == 0)
 			{
-				var entry = stack.PeekOrDefault();
-				// check if we've reached a leaf or function node
-				if (entry.Node.Height == 0)
+				if (entry.Node.Contents is null)
 				{
-					if (entry.Node.Contents == null)
-					{
-						// this is a function node - go down into its subtree
-						entry = new RopeCacheEntry(entry.Node.GetContentNode(), entry.NodeStartIndex);
-						// entry is now guaranteed NOT to be another function node
-					}
-					if (entry.Node.Contents != null)
-					{
-						// this is a node containing actual content, so we're done
-						break;
-					}
+					// this is a function node - go down into its subtree
+					entry = new RopeCacheEntry(entry.Node.GetContentNode(), entry.NodeStartIndex);
+					// entry is now guaranteed NOT to be another function node
 				}
-				// go down towards leaves
-				stack = stack.Push(index - entry.NodeStartIndex >= entry.Node.Left.Length
-					? new RopeCacheEntry(entry.Node.Right, entry.NodeStartIndex + entry.Node.Left.Length)
-					: new RopeCacheEntry(entry.Node.Left, entry.NodeStartIndex));
+				if (entry.Node.Contents != null)
+				{
+					// this is a node containing actual content, so we're done
+					break;
+				}
 			}
-
-			// write back stack to volatile cache variable
-			// (in multithreaded access, it doesn't matter which of the threads wins - it's just a cache)
-			if (oldStack != stack)
-			{
-				// no need to write when we the cache variable didn't change
-				_lastUsedNodeStack = stack;
-			}
-
-			// this method guarantees that it finds a leaf node
-			Debug.Assert(stack.Peek().Node.Contents != null);
-			return stack;
-		}
-		#endregion
-
-		#region ToString / WriteTo
-		internal void VerifyRange(int startIndex, int length)
-		{
-			if (startIndex < 0 || startIndex > Length)
-			{
-				throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex, "0 <= startIndex <= " + Length.ToString(CultureInfo.InvariantCulture));
-			}
-			if (length < 0 || startIndex + length > Length)
-			{
-				throw new ArgumentOutOfRangeException(nameof(length), length, "0 <= length, startIndex(" + startIndex + ")+length <= " + Length.ToString(CultureInfo.InvariantCulture));
-			}
+			// go down towards leaves
+			stack = stack.Push(index - entry.NodeStartIndex >= entry.Node.Left.Length
+				? new RopeCacheEntry(entry.Node.Right, entry.NodeStartIndex + entry.Node.Left.Length)
+				: new RopeCacheEntry(entry.Node.Left, entry.NodeStartIndex));
 		}
 
-		internal static void VerifyArrayWithRange(Span<T> array, int arrayIndex, int count)
+		// write back stack to volatile cache variable
+		// (in multithreaded access, it doesn't matter which of the threads wins - it's just a cache)
+		if (oldStack != stack)
 		{
-			if (arrayIndex < 0 || arrayIndex > array.Length)
-			{
-				throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, "0 <= arrayIndex <= " + array.Length.ToString(CultureInfo.InvariantCulture));
-			}
-			if (count < 0 || arrayIndex + count > array.Length)
-			{
-				throw new ArgumentOutOfRangeException(nameof(count), count, "0 <= length, arrayIndex(" + arrayIndex + ")+count <= " + array.Length.ToString(CultureInfo.InvariantCulture));
-			}
+			// no need to write when we the cache variable didn't change
+			_lastUsedNodeStack = stack;
 		}
 
-		/// <summary>
-		/// Creates a string from the rope. Runs in O(N).
-		/// </summary>
-		/// <returns>A string consisting of all elements in the rope as comma-separated list in {}.
-		/// As a special case, Rope&lt;char&gt; will return its contents as string without any additional separators or braces,
-		/// so it can be used like StringBuilder.ToString().</returns>
-		/// <remarks>
-		/// This method counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		public override string ToString()
+		// this method guarantees that it finds a leaf node
+		Debug.Assert(stack.Peek().Node.Contents != null);
+		return stack;
+	}
+	#endregion
+
+	#region ToString / WriteTo
+	internal void VerifyRange(int startIndex, int length)
+	{
+		if (startIndex < 0 || startIndex > Length)
 		{
+			throw new ArgumentOutOfRangeException(nameof(startIndex), startIndex, "0 <= startIndex <= " + Length.ToString(CultureInfo.InvariantCulture));
+		}
+		if (length < 0 || startIndex + length > Length)
+		{
+			throw new ArgumentOutOfRangeException(nameof(length), length, "0 <= length, startIndex(" + startIndex + ")+length <= " + Length.ToString(CultureInfo.InvariantCulture));
+		}
+	}
+
+	internal static void VerifyArrayWithRange(Span<T> array, int arrayIndex, int count)
+	{
+		if (arrayIndex < 0 || arrayIndex > array.Length)
+		{
+			throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, "0 <= arrayIndex <= " + array.Length.ToString(CultureInfo.InvariantCulture));
+		}
+		if (count < 0 || arrayIndex + count > array.Length)
+		{
+			throw new ArgumentOutOfRangeException(nameof(count), count, "0 <= length, arrayIndex(" + arrayIndex + ")+count <= " + array.Length.ToString(CultureInfo.InvariantCulture));
+		}
+	}
+
+	/// <summary>
+	/// Creates a string from the rope. Runs in O(N).
+	/// </summary>
+	/// <returns>A string consisting of all elements in the rope as comma-separated list in {}.
+	/// As a special case, Rope&lt;char&gt; will return its contents as string without any additional separators or braces,
+	/// so it can be used like StringBuilder.ToString().</returns>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public override string ToString()
+	{
 #pragma warning disable IDE0019 // Use pattern matching
-			var charRope = this as Rope<char>;
+		var charRope = this as Rope<char>;
 #pragma warning restore IDE0019 // Use pattern matching
-			if (charRope != null)
-			{
-				return charRope.ToString(0, Length);
-			}
-
-			var b = new StringBuilder();
-			foreach (var element in this)
-			{
-				if (b.Length == 0)
-					b.Append('{');
-				else
-					b.Append(", ");
-				b.Append(element);
-			}
-			b.Append('}');
-			return b.ToString();
+		if (charRope != null)
+		{
+			return charRope.ToString(0, Length);
 		}
+
+		var b = new StringBuilder();
+		foreach (var element in this)
+		{
+			if (b.Length == 0)
+				b.Append('{');
+			else
+				b.Append(", ");
+			b.Append(element);
+		}
+		b.Append('}');
+		return b.ToString();
+	}
 
 	internal string GetTreeAsString() =>
 #if DEBUG
 		Root.GetTreeAsString();
 #else
-		"Not available in release build.";
+		return "Not available in release build.";
 #endif
 
 	#endregion
@@ -648,23 +648,23 @@ public sealed class Rope<T> : IList<T>, ICloneable
 	/// This method counts as a read access and may be called concurrently to other read accesses.
 	/// </remarks>
 	public int IndexOf(T item, int startIndex, int count)
-		{
-			VerifyRange(startIndex, count);
+	{
+		VerifyRange(startIndex, count);
 
-			while (count > 0)
-			{
-				var entry = FindNodeUsingCache(startIndex).PeekOrDefault();
-				var contents = entry.Node.Contents;
-				var startWithinNode = startIndex - entry.NodeStartIndex;
-				var nodeLength = Math.Min(entry.Node.Length, startWithinNode + count);
-				var r = Array.IndexOf(contents, item, startWithinNode, nodeLength - startWithinNode);
-				if (r >= 0)
-					return entry.NodeStartIndex + r;
-				count -= nodeLength - startWithinNode;
-				startIndex = entry.NodeStartIndex + nodeLength;
-			}
-			return -1;
+		while (count > 0)
+		{
+			var entry = FindNodeUsingCache(startIndex).PeekOrDefault();
+			var contents = entry.Node.Contents;
+			var startWithinNode = startIndex - entry.NodeStartIndex;
+			var nodeLength = Math.Min(entry.Node.Length, startWithinNode + count);
+			var r = Array.IndexOf(contents, item, startWithinNode, nodeLength - startWithinNode);
+			if (r >= 0)
+				return entry.NodeStartIndex + r;
+			count -= nodeLength - startWithinNode;
+			startIndex = entry.NodeStartIndex + nodeLength;
 		}
+		return -1;
+	}
 
 	/// <summary>
 	/// Gets the index of the last occurrence of the specified item in this rope.
@@ -681,23 +681,23 @@ public sealed class Rope<T> : IList<T>, ICloneable
 	/// <remarks>The search proceeds backwards from (startIndex+count) to startIndex.
 	/// This is different than the meaning of the parameters on Array.LastIndexOf!</remarks>
 	public int LastIndexOf(T item, int startIndex, int count)
-		{
-			VerifyRange(startIndex, count);
+	{
+		VerifyRange(startIndex, count);
 
-			var comparer = EqualityComparer<T>.Default;
-			for (var i = startIndex + count - 1; i >= startIndex; i--)
-			{
-				if (comparer.Equals(this[i], item))
-					return i;
-			}
-			return -1;
+		var comparer = EqualityComparer<T>.Default;
+		for (var i = startIndex + count - 1; i >= startIndex; i--)
+		{
+			if (comparer.Equals(this[i], item))
+				return i;
 		}
+		return -1;
+	}
 
 	/// <summary>
 	/// Inserts the item at the specified index in the rope.
 	/// Runs in O(lg N).
 	/// </summary>
-	public void Insert(int index, T item) => InsertRange(index, new[] { item }, 0, 1);
+	public void Insert(int index, T item) => InsertRange(index, [item], 0, 1);
 
 	/// <summary>
 	/// Removes a single item from the rope.
@@ -709,7 +709,7 @@ public sealed class Rope<T> : IList<T>, ICloneable
 	/// Appends the item at the end of the rope.
 	/// Runs in O(lg N).
 	/// </summary>
-	public void Add(T item) => InsertRange(Length, new[] { item }, 0, 1);
+	public void Add(T item) => InsertRange(Length, [item], 0, 1);
 
 	/// <summary>
 	/// Searches the item in the rope.
@@ -746,97 +746,97 @@ public sealed class Rope<T> : IList<T>, ICloneable
 	/// This method counts as a read access and may be called concurrently to other read accesses.
 	/// </remarks>
 	public void CopyTo(int index, Span<T> array, int arrayIndex, int count)
-		{
-			VerifyRange(index, count);
-			VerifyArrayWithRange(array, arrayIndex, count);
-			Root.CopyTo(index, array, arrayIndex, count);
-		}
+	{
+		VerifyRange(index, count);
+		VerifyArrayWithRange(array, arrayIndex, count);
+		Root.CopyTo(index, array, arrayIndex, count);
+	}
 
-		/// <summary>
-		/// Removes the first occurance of an item from the rope.
-		/// Runs in O(N).
-		/// </summary>
-		public bool Remove(T item)
+	/// <summary>
+	/// Removes the first occurance of an item from the rope.
+	/// Runs in O(N).
+	/// </summary>
+	public bool Remove(T item)
+	{
+		var index = IndexOf(item);
+		if (index >= 0)
 		{
-			var index = IndexOf(item);
-			if (index >= 0)
+			RemoveAt(index);
+			return true;
+		}
+		return false;
+	}
+
+	/// <summary>
+	/// Retrieves an enumerator to iterate through the rope.
+	/// The enumerator will reflect the state of the rope from the GetEnumerator() call, further modifications
+	/// to the rope will not be visible to the enumerator.
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public IEnumerator<T> GetEnumerator()
+	{
+		Root.Publish();
+		return Enumerate(Root);
+	}
+
+	/// <summary>
+	/// Creates an array and copies the contents of the rope into it.
+	/// Runs in O(N).
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public T[] ToArray()
+	{
+		var arr = new T[Length];
+		Root.CopyTo(0, arr, 0, arr.Length);
+		return arr;
+	}
+
+	/// <summary>
+	/// Creates an array and copies the contents of the rope into it.
+	/// Runs in O(N).
+	/// </summary>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// </remarks>
+	public T[] ToArray(int startIndex, int count)
+	{
+		VerifyRange(startIndex, count);
+		var arr = new T[count];
+		CopyTo(startIndex, arr, 0, count);
+		return arr;
+	}
+
+	private static IEnumerator<T> Enumerate(RopeNode<T> node)
+	{
+		var stack = new Stack<RopeNode<T>>();
+		while (node != null)
+		{
+			// go to leftmost node, pushing the right parts that we'll have to visit later
+			while (node.Contents is null)
 			{
-				RemoveAt(index);
-				return true;
+				if (node.Height == 0)
+				{
+					// go down into function nodes
+					node = node.GetContentNode();
+					continue;
+				}
+				Debug.Assert(node.Right != null);
+				stack.Push(node.Right);
+				node = node.Left;
 			}
-			return false;
-		}
-
-		/// <summary>
-		/// Retrieves an enumerator to iterate through the rope.
-		/// The enumerator will reflect the state of the rope from the GetEnumerator() call, further modifications
-		/// to the rope will not be visible to the enumerator.
-		/// </summary>
-		/// <remarks>
-		/// This method counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		public IEnumerator<T> GetEnumerator()
-		{
-			Root.Publish();
-			return Enumerate(Root);
-		}
-
-		/// <summary>
-		/// Creates an array and copies the contents of the rope into it.
-		/// Runs in O(N).
-		/// </summary>
-		/// <remarks>
-		/// This method counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		public T[] ToArray()
-		{
-			var arr = new T[Length];
-			Root.CopyTo(0, arr, 0, arr.Length);
-			return arr;
-		}
-
-		/// <summary>
-		/// Creates an array and copies the contents of the rope into it.
-		/// Runs in O(N).
-		/// </summary>
-		/// <remarks>
-		/// This method counts as a read access and may be called concurrently to other read accesses.
-		/// </remarks>
-		public T[] ToArray(int startIndex, int count)
-		{
-			VerifyRange(startIndex, count);
-			var arr = new T[count];
-			CopyTo(startIndex, arr, 0, count);
-			return arr;
-		}
-
-		private static IEnumerator<T> Enumerate(RopeNode<T> node)
-		{
-			var stack = new Stack<RopeNode<T>>();
-			while (node != null)
+			// yield contents of leaf node
+			for (var i = 0; i < node.Length; i++)
 			{
-				// go to leftmost node, pushing the right parts that we'll have to visit later
-				while (node.Contents == null)
-				{
-					if (node.Height == 0)
-					{
-						// go down into function nodes
-						node = node.GetContentNode();
-						continue;
-					}
-					Debug.Assert(node.Right != null);
-					stack.Push(node.Right);
-					node = node.Left;
-				}
-				// yield contents of leaf node
-				for (var i = 0; i < node.Length; i++)
-				{
-					yield return node.Contents[i];
-				}
-				// go up to the next node not visited yet
-				node = stack.Count > 0 ? stack.Pop() : null;
+				yield return node.Contents[i];
 			}
+			// go up to the next node not visited yet
+			node = stack.Count > 0 ? stack.Pop() : null;
 		}
+	}
 
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

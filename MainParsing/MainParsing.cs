@@ -42,10 +42,10 @@ public partial class MainParsing : LexemStream
 		{ "IsAndExpr", (nameof(IsUnaryExpr), "Pattern", ["and"]) },
 		{ "BitwiseXorExpr", ("BitwiseOrExpr", "Expr", ["^"]) }, { "BitwiseOrExpr", ("BitwiseAndExpr", "Expr", ["|"]) },
 		{ "BitwiseAndExpr", ("BitwiseShiftExpr", "Expr", ["&"]) },
-		{ "BitwiseShiftExpr", ("PMExpr", "Expr", [">>>", ">>", "<<"]) }, { "PMExpr", ("MulDivExpr", "Expr", ["+", "-"]) },
-		{ "MulDivExpr", ("PowExpr", "Expr", ["*", "/", "%"]) }, { "PowExpr", ("TetraExpr", "Expr", ["pow"]) },
-		{ "TetraExpr", ("RangeExpr", "Expr", []) }, { "RangeExpr", (nameof(UnaryExpr), "Expr", []) },
-		{ "PrefixExpr", ("PostfixExpr", "Expr", []) }
+		{ "BitwiseShiftExpr", ("PMExpr", "Expr", [">>>", "<<<", ">>", "<<"]) },
+		{ "PMExpr", ("MulDivExpr", "Expr", ["+", "-"]) }, { "MulDivExpr", ("PowExpr", "Expr", ["*", "/", "%"]) },
+		{ "PowExpr", ("TetraExpr", "Expr", ["pow"]) }, { "TetraExpr", ("RangeExpr", "Expr", []) },
+		{ "RangeExpr", (nameof(UnaryExpr), "Expr", []) }, { "PrefixExpr", ("PostfixExpr", "Expr", []) }
 	};
 	private static readonly G.Dictionary<String, dynamic> attributesMapping = new()
 	{
@@ -58,8 +58,7 @@ public partial class MainParsing : LexemStream
 	private static readonly ImmutableArray<string> BasicExprKeywordsAndOperators = ["_",
 		"true", "false", "this", "base", "null", "Infty", "Uncty", "Pi", "E", "List"];
 	private static readonly ImmutableArray<string> BasicExprOperators = ["Infty", "-Infty", "Uncty", "Pi", "E"];
-	private static readonly ImmutableArray<string> MultiCharUnaryOperators = ["++", "--", "^",
-		"sin", "cos", "tan", "asin", "acos", "atan"];
+	private static readonly ImmutableArray<string> MultiCharUnaryOperators = ["^", "sin", "cos", "tan", "asin", "acos", "atan"];
 
 	public MainParsing(LexemStream lexemStream, bool wreckOccurred) : base(lexemStream)
 	{
@@ -376,7 +375,7 @@ public partial class MainParsing : LexemStream
 		TransformErrorMessage();
 		if (treeBranch != null && !(treeBranch.Name == "" && treeBranch.Length == 0))
 		{
-			if (_TBStack[_Stackpos] == null)
+			if (_TBStack[_Stackpos] is null)
 				_TBStack[_Stackpos] = new(nameof(Main), treeBranch.Name == nameof(Main)
 					&& !(pos < end && IsCurrentLexemOther("}")) ? treeBranch.Elements : [treeBranch]);
 			else if (_TBStack[_Stackpos]!.Name == nameof(Main)
@@ -405,7 +404,7 @@ public partial class MainParsing : LexemStream
 		_PosStack[_Stackpos] = ++pos;
 		_TaskStack[_Stackpos] = nameof(Main);
 		TransformErrorMessage();
-		if (_TBStack[_Stackpos] == null || _TBStack[_Stackpos]?.Length == 0 && (treeBranch == null
+		if (_TBStack[_Stackpos] is null || _TBStack[_Stackpos]?.Length == 0 && (treeBranch is null
 			|| treeBranch.Length <= 1 && treeBranch[0].Name == nameof(Main)))
 			_TBStack[_Stackpos] = treeBranch;
 		else
@@ -1129,7 +1128,7 @@ public partial class MainParsing : LexemStream
 			if (NStarType.MainType.Equals(RecursiveBlockStack))
 				ValidateTypeName();
 			else if (((PropertyAttributes)l![0] & (PropertyAttributes.Private | PropertyAttributes.Protected)) == 0
-				|| ((PropertyAttributes)l![0] & (PropertyAttributes.Const)) == PropertyAttributes.Const)
+				|| ((PropertyAttributes)l![0] & PropertyAttributes.Const) == PropertyAttributes.Const)
 				ValidateOpenName();
 			else
 				ValidateLocalName(NStarType);
@@ -1294,7 +1293,7 @@ public partial class MainParsing : LexemStream
 				userDefinedType.Restrictions.Add(new(false, NStarType, name));
 				return EndWithEmpty();
 			}
-			containerProperties.Add(name, new(NStarType, attributes, treeBranch == null ? "" : treeBranch.Length == 0
+			containerProperties.Add(name, new(NStarType, attributes, treeBranch is null ? "" : treeBranch.Length == 0
 				&& NStarEntity.TryParse(treeBranch.Name.ToString(), out var value) ? value.ToString(true)
 				: treeBranch.Name == "Expr" && treeBranch.Length == 1 && treeBranch[0].Length == 0
 				&& NStarEntity.TryParse(treeBranch[0].Name.ToString(), out value) ? value.ToString(true) : ""));
@@ -1328,7 +1327,7 @@ public partial class MainParsing : LexemStream
 				UserDefinedConstants.Add(container, containerConstants = []);
 			var attributes = (ConstantAttributes)l[0];
 			var name = (String)l[2];
-			if (treeBranch == null)
+			if (treeBranch is null)
 				containerConstants.Add(name, new(NStarType, attributes, new("null", 0, [])));
 			else if (treeBranch.Length == 0 && NStarEntity.TryParse(treeBranch.Name.ToString(), out var value))
 				containerConstants.Add(name, new(NStarType, attributes, new(value.ToString(true),
@@ -1393,7 +1392,7 @@ public partial class MainParsing : LexemStream
 		else if (IsCurrentLexemKeyword("loop"))
 		{
 			_PosStack[_Stackpos] = ++pos;
-			if (_TBStack[_Stackpos] == null)
+			if (_TBStack[_Stackpos] is null)
 				_TBStack[_Stackpos] = new(nameof(Main), pos - 1, pos, container);
 			_TBStack[_Stackpos]?.Add(new("loop", pos - 1, pos, container));
 			_ErLStack[_Stackpos].AddRange(errors ?? []);
@@ -1422,13 +1421,13 @@ public partial class MainParsing : LexemStream
 			return IncreaseStack("Expr", currentTask: nameof(ActionChain3), pos_: pos, applyPos: true, applyCurrentTask: true,
 				currentExtra: new List<object>());
 		_ErLStack[_Stackpos].AddRange(errors ?? []);
-		if (treeBranch == null || treeBranch.Length == 0 && treeBranch.Name.AsSpan() is not ("while" or "while!"))
+		if (treeBranch is null || treeBranch.Length == 0 && treeBranch.Name.AsSpan() is not ("while" or "while!"))
 			return EndActionChain();
 		if (_TaskStack[_Stackpos - 1] == nameof(Main2))
 		{
-			if (_TBStack[_Stackpos] == null)
+			if (_TBStack[_Stackpos] is null)
 				_TBStack[_Stackpos] = treeBranch;
-			else if (_TBStack[_Stackpos] == null || treeBranch.Name.AsSpan() is nameof(Main)
+			else if (_TBStack[_Stackpos] is null || treeBranch.Name.AsSpan() is nameof(Main)
 				&& (treeBranch.Length == 1 || treeBranch[0].Name.AsSpan() is "else if" or "else if!" or "else"))
 				(_TBStack[_Stackpos] ??= new(nameof(Main), treeBranch.Pos, container))?.AddRange(treeBranch.Elements);
 			else
@@ -1597,7 +1596,7 @@ public partial class MainParsing : LexemStream
 
 	private bool Condition2_WhileRepeat2_For3()
 	{
-		if (!success || treeBranch == null)
+		if (!success || treeBranch is null)
 		{
 			GenerateMessage(0x200E, pos, true);
 			return EndWithEmpty();
@@ -1722,7 +1721,7 @@ public partial class MainParsing : LexemStream
 
 	private bool For2()
 	{
-		if (!success || treeBranch == null || treeBranch.Name != "type" || treeBranch.Extra is not NStarType NStarType)
+		if (!success || treeBranch is null || treeBranch.Name != "type" || treeBranch.Extra is not NStarType NStarType)
 		{
 			NStarType = GetPrimitiveType("var");
 			treeBranch = new("type", pos, pos + 1, container) { Extra = NStarType };
@@ -1856,7 +1855,7 @@ public partial class MainParsing : LexemStream
 
 	private bool Try2()
 	{
-		if (!success || treeBranch == null || treeBranch.Name != nameof(Main))
+		if (!success || treeBranch is null || treeBranch.Name != nameof(Main))
 			return _SuccessStack[_Stackpos] = false;
 		if (!IsCurrentLexemOther("}"))
 		{
@@ -1871,7 +1870,7 @@ public partial class MainParsing : LexemStream
 	private bool Try3()
 	{
 		_ErLStack[_Stackpos].AddRange(errors ?? []);
-		if (!success || treeBranch == null)
+		if (!success || treeBranch is null)
 			return Default();
 		if (treeBranch.Name != nameof(Catch))
 			return _SuccessStack[_Stackpos] = false;
@@ -1881,7 +1880,7 @@ public partial class MainParsing : LexemStream
 
 	private bool Try4()
 	{
-		if (!success || treeBranch == null)
+		if (!success || treeBranch is null)
 			return Default();
 		_TBStack[_Stackpos]?.Add(treeBranch);
 		return Default();
@@ -1916,7 +1915,7 @@ public partial class MainParsing : LexemStream
 
 	private bool Catch2()
 	{
-		if (!success || treeBranch == null)
+		if (!success || treeBranch is null)
 		{
 			treeBranch = new("type", pos, container) { Extra = ExceptionType };
 			if (lexems[pos].Type != LexemType.Identifier)
@@ -1973,7 +1972,7 @@ public partial class MainParsing : LexemStream
 
 	private bool Catch3()
 	{
-		if (!success || treeBranch == null)
+		if (!success || treeBranch is null)
 			return _SuccessStack[_Stackpos] = false;
 		_ErLStack[_Stackpos].AddRange(errors ?? []);
 		_TBStack[_Stackpos]?.Add(treeBranch);
@@ -1996,7 +1995,7 @@ public partial class MainParsing : LexemStream
 
 	private bool Catch4()
 	{
-		if (!success || treeBranch == null || treeBranch.Name != nameof(Main))
+		if (!success || treeBranch is null || treeBranch.Name != nameof(Main))
 			return _SuccessStack[_Stackpos] = false;
 		if (!IsCurrentLexemOther("}"))
 		{
@@ -2139,7 +2138,7 @@ public partial class MainParsing : LexemStream
 
 	private bool Switch2()
 	{
-		if (!success || _TBStack[_Stackpos] == null || treeBranch == null)
+		if (!success || _TBStack[_Stackpos] is null || treeBranch is null)
 		{
 			GenerateMessage(0x2033, pos, false);
 			return SwitchFail();
@@ -2165,7 +2164,7 @@ public partial class MainParsing : LexemStream
 
 	private bool Switch3_4()
 	{
-		if (!success || _TBStack[_Stackpos] == null || _TBStack[_Stackpos]!.Length == 0 || treeBranch == null)
+		if (!success || _TBStack[_Stackpos] is null || _TBStack[_Stackpos]!.Length == 0 || treeBranch is null)
 		{
 			GenerateMessage(0x200E, pos, false);
 			return SwitchFail();
@@ -2220,7 +2219,7 @@ public partial class MainParsing : LexemStream
 
 	private bool Switch5()
 	{
-		if (!success || _TBStack[_Stackpos] == null || _TBStack[_Stackpos]!.Length == 0 || treeBranch == null)
+		if (!success || _TBStack[_Stackpos] is null || _TBStack[_Stackpos]!.Length == 0 || treeBranch is null)
 		{
 			GenerateMessage(0x200E, pos, false);
 			return SwitchFail();
@@ -2255,7 +2254,7 @@ public partial class MainParsing : LexemStream
 				CloseTempTypes();
 			return EndWithAddingOrAssigning(true, 0);
 		}
-		if (treeBranch == null || treeBranch.Name != "Declaration" && treeBranch.Name != nameof(Hypername))
+		if (treeBranch is null || treeBranch.Name != "Declaration" && treeBranch.Name != nameof(Hypername))
 		{
 			GenerateMessage(0x201D, pos, false);
 			_TBStack[_Stackpos]?.Insert(0, new TreeBranch("null", pos, pos + 1, container));
@@ -2335,7 +2334,7 @@ public partial class MainParsing : LexemStream
 
 	private void CloseTempTypes()
 	{
-		if (treeBranch == null)
+		if (treeBranch is null)
 			return;
 		if (TempTypes.TryGetValue(container, out var containerTempTypes)
 			&& Variables.TryGetValue(container, out var containerVariables))
@@ -2362,7 +2361,7 @@ public partial class MainParsing : LexemStream
 
 	private bool DictionaryExpr2()
 	{
-		if (!success || treeBranch == null)
+		if (!success || treeBranch is null)
 			return _SuccessStack[_Stackpos] = false;
 		if (treeBranch.Name == "Expr" && treeBranch.Length == 3 && treeBranch[2].Name == ":")
 		{
@@ -2405,7 +2404,7 @@ public partial class MainParsing : LexemStream
 
 	private bool DictionaryExpr3()
 	{
-		if (!success || treeBranch == null)
+		if (!success || treeBranch is null)
 			return _SuccessStack[_Stackpos] = false;
 		if (pos < end && IsCurrentLexemOther(")"))
 		{
@@ -2662,8 +2661,7 @@ public partial class MainParsing : LexemStream
 			return _SuccessStack[_Stackpos] = false;
 		if (pos >= end || !IsCurrentLexemOperator(".."))
 			return EndWithAddingOrAssigning(true, Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1));
-		if (treeBranch == null)
-			treeBranch = new TreeBranch("1", pos, container);
+		treeBranch ??= new TreeBranch("1", pos, container);
 		_TBStack[_Stackpos]?.Insert(Max(0, (_TBStack[_Stackpos]?.Length ?? 0) - 1), treeBranch);
 		_TBStack[_Stackpos]?.Add(new(lexems[pos].String, pos, pos + 1, container));
 		pos++;
@@ -2675,7 +2673,7 @@ public partial class MainParsing : LexemStream
 	{
 		if (!success)
 			return _SuccessStack[_Stackpos] = false;
-		if (treeBranch == null)
+		if (treeBranch is null)
 		{
 			treeBranch = new(nameof(Index), [new("1", pos, container), new("^", pos, container)]);
 			errors = null;
@@ -2718,6 +2716,8 @@ public partial class MainParsing : LexemStream
 				_TBStack[_Stackpos]?.Name = "Index";
 			isPrefix = true;
 		}
+		else if (IsLexemOperator(pos, ["++", "--"]))
+			GenerateMessage(0x2039, pos++, true);
 		return IncreaseStack("PrefixExpr", currentTask: isPrefix ? nameof(UnaryExpr3) : "UnaryExpr4",
 			pos_: pos, applyPos: true, applyCurrentTask: true);
 	}
@@ -3781,7 +3781,7 @@ public partial class MainParsing : LexemStream
 				return null;
 			GenerateMessage(0x200A, pos, false);
 			typeDepth++;
-			CloseBracket(ref pos, ")", ref errors!, false, end);
+			CloseBracket(ref pos, ")", ref errors, false, end);
 			collectionTypes.Add("list");
 			return IncreaseStack(nameof(Type), currentTask: nameof(TypeListFail), pos_: pos,
 				applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
@@ -3834,7 +3834,7 @@ public partial class MainParsing : LexemStream
 
 	private bool TypeList()
 	{
-		if (!success || treeBranch == null)
+		if (!success || treeBranch is null)
 		{
 			GenerateMessage(0x200E, pos, false);
 			return _SuccessStack[_Stackpos] = false;
@@ -3843,7 +3843,7 @@ public partial class MainParsing : LexemStream
 			|| treeBranch.Name == "Declaration" && treeBranch.Length == 2 && treeBranch[0].Name == "type"
 			&& treeBranch[0].Extra is NStarType RecursiveNStarType && RecursiveNStarType.MainType.Equals(RecursiveBlockStack)
 			&& RecursiveNStarType.ExtraTypes.Length == 1 ? treeBranch[0] : treeBranch;
-		if (!(treeBranch.Extra == null || targetBranch.Extra is NStarType NStarType
+		if (!(treeBranch.Extra is null || targetBranch.Extra is NStarType NStarType
 			&& TypesAreCompatible(NStarType, IntType, out var warning, [], out _, out _) && !warning))
 		{
 			NStarType = NullType;
@@ -3879,7 +3879,7 @@ public partial class MainParsing : LexemStream
 		}
 		typeDepth++;
 		collectionTypes.Add("list");
-		CloseBracket(ref pos, ")", ref errors!, false, end);
+		CloseBracket(ref pos, ")", ref errors, false, end);
 		return IncreaseStack(nameof(Type), currentTask: nameof(TypeListFail), pos_: pos,
 			applyPos: true, applyCurrentTask: true, applyCurrentErl: true);
 	}
@@ -4063,7 +4063,7 @@ public partial class MainParsing : LexemStream
 		{
 			TransformErrorMessage();
 			ReduceStack();
-			if (treeBranch == null)
+			if (treeBranch is null)
 				return _SuccessStack[_Stackpos] = false;
 			if (treeBranch.Name != "List")
 				treeBranch.Extra = RecursiveType;
@@ -4215,7 +4215,7 @@ public partial class MainParsing : LexemStream
 			_ExtraStack[_Stackpos - 1] = NullType;
 			_TBStack[_Stackpos] = new("type", pos, container) { Extra = NullType };
 			GenerateMessage(0x2017, pos, false);
-			CloseBracket(ref pos, "]", ref errors!, false, end);
+			CloseBracket(ref pos, "]", ref errors, false, end);
 			return Default();
 		}
 		else
@@ -4228,10 +4228,10 @@ public partial class MainParsing : LexemStream
 
 	private bool TypeInt2()
 	{
-		if (!success || treeBranch == null || _ExtraStack[_Stackpos - 1] is not NStarType OuterNStarType)
+		if (!success || treeBranch is null || _ExtraStack[_Stackpos - 1] is not NStarType OuterNStarType)
 			return _SuccessStack[_Stackpos] = false;
 		var targetBranch = treeBranch.Name == "Expr" && treeBranch.Length == 1 ? treeBranch[0] : treeBranch;
-		if (!(treeBranch.Extra == null || targetBranch.Extra is NStarType NStarType
+		if (!(treeBranch.Extra is null || targetBranch.Extra is NStarType NStarType
 			&& TypesAreCompatible(NStarType, IntType, out var warning, [], out _, out _) && !warning))
 		{
 			NStarType = NullType;
@@ -4248,7 +4248,7 @@ public partial class MainParsing : LexemStream
 				&& containerConstants.ContainsKey(x[0].Name), out _))
 				continue;
 			NStarType TargetNStarType;
-			UserDefinedType userDefinedType = default!;
+			UserDefinedType userDefinedType = default;
 			if (PrimitiveTypes.ContainsKey(x[0].Name))
 				TargetNStarType = new NStarType(new(new Block(BlockType.Primitive, x[0].Name, 1)), NoBranches);
 			else if (CheckContainer(container, stack => TempTypes.TryGetValue(stack, out var containerTempTypes)
@@ -4365,7 +4365,7 @@ public partial class MainParsing : LexemStream
 		else if (lexems[pos].Type == LexemType.Int)
 		{
 			pos++;
-			_TBStack[_Stackpos] = new(s[^1] == 'i' ? s : s.Add('i'), pos - 1, pos, container)
+			_TBStack[_Stackpos] = new(s[^1] == 'n' ? s : s.Add('n'), pos - 1, pos, container)
 			{
 				Extra = byte.TryParse(CreateVar(s[..^1].ToString(), out var systemString), out _) ? ByteType
 				: short.TryParse(systemString, out _) ? ShortIntType
@@ -4409,10 +4409,16 @@ public partial class MainParsing : LexemStream
 			_TBStack[_Stackpos] = new(s[^1] == 'r' ? s : s.Add('r'), pos - 1, pos, container) { Extra = RealType };
 			return Default();
 		}
+		else if (lexems[pos].Type == LexemType.Decimal)
+		{
+			pos++;
+			_TBStack[_Stackpos] = new(s[^1] == 'm' ? s : s.Add('m'), pos - 1, pos, container) { Extra = RealType };
+			return Default();
+		}
 		else if (lexems[pos].Type == LexemType.Complex)
 		{
 			pos++;
-			_TBStack[_Stackpos] = new(s[^1] is 'c' or 'I' ? s : s.Add('c'), pos - 1, pos, container) { Extra = ComplexType };
+			_TBStack[_Stackpos] = new(s[^1] is 'c' or 'i' ? s : s.Add('c'), pos - 1, pos, container) { Extra = ComplexType };
 			return Default();
 		}
 		else if (lexems[pos].Type == LexemType.String)
@@ -4518,13 +4524,13 @@ public partial class MainParsing : LexemStream
 		while (pos < end && lexems[pos].Type == LexemType.Other && (lexems[pos].String == ";" || lexems[pos].String == "\r\n"))
 		{
 			pos++;
-			if (lexems[pos - 1].String != ";" || _TBStack[_Stackpos] == null || !(_TBStack[_Stackpos]?.Length >= 1))
+			if (lexems[pos - 1].String != ";" || _TBStack[_Stackpos] is null || !(_TBStack[_Stackpos]?.Length >= 1))
 				continue;
 			if (new List<String>
 			{
 				"if", "if!", "else", "else if", "else if!", "while", "while!", "repeat", "for", "loop", "loop-while",
 				"loop-while!"
-			}.Contains(_TBStack[_Stackpos]?[^1].Name ?? "") && treeBranch == null)
+			}.Contains(_TBStack[_Stackpos]?[^1].Name ?? "") && treeBranch is null)
 				AppendBranch(nameof(Main), new(nameof(Main), pos - 1, pos, container));
 		}
 	}
@@ -4575,7 +4581,7 @@ public partial class MainParsing : LexemStream
 	{
 		if (addError)
 			_ErLStack[_Stackpos].AddRange(errors ?? []);
-		if (_TBStack[_Stackpos] == null || _TBStack[_Stackpos]?.Length == 0
+		if (_TBStack[_Stackpos] is null || _TBStack[_Stackpos]?.Length == 0
 			&& !(task == nameof(Expr2) && _TaskStack[_Stackpos - 1].AsSpan() is not (nameof(BasicExpr2) or nameof(TypeInt2))
 			&& treeBranch != null && treeBranch.Name.AsSpan() is not ("Expr" or "Assignment" or "DeclarationAssignment")))
 			_TBStack[_Stackpos] = treeBranch;
@@ -4598,7 +4604,7 @@ public partial class MainParsing : LexemStream
 
 	private void AppendBranch(String newInfo, TreeBranch newBranch)
 	{
-		if (_TBStack[_Stackpos] == null)
+		if (_TBStack[_Stackpos] is null)
 			_TBStack[_Stackpos] = new(newInfo, newBranch, container);
 		else
 		{
@@ -4670,7 +4676,7 @@ public partial class MainParsing : LexemStream
 		var bNumberContext = NStarType.MainType.Length == 1
 			&& NStarType.MainType.TryPeek(out block) && block.Name.AsSpan() is "byte" or "short int" or "unsigned short int"
 			or "int" or "unsigned int" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex"
+			or "real" or "decimal" or "long real" or "complex" or "long complex"
 			&& NStarType.ExtraTypes.Length == 0;
 		var bStringContext = TypeEqualsToPrimitive(NStarType, "string");
 		if (lexems[pos].String.Length == 1

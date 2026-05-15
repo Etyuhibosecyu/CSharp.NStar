@@ -65,6 +65,9 @@ public sealed class RopeTextSource : ITextSource
 	public string GetText(int offset, int length) => _rope.ToString(offset, length);
 
 	/// <inheritdoc/>
+	public ReadOnlyMemory<char> GetTextAsMemory(int offset, int length) => _rope.GetMemory(offset, length);
+
+	/// <inheritdoc/>
 	public string GetText(ISegment segment) => _rope.ToString(segment.Offset, segment.Length);
 
 	/// <inheritdoc/>

@@ -25,162 +25,162 @@ using Avalonia.Input;
 
 namespace AvaloniaEdit.CodeCompletion;
 
+/// <summary>
+/// The code completion window.
+/// </summary>
+public class CompletionWindow : CompletionWindowBase
+{
+	private PopupWithCustomPosition _toolTip;
+	private CompletionTipContentControl _toolTipContent;
+
 	/// <summary>
-	/// The code completion window.
+	/// Gets the completion list used in this completion window.
 	/// </summary>
-	public class CompletionWindow : CompletionWindowBase
+	public CompletionList CompletionList { get; }
+
+	/// <summary>
+	/// Creates a new code completion window.
+	/// </summary>
+	public CompletionWindow(TextArea textArea) : base(textArea)
 	{
-		private PopupWithCustomPosition _toolTip;
-		private CompletionTipContentControl _toolTipContent;
-
-		/// <summary>
-		/// Gets the completion list used in this completion window.
-		/// </summary>
-		public CompletionList CompletionList { get; }
-
-		/// <summary>
-		/// Creates a new code completion window.
-		/// </summary>
-		public CompletionWindow(TextArea textArea) : base(textArea)
+		CompletionList = new CompletionList
 		{
-			CompletionList = new CompletionList
-			{
-				CompletionAcceptAction = textArea.Options.CompletionAcceptAction
-			};
+			CompletionAcceptAction = textArea.Options.CompletionAcceptAction
+		};
 
-			// keep height automatic
-			CloseAutomatically = true;
-			MaxHeight = 225;
-			MaxWidth = 550;
-			Child = CompletionList;
-			// prevent user from resizing window to 0x0
-			MinHeight = 15;
-			MinWidth = 175;
+		// keep height automatic
+		CloseAutomatically = true;
+		MaxHeight = 225;
+		MaxWidth = 550;
+		Child = CompletionList;
+		// prevent user from resizing window to 0x0
+		MinHeight = 15;
+		MinWidth = 175;
 
-			_toolTipContent = new CompletionTipContentControl();
+		_toolTipContent = new CompletionTipContentControl();
 
-			_toolTip = new PopupWithCustomPosition
-			{
-				// The popup should not interfere with the pointer input. Popup visibility is
-				// controlled explicitly.
-				IsLightDismissEnabled = false,
+		_toolTip = new PopupWithCustomPosition
+		{
+			// The popup should not interfere with the pointer input. Popup visibility is
+			// controlled explicitly.
+			IsLightDismissEnabled = false,
 
-				PlacementTarget = this,
-				Child = _toolTipContent,
-			};
+			PlacementTarget = this,
+			Child = _toolTipContent,
+		};
 
-			LogicalChildren.Add(_toolTip);
+		LogicalChildren.Add(_toolTip);
 
-			//_toolTip.Closed += (o, e) => ((Popup)o).Child = null;
+		//_toolTip.Closed += (o, e) => ((Popup)o).Child = null;
 
-			AttachEvents();
+		AttachEvents();
+	}
+
+	protected override void OnClosed()
+	{
+		base.OnClosed();
+
+		if (_toolTip != null)
+		{
+			_toolTip.IsOpen = false;
+			_toolTip = null;
+			_toolTipContent = null;
 		}
+	}
 
-		protected override void OnClosed()
+	#region ToolTip handling
+
+	private void CompletionList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+	{
+		if (_toolTipContent is null) return;
+
+		var item = CompletionList.SelectedItem;
+		var description = item?.Description;
+		
+
+		if (description != null && TopLevel.GetTopLevel(CompletionList) is Control placementTarget && CompletionList.CurrentList != null)
 		{
-			base.OnClosed();
+			_toolTipContent.Content = description;
 
-			if (_toolTip != null)
+			double yOffset = 0;
+			var selectedIndex = CompletionList.ListBox.SelectedIndex;
+				
+			var itemContainer = CompletionList.ListBox.ContainerFromIndex(selectedIndex);
+				
+			if (itemContainer != null)
 			{
-				_toolTip.IsOpen = false;
-				_toolTip = null;
-				_toolTipContent = null;
+				_toolTip.Placement = PlacementMode.RightEdgeAlignedTop;
+				var position = itemContainer.TranslatePoint(new Point(0, 0), placementTarget);
+				if (position.HasValue) yOffset = position.Value.Y;
 			}
-		}
-
-		#region ToolTip handling
-
-		private void CompletionList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-		{
-			if (_toolTipContent == null) return;
-
-			var item = CompletionList.SelectedItem;
-			var description = item?.Description;
-
-
-			if (description != null && Host is Control placementTarget && CompletionList.CurrentList != null)
+			else 
 			{
-				_toolTipContent.Content = description;
-
-				double yOffset = 0;
-				var selectedIndex = CompletionList.ListBox.SelectedIndex;
-
-				var itemContainer = CompletionList.ListBox.ContainerFromIndex(selectedIndex);
-
-				if (itemContainer != null)
+				//When scrolling down the container is not always ready
+				//If that happens we align the tooltip at the bottom or top
+				if (CompletionList.ListBox.FirstVisibleItem < selectedIndex)
+				{
+					_toolTip.Placement = PlacementMode.RightEdgeAlignedBottom;
+				}
+				else
 				{
 					_toolTip.Placement = PlacementMode.RightEdgeAlignedTop;
-					var position = itemContainer.TranslatePoint(new Point(0, 0), placementTarget);
-					if (position.HasValue) yOffset = position.Value.Y;
 				}
-				else 
-				{
-					//When scrolling down the container is not always ready
-					//If that happens we align the tooltip at the bottom or top
-					if (CompletionList.ListBox.FirstVisibleItem < selectedIndex)
-					{
-						_toolTip.Placement = PlacementMode.RightEdgeAlignedBottom;
-					}
-					else
-					{
-						_toolTip.Placement = PlacementMode.RightEdgeAlignedTop;
-					}
-				}
-				   
-				_toolTip.Offset = new Point(2, yOffset);
-				_toolTip.PlacementTarget = placementTarget;
-				_toolTip.IsOpen = true;
 			}
-			else
-			{
-				_toolTip.IsOpen = false;
-			}
+			   
+			_toolTip.Offset = new Point(2, yOffset);
+			_toolTip.PlacementTarget = placementTarget;
+			_toolTip.IsOpen = true;
 		}
-
-		#endregion
-
-		private void CompletionList_InsertionRequested(object sender, EventArgs e)
+		else
 		{
-			Hide();
-			// The window must close before Complete() is called.
-			// If the Complete callback pushes stacked input handlers, we don't want to pop those when the CC window closes.
-			var item = CompletionList.SelectedItem;
-			item?.Complete(TextArea, new AnchorSegment(TextArea.Document, StartOffset, EndOffset - StartOffset), e);
+			_toolTip.IsOpen = false;
 		}
+	}
+
+	#endregion
+
+	private void CompletionList_InsertionRequested(object sender, EventArgs e)
+	{
+		Hide();
+		// The window must close before Complete() is called.
+		// If the Complete callback pushes stacked input handlers, we don't want to pop those when the CC window closes.
+		var item = CompletionList.SelectedItem;
+		item?.Complete(TextArea, new AnchorSegment(TextArea.Document, StartOffset, EndOffset - StartOffset), e);
+	}
 
 	private void CompletionList_SizeChanged(object sender, SizeChangedEventArgs e) => MinWidth = Math.Max(MinWidth, CompletionList.Bounds.Width);
 
 	private void AttachEvents()
-		{
-			CompletionList.InsertionRequested += CompletionList_InsertionRequested;
-			CompletionList.SelectionChanged += CompletionList_SelectionChanged;
-			CompletionList.SizeChanged += CompletionList_SizeChanged;
-			TextArea.Caret.PositionChanged += CaretPositionChanged;
-			TextArea.PointerWheelChanged += TextArea_MouseWheel;
-			TextArea.TextInput += TextArea_PreviewTextInput;
-		}
+	{
+		CompletionList.InsertionRequested += CompletionList_InsertionRequested;
+		CompletionList.SelectionChanged += CompletionList_SelectionChanged;
+		CompletionList.SizeChanged += CompletionList_SizeChanged;
+		TextArea.Caret.PositionChanged += CaretPositionChanged;
+		TextArea.PointerWheelChanged += TextArea_MouseWheel;
+		TextArea.TextInput += TextArea_PreviewTextInput;
+	}
 
-		/// <inheritdoc/>
-		protected override void DetachEvents()
-		{
-			CompletionList.InsertionRequested -= CompletionList_InsertionRequested;
-			CompletionList.SelectionChanged -= CompletionList_SelectionChanged;
-			CompletionList.SizeChanged -= CompletionList_SizeChanged;
-			TextArea.Caret.PositionChanged -= CaretPositionChanged;
-			TextArea.PointerWheelChanged -= TextArea_MouseWheel;
-			TextArea.TextInput -= TextArea_PreviewTextInput;
-			base.DetachEvents();
-		}
+	/// <inheritdoc/>
+	protected override void DetachEvents()
+	{
+		CompletionList.InsertionRequested -= CompletionList_InsertionRequested;
+		CompletionList.SelectionChanged -= CompletionList_SelectionChanged;
+		CompletionList.SizeChanged -= CompletionList_SizeChanged;
+		TextArea.Caret.PositionChanged -= CaretPositionChanged;
+		TextArea.PointerWheelChanged -= TextArea_MouseWheel;
+		TextArea.TextInput -= TextArea_PreviewTextInput;
+		base.DetachEvents();
+	}
 
-		/// <inheritdoc/>
-		protected override void OnKeyDown(KeyEventArgs e)
+	/// <inheritdoc/>
+	protected override void OnKeyDown(KeyEventArgs e)
+	{
+		base.OnKeyDown(e);
+		if (!e.Handled)
 		{
-			base.OnKeyDown(e);
-			if (!e.Handled)
-			{
-				CompletionList.HandleKey(e);
-			}
+			CompletionList.HandleKey(e);
 		}
+	}
 
 	private void TextArea_PreviewTextInput(object sender, TextInputEventArgs e) => e.Handled = RaiseEventPair(this, null, TextInputEvent,
 								   new TextInputEventArgs { Text = e.Text });
@@ -189,64 +189,72 @@ namespace AvaloniaEdit.CodeCompletion;
 								   null, PointerWheelChangedEvent, e);
 
 	private Control GetScrollEventTarget()
+	{
+		if (CompletionList is null)
+			return this;
+		return CompletionList.ScrollViewer ?? CompletionList.ListBox ?? (Control)CompletionList;
+	}
+
+	/// <summary>
+	/// Gets/Sets whether the completion window should close automatically.
+	/// The default value is true.
+	/// </summary>
+	public bool CloseAutomatically { get; set; }
+
+	/// <inheritdoc/>
+	protected override bool CloseOnFocusLost => CloseAutomatically;
+
+	/// <summary>
+	/// When this flag is set, code completion closes if the caret moves to the
+	/// beginning of the allowed range. This is useful in Ctrl+Space and "complete when typing",
+	/// but not in dot-completion.
+	/// Has no effect if CloseAutomatically is false.
+	/// </summary>
+	public bool CloseWhenCaretAtBeginning { get; set; }
+
+	private void CaretPositionChanged(object sender, EventArgs e)
+	{
+	   var offset = TextArea.Caret.Offset;
+		if (offset == StartOffset)
 		{
-			if (CompletionList == null)
-				return this;
-			return CompletionList.ScrollViewer ?? CompletionList.ListBox ?? (Control)CompletionList;
-		}
-
-		/// <summary>
-		/// Gets/Sets whether the completion window should close automatically.
-		/// The default value is true.
-		/// </summary>
-		public bool CloseAutomatically { get; set; }
-
-		/// <inheritdoc/>
-		protected override bool CloseOnFocusLost => CloseAutomatically;
-
-		/// <summary>
-		/// When this flag is set, code completion closes if the caret moves to the
-		/// beginning of the allowed range. This is useful in Ctrl+Space and "complete when typing",
-		/// but not in dot-completion.
-		/// Has no effect if CloseAutomatically is false.
-		/// </summary>
-		public bool CloseWhenCaretAtBeginning { get; set; }
-
-		private void CaretPositionChanged(object sender, EventArgs e)
-		{
-			var offset = TextArea.Caret.Offset;
-			if (offset == StartOffset)
+			if (CloseAutomatically && CloseWhenCaretAtBeginning)
 			{
-				if (CloseAutomatically && CloseWhenCaretAtBeginning)
-				{
-					Hide();
-				}
-				else
-				{
-					CompletionList.SelectItem(string.Empty);
-
-					if (CompletionList.ListBox.ItemCount == 0) CompletionList.IsVisible = false;
-					else CompletionList.IsVisible = true;
-				}
-				return;
-			}
-			if (offset < StartOffset || offset > EndOffset)
-			{
-				if (CloseAutomatically)
-				{
-					Hide();
-				}
+				Hide();
 			}
 			else
 			{
-				var document = TextArea.Document;
-				if (document != null)
-				{
-					CompletionList.SelectItem(document.GetText(StartOffset, offset - StartOffset));
+				CompletionList.SelectItem(string.Empty);
 
-					if (CompletionList.ListBox.ItemCount == 0) CompletionList.IsVisible = false;
-					else CompletionList.IsVisible = true;
+				if (CompletionList.ListBox.ItemCount == 0)
+				{
+					if (CloseAutomatically) { Hide(); return; }
+					CompletionList.IsVisible = false;
 				}
+				else CompletionList.IsVisible = true;
+			}
+			return;
+		}
+		if (offset < StartOffset || offset > EndOffset)
+		{
+			if (CloseAutomatically)
+			{
+				Hide();
+			}
+		}
+		else
+		{
+			var document = TextArea.Document;
+			if (document != null)
+			{
+				CompletionList.SelectItem(document.GetText(StartOffset, offset - StartOffset));
+
+				if (CompletionList.ListBox.ItemCount == 0)
+				{
+					if (CloseAutomatically) { Hide(); return; }
+					CompletionList.IsVisible = false;
+				}
+				else CompletionList.IsVisible = true;
 			}
 		}
 	}
+}

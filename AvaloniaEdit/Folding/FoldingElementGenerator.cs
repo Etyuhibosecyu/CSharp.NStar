@@ -24,128 +24,127 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.Media.TextFormatting;
-using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Folding;
 
-	/// <summary>
-	/// A <see cref="VisualLineElementGenerator"/> that produces line elements for folded <see cref="FoldingSection"/>s.
-	/// </summary>
-	public sealed class FoldingElementGenerator : VisualLineElementGenerator, ITextViewConnect
-	{
-		private readonly List<TextView> _textViews = [];
+/// <summary>
+/// A <see cref="VisualLineElementGenerator"/> that produces line elements for folded <see cref="FoldingSection"/>s.
+/// </summary>
+public sealed class FoldingElementGenerator : VisualLineElementGenerator, ITextViewConnect
+{
+	private readonly List<TextView> _textViews = [];
 
 	#region FoldingManager property / connecting with TextView
 	/// <summary>
 	/// Gets/Sets the folding manager from which the foldings should be shown.
 	/// </summary>
 	public FoldingManager FoldingManager
-		{
-			get;
+	{
+		get;
 		set
+		{
+			if (field != value)
 			{
-				if (field != value)
+				if (field != null)
 				{
-					if (field != null)
-					{
-						foreach (var v in _textViews)
-							field.RemoveFromTextView(v);
-					}
-					field = value;
-					if (field != null)
-					{
-						foreach (var v in _textViews)
-							field.AddToTextView(v);
-					}
+					foreach (var v in _textViews)
+						field.RemoveFromTextView(v);
+				}
+				field = value;
+				if (field != null)
+				{
+					foreach (var v in _textViews)
+						field.AddToTextView(v);
 				}
 			}
 		}
+	}
 
-		void ITextViewConnect.AddToTextView(TextView textView)
+	void ITextViewConnect.AddToTextView(TextView textView)
+	{
+		_textViews.Add(textView);
+		FoldingManager?.AddToTextView(textView);
+	}
+
+	void ITextViewConnect.RemoveFromTextView(TextView textView)
+	{
+		_textViews.Remove(textView);
+		FoldingManager?.RemoveFromTextView(textView);
+	}
+	#endregion
+
+	/// <inheritdoc/>
+	public override void StartGeneration(ITextRunConstructionContext context)
+	{
+		base.StartGeneration(context);
+		if (FoldingManager != null)
 		{
-			_textViews.Add(textView);
-			FoldingManager?.AddToTextView(textView);
+			if (!FoldingManager.TextViews.Contains(context.TextView))
+				throw new ArgumentException("Invalid TextView");
+			if (context.Document != FoldingManager.Document)
+				throw new ArgumentException("Invalid document");
 		}
+	}
 
-		void ITextViewConnect.RemoveFromTextView(TextView textView)
+	/// <inheritdoc/>
+	public override int GetFirstInterestedOffset(int startOffset)
+	{
+		if (FoldingManager != null)
 		{
-			_textViews.Remove(textView);
-			FoldingManager?.RemoveFromTextView(textView);
-		}
-		#endregion
-
-		/// <inheritdoc/>
-		public override void StartGeneration(ITextRunConstructionContext context)
-		{
-			base.StartGeneration(context);
-			if (FoldingManager != null)
+			foreach (var fs in FoldingManager.GetFoldingsContaining(startOffset))
 			{
-				if (!FoldingManager.TextViews.Contains(context.TextView))
-					throw new ArgumentException("Invalid TextView");
-				if (context.Document != FoldingManager.Document)
-					throw new ArgumentException("Invalid document");
-			}
-		}
-
-		/// <inheritdoc/>
-		public override int GetFirstInterestedOffset(int startOffset)
-		{
-			if (FoldingManager != null)
-			{
-				foreach (var fs in FoldingManager.GetFoldingsContaining(startOffset))
+				// Test whether we're currently within a folded folding (that didn't just end).
+				// If so, create the fold marker immediately.
+				// This is necessary if the actual beginning of the fold marker got skipped due to another VisualElementGenerator.
+				if (fs.IsFolded && fs.EndOffset > startOffset)
 				{
-					// Test whether we're currently within a folded folding (that didn't just end).
-					// If so, create the fold marker immediately.
-					// This is necessary if the actual beginning of the fold marker got skipped due to another VisualElementGenerator.
-					if (fs.IsFolded && fs.EndOffset > startOffset)
-					{
-						//return startOffset;
-					}
+					//return startOffset;
 				}
-				return FoldingManager.GetNextFoldedFoldingStart(startOffset);
 			}
-			else
+			return FoldingManager.GetNextFoldedFoldingStart(startOffset);
+		}
+		else
+		{
+			return -1;
+		}
+	}
+
+	/// <inheritdoc/>
+	public override VisualLineElement ConstructElement(int offset)
+	{
+		if (FoldingManager is null)
+			return null;
+		var foldedUntil = -1;
+		FoldingSection foldingSection = null;
+		foreach (var fs in FoldingManager.GetFoldingsContaining(offset))
+		{
+			if (fs.IsFolded)
 			{
-				return -1;
+				if (fs.EndOffset > foldedUntil)
+				{
+					foldedUntil = fs.EndOffset;
+					foldingSection = fs;
+				}
 			}
 		}
-
-		/// <inheritdoc/>
-		public override VisualLineElement ConstructElement(int offset)
+		if (foldedUntil > offset && foldingSection != null)
 		{
-			if (FoldingManager == null)
-				return null;
-			var foldedUntil = -1;
-			FoldingSection foldingSection = null;
-			foreach (var fs in FoldingManager.GetFoldingsContaining(offset))
+			// Handle overlapping foldings: if there's another folded folding
+			// (starting within the foldingSection) that continues after the end of the folded section,
+			// then we'll extend our fold element to cover that overlapping folding.
+			bool foundOverlappingFolding;
+			do
 			{
-				if (fs.IsFolded)
+				foundOverlappingFolding = false;
+				foreach (var fs in FoldingManager.GetFoldingsContaining(foldedUntil))
 				{
-					if (fs.EndOffset > foldedUntil)
+					if (fs.IsFolded && fs.EndOffset > foldedUntil)
 					{
 						foldedUntil = fs.EndOffset;
-						foldingSection = fs;
+						foundOverlappingFolding = true;
 					}
 				}
-			}
-			if (foldedUntil > offset && foldingSection != null)
-			{
-				// Handle overlapping foldings: if there's another folded folding
-				// (starting within the foldingSection) that continues after the end of the folded section,
-				// then we'll extend our fold element to cover that overlapping folding.
-				bool foundOverlappingFolding;
-				do
-				{
-					foundOverlappingFolding = false;
-					foreach (var fs in FoldingManager.GetFoldingsContaining(foldedUntil))
-					{
-						if (fs.IsFolded && fs.EndOffset > foldedUntil)
-						{
-							foldedUntil = fs.EndOffset;
-							foundOverlappingFolding = true;
-						}
-					}
-				} while (foundOverlappingFolding);
+			} while (foundOverlappingFolding);
 
 			var title = foldingSection.Title;
 			if (string.IsNullOrEmpty(title))
@@ -159,41 +158,36 @@ namespace AvaloniaEdit.Folding;
 		}
 	}
 
-		private sealed class FoldingLineElement(FoldingSection fs, TextLine text, int documentLength, IBrush textBrush) : FormattedTextElement(text, documentLength)
-		{
-			private readonly FoldingSection _fs = fs;
-			private readonly IBrush _textBrush = textBrush;
-
-		public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context) => new FoldingLineTextRun(this, this.TextRunProperties, _textBrush);
+	private sealed class FoldingLineElement(FoldingSection fs, TextLine text, int documentLength, IBrush textBrush) : FormattedTextElement(text, documentLength)
+	{
+		public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context) => new FoldingLineTextRun(this, TextRunProperties, textBrush);
 
 		//DOUBLETAP
 		protected internal override void OnPointerPressed(PointerPressedEventArgs e)
-			{
-				_fs.IsFolded = false;
-				e.Handled = true;
-			}
-		}
-
-		private sealed class FoldingLineTextRun(FormattedTextElement element, TextRunProperties properties, IBrush textBrush) : FormattedTextRun(element, properties)
 		{
-			private readonly IBrush _textBrush = textBrush;
-
-		public override void Draw(DrawingContext drawingContext, Point origin)
-			{
-				var (width, height) = Size;
-				var r = new Rect(origin.X, origin.Y, width, height);
-				drawingContext.DrawRectangle(new ImmutablePen(_textBrush.ToImmutable()), r);
-				base.Draw(drawingContext, origin);
-			}
+			fs.IsFolded = false;
+			e.Handled = true;
 		}
-
-		/// <summary>
-		/// Default brush for folding element text. Value: Brushes.Gray
-		/// </summary>
-		public static IBrush DefaultTextBrush { get; } = Brushes.Gray;
-
-		/// <summary>
-		/// Gets/sets the brush used for folding element text.
-		/// </summary>
-		public static IBrush TextBrush { get; set; } = DefaultTextBrush;
 	}
+
+	private sealed class FoldingLineTextRun(FormattedTextElement element, TextRunProperties properties, IBrush textBrush) : FormattedTextRun(element, properties)
+	{
+		public override void Draw(DrawingContext drawingContext, Point origin)
+		{
+			var (width, height) = Size;
+			var r = new Rect(origin.X, origin.Y, width, height);
+			drawingContext.DrawRectangle(new ImmutablePen(textBrush.ToImmutable()), r);
+			base.Draw(drawingContext, origin);
+		}
+	}
+
+	/// <summary>
+	/// Default brush for folding element text. Value: Brushes.Gray
+	/// </summary>
+	public static IBrush DefaultTextBrush { get; } = Brushes.Gray;
+
+	/// <summary>
+	/// Gets/sets the brush used for folding element text.
+	/// </summary>
+	public static IBrush TextBrush { get; set; } = DefaultTextBrush;
+}

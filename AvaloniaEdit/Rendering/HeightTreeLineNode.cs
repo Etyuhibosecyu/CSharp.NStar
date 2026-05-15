@@ -21,35 +21,35 @@ using System.Diagnostics;
 
 namespace AvaloniaEdit.Rendering;
 
-	internal struct HeightTreeLineNode
+internal struct HeightTreeLineNode
+{
+	internal HeightTreeLineNode(double height)
 	{
-		internal HeightTreeLineNode(double height)
-		{
-			CollapsedSections = null;
-			Height = height;
-		}
+		CollapsedSections = null;
+		Height = height;
+	}
 
-		internal double Height;
-		internal List<CollapsedLineSection> CollapsedSections;
+	internal double Height;
+	internal List<CollapsedLineSection> CollapsedSections;
 
-	internal bool IsDirectlyCollapsed => CollapsedSections != null;
+	internal readonly bool IsDirectlyCollapsed => CollapsedSections != null;
 
 	internal void AddDirectlyCollapsed(CollapsedLineSection section)
-		{
-			CollapsedSections ??= [];
-			CollapsedSections.Add(section);
-		}
+	{
+		CollapsedSections ??= [];
+		CollapsedSections.Add(section);
+	}
 
-		internal void RemoveDirectlyCollapsed(CollapsedLineSection section)
-		{
-			Debug.Assert(CollapsedSections.Contains(section));
-			CollapsedSections.Remove(section);
-			if (CollapsedSections.Count == 0)
-				CollapsedSections = null;
-		}
+	internal void RemoveDirectlyCollapsed(CollapsedLineSection section)
+	{
+		Debug.Assert(CollapsedSections.Contains(section));
+		CollapsedSections.Remove(section);
+		if (CollapsedSections.Count == 0)
+			CollapsedSections = null;
+	}
 
 	/// <summary>
 	/// Returns 0 if the line is directly collapsed, otherwise, returns <see cref="Height"/>.
 	/// </summary>
-	internal double TotalHeight => IsDirectlyCollapsed ? 0 : Height;
+	internal readonly double TotalHeight => IsDirectlyCollapsed ? 0 : Height;
 }

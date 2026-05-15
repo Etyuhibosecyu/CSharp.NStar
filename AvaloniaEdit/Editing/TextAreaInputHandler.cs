@@ -28,7 +28,7 @@ namespace AvaloniaEdit.Editing;
 /// </summary>
 /// <remarks>
 /// <para>
-/// There is one active input handler per text area (<see cref="TextArea.ActiveInputHandler"/>), plus
+/// There is one active input handler per text area (<see cref="Editing.TextArea.ActiveInputHandler"/>), plus
 /// a number of active stacked input handlers.
 /// </para>
 /// <para>
@@ -40,25 +40,25 @@ namespace AvaloniaEdit.Editing;
 /// </para>
 /// </remarks>
 public interface ITextAreaInputHandler
+{
+	/// <summary>
+	/// Gets the text area that the input handler belongs to.
+	/// </summary>
+	TextArea TextArea
 	{
-		/// <summary>
-		/// Gets the text area that the input handler belongs to.
-		/// </summary>
-		TextArea TextArea
-		{
-			get;
-		}
-
-		/// <summary>
-		/// Attaches an input handler to the text area.
-		/// </summary>
-		void Attach();
-
-		/// <summary>
-		/// Detaches the input handler from the text area.
-		/// </summary>
-		void Detach();
+		get;
 	}
+
+	/// <summary>
+	/// Attaches an input handler to the text area.
+	/// </summary>
+	void Attach();
+
+	/// <summary>
+	/// Detaches the input handler from the text area.
+	/// </summary>
+	void Detach();
+}
 
 /// <summary>
 /// Stacked input handler.
@@ -68,191 +68,191 @@ public interface ITextAreaInputHandler
 /// Creates a new TextAreaInputHandler.
 /// </remarks>
 public abstract class TextAreaStackedInputHandler(TextArea textArea) : ITextAreaInputHandler
-	{
+{
 	/// <inheritdoc/>
 	public TextArea TextArea { get; } = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
 	/// <inheritdoc/>
 	public virtual void Attach()
-		{
-		}
+	{
+	}
 
-		/// <inheritdoc/>
-		public virtual void Detach()
-		{
-		}
-
-		/// <summary>
-		/// Called for the PreviewKeyDown event.
-		/// </summary>
-		public virtual void OnPreviewKeyDown(KeyEventArgs e)
-		{
-		}
-
-		/// <summary>
-		/// Called for the PreviewKeyUp event.
-		/// </summary>
-		public virtual void OnPreviewKeyUp(KeyEventArgs e)
-		{
-		}
+	/// <inheritdoc/>
+	public virtual void Detach()
+	{
 	}
 
 	/// <summary>
-	/// Default-implementation of <see cref="ITextAreaInputHandler"/>.
+	/// Called for the PreviewKeyDown event.
 	/// </summary>
-	/// <remarks><inheritdoc cref="ITextAreaInputHandler"/></remarks>
-	public class TextAreaInputHandler : ITextAreaInputHandler
+	public virtual void OnPreviewKeyDown(KeyEventArgs e)
 	{
-		private readonly ObserveAddRemoveCollection<RoutedCommandBinding> _commandBindings;
-		private readonly List<KeyBinding> _keyBindings;
-		private readonly ObserveAddRemoveCollection<ITextAreaInputHandler> _nestedInputHandlers;
+	}
 
-		/// <summary>
-		/// Creates a new TextAreaInputHandler.
-		/// </summary>
-		public TextAreaInputHandler(TextArea textArea)
-		{
-			TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
-			_commandBindings = new ObserveAddRemoveCollection<RoutedCommandBinding>(CommandBinding_Added, CommandBinding_Removed);
-			_keyBindings = [];
-			_nestedInputHandlers = new ObserveAddRemoveCollection<ITextAreaInputHandler>(NestedInputHandler_Added, NestedInputHandler_Removed);
-		}
+	/// <summary>
+	/// Called for the PreviewKeyUp event.
+	/// </summary>
+	public virtual void OnPreviewKeyUp(KeyEventArgs e)
+	{
+	}
+}
 
-		/// <inheritdoc/>
-		public TextArea TextArea { get; }
+/// <summary>
+/// Default-implementation of <see cref="ITextAreaInputHandler"/>.
+/// </summary>
+/// <remarks><inheritdoc cref="ITextAreaInputHandler"/></remarks>
+public class TextAreaInputHandler : ITextAreaInputHandler
+{
+	private readonly ObserveAddRemoveCollection<RoutedCommandBinding> _commandBindings;
+	private readonly List<KeyBinding> _keyBindings;
+	private readonly ObserveAddRemoveCollection<ITextAreaInputHandler> _nestedInputHandlers;
 
-		/// <summary>
-		/// Gets whether the input handler is currently attached to the text area.
-		/// </summary>
-		public bool IsAttached { get; private set; }
+	/// <summary>
+	/// Creates a new TextAreaInputHandler.
+	/// </summary>
+	public TextAreaInputHandler(TextArea textArea)
+	{
+		TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
+		_commandBindings = new ObserveAddRemoveCollection<RoutedCommandBinding>(CommandBinding_Added, CommandBinding_Removed);
+		_keyBindings = [];
+		_nestedInputHandlers = new ObserveAddRemoveCollection<ITextAreaInputHandler>(NestedInputHandler_Added, NestedInputHandler_Removed);
+	}
 
-		#region CommandBindings / KeyBindings
-		/// <summary>
-		/// Gets the command bindings of this input handler.
-		/// </summary>
-		public ICollection<RoutedCommandBinding> CommandBindings => _commandBindings;
+	/// <inheritdoc/>
+	public TextArea TextArea { get; }
 
-		private void CommandBinding_Added(RoutedCommandBinding commandBinding)
-		{
-			if (IsAttached)
-				TextArea.CommandBindings.Add(commandBinding);
-		}
+	/// <summary>
+	/// Gets whether the input handler is currently attached to the text area.
+	/// </summary>
+	public bool IsAttached { get; private set; }
 
-		private void CommandBinding_Removed(RoutedCommandBinding commandBinding)
-		{
-			if (IsAttached)
-				TextArea.CommandBindings.Remove(commandBinding);
-		}
+	#region CommandBindings / KeyBindings
+	/// <summary>
+	/// Gets the command bindings of this input handler.
+	/// </summary>
+	public ICollection<RoutedCommandBinding> CommandBindings => _commandBindings;
 
-		/// <summary>
-		/// Gets the input bindings of this input handler.
-		/// </summary>
-		public ICollection<KeyBinding> KeyBindings => _keyBindings;
+	private void CommandBinding_Added(RoutedCommandBinding commandBinding)
+	{
+		if (IsAttached)
+			TextArea.CommandBindings.Add(commandBinding);
+	}
 
-		//private void KeyBinding_Added(KeyBinding keyBinding)
-		//{
-		//	if (IsAttached)
-		//		TextArea.KeyBindings.Add(keyBinding);
-		//}
+	private void CommandBinding_Removed(RoutedCommandBinding commandBinding)
+	{
+		if (IsAttached)
+			TextArea.CommandBindings.Remove(commandBinding);
+	}
 
-		//private void KeyBinding_Removed(KeyBinding keyBinding)
-		//{
-		//	if (IsAttached)
-		//		TextArea.KeyBindings.Remove(keyBinding);
-		//}
+	/// <summary>
+	/// Gets the input bindings of this input handler.
+	/// </summary>
+	public ICollection<KeyBinding> KeyBindings => _keyBindings;
 
-		/// <summary>
-		/// Adds a command and input binding.
-		/// </summary>
-		/// <param name="command">The command ID.</param>
-		/// <param name="modifiers">The modifiers of the keyboard shortcut.</param>
-		/// <param name="key">The key of the keyboard shortcut.</param>
-		/// <param name="handler">The event handler to run when the command is executed.</param>
-		public void AddBinding(RoutedCommand command, KeyModifiers modifiers, Key key, EventHandler<ExecutedRoutedEventArgs> handler)
-		{
-			CommandBindings.Add(new RoutedCommandBinding(command, handler));
-			KeyBindings.Add(new KeyBinding { Command = command, Gesture = new KeyGesture (key, modifiers) });
-		}
-		#endregion
+	//private void KeyBinding_Added(KeyBinding keyBinding)
+	//{
+	//	if (IsAttached)
+	//		TextArea.KeyBindings.Add(keyBinding);
+	//}
 
-		#region NestedInputHandlers
-		/// <summary>
-		/// Gets the collection of nested input handlers. NestedInputHandlers are activated and deactivated
-		/// together with this input handler.
-		/// </summary>
-		public ICollection<ITextAreaInputHandler> NestedInputHandlers => _nestedInputHandlers;
+	//private void KeyBinding_Removed(KeyBinding keyBinding)
+	//{
+	//	if (IsAttached)
+	//		TextArea.KeyBindings.Remove(keyBinding);
+	//}
 
-		private void NestedInputHandler_Added(ITextAreaInputHandler handler)
-		{
+	/// <summary>
+	/// Adds a command and input binding.
+	/// </summary>
+	/// <param name="command">The command ID.</param>
+	/// <param name="modifiers">The modifiers of the keyboard shortcut.</param>
+	/// <param name="key">The key of the keyboard shortcut.</param>
+	/// <param name="handler">The event handler to run when the command is executed.</param>
+	public void AddBinding(RoutedCommand command, KeyModifiers modifiers, Key key, EventHandler<ExecutedRoutedEventArgs> handler)
+	{
+		CommandBindings.Add(new RoutedCommandBinding(command, handler));
+		KeyBindings.Add(new KeyBinding { Command = command, Gesture = new KeyGesture (key, modifiers) });
+	}
+	#endregion
+
+	#region NestedInputHandlers
+	/// <summary>
+	/// Gets the collection of nested input handlers. NestedInputHandlers are activated and deactivated
+	/// together with this input handler.
+	/// </summary>
+	public ICollection<ITextAreaInputHandler> NestedInputHandlers => _nestedInputHandlers;
+
+	private void NestedInputHandler_Added(ITextAreaInputHandler handler)
+	{
 		ArgumentNullException.ThrowIfNull(handler);
 		if (handler.TextArea != TextArea)
-				throw new ArgumentException("The nested handler must be working for the same text area!");
-			if (IsAttached)
-				handler.Attach();
-		}
-
-		private void NestedInputHandler_Removed(ITextAreaInputHandler handler)
-		{
-			if (IsAttached)
-				handler.Detach();
-		}
-
-		// workaround since InputElement.KeyBindings can't be marked as handled
-		private void TextAreaOnKeyDown(object sender, KeyEventArgs keyEventArgs)
-		{
-			foreach (var keyBinding in _keyBindings)
-			{
-				if (keyEventArgs.Handled)
-				{
-					break;
-				}
-
-				keyBinding.TryHandle(keyEventArgs);
-			}
-
-			foreach (var commandBinding in CommandBindings)
-			{
-				if (commandBinding.Command.Gesture?.Matches(keyEventArgs) == true)
-				{
-					commandBinding.Command.Execute(null, (IInputElement)sender);
-					keyEventArgs.Handled = true;
-					break;
-				}
-			}
-		}
-
-		#endregion
-
-		#region Attach/Detach
-		/// <inheritdoc/>
-		public virtual void Attach()
-		{
-			if (IsAttached)
-				throw new InvalidOperationException("Input handler is already attached");
-			IsAttached = true;
-
-			TextArea.CommandBindings.AddRange(_commandBindings);
-			TextArea.KeyDown += TextAreaOnKeyDown;
-			//TextArea.KeyBindings.AddRange(_keyBindings);
-			foreach (var handler in _nestedInputHandlers)
-				handler.Attach();
-		}
-
-		/// <inheritdoc/>
-		public virtual void Detach()
-		{
-			if (!IsAttached)
-				throw new InvalidOperationException("Input handler is not attached");
-			IsAttached = false;
-
-			foreach (var b in _commandBindings)
-				TextArea.CommandBindings.Remove(b);
-
-			TextArea.KeyDown -= TextAreaOnKeyDown;
-			//foreach (var b in _keyBindings)
-			//	TextArea.KeyBindings.Remove(b);
-			foreach (var handler in _nestedInputHandlers)
-				handler.Detach();
-		}
-		#endregion
+			throw new ArgumentException("The nested handler must be working for the same text area!");
+		if (IsAttached)
+			handler.Attach();
 	}
+
+	private void NestedInputHandler_Removed(ITextAreaInputHandler handler)
+	{
+		if (IsAttached)
+			handler.Detach();
+	}
+
+	// workaround since InputElement.KeyBindings can't be marked as handled
+	private void TextAreaOnKeyDown(object sender, KeyEventArgs keyEventArgs)
+	{
+		foreach (var keyBinding in _keyBindings)
+		{
+			if (keyEventArgs.Handled)
+			{
+				break;
+			}
+
+			keyBinding.TryHandle(keyEventArgs);
+		}
+
+		foreach (var commandBinding in CommandBindings)
+		{
+			if (commandBinding.Command.Gesture?.Matches(keyEventArgs) == true)
+			{
+				commandBinding.Command.Execute(null, (IInputElement)sender);
+				keyEventArgs.Handled = true;
+				break;
+			}
+		}
+	}
+
+	#endregion
+
+	#region Attach/Detach
+	/// <inheritdoc/>
+	public virtual void Attach()
+	{
+		if (IsAttached)
+			throw new InvalidOperationException("Input handler is already attached");
+		IsAttached = true;
+
+		TextArea.CommandBindings.AddRange(_commandBindings);
+		TextArea.KeyDown += TextAreaOnKeyDown;
+		//TextArea.KeyBindings.AddRange(_keyBindings);
+		foreach (var handler in _nestedInputHandlers)
+			handler.Attach();
+	}
+
+	/// <inheritdoc/>
+	public virtual void Detach()
+	{
+		if (!IsAttached)
+			throw new InvalidOperationException("Input handler is not attached");
+		IsAttached = false;
+
+		foreach (var b in _commandBindings)
+			TextArea.CommandBindings.Remove(b);
+
+		TextArea.KeyDown -= TextAreaOnKeyDown;
+		//foreach (var b in _keyBindings)
+		//	TextArea.KeyBindings.Remove(b);
+		foreach (var handler in _nestedInputHandlers)
+			handler.Detach();
+	}
+	#endregion
+}

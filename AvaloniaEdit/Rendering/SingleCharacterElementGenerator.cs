@@ -22,9 +22,7 @@ using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
 using Avalonia.Media.TextFormatting;
-using Avalonia.Utilities;
 using AvaloniaEdit.Document;
-using AvaloniaEdit.Utils;
 using LogicalDirection = AvaloniaEdit.Document.LogicalDirection;
 
 namespace AvaloniaEdit.Rendering;
@@ -98,9 +96,9 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 		return -1;
 	}
 
-		public override VisualLineElement ConstructElement(int offset)
-		{
-			var c = CurrentContext.Document.GetCharAt(offset);
+	public override VisualLineElement ConstructElement(int offset)
+	{
+		var c = CurrentContext.Document.GetCharAt(offset);
 
 		if (ShowSpaces && c == ' ')
 		{
@@ -110,7 +108,7 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 			var textLine = TextFormatter.Current.FormatLine(textSource, 0, double.MaxValue, new GenericTextParagraphProperties(properties));
 			return new SpaceTextElement(textLine);
 		}
-
+		
 		if (ShowTabs && c == '\t')
 		{
 			var properties = new VisualLineElementTextRunProperties(CurrentContext.GlobalTextRunProperties);
@@ -129,10 +127,10 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 			return new SpecialCharacterBoxElement(textLine);
 		}
 
-			return null;
-		}
+		return null;
+	}
 
-		private sealed class SpaceTextElement(TextLine textLine) : FormattedTextElement(textLine, 1)
+	private sealed class SpaceTextElement(TextLine textLine) : FormattedTextElement(textLine, 1)
 	{
 		public override int GetNextCaretPosition(int visualColumn, LogicalDirection direction, CaretPositioningMode mode)
 		{
@@ -183,7 +181,7 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 			_element = element;
 		}
 
-			public override TextRunProperties Properties { get; }
+		public override TextRunProperties Properties { get; }
 
 		public override double Baseline => _element.Text.Baseline;
 
@@ -197,38 +195,38 @@ internal sealed class SingleCharacterElementGenerator : VisualLineElementGenerat
 		public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context) => new SpecialCharacterTextRun(this, TextRunProperties);
 	}
 
-		internal sealed class SpecialCharacterTextRun(FormattedTextElement element, TextRunProperties properties) : FormattedTextRun(element, properties)
-		{
-			private static readonly ISolidColorBrush DarkGrayBrush;
+	internal sealed class SpecialCharacterTextRun(FormattedTextElement element, TextRunProperties properties) : FormattedTextRun(element, properties)
+	{
+		private static readonly ISolidColorBrush DarkGrayBrush;
 
-			internal const double BoxMargin = 3;
+		internal const double BoxMargin = 3;
 
 		static SpecialCharacterTextRun() => DarkGrayBrush = new ImmutableSolidColorBrush(Color.FromArgb(200, 128, 128, 128));
 
 		public override Size Size
+		{
+			get
 			{
-				get
-				{
-					var s = base.Size;
-
-					return s.WithWidth(s.Width + BoxMargin);
-				}
-			}
-
-			public override void Draw(DrawingContext drawingContext, Point origin)
-			{
-			var (x, y) = origin;
-
-			var newOrigin = new Point(x + BoxMargin / 2, y);
-
-				var (width, height) = Size;
-
-				var r = new Rect(x, y, width, height);
-
-				drawingContext.FillRectangle(DarkGrayBrush, r, 2.5f);
-
-				base.Draw(drawingContext, newOrigin);
+				var s = base.Size;
+				
+				return s.WithWidth(s.Width + BoxMargin);
 			}
 		}
+
+		public override void Draw(DrawingContext drawingContext, Point origin)
+		{
+			var (x, y) = origin;
+			
+			var newOrigin = new Point(x + BoxMargin / 2, y);
+			
+			var (width, height) = Size;
+			
+			var r = new Rect(x, y, width, height);
+			
+			drawingContext.FillRectangle(DarkGrayBrush, r, 2.5f);
+			
+			base.Draw(drawingContext, newOrigin);
+		}
 	}
+}
 

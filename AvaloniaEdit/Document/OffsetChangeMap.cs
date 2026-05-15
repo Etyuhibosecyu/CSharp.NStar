@@ -113,7 +113,8 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 	{
 		var items = Items;
 		var count = items.Count;
-		for (var i = 0; i < count; i++) {
+		for (var i = 0; i < count; i++)
+		{
 			offset = items[i].GetNewOffset(offset, movementType);
 		}
 		return offset;
@@ -125,7 +126,8 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 	public bool IsValidForDocumentChange(int offset, int removalLength, int insertionLength)
 	{
 		var endOffset = offset + removalLength;
-		foreach (var entry in this) {
+		foreach (var entry in this)
+		{
 			// check that ChangeMapEntry is in valid range for this document change
 			if (entry.Offset < offset || entry.Offset + entry.RemovalLength > endOffset)
 				return false;
@@ -142,8 +144,9 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 	{
 		if (this == Empty)
 			return this;
-		OffsetChangeMap newMap = new OffsetChangeMap(Count);
-		for (var i = Count - 1; i >= 0; i--) {
+		var newMap = new OffsetChangeMap(Count);
+		for (var i = Count - 1; i >= 0; i--)
+		{
 			var entry = this[i];
 			// swap InsertionLength and RemovalLength
 			newMap.Add(new OffsetChangeMapEntry(entry.Offset, entry.InsertionLength, entry.RemovalLength));
@@ -185,10 +188,10 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 			throw new InvalidOperationException("This instance is frozen and cannot be modified.");
 	}
 
-		/// <summary>
-		/// Gets if this instance is frozen. Frozen instances are immutable and thus thread-safe.
-		/// </summary>
-		public bool IsFrozen { get; private set; }
+	/// <summary>
+	/// Gets if this instance is frozen. Frozen instances are immutable and thus thread-safe.
+	/// </summary>
+	public bool IsFrozen { get; private set; }
 
 	/// <summary>
 	/// Freezes this instance.
@@ -200,7 +203,7 @@ public sealed class OffsetChangeMap : Collection<OffsetChangeMapEntry>
 /// An entry in the OffsetChangeMap.
 /// This represents the offset of a document change (either insertion or removal, not both at once).
 /// </summary>
-public struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
+public readonly struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
 {
 	// MSB: DefaultAnchorMovementIsBeforeInsertion
 	private readonly uint _insertionLengthWithMovementFlag;
@@ -242,7 +245,8 @@ public struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
 	{
 		var insertionLength = InsertionLength;
 		var removalLength = RemovalLength;
-		if (!(removalLength == 0 && oldOffset == Offset)) {
+		if (!(removalLength == 0 && oldOffset == Offset))
+		{
 			// we're getting trouble (both if statements in here would apply)
 			// if there's no removal and we insert at the offset
 			// -> we'd need to disambiguate by movementType, which is handled after the if
@@ -293,13 +297,14 @@ public struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
 	/// <inheritdoc/>
 	public override int GetHashCode()
 	{
-		unchecked {
+		unchecked
+		{
 			return Offset + 3559 * (int)_insertionLengthWithMovementFlag + 3571 * (int)_removalLengthWithDeletionFlag;
 		}
 	}
 
 	/// <inheritdoc/>
-	public override bool Equals(object obj) => obj is OffsetChangeMapEntry && Equals((OffsetChangeMapEntry)obj);
+	public override bool Equals(object obj) => obj is OffsetChangeMapEntry entry && Equals(entry);
 
 	/// <inheritdoc/>
 	public bool Equals(OffsetChangeMapEntry other) => Offset == other.Offset && _insertionLengthWithMovementFlag == other._insertionLengthWithMovementFlag && _removalLengthWithDeletionFlag == other._removalLengthWithDeletionFlag;
@@ -307,16 +312,10 @@ public struct OffsetChangeMapEntry : IEquatable<OffsetChangeMapEntry>
 	/// <summary>
 	/// Tests the two entries for equality.
 	/// </summary>
-	public static bool operator ==(OffsetChangeMapEntry left, OffsetChangeMapEntry right)
-	{
-		return left.Equals(right);
-	}
+	public static bool operator ==(OffsetChangeMapEntry left, OffsetChangeMapEntry right) => left.Equals(right);
 
 	/// <summary>
 	/// Tests the two entries for inequality.
 	/// </summary>
-	public static bool operator !=(OffsetChangeMapEntry left, OffsetChangeMapEntry right)
-	{
-		return !left.Equals(right);
-	}
+	public static bool operator !=(OffsetChangeMapEntry left, OffsetChangeMapEntry right) => !left.Equals(right);
 }

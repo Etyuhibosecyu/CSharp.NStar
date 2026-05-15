@@ -24,43 +24,45 @@ using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Editing;
 
-internal sealed class EmptySelection(TextArea textArea) : Selection(textArea)
-	{
+sealed class EmptySelection(TextArea textArea) : Selection(textArea)
+{
 	public override Selection UpdateOnDocumentChange(DocumentChangeEventArgs e) => this;
 
 	public override TextViewPosition StartPosition => new(TextLocation.Empty);
 
-		public override TextViewPosition EndPosition => new(TextLocation.Empty);
+	public override TextViewPosition EndPosition => new(TextLocation.Empty);
 
-		public override ISegment SurroundingSegment => null;
+	public override ISegment SurroundingSegment => null;
 
 	public override Selection SetEndpoint(TextViewPosition endPosition) => throw new NotSupportedException();
 
 	public override Selection StartSelectionOrSetEndpoint(TextViewPosition startPosition, TextViewPosition endPosition)
-		{
-			var document = TextArea.Document ?? throw ThrowUtil.NoDocumentAssigned();
+	{
+		var document = TextArea.Document;
+		if (document is null)
+			throw ThrowUtil.NoDocumentAssigned();
 		return Create(TextArea, startPosition, endPosition);
-		}
+	}
 
-		public override IEnumerable<SelectionSegment> Segments => Empty<SelectionSegment>.Array;
+	public override IEnumerable<SelectionSegment> Segments => Array.Empty<SelectionSegment>();
 
 	public override string GetText() => string.Empty;
 
 	public override void ReplaceSelectionWithText(string newText)
-		{
+	{
 		ArgumentNullException.ThrowIfNull(newText);
 		newText = AddSpacesIfRequired(newText, TextArea.Caret.Position, TextArea.Caret.Position);
-			if (newText.Length > 0)
+		if (newText.Length > 0)
+		{
+			if (TextArea.ReadOnlySectionProvider.CanInsert(TextArea.Caret.Offset))
 			{
-				if (TextArea.ReadOnlySectionProvider.CanInsert(TextArea.Caret.Offset))
-				{
-					TextArea.Document.Insert(TextArea.Caret.Offset, newText);
-				}
+				TextArea.Document.Insert(TextArea.Caret.Offset, newText);
 			}
-			TextArea.Caret.VisualColumn = -1;
 		}
+		TextArea.Caret.VisualColumn = -1;
+	}
 
-		public override int Length => 0;
+	public override int Length => 0;
 
 	// Use reference equality because there's only one EmptySelection per text area.
 	public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);

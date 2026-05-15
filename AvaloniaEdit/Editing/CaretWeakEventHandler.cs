@@ -34,5 +34,5 @@ public static class CaretWeakEventManager
 		protected override void StartListening(Caret source) => source.PositionChanged += DeliverEvent;
 
 		protected override void StopListening(Caret source) => source.PositionChanged -= DeliverEvent;
-		}
 	}
+}

@@ -16,8 +16,9 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
 using AvaloniaEdit.Utils;
+using System;
+using System.Globalization;
 
 namespace AvaloniaEdit.Document;
 
@@ -61,27 +62,27 @@ public sealed class TextAnchor : ITextAnchor
 
 	/// <inheritdoc/>
 	public AnchorMovementType MovementType { get; set; }
-
+	
 	/// <inheritdoc/>
 	public bool SurviveDeletion { get; set; }
-
+	
 	/// <inheritdoc/>
 	public bool IsDeleted {
 		get {
 			Document.DebugVerifyAccess();
-			return Node == null;
+			return Node is null;
 		}
 	}
-
+	
 	/// <inheritdoc/>
 	public event EventHandler Deleted;
-
+	
 	internal void OnDeleted(DelayedEvents delayedEvents)
 	{
 		Node = null;
 		delayedEvents.DelayedRaise(Deleted, this, EventArgs.Empty);
 	}
-
+	
 	/// <summary>
 	/// Gets the offset of the text anchor.
 	/// </summary>
@@ -89,8 +90,11 @@ public sealed class TextAnchor : ITextAnchor
 	public int Offset {
 		get {
 			Document.DebugVerifyAccess();
-
-			var n = Node ?? throw new InvalidOperationException();
+			
+			var n = Node;
+			if (n is null)
+				throw new InvalidOperationException();
+			
 			var offset = n.Length;
 			if (n.Left != null)
 				offset += n.Left.TotalLength;
@@ -105,7 +109,7 @@ public sealed class TextAnchor : ITextAnchor
 			return offset;
 		}
 	}
-
+	
 	/// <summary>
 	/// Gets the line number of the anchor.
 	/// </summary>
@@ -122,7 +126,7 @@ public sealed class TextAnchor : ITextAnchor
 			return offset - Document.GetLineByOffset(offset).Offset + 1;
 		}
 	}
-
+	
 	/// <summary>
 	/// Gets the text location of this anchor.
 	/// </summary>
@@ -130,5 +134,5 @@ public sealed class TextAnchor : ITextAnchor
 	public TextLocation Location => Document.GetLocation(Offset);
 
 	/// <inheritdoc/>
-	public override string ToString() => "[TextAnchor Offset=" + Offset + "]";
+	public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"[{nameof(TextAnchor)} {nameof(Offset)}={Offset}]");
 }

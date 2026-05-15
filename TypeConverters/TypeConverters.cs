@@ -11,7 +11,7 @@ global using static NStar.Core.Extents;
 global using static System.Math;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
-using Mpir.NET;
+using NStar.Mpir;
 using NStar.EasyEvalLib;
 using NStar.ParallelHS;
 using NStar.SortedSets;
@@ -175,35 +175,51 @@ public static class TypeConverters
 		if (leftTypeName == "bool" && rightTypeName.AsSpan() is "byte"
 			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex")
+			or "real" or "decimal" or "unsigned long real" or "long real" or "long decimal"
+			or "complex" or "deccomplex" or "long complex" or "long deccomplex")
 			leftValue.Insert(0, '(').AddRange(" ? 1 : 0)");
 		else if (rightTypeName == "bool" && leftTypeName.AsSpan() is "byte"
 			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex")
+			or "real" or "decimal" or "unsigned long real" or "long real" or "long decimal"
+			or "complex" or "deccomplex" or "long complex" or "long deccomplex")
 			rightValue.Insert(0, '(').AddRange(" ? 1 : 0)");
 		if (leftTypeName == "dynamic" || rightTypeName == "dynamic")
 			return "dynamic";
 		else if (leftTypeName == "string" || rightTypeName == "string")
 			return "string";
-		else if (leftTypeName == "long complex" || rightTypeName == "long complex")
+		else if (leftTypeName == "long deccomplex" || rightTypeName == "long deccomplex")
 			return "long complex";
+		else if (leftTypeName == "long complex" || rightTypeName == "long complex")
+		{
+			if (leftTypeName == "long decimal" || rightTypeName == "long decimal")
+				return "long deccomplex";
+			else
+				return "long complex";
+		}
+		else if (leftTypeName == "long decimal" || rightTypeName == "long decimal")
+			return "long decimal";
 		else if (leftTypeName == "long real" || rightTypeName == "long real")
 			return "long real";
+		else if (leftTypeName == "unsigned long real" || rightTypeName == "unsigned long real")
+			return "unsigned long real";
 		else if (leftTypeName == "long long" || rightTypeName == "long long")
 		{
 			if (leftTypeName == "complex" || rightTypeName == "complex")
 				return "long complex";
-			else if (leftTypeName == "real" || rightTypeName == "real")
+			else if (leftTypeName.AsSpan() is "real" or "decimal" || rightTypeName.AsSpan() is "real" or "decimal")
 				return "long real";
 			else
 				return "long long";
 		}
 		else if (leftTypeName == "unsigned long long" || rightTypeName == "unsigned long long")
 		{
-			if (leftTypeName.AsSpan() is "short int" or "int" or "long int" or "DateTime" or "TimeSpan" or "real" or "complex"
-				|| rightTypeName.AsSpan() is "short int" or "int" or "long int"
-				or "DateTime" or "TimeSpan" or "real" or "complex")
+			if (leftTypeName == "complex" || rightTypeName == "complex")
+				return "long complex";
+			else if (leftTypeName.AsSpan() is "real" or "decimal" || rightTypeName.AsSpan() is "real" or "decimal")
+				return "long real";
+			else if (leftTypeName.AsSpan() is "short int" or "int" or "long int" or "DateTime" or "TimeSpan"
+				|| rightTypeName.AsSpan() is "short int" or "int" or "long int" or "DateTime" or "TimeSpan")
 				return "long long";
 			else
 				return "unsigned long long";
@@ -211,7 +227,14 @@ public static class TypeConverters
 		else if (leftTypeName == "complex" || rightTypeName == "complex")
 			return "complex";
 		else if (leftTypeName == "real" || rightTypeName == "real")
-			return "real";
+		{
+			if (leftTypeName == "decimal" || rightTypeName == "decimal")
+				return "long real";
+			else
+				return "real";
+		}
+		else if (leftTypeName == "decimal" || rightTypeName == "decimal")
+			return "decimal";
 		else if (leftTypeName == "unsigned long int" || rightTypeName == "unsigned long int")
 		{
 			if (leftTypeName.AsSpan() is "short int" or "int" or "long int" or "DateTime" or "TimeSpan"
@@ -325,7 +348,7 @@ public static class TypeConverters
 		}
 		if (ImplicitConversionsFromAnything.Contains(destinationType, new FullTypeEComparer()))
 		{
-			if (srcExpr == null)
+			if (srcExpr is null)
 				destExpr = null;
 			else if (TypeEqualsToPrimitive(destinationType, "string"))
 				destExpr = ((String)"(").AddRange(srcExpr).AddRange(").ToString()");
@@ -389,7 +412,7 @@ public static class TypeConverters
 			var (DestinationDepth, DestinationLeafType) = GetTypeDepthAndLeafType(destinationType);
 			if (SourceDepth >= DestinationDepth && TypeEqualsToPrimitive(DestinationLeafType, "string"))
 			{
-				destExpr = srcExpr == null ? null : DestinationDepth == 0
+				destExpr = srcExpr is null ? null : DestinationDepth == 0
 					? ((String)"(").AddRange(srcExpr).AddRange(").ToString()") : srcExpr;
 				return true;
 			}
@@ -398,7 +421,7 @@ public static class TypeConverters
 			{
 				var toInsert = ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(')
 					.Repeat(DestinationDepth - SourceDepth);
-				if (srcExpr == null)
+				if (srcExpr is null)
 				{
 					destExpr = null;
 					return true;
@@ -431,7 +454,7 @@ public static class TypeConverters
 			{
 				var toInsert = ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(')
 					.Repeat(DestinationDepth - SourceDepth - 1);
-				if (srcExpr == null)
+				if (srcExpr is null)
 					destExpr = null;
 				else
 				{
@@ -448,7 +471,7 @@ public static class TypeConverters
 			{
 				var toInsert = ((String)nameof(TypeConverters)).Add('.').AddRange(nameof(ListWithSingle)).Add('(')
 					.Repeat(DestinationDepth - SourceDepth - 1);
-				if (srcExpr == null)
+				if (srcExpr is null)
 					destExpr = null;
 				else
 				{
@@ -505,7 +528,7 @@ public static class TypeConverters
 			var (DestinationDepth, DestinationLeafType) = GetTypeDepthAndLeafType(destinationType);
 			if (SourceDepth >= DestinationDepth && TypeEqualsToPrimitive(DestinationLeafType, "string"))
 			{
-				destExpr = srcExpr == null ? null : DestinationDepth == 0
+				destExpr = srcExpr is null ? null : DestinationDepth == 0
 					? ((String)"(").AddRange(srcExpr).AddRange(").ToString()") : srcExpr;
 				return true;
 			}
@@ -551,7 +574,7 @@ public static class TypeConverters
 		if (foundIndex != -1)
 		{
 			warning = typeConversions[foundIndex].Warning;
-			if (srcExpr == null)
+			if (srcExpr is null)
 				destExpr = null;
 			else if (!warning && !sourceType.Equals(BoolType))
 				destExpr = srcExpr;
@@ -574,7 +597,7 @@ public static class TypeConverters
 					continue;
 				}
 				warning = new_types3_list[foundIndex].Warning;
-				if (srcExpr == null)
+				if (srcExpr is null)
 					destExpr = null;
 				else if (!warning)
 					destExpr = srcExpr;
@@ -609,6 +632,8 @@ public static class TypeConverters
 			"long int" => "long",
 			"unsigned long int" => "ulong",
 			"long long" => nameof(MpzT),
+			"unsigned long long" => nameof(MpuT),
+			"unsigned long real" => nameof(UnsignedLongReal),
 			"real" => "double",
 			"complex" => "Complex",
 			"string" => nameof(String),
@@ -641,9 +666,9 @@ public static class TypeConverters
 			Debug.Assert(destTypeBlockName != "bool");
 			return ((String)"(").AddRange(source).AddRange(") ? 1 : 0");
 		}
-		else if (srcTypeBlockName == "real")
+		else if (srcTypeBlockName is "real" or "decimal")
 		{
-			Debug.Assert(destTypeBlockName != "real");
+			Debug.Assert(destTypeBlockName != srcTypeBlockName);
 			return ((String)"(").AddRange(destTypeConverter).Add(')')
 				.AddRange(nameof(Truncate)).Add('(').AddRange(source).Add(')');
 		}
@@ -756,7 +781,7 @@ public static class TypeConverters
 					return memoized;
 				var assembly = EasyEval.CompileAndGetAssembly("class C<" + block.Name + ">{}class P{static void Main(){}}",
 					[], out var errors);
-				if (assembly == null || errors != "Compilation done without any error.\r\n")
+				if (assembly is null || errors != "Compilation done without any error.\r\n")
 					throw new InvalidOperationException();
 				return memoizedExtraTypes[block.Name] = assembly.DefinedTypes.First().GetGenericArguments().First();
 			}
@@ -1038,12 +1063,12 @@ public static class TypeConverters
 
 	public static object? CastType(Type? type, dynamic value)
 	{
-		if (type == null || value == null)
+		if (type is null || value is null)
 			return null;
-		if (value!.GetType() == type)
+		if (value.GetType() == type)
 			return value;
 		var valueAsString = value.ToString();
-		if (type!.IsEnum)
+		if (type.IsEnum)
 		{
 			if (Enum.IsDefined(type, valueAsString))
 				return Enum.Parse(type, valueAsString);

@@ -187,7 +187,7 @@ public sealed class FuncDictionary<TKey, TValue> : BaseDictionary<TKey, TValue, 
 
 		private bool MoveNextRare()
 		{
-			Current = default!;
+			Current = default;
 			return false;
 		}
 
@@ -198,7 +198,7 @@ public sealed class FuncDictionary<TKey, TValue> : BaseDictionary<TKey, TValue, 
 		void IEnumerator.Reset()
 		{
 			lowEnumerator.Reset();
-			Current = default!;
+			Current = default;
 		}
 	}
 }

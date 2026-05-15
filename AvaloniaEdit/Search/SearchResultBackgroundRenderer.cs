@@ -17,51 +17,48 @@
 // DEALINGS IN THE SOFTWARE.
 
 using System;
-using System.Linq;
 using Avalonia.Media;
 using AvaloniaEdit.Document;
 using AvaloniaEdit.Rendering;
 
 namespace AvaloniaEdit.Search;
 
-	using Avalonia.Media.Immutable;
+internal class SearchResultBackgroundRenderer(IBrush brush) : IBackgroundRenderer
+{
+	public TextSegmentCollection<SearchResult> CurrentResults { get; } = [];
 
-	internal class SearchResultBackgroundRenderer(IBrush brush) : IBackgroundRenderer
-	{
-		public TextSegmentCollection<SearchResult> CurrentResults { get; } = [];
-
-		public KnownLayer Layer => KnownLayer.Background;
+	public KnownLayer Layer => KnownLayer.Background;
 
 	public IBrush MarkerBrush { get; set; } = brush;
 
 	public void Draw(TextView textView, DrawingContext drawingContext)
-		{
+	{
 		ArgumentNullException.ThrowIfNull(textView);
 		ArgumentNullException.ThrowIfNull(drawingContext);
 
-		if (CurrentResults == null || !textView.VisualLinesValid)
-				return;
+		if (CurrentResults is null || !textView.VisualLinesValid)
+			return;
 
-			var visualLines = textView.VisualLines;
-			if (visualLines.Count == 0)
-				return;
+		var visualLines = textView.VisualLines;
+		if (visualLines.Count == 0)
+			return;
 
-			var viewStart = visualLines.First().FirstDocumentLine.Offset;
-			var viewEnd = visualLines.Last().LastDocumentLine.EndOffset;
+		var viewStart = visualLines[0].FirstDocumentLine.Offset;
+		var viewEnd = visualLines[^1].LastDocumentLine.EndOffset;
 
-			foreach (var result in CurrentResults.FindOverlappingSegments(viewStart, viewEnd - viewStart))
+		foreach (var result in CurrentResults.FindOverlappingSegments(viewStart, viewEnd - viewStart))
+		{
+			var geoBuilder = new BackgroundGeometryBuilder
 			{
-				var geoBuilder = new BackgroundGeometryBuilder
-				{
-					AlignToWholePixels = true,
-					CornerRadius = 0
-				};
-				geoBuilder.AddSegment(textView, result);
-				var geometry = geoBuilder.CreateGeometry();
-				if (geometry != null)
-				{
-					drawingContext.DrawGeometry(MarkerBrush, null, geometry);
-				}
+				AlignToWholePixels = true,
+				CornerRadius = 0
+			};
+			geoBuilder.AddSegment(textView, result);
+			var geometry = geoBuilder.CreateGeometry();
+			if (geometry != null)
+			{
+				drawingContext.DrawGeometry(MarkerBrush, null, geometry);
 			}
 		}
 	}
+}

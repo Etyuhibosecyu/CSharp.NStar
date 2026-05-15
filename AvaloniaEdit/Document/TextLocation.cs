@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2010-2013 AlphaSierraPapa for the SharpDevelop Team
+// Copyright (c) 2010-2013 AlphaSierraPapa for the SharpDevelop Team
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this
 // software and associated documentation files (the "Software"), to deal in the Software
@@ -17,8 +17,8 @@
 // DEALINGS IN THE SOFTWARE.
 
 using System;
-using System.Globalization;
 using System.ComponentModel;
+using System.Globalization;
 
 namespace AvaloniaEdit.Document;
 
@@ -34,12 +34,12 @@ namespace AvaloniaEdit.Document;
 /// Creates a TextLocation instance.
 /// </remarks>
 [TypeConverter(typeof(TextLocationConverter))]
-	public struct TextLocation(int line, int column) : IComparable<TextLocation>, IEquatable<TextLocation>
-	{
-		/// <summary>
-		/// Represents no text location (0, 0).
-		/// </summary>
-		public static readonly TextLocation Empty = new(0, 0);
+public readonly struct TextLocation(int line, int column) : IComparable<TextLocation>, IEquatable<TextLocation>
+{
+	/// <summary>
+	/// Represents no text location (0, 0).
+	/// </summary>
+	public static readonly TextLocation Empty = new(0, 0);
 
 	/// <summary>
 	/// Gets the line number.
@@ -59,7 +59,7 @@ namespace AvaloniaEdit.Document;
 	/// <summary>
 	/// Gets a string representation for debugging purposes.
 	/// </summary>
-	public override string ToString() => string.Format(CultureInfo.InvariantCulture, "(Line {1}, Col {0})", Column, Line);
+	public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"({nameof(Line)} {Line}, Col {Column})");
 
 	/// <summary>
 	/// Gets a hash code.
@@ -70,10 +70,10 @@ namespace AvaloniaEdit.Document;
 	/// Equality test.
 	/// </summary>
 	public override bool Equals(object obj)
-		{
-			if (obj is not TextLocation) return false;
-			return (TextLocation)obj == this;
-		}
+	{
+		if (obj is TextLocation textLocation) return textLocation == this;
+		return false;
+	}
 
 	/// <summary>
 	/// Equality test.
@@ -83,77 +83,65 @@ namespace AvaloniaEdit.Document;
 	/// <summary>
 	/// Equality test.
 	/// </summary>
-	public static bool operator ==(TextLocation left, TextLocation right)
-		{
-			return left.Column == right.Column && left.Line == right.Line;
-		}
+	public static bool operator ==(TextLocation left, TextLocation right) => left.Column == right.Column && left.Line == right.Line;
 
-		/// <summary>
-		/// Inequality test.
-		/// </summary>
-		public static bool operator !=(TextLocation left, TextLocation right)
-		{
-			return left.Column != right.Column || left.Line != right.Line;
-		}
+	/// <summary>
+	/// Inequality test.
+	/// </summary>
+	public static bool operator !=(TextLocation left, TextLocation right) => left.Column != right.Column || left.Line != right.Line;
 
-		/// <summary>
-		/// Compares two text locations.
-		/// </summary>
-		public static bool operator <(TextLocation left, TextLocation right)
-		{
-			if (left.Line < right.Line)
-				return true;
-			if (left.Line == right.Line)
-				return left.Column < right.Column;
-			return false;
-		}
-
-		/// <summary>
-		/// Compares two text locations.
-		/// </summary>
-		public static bool operator >(TextLocation left, TextLocation right)
-		{
-			if (left.Line > right.Line)
-				return true;
-			if (left.Line == right.Line)
-				return left.Column > right.Column;
-			return false;
-		}
-
-		/// <summary>
-		/// Compares two text locations.
-		/// </summary>
-		public static bool operator <=(TextLocation left, TextLocation right)
-		{
-			return !(left > right);
-		}
-
-		/// <summary>
-		/// Compares two text locations.
-		/// </summary>
-		public static bool operator >=(TextLocation left, TextLocation right)
-		{
-			return !(left < right);
-		}
-
-		/// <summary>
-		/// Compares two text locations.
-		/// </summary>
-		public int CompareTo(TextLocation other)
-		{
-			if (this == other)
-				return 0;
-			if (this < other)
-				return -1;
-			return 1;
-		}
+	/// <summary>
+	/// Compares two text locations.
+	/// </summary>
+	public static bool operator <(TextLocation left, TextLocation right)
+	{
+		if (left.Line < right.Line)
+			return true;
+		if (left.Line == right.Line)
+			return left.Column < right.Column;
+		return false;
 	}
 
 	/// <summary>
-	/// Converts strings of the form '0+[;,]0+' to a <see cref="TextLocation"/>.
+	/// Compares two text locations.
 	/// </summary>
-	public class TextLocationConverter : TypeConverter
+	public static bool operator >(TextLocation left, TextLocation right)
 	{
+		if (left.Line > right.Line)
+			return true;
+		if (left.Line == right.Line)
+			return left.Column > right.Column;
+		return false;
+	}
+
+	/// <summary>
+	/// Compares two text locations.
+	/// </summary>
+	public static bool operator <=(TextLocation left, TextLocation right) => !(left > right);
+
+	/// <summary>
+	/// Compares two text locations.
+	/// </summary>
+	public static bool operator >=(TextLocation left, TextLocation right) => !(left < right);
+
+	/// <summary>
+	/// Compares two text locations.
+	/// </summary>
+	public int CompareTo(TextLocation other)
+	{
+		if (this == other)
+			return 0;
+		if (this < other)
+			return -1;
+		return 1;
+	}
+}
+
+/// <summary>
+/// Converts strings of the form '0+[;,]0+' to a <see cref="TextLocation"/>.
+/// </summary>
+public class TextLocationConverter : TypeConverter
+{
 	/// <inheritdoc/>
 	public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType) => sourceType == typeof(string);
 
@@ -162,55 +150,55 @@ namespace AvaloniaEdit.Document;
 
 	/// <inheritdoc/>
 	public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+	{
+		var s = value as string;
+		var parts = s?.Split(';', ',');
+		if (parts?.Length == 2)
 		{
-			var s = value as string;
-			var parts = s?.Split(';', ',');
-			if (parts?.Length == 2)
-			{
-				return new TextLocation(int.Parse(parts[0], culture), int.Parse(parts[1], culture));
-			}
-			throw new InvalidOperationException();
+			return new TextLocation(int.Parse(parts[0], culture), int.Parse(parts[1], culture));
 		}
-
-		/// <inheritdoc/>
-		public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
-		{
-			if (value is TextLocation loc && destinationType == typeof(string))
-			{
-				return loc.Line.ToString(culture) + ";" + loc.Column.ToString(culture);
-			}
-			throw new InvalidOperationException();
-		}
+		throw new InvalidOperationException();
 	}
 
-	/// <summary>
-	/// An (Offset,Length)-pair.
-	/// </summary>
-	public interface ISegment
+	/// <inheritdoc/>
+	public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
 	{
-		/// <summary>
-		/// Gets the start offset of the segment.
-		/// </summary>
-		int Offset { get; }
-
-		/// <summary>
-		/// Gets the length of the segment.
-		/// </summary>
-		/// <remarks>For line segments (IDocumentLine), the length does not include the line delimeter.</remarks>
-		int Length { get; }
-
-		/// <summary>
-		/// Gets the end offset of the segment.
-		/// </summary>
-		/// <remarks>EndOffset = Offset + Length;</remarks>
-		int EndOffset { get; }
+		if (value is TextLocation loc && destinationType == typeof(string))
+		{
+			return string.Create(culture, $"{loc.Line};{loc.Column}");
+		}
+		throw new InvalidOperationException();
 	}
+}
+
+/// <summary>
+/// An (Offset,Length)-pair.
+/// </summary>
+public interface ISegment
+{
+	/// <summary>
+	/// Gets the start offset of the segment.
+	/// </summary>
+	int Offset { get; }
 
 	/// <summary>
-	/// Extension methods for <see cref="ISegment"/>.
+	/// Gets the length of the segment.
 	/// </summary>
-	public static class SegmentExtensions
-	{
+	/// <remarks>For line segments (IDocumentLine), the length does not include the line delimeter.</remarks>
+	int Length { get; }
+
+	/// <summary>
+	/// Gets the end offset of the segment.
+	/// </summary>
+	/// <remarks>EndOffset = Offset + Length;</remarks>
+	int EndOffset { get; }
+}
+
+/// <summary>
+/// Extension methods for <see cref="ISegment"/>.
+/// </summary>
+public static class SegmentExtensions
+{
 	/// <summary>
 	/// Gets whether <paramref name="segment"/> fully contains the specified segment.
 	/// </summary>

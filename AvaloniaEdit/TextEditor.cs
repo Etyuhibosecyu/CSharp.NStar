@@ -34,93 +34,92 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
-using Avalonia.Data;
 using AvaloniaEdit.Search;
 
 namespace AvaloniaEdit;
 
-	/// <summary>
-	/// The text editor control.
-	/// Contains a scrollable TextArea.
-	/// </summary>
-	public class TextEditor : TemplatedControl, ITextEditorComponent
+/// <summary>
+/// The text editor control.
+/// Contains a scrollable TextArea.
+/// </summary>
+public class TextEditor : TemplatedControl, ITextEditorComponent
+{
+	#region Constructors
+	static TextEditor()
 	{
-		#region Constructors
-		static TextEditor()
-		{
-			FocusableProperty.OverrideDefaultValue<TextEditor>(false);
-			HorizontalScrollBarVisibilityProperty.OverrideDefaultValue<TextEditor>(ScrollBarVisibility.Auto);
-			VerticalScrollBarVisibilityProperty.OverrideDefaultValue<TextEditor>(ScrollBarVisibility.Auto);
+		FocusableProperty.OverrideDefaultValue<TextEditor>(false);
+		HorizontalScrollBarVisibilityProperty.OverrideDefaultValue<TextEditor>(ScrollBarVisibility.Auto);
+		VerticalScrollBarVisibilityProperty.OverrideDefaultValue<TextEditor>(ScrollBarVisibility.Auto);
 
-			OptionsProperty.Changed.Subscribe(OnOptionsChanged);
-			DocumentProperty.Changed.Subscribe(OnDocumentChanged);
-			SyntaxHighlightingProperty.Changed.Subscribe(OnSyntaxHighlightingChanged);
-			IsReadOnlyProperty.Changed.Subscribe(OnIsReadOnlyChanged);
-			IsModifiedProperty.Changed.Subscribe(OnIsModifiedChanged);
-			ShowLineNumbersProperty.Changed.Subscribe(OnShowLineNumbersChanged);
-			LineNumbersForegroundProperty.Changed.Subscribe(OnLineNumbersForegroundChanged);
-			FontFamilyProperty.Changed.Subscribe(OnFontFamilyPropertyChanged);
-			FontSizeProperty.Changed.Subscribe(OnFontSizePropertyChanged);
-			SearchResultsBrushProperty.Changed.Subscribe(SearchResultsBrushChangedCallback);
-		}
+		OptionsProperty.Changed.Subscribe(OnOptionsChanged);
+		DocumentProperty.Changed.Subscribe(OnDocumentChanged);
+		SyntaxHighlightingProperty.Changed.Subscribe(OnSyntaxHighlightingChanged);
+		IsReadOnlyProperty.Changed.Subscribe(OnIsReadOnlyChanged);
+		IsModifiedProperty.Changed.Subscribe(OnIsModifiedChanged);
+		ShowLineNumbersProperty.Changed.Subscribe(OnShowLineNumbersChanged);
+		LineNumbersForegroundProperty.Changed.Subscribe(OnLineNumbersForegroundChanged);
+		FontFamilyProperty.Changed.Subscribe(OnFontFamilyPropertyChanged);
+		FontSizeProperty.Changed.Subscribe(OnFontSizePropertyChanged);
+		SearchResultsBrushProperty.Changed.Subscribe(SearchResultsBrushChangedCallback);
+	}
 
-		/// <summary>
-		/// Creates a new TextEditor instance.
-		/// </summary>
-		public TextEditor() : this(new TextArea())
-		{
-		}
+	/// <summary>
+	/// Creates a new TextEditor instance.
+	/// </summary>
+	public TextEditor() : this(new TextArea())
+	{
+	}
 
-		/// <summary>
-		/// Creates a new TextEditor instance.
-		/// </summary>
-		protected TextEditor(TextArea textArea) : this(textArea, new TextDocument())
-		{
+	/// <summary>
+	/// Creates a new TextEditor instance.
+	/// </summary>
+	protected TextEditor(TextArea textArea) : this(textArea, new TextDocument())
+	{
+		
+	}
 
-		}
-
-		protected TextEditor(TextArea textArea, TextDocument document)
-		{
+	protected TextEditor(TextArea textArea, TextDocument document)
+	{
 		TextArea = textArea ?? throw new ArgumentNullException(nameof(textArea));
 
-			textArea.TextView.Services.AddService(this);
+		textArea.TextView.Services.AddService(this);
 
-			SetValue(OptionsProperty, textArea.Options);
-			SetValue(DocumentProperty, document);
+		SetValue(OptionsProperty, textArea.Options);
+		SetValue(DocumentProperty, document);
 
-			textArea[!BackgroundProperty] = this[!BackgroundProperty];
-		}
+		textArea[!BackgroundProperty] = this[!BackgroundProperty];
+	}
 
-		#endregion
+	#endregion
 
-		protected override void OnGotFocus(GotFocusEventArgs e)
-		{
-			base.OnGotFocus(e);
-			TextArea.Focus();
-			e.Handled = true;
-		}
+	protected override void OnGotFocus(FocusChangedEventArgs e)
+	{
+		base.OnGotFocus(e);
+		TextArea.Focus();
+		e.Handled = true;
+	}
 
-		#region Document property
-		/// <summary>
-		/// Document property.
-		/// </summary>
-		public static readonly StyledProperty<TextDocument> DocumentProperty
-			= TextView.DocumentProperty.AddOwner<TextEditor>();
+	#region Document property
+	/// <summary>
+	/// Document property.
+	/// </summary>
+	public static readonly StyledProperty<TextDocument> DocumentProperty
+		= TextView.DocumentProperty.AddOwner<TextEditor>();
 
-		/// <summary>
-		/// Gets/Sets the document displayed by the text editor.
-		/// This is a dependency property.
-		/// </summary>
-		public TextDocument Document
-		{
-			get => GetValue(DocumentProperty);
-			set => SetValue(DocumentProperty, value);
-		}
+	/// <summary>
+	/// Gets/Sets the document displayed by the text editor.
+	/// This is a dependency property.
+	/// </summary>
+	public TextDocument Document
+	{
+		get => GetValue(DocumentProperty);
+		set => SetValue(DocumentProperty, value);
+	}
 
-		/// <summary>
-		/// Occurs when the document property has changed.
-		/// </summary>
-		public event EventHandler<DocumentChangedEventArgs> DocumentChanged;
+	/// <summary>
+	/// Occurs when the document property has changed.
+	/// </summary>
+	public event EventHandler<DocumentChangedEventArgs> DocumentChanged;
 
 	/// <summary>
 	/// Raises the <see cref="DocumentChanged"/> event.
@@ -130,44 +129,44 @@ namespace AvaloniaEdit;
 	private static void OnDocumentChanged(AvaloniaPropertyChangedEventArgs e) => (e.Sender as TextEditor)?.OnDocumentChanged((TextDocument)e.OldValue, (TextDocument)e.NewValue);
 
 	private void OnDocumentChanged(TextDocument oldValue, TextDocument newValue)
+	{
+		if (oldValue != null)
 		{
-			if (oldValue != null)
-			{
-				TextDocumentWeakEventManager.TextChanged.RemoveHandler(oldValue, OnTextChanged);
-				PropertyChangedWeakEventManager.RemoveHandler(oldValue.UndoStack, OnUndoStackPropertyChangedHandler);
-			}
-			TextArea.Document = newValue;
-			if (newValue != null)
-			{
-				TextDocumentWeakEventManager.TextChanged.AddHandler(newValue, OnTextChanged);
-				PropertyChangedWeakEventManager.AddHandler(newValue.UndoStack, OnUndoStackPropertyChangedHandler);
-			}
-			OnDocumentChanged(new DocumentChangedEventArgs(oldValue, newValue));
-			OnTextChanged(EventArgs.Empty);
+			TextDocumentWeakEventManager.TextChanged.RemoveHandler(oldValue, OnTextChanged);
+			PropertyChangedWeakEventManager.RemoveHandler(oldValue.UndoStack, OnUndoStackPropertyChangedHandler);
 		}
-		#endregion
-
-		#region Options property
-
-		/// <summary>
-		/// Options property.
-		/// </summary>
-		public static readonly StyledProperty<TextEditorOptions> OptionsProperty
-			= TextView.OptionsProperty.AddOwner<TextEditor>();
-
-		/// <summary>
-		/// Gets/Sets the options currently used by the text editor.
-		/// </summary>
-		public TextEditorOptions Options
+		TextArea.Document = newValue;
+		if (newValue != null)
 		{
-			get => GetValue(OptionsProperty);
-			set => SetValue(OptionsProperty, value);
+			TextDocumentWeakEventManager.TextChanged.AddHandler(newValue, OnTextChanged);
+			PropertyChangedWeakEventManager.AddHandler(newValue.UndoStack, OnUndoStackPropertyChangedHandler);
 		}
+		OnDocumentChanged(new DocumentChangedEventArgs(oldValue, newValue));
+		OnTextChanged(EventArgs.Empty);
+	}
+	#endregion
 
-		/// <summary>
-		/// Occurs when a text editor option has changed.
-		/// </summary>
-		public event PropertyChangedEventHandler OptionChanged;
+	#region Options property
+
+	/// <summary>
+	/// Options property.
+	/// </summary>
+	public static readonly StyledProperty<TextEditorOptions> OptionsProperty
+		= TextView.OptionsProperty.AddOwner<TextEditor>();
+
+	/// <summary>
+	/// Gets/Sets the options currently used by the text editor.
+	/// </summary>
+	public TextEditorOptions Options
+	{
+		get => GetValue(OptionsProperty);
+		set => SetValue(OptionsProperty, value);
+	}
+
+	/// <summary>
+	/// Occurs when a text editor option has changed.
+	/// </summary>
+	public event PropertyChangedEventHandler OptionChanged;
 
 	/// <summary>
 	/// Raises the <see cref="OptionChanged"/> event.
@@ -177,46 +176,46 @@ namespace AvaloniaEdit;
 	private static void OnOptionsChanged(AvaloniaPropertyChangedEventArgs e) => (e.Sender as TextEditor)?.OnOptionsChanged((TextEditorOptions)e.OldValue, (TextEditorOptions)e.NewValue);
 
 	private void OnOptionsChanged(TextEditorOptions oldValue, TextEditorOptions newValue)
+	{
+		if (oldValue != null)
 		{
-			if (oldValue != null)
-			{
-				PropertyChangedWeakEventManager.RemoveHandler(oldValue, OnPropertyChangedHandler);
-			}
-			TextArea.Options = newValue;
-			if (newValue != null)
-			{
-				PropertyChangedWeakEventManager.AddHandler(newValue, OnPropertyChangedHandler);
-			}
-			OnOptionChanged(new PropertyChangedEventArgs(null));
+			PropertyChangedWeakEventManager.RemoveHandler(oldValue, OnPropertyChangedHandler);
 		}
+		TextArea.Options = newValue;
+		if (newValue != null)
+		{
+			PropertyChangedWeakEventManager.AddHandler(newValue, OnPropertyChangedHandler);
+		}
+		OnOptionChanged(new PropertyChangedEventArgs(null));
+	}
 
 	private void OnPropertyChangedHandler(object sender, PropertyChangedEventArgs e) => OnOptionChanged(e);
 
 	protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-		{
-			base.OnPropertyChanged(change);
+	{
+		base.OnPropertyChanged(change);
 
-			if (change.Property == WordWrapProperty)
+		if (change.Property == WordWrapProperty)
+		{
+			if (WordWrap)
 			{
-				if (WordWrap)
-				{
-					_horizontalScrollBarVisibilityBck = HorizontalScrollBarVisibility;
-					HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
-				}
-				else
-				{
-					HorizontalScrollBarVisibility = _horizontalScrollBarVisibilityBck;
-				}
+				_horizontalScrollBarVisibilityBck = HorizontalScrollBarVisibility;
+				HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+			}
+			else
+			{
+				HorizontalScrollBarVisibility = _horizontalScrollBarVisibilityBck;
 			}
 		}
+	}
 
-		private void OnUndoStackPropertyChangedHandler(object sender, PropertyChangedEventArgs e)
+	private void OnUndoStackPropertyChangedHandler(object sender, PropertyChangedEventArgs e)
+	{
+		if (e.PropertyName == "IsOriginalFile")
 		{
-			if (e.PropertyName == "IsOriginalFile")
-			{
-				HandleIsOriginalChanged(e);
-			}
+			HandleIsOriginalChanged(e);
 		}
+	}
 
 	private void OnTextChanged(object sender, EventArgs e) => OnTextChanged(e);
 
@@ -228,42 +227,42 @@ namespace AvaloniaEdit;
 	/// property is not yet set.
 	/// </summary>
 	public string Watermark
-		{
-			get => TextArea.Watermark;
-			set => TextArea.Watermark = value;
-		}
+	{
+		get => TextArea.Watermark;
+		set => TextArea.Watermark = value;
+	}
 
-		/// <summary>
-		/// Gets/Sets the text of the current document.
-		/// </summary>
-		public string Text
+	/// <summary>
+	/// Gets/Sets the text of the current document.
+	/// </summary>
+	public string Text
+	{
+		get
 		{
-			get
-			{
-				var document = Document;
-				return document != null ? document.Text : string.Empty;
-			}
-			set
-			{
-				var document = GetDocument();
-				document.Text = value ?? string.Empty;
-				// after replacing the full text, the caret is positioned at the end of the document
-				// - reset it to the beginning.
-				CaretOffset = 0;
-				document.UndoStack.ClearAll();
-			}
+			var document = Document;
+			return document != null ? document.Text : string.Empty;
 		}
-
-		private TextDocument GetDocument()
+		set
 		{
-			var document = Document ?? throw ThrowUtil.NoDocumentAssigned();
-		return document;
+			var document = GetDocument();
+			document.Text = value ?? string.Empty;
+			// after replacing the full text, the caret is positioned at the end of the document
+			// - reset it to the beginning.
+			CaretOffset = 0;
+			document.UndoStack.ClearAll();
 		}
+	}
 
-		/// <summary>
-		/// Occurs when the Text property changes.
-		/// </summary>
-		public event EventHandler TextChanged;
+	private TextDocument GetDocument()
+	{
+		var document = Document;
+		return document ?? throw ThrowUtil.NoDocumentAssigned();
+	}
+
+	/// <summary>
+	/// Occurs when the Text property changes.
+	/// </summary>
+	public event EventHandler TextChanged;
 
 	/// <summary>
 	/// Raises the <see cref="TextChanged"/> event.
@@ -274,36 +273,36 @@ namespace AvaloniaEdit;
 	#region TextArea / ScrollViewer properties
 	private bool wasSearchPanelOpened;
 
-		protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+	protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+	{
+		base.OnApplyTemplate(e);
+		ScrollViewer = (ScrollViewer)e.NameScope.Find("PART_ScrollViewer");
+		ScrollViewer.Content = TextArea;
+
+		SearchPanel = SearchPanel.Install(this);
+	}
+
+	protected override void OnAttachedToLogicalTree(LogicalTreeAttachmentEventArgs e)
+	{
+		base.OnAttachedToLogicalTree(e);
+
+		if (SearchPanel != null && wasSearchPanelOpened)
 		{
-			base.OnApplyTemplate(e);
-			ScrollViewer = (ScrollViewer)e.NameScope.Find("PART_ScrollViewer");
-			ScrollViewer.Content = TextArea;
-
-			SearchPanel = SearchPanel.Install(this);
+			SearchPanel.Open();
 		}
+	}
 
-		protected override void OnAttachedToLogicalTree(LogicalTreeAttachmentEventArgs e)
+	protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
+	{
+		base.OnDetachedFromLogicalTree(e);
+
+		if (SearchPanel != null)
 		{
-			base.OnAttachedToLogicalTree(e);
-
-			if (SearchPanel != null && wasSearchPanelOpened)
-			{
-				SearchPanel.Open();
-			}
+			wasSearchPanelOpened = SearchPanel.IsOpened;
+			if (SearchPanel.IsOpened)
+				SearchPanel.Close();
 		}
-
-		protected override void OnDetachedFromLogicalTree(LogicalTreeAttachmentEventArgs e)
-		{
-			base.OnDetachedFromLogicalTree(e);
-
-			if (SearchPanel != null)
-			{
-				wasSearchPanelOpened = SearchPanel.IsOpened;
-				if (SearchPanel.IsOpened)
-					SearchPanel.Close();
-			}
-		}
+	}
 
 	/// <summary>
 	/// Gets the text area.
@@ -321,300 +320,299 @@ namespace AvaloniaEdit;
 	/// </summary>
 	internal ScrollViewer ScrollViewer { get; private set; }
 
-		#endregion
+	#endregion
 
-		#region Syntax highlighting
-		/// <summary>
-		/// The <see cref="SyntaxHighlighting"/> property.
-		/// </summary>
-		public static readonly StyledProperty<IHighlightingDefinition> SyntaxHighlightingProperty =
-			AvaloniaProperty.Register<TextEditor, IHighlightingDefinition>("SyntaxHighlighting");
+	#region Syntax highlighting
+	/// <summary>
+	/// The <see cref="SyntaxHighlighting"/> property.
+	/// </summary>
+	public static readonly StyledProperty<IHighlightingDefinition> SyntaxHighlightingProperty =
+		AvaloniaProperty.Register<TextEditor, IHighlightingDefinition>("SyntaxHighlighting");
 
-		/// <summary>
-		/// Gets/sets the syntax highlighting definition used to colorize the text.
-		/// </summary>
-		public IHighlightingDefinition SyntaxHighlighting
-		{
-			get => GetValue(SyntaxHighlightingProperty);
-			set => SetValue(SyntaxHighlightingProperty, value);
-		}
+	/// <summary>
+	/// Gets/sets the syntax highlighting definition used to colorize the text.
+	/// </summary>
+	public IHighlightingDefinition SyntaxHighlighting
+	{
+		get => GetValue(SyntaxHighlightingProperty);
+		set => SetValue(SyntaxHighlightingProperty, value);
+	}
 
-		private IVisualLineTransformer _colorizer;
+	private IVisualLineTransformer _colorizer;
 
 	private static void OnSyntaxHighlightingChanged(AvaloniaPropertyChangedEventArgs e) => (e.Sender as TextEditor)?.OnSyntaxHighlightingChanged(e.NewValue as IHighlightingDefinition);
 
 	private void OnSyntaxHighlightingChanged(IHighlightingDefinition newValue)
+	{
+		if (_colorizer != null)
 		{
+			TextArea.TextView.LineTransformers.Remove(_colorizer);
+			_colorizer = null;
+		}
+
+		if (newValue != null)
+		{
+			_colorizer = CreateColorizer(newValue);
 			if (_colorizer != null)
 			{
-				TextArea.TextView.LineTransformers.Remove(_colorizer);
-				_colorizer = null;
-			}
-
-			if (newValue != null)
-			{
-				_colorizer = CreateColorizer(newValue);
-				if (_colorizer != null)
-				{
-					TextArea.TextView.LineTransformers.Insert(0, _colorizer);
-				}
+				TextArea.TextView.LineTransformers.Insert(0, _colorizer);
 			}
 		}
+	}
 
-		/// <summary>
-		/// Creates the highlighting colorizer for the specified highlighting definition.
-		/// Allows derived classes to provide custom colorizer implementations for special highlighting definitions.
-		/// </summary>
-		/// <returns></returns>
-		protected virtual IVisualLineTransformer CreateColorizer(IHighlightingDefinition highlightingDefinition)
-		{
+	/// <summary>
+	/// Creates the highlighting colorizer for the specified highlighting definition.
+	/// Allows derived classes to provide custom colorizer implementations for special highlighting definitions.
+	/// </summary>
+	/// <returns></returns>
+	protected virtual IVisualLineTransformer CreateColorizer(IHighlightingDefinition highlightingDefinition)
+	{
 		ArgumentNullException.ThrowIfNull(highlightingDefinition);
 		return new HighlightingColorizer(highlightingDefinition);
-		}
-		#endregion
+	}
+	#endregion
 
-		#region WordWrap
-		/// <summary>
-		/// Word wrap dependency property.
-		/// </summary>
-		public static readonly StyledProperty<bool> WordWrapProperty =
-			AvaloniaProperty.Register<TextEditor, bool>("WordWrap");
+	#region WordWrap
+	/// <summary>
+	/// Word wrap dependency property.
+	/// </summary>
+	public static readonly StyledProperty<bool> WordWrapProperty =
+		AvaloniaProperty.Register<TextEditor, bool>("WordWrap");
 
-		/// <summary>
-		/// Specifies whether the text editor uses word wrapping.
-		/// </summary>
-		/// <remarks>
-		/// Setting WordWrap=true has the same effect as setting HorizontalScrollBarVisibility=Disabled and will override the
-		/// HorizontalScrollBarVisibility setting.
-		/// </remarks>
-		public bool WordWrap
-		{
-			get => GetValue(WordWrapProperty);
-			set => SetValue(WordWrapProperty, value);
-		}
-		#endregion
+	/// <summary>
+	/// Specifies whether the text editor uses word wrapping.
+	/// </summary>
+	/// <remarks>
+	/// Setting WordWrap=true has the same effect as setting HorizontalScrollBarVisibility=Disabled and will override the
+	/// HorizontalScrollBarVisibility setting.
+	/// </remarks>
+	public bool WordWrap
+	{
+		get => GetValue(WordWrapProperty);
+		set => SetValue(WordWrapProperty, value);
+	}
+	#endregion
 
-		#region IsReadOnly
-		/// <summary>
-		/// IsReadOnly dependency property.
-		/// </summary>
-		public static readonly StyledProperty<bool> IsReadOnlyProperty =
-			AvaloniaProperty.Register<TextEditor, bool>("IsReadOnly");
+	#region IsReadOnly
+	/// <summary>
+	/// IsReadOnly dependency property.
+	/// </summary>
+	public static readonly StyledProperty<bool> IsReadOnlyProperty =
+		AvaloniaProperty.Register<TextEditor, bool>("IsReadOnly");
 
 	/// <summary>
 	/// Specifies whether the user can change the text editor content.
 	/// Setting this property will replace the
-	/// <see cref="TextArea.ReadOnlySectionProvider">TextArea.ReadOnlySectionProvider</see>.
+	/// <see cref="Editing.TextArea.ReadOnlySectionProvider">TextArea.ReadOnlySectionProvider</see>.
 	/// </summary>
 	public bool IsReadOnly
+	{
+		get => GetValue(IsReadOnlyProperty);
+		set => SetValue(IsReadOnlyProperty, value);
+	}
+
+	private static void OnIsReadOnlyChanged(AvaloniaPropertyChangedEventArgs e)
+	{
+		if (e.Sender is TextEditor editor)
 		{
-			get => GetValue(IsReadOnlyProperty);
-			set => SetValue(IsReadOnlyProperty, value);
+			var isReadonly = e.GetNewValue<bool>();
+
+			editor.TextArea.ReadOnlySectionProvider = isReadonly ?
+				ReadOnlySectionDocument.Instance :
+				NoReadOnlySections.Instance;
+
+			editor.SearchPanel?.IsReplaceMode = !isReadonly && editor.SearchPanel.IsReplaceMode;
 		}
+	}
+	#endregion
 
-		private static void OnIsReadOnlyChanged(AvaloniaPropertyChangedEventArgs e)
+	#region IsModified
+	/// <summary>
+	/// Dependency property for <see cref="IsModified"/>
+	/// </summary>
+	public static readonly StyledProperty<bool> IsModifiedProperty =
+		AvaloniaProperty.Register<TextEditor, bool>("IsModified");
+
+	/// <summary>
+	/// Gets/Sets the 'modified' flag.
+	/// </summary>
+	public bool IsModified
+	{
+		get => GetValue(IsModifiedProperty);
+		set => SetValue(IsModifiedProperty, value);
+	}
+
+	private static void OnIsModifiedChanged(AvaloniaPropertyChangedEventArgs e)
+	{
+		var editor = e.Sender as TextEditor;
+		var document = editor?.Document;
+		if (document != null)
 		{
-			if (e.Sender is TextEditor editor)
-			{
-				var isReadonly = e.GetNewValue<bool>();
-
-				editor.TextArea.ReadOnlySectionProvider = isReadonly ?
-					ReadOnlySectionDocument.Instance :
-					NoReadOnlySections.Instance;
-
-				editor.SearchPanel?.IsReplaceMode = isReadonly ?
-						false : editor.SearchPanel.IsReplaceMode;
-			}
-		}
-		#endregion
-
-		#region IsModified
-		/// <summary>
-		/// Dependency property for <see cref="IsModified"/>
-		/// </summary>
-		public static readonly StyledProperty<bool> IsModifiedProperty =
-			AvaloniaProperty.Register<TextEditor, bool>("IsModified");
-
-		/// <summary>
-		/// Gets/Sets the 'modified' flag.
-		/// </summary>
-		public bool IsModified
-		{
-			get => GetValue(IsModifiedProperty);
-			set => SetValue(IsModifiedProperty, value);
-		}
-
-		private static void OnIsModifiedChanged(AvaloniaPropertyChangedEventArgs e)
-		{
-			var editor = e.Sender as TextEditor;
-			var document = editor?.Document;
-			if (document != null)
-			{
-				var undoStack = document.UndoStack;
-				if ((bool)e.NewValue)
-				{
-					if (undoStack.IsOriginalFile)
-						undoStack.DiscardOriginalFileMarker();
-				}
-				else
-				{
-					undoStack.MarkAsOriginalFile();
-				}
-			}
-		}
-
-		private void HandleIsOriginalChanged(PropertyChangedEventArgs e)
-		{
-			if (e.PropertyName == "IsOriginalFile")
-			{
-				var document = Document;
-				if (document != null)
-				{
-					SetValue(IsModifiedProperty, (object)!document.UndoStack.IsOriginalFile);
-				}
-			}
-		}
-		#endregion
-
-		#region ShowLineNumbers
-		/// <summary>
-		/// ShowLineNumbers dependency property.
-		/// </summary>
-		public static readonly StyledProperty<bool> ShowLineNumbersProperty =
-			AvaloniaProperty.Register<TextEditor, bool>("ShowLineNumbers");
-
-		/// <summary>
-		/// Specifies whether line numbers are shown on the left to the text view.
-		/// </summary>
-		public bool ShowLineNumbers
-		{
-			get => GetValue(ShowLineNumbersProperty);
-			set => SetValue(ShowLineNumbersProperty, value);
-		}
-
-		/// <summary>
-		/// Dependency property for <see cref="SearchResultsBrush"/>.
-		/// </summary>
-		public static readonly StyledProperty<IBrush> SearchResultsBrushProperty =
-			AvaloniaProperty.Register<TextEditor, IBrush>(nameof(SearchResultsBrush), new SolidColorBrush(Color.FromRgb(81, 92, 106)));
-
-		/// <summary>
-		/// Gets/sets the Brush used for marking search results in the TextView.
-		/// </summary>
-		public IBrush SearchResultsBrush
-		{
-			get => GetValue(SearchResultsBrushProperty);
-			set => SetValue(SearchResultsBrushProperty, value);
-		}
-
-		private static void OnShowLineNumbersChanged(AvaloniaPropertyChangedEventArgs e)
-		{
-		if (e.Sender is not TextEditor editor) return;
-
-		var leftMargins = editor.TextArea.LeftMargins;
+			var undoStack = document.UndoStack;
 			if ((bool)e.NewValue)
 			{
-				var lineNumbers = new LineNumberMargin();
-				var line = (Line)DottedLineMargin.Create();
-				leftMargins.Insert(0, lineNumbers);
-				leftMargins.Insert(1, line);
-				var lineNumbersForeground = editor.GetBindingObservable(LineNumbersForegroundProperty);
-				var lineNumbersMargin = editor.GetBindingObservable(LineNumbersMarginProperty);
-				line.Bind(Shape.StrokeProperty, lineNumbersForeground);
-				line.Bind(MarginProperty, lineNumbersMargin);
-				lineNumbers.Bind(ForegroundProperty, lineNumbersForeground);
+				if (undoStack.IsOriginalFile)
+					undoStack.DiscardOriginalFileMarker();
 			}
 			else
 			{
-				for (var i = 0; i < leftMargins.Count; i++)
+				undoStack.MarkAsOriginalFile();
+			}
+		}
+	}
+
+	private void HandleIsOriginalChanged(PropertyChangedEventArgs e)
+	{
+		if (e.PropertyName == "IsOriginalFile")
+		{
+			var document = Document;
+			if (document != null)
+			{
+				SetValue(IsModifiedProperty, (object)!document.UndoStack.IsOriginalFile);
+			}
+		}
+	}
+	#endregion
+
+	#region ShowLineNumbers
+	/// <summary>
+	/// ShowLineNumbers dependency property.
+	/// </summary>
+	public static readonly StyledProperty<bool> ShowLineNumbersProperty =
+		AvaloniaProperty.Register<TextEditor, bool>("ShowLineNumbers");
+
+	/// <summary>
+	/// Specifies whether line numbers are shown on the left to the text view.
+	/// </summary>
+	public bool ShowLineNumbers
+	{
+		get => GetValue(ShowLineNumbersProperty);
+		set => SetValue(ShowLineNumbersProperty, value);
+	}
+
+	/// <summary>
+	/// Dependency property for <see cref="SearchResultsBrush"/>.
+	/// </summary>
+	public static readonly StyledProperty<IBrush> SearchResultsBrushProperty =
+		AvaloniaProperty.Register<TextEditor, IBrush>(nameof(SearchResultsBrush), new SolidColorBrush(Color.FromRgb(81, 92, 106)));
+
+	/// <summary>
+	/// Gets/sets the Brush used for marking search results in the TextView.
+	/// </summary>
+	public IBrush SearchResultsBrush
+	{
+		get => GetValue(SearchResultsBrushProperty);
+		set => SetValue(SearchResultsBrushProperty, value);
+	}
+
+	private static void OnShowLineNumbersChanged(AvaloniaPropertyChangedEventArgs e)
+	{
+		if (e.Sender is not TextEditor editor) return;
+
+		var leftMargins = editor.TextArea.LeftMargins;
+		if ((bool)e.NewValue)
+		{
+			var lineNumbers = new LineNumberMargin();
+			var line = (Line)DottedLineMargin.Create();
+			leftMargins.Insert(0, lineNumbers);
+			leftMargins.Insert(1, line);
+			var lineNumbersForeground = editor.GetBindingObservable(LineNumbersForegroundProperty);
+			var lineNumbersMargin = editor.GetBindingObservable(LineNumbersMarginProperty);
+			line.Bind(Shape.StrokeProperty, lineNumbersForeground);
+			line.Bind(MarginProperty, lineNumbersMargin);
+			lineNumbers.Bind(ForegroundProperty, lineNumbersForeground);
+		}
+		else
+		{
+			for (var i = 0; i < leftMargins.Count; i++)
+			{
+				if (leftMargins[i] is LineNumberMargin)
 				{
-					if (leftMargins[i] is LineNumberMargin)
+					leftMargins.RemoveAt(i);
+					if (i < leftMargins.Count && DottedLineMargin.IsDottedLineMargin(leftMargins[i]))
 					{
 						leftMargins.RemoveAt(i);
-						if (i < leftMargins.Count && DottedLineMargin.IsDottedLineMargin(leftMargins[i]))
-						{
-							leftMargins.RemoveAt(i);
-						}
-						break;
 					}
+					break;
 				}
 			}
 		}
-		#endregion
+	}
+	#endregion
 
-		#region LineNumbersForeground
-		/// <summary>
-		/// LineNumbersForeground dependency property.
-		/// </summary>
-		public static readonly StyledProperty<IBrush> LineNumbersForegroundProperty =
-			AvaloniaProperty.Register<TextEditor, IBrush>("LineNumbersForeground", Brushes.Gray);
+	#region LineNumbersForeground
+	/// <summary>
+	/// LineNumbersForeground dependency property.
+	/// </summary>
+	public static readonly StyledProperty<IBrush> LineNumbersForegroundProperty =
+		AvaloniaProperty.Register<TextEditor, IBrush>("LineNumbersForeground", Brushes.Gray);
 
-		/// <summary>
-		/// Gets/sets the Brush used for displaying the foreground color of line numbers.
-		/// </summary>
-		public IBrush LineNumbersForeground
-		{
-			get => GetValue(LineNumbersForegroundProperty);
-			set => SetValue(LineNumbersForegroundProperty, value);
-		}
+	/// <summary>
+	/// Gets/sets the Brush used for displaying the foreground color of line numbers.
+	/// </summary>
+	public IBrush LineNumbersForeground
+	{
+		get => GetValue(LineNumbersForegroundProperty);
+		set => SetValue(LineNumbersForegroundProperty, value);
+	}
 
-		private static void OnLineNumbersForegroundChanged(AvaloniaPropertyChangedEventArgs e)
-		{
-			var editor = e.Sender as TextEditor;
-			var lineNumberMargin = editor?.TextArea.LeftMargins.FirstOrDefault(margin => margin is LineNumberMargin) as LineNumberMargin;
+	private static void OnLineNumbersForegroundChanged(AvaloniaPropertyChangedEventArgs e)
+	{
+		var editor = e.Sender as TextEditor;
+		var lineNumberMargin = editor?.TextArea.LeftMargins.FirstOrDefault(margin => margin is LineNumberMargin) as LineNumberMargin;
 
-			lineNumberMargin?.SetValue(ForegroundProperty, e.NewValue);
-		}
+		lineNumberMargin?.SetValue(ForegroundProperty, e.NewValue);
+	}
 
-		private static void OnFontFamilyPropertyChanged(AvaloniaPropertyChangedEventArgs e)
-		{
-			var editor = e.Sender as TextEditor;
+	private static void OnFontFamilyPropertyChanged(AvaloniaPropertyChangedEventArgs e)
+	{
+		var editor = e.Sender as TextEditor;
 
-			editor?.TextArea.TextView.SetValue(FontFamilyProperty, e.NewValue);
-		}
+		editor?.TextArea.TextView.SetValue(FontFamilyProperty, e.NewValue);
+	}
 
-		private static void OnFontSizePropertyChanged(AvaloniaPropertyChangedEventArgs e)
-		{
-			var editor = e.Sender as TextEditor;
+	private static void OnFontSizePropertyChanged(AvaloniaPropertyChangedEventArgs e)
+	{
+		var editor = e.Sender as TextEditor;
 
-			editor?.TextArea.TextView.SetValue(FontSizeProperty, e.NewValue);
-		}
+		editor?.TextArea.TextView.SetValue(FontSizeProperty, e.NewValue);
+	}
 
-		private static void SearchResultsBrushChangedCallback(AvaloniaPropertyChangedEventArgs e)
-		{
-			var editor = e.Sender as TextEditor;
+	private static void SearchResultsBrushChangedCallback(AvaloniaPropertyChangedEventArgs e)
+	{
+		var editor = e.Sender as TextEditor;
 
-			editor?.SearchPanel?.SetSearchResultsBrush(e.GetNewValue<IBrush>());
-		}
+		editor?.SearchPanel?.SetSearchResultsBrush(e.GetNewValue<IBrush>());
+	}
 
-		#endregion
+	#endregion
+	
+	#region LineNumbersMargin
+	/// <summary>
+	/// LineNumbersMargin dependency property.
+	/// </summary>
+	public static readonly StyledProperty<Thickness> LineNumbersMarginProperty =
+		AvaloniaProperty.Register<TextEditor, Thickness>("LineNumbersMargin", new Thickness(2, 0, 2, 0));
 
-		#region LineNumbersMargin
-		/// <summary>
-		/// LineNumbersMargin dependency property.
-		/// </summary>
-		public static readonly StyledProperty<Thickness> LineNumbersMarginProperty =
-			AvaloniaProperty.Register<TextEditor, Thickness>("LineNumbersMargin", new Thickness(2, 0, 2, 0));
+	/// <summary>
+	/// Gets or sets the margin that is used to display the vertical line to the right of the line numbers.
+	/// </summary>
+	public Thickness LineNumbersMargin
+	{
+		get => GetValue(LineNumbersMarginProperty);
+		set => SetValue(LineNumbersMarginProperty, value);
+	}
+	#endregion
 
-		/// <summary>
-		/// Gets or sets the margin that is used to display the vertical line to the right of the line numbers.
-		/// </summary>
-		public Thickness LineNumbersMargin
-		{
-			get => GetValue(LineNumbersMarginProperty);
-			set => SetValue(LineNumbersMarginProperty, value);
-		}
-		#endregion
-
-		#region TextBoxBase-like methods
-		/// <summary>
-		/// Appends text to the end of the document.
-		/// </summary>
-		public void AppendText(string textData)
-		{
-			var document = GetDocument();
-			document.Insert(document.TextLength, textData);
-		}
+	#region TextBoxBase-like methods
+	/// <summary>
+	/// Appends text to the end of the document.
+	/// </summary>
+	public void AppendText(string textData)
+	{
+		var document = GetDocument();
+		document.Insert(document.TextLength, textData);
+	}
 
 	/// <summary>
 	/// Begins a group of document changes.
@@ -625,23 +623,23 @@ namespace AvaloniaEdit;
 	/// Copies the current selection to the clipboard.
 	/// </summary>
 	public void Copy()
+	{
+		if (CanCopy)
 		{
-			if (CanCopy)
-			{
-				ApplicationCommands.Copy.Execute(null, TextArea);
-			}
+			ApplicationCommands.Copy.Execute(null, TextArea);
 		}
+	}
 
-		/// <summary>
-		/// Removes the current selection and copies it to the clipboard.
-		/// </summary>
-		public void Cut()
+	/// <summary>
+	/// Removes the current selection and copies it to the clipboard.
+	/// </summary>
+	public void Cut()
+	{
+		if (CanCut)
 		{
-			if (CanCut)
-			{
-				ApplicationCommands.Cut.Execute(null, TextArea);
-			}
+			ApplicationCommands.Cut.Execute(null, TextArea);
 		}
+	}
 
 	/// <summary>
 	/// Begins a group of document changes and returns an object that ends the group of document
@@ -653,12 +651,12 @@ namespace AvaloniaEdit;
 	/// Removes the current selection without copying it to the clipboard.
 	/// </summary>
 	public void Delete()
+	{
+		if(CanDelete)
 		{
-			if(CanDelete)
-			{
-				ApplicationCommands.Delete.Execute(null, TextArea);
-			}
+			ApplicationCommands.Delete.Execute(null, TextArea);
 		}
+	}
 
 	/// <summary>
 	/// Ends the current group of document changes.
@@ -669,116 +667,116 @@ namespace AvaloniaEdit;
 	/// Scrolls one line down.
 	/// </summary>
 	public void LineDown()
-		{
-			//if (scrollViewer != null)
-			//	scrollViewer.LineDown();
-		}
+	{
+		//if (scrollViewer != null)
+		//	scrollViewer.LineDown();
+	}
 
-		/// <summary>
-		/// Scrolls to the left.
-		/// </summary>
-		public void LineLeft()
-		{
-			//if (scrollViewer != null)
-			//	scrollViewer.LineLeft();
-		}
+	/// <summary>
+	/// Scrolls to the left.
+	/// </summary>
+	public void LineLeft()
+	{
+		//if (scrollViewer != null)
+		//	scrollViewer.LineLeft();
+	}
 
-		/// <summary>
-		/// Scrolls to the right.
-		/// </summary>
-		public void LineRight()
-		{
-			//if (scrollViewer != null)
-			//	scrollViewer.LineRight();
-		}
+	/// <summary>
+	/// Scrolls to the right.
+	/// </summary>
+	public void LineRight()
+	{
+		//if (scrollViewer != null)
+		//	scrollViewer.LineRight();
+	}
 
-		/// <summary>
-		/// Scrolls one line up.
-		/// </summary>
-		public void LineUp()
-		{
-			//if (scrollViewer != null)
-			//	scrollViewer.LineUp();
-		}
+	/// <summary>
+	/// Scrolls one line up.
+	/// </summary>
+	public void LineUp()
+	{
+		//if (scrollViewer != null)
+		//	scrollViewer.LineUp();
+	}
 
-		/// <summary>
-		/// Scrolls one page down.
-		/// </summary>
-		public void PageDown()
-		{
-			//if (scrollViewer != null)
-			//	scrollViewer.PageDown();
-		}
+	/// <summary>
+	/// Scrolls one page down.
+	/// </summary>
+	public void PageDown()
+	{
+		//if (scrollViewer != null)
+		//	scrollViewer.PageDown();
+	}
 
-		/// <summary>
-		/// Scrolls one page up.
-		/// </summary>
-		public void PageUp()
-		{
-			//if (scrollViewer != null)
-			//	scrollViewer.PageUp();
-		}
+	/// <summary>
+	/// Scrolls one page up.
+	/// </summary>
+	public void PageUp()
+	{
+		//if (scrollViewer != null)
+		//	scrollViewer.PageUp();
+	}
 
-		/// <summary>
-		/// Scrolls one page left.
-		/// </summary>
-		public void PageLeft()
-		{
-			//if (scrollViewer != null)
-			//	scrollViewer.PageLeft();
-		}
+	/// <summary>
+	/// Scrolls one page left.
+	/// </summary>
+	public void PageLeft()
+	{
+		//if (scrollViewer != null)
+		//	scrollViewer.PageLeft();
+	}
 
-		/// <summary>
-		/// Scrolls one page right.
-		/// </summary>
-		public void PageRight()
-		{
-			//if (scrollViewer != null)
-			//	scrollViewer.PageRight();
-		}
+	/// <summary>
+	/// Scrolls one page right.
+	/// </summary>
+	public void PageRight()
+	{
+		//if (scrollViewer != null)
+		//	scrollViewer.PageRight();
+	}
 
-		/// <summary>
-		/// Pastes the clipboard content.
-		/// </summary>
-		public void Paste()
+	/// <summary>
+	/// Pastes the clipboard content.
+	/// </summary>
+	public void Paste()
+	{
+		if (CanPaste)
 		{
-			if (CanPaste)
-			{
-				ApplicationCommands.Paste.Execute(null, TextArea);
-			}
+			ApplicationCommands.Paste.Execute(null, TextArea);
 		}
+	}
 
-		/// <summary>
-		/// Redoes the most recent undone command.
-		/// </summary>
-		/// <returns>True is the redo operation was successful, false is the redo stack is empty.</returns>
-		public bool Redo()
+	/// <summary>
+	/// Redoes the most recent undone command.
+	/// </summary>
+	/// <returns>True is the redo operation was successful, false is the redo stack is empty.</returns>
+	public bool Redo()
+	{
+		if (CanRedo)
 		{
-			if (CanRedo)
-			{
-				ApplicationCommands.Redo.Execute(null, TextArea);
-				return true;
-			}
-			return false;
+			ApplicationCommands.Redo.Execute(null, TextArea);
+			return true;
 		}
+		return false;
+	}
 
-		/// <summary>
-		/// Scrolls to the end of the document.
-		/// </summary>
-		public void ScrollToEnd()
-		{
-			ApplyTemplate(); // ensure scrollViewer is created
-			ScrollViewer?.ScrollToEnd();
-		}
+	/// <summary>
+	/// Scrolls to the end of the document.
+	/// </summary>
+	public void ScrollToEnd()
+	{
+		ApplyTemplate(); // ensure scrollViewer is created
+		ScrollViewer?.ScrollToEnd();
+	}
 
-		/// <summary>
-		/// Scrolls to the start of the document.
-		/// </summary>
-		public void ScrollToHome()
-		{
-			ApplyTemplate(); // ensure scrollViewer is created
-			ScrollViewer?.ScrollToHome();
-		}
+	/// <summary>
+	/// Scrolls to the start of the document.
+	/// </summary>
+	public void ScrollToHome()
+	{
+		ApplyTemplate(); // ensure scrollViewer is created
+		ScrollViewer?.ScrollToHome();
+	}
 
 	/// <summary>
 	/// Scrolls to the specified position in the document.
@@ -794,26 +792,26 @@ namespace AvaloniaEdit;
 	/// Selects the entire text.
 	/// </summary>
 	public void SelectAll()
+	{
+		if (CanSelectAll)
 		{
-			if (CanSelectAll)
-			{
-				ApplicationCommands.SelectAll.Execute(null, TextArea);
-			}
+			ApplicationCommands.SelectAll.Execute(null, TextArea);
 		}
+	}
 
-		/// <summary>
-		/// Undoes the most recent command.
-		/// </summary>
-		/// <returns>True is the undo operation was successful, false is the undo stack is empty.</returns>
-		public bool Undo()
+	/// <summary>
+	/// Undoes the most recent command.
+	/// </summary>
+	/// <returns>True is the undo operation was successful, false is the undo stack is empty.</returns>
+	public bool Undo()
+	{
+		if (CanUndo)
 		{
-			if (CanUndo)
-			{
-				ApplicationCommands.Undo.Execute(null, TextArea);
-				return true;
-			}
-			return false;
+			ApplicationCommands.Undo.Execute(null, TextArea);
+			return true;
 		}
+		return false;
+	}
 
 	/// <summary>
 	/// Gets if the most recent undone command can be redone.
@@ -860,134 +858,127 @@ namespace AvaloniaEdit;
 	/// </summary>
 	public double ExtentHeight => ScrollViewer?.Extent.Height ?? 0;
 
-		/// <summary>
-		/// Gets the horizontal size of the current document region.
-		/// </summary>
-		public double ExtentWidth => ScrollViewer?.Extent.Width ?? 0;
+	/// <summary>
+	/// Gets the horizontal size of the current document region.
+	/// </summary>
+	public double ExtentWidth => ScrollViewer?.Extent.Width ?? 0;
 
-		/// <summary>
-		/// Gets the horizontal size of the viewport.
-		/// </summary>
-		public double ViewportHeight => ScrollViewer?.Viewport.Height ?? 0;
+	/// <summary>
+	/// Gets the horizontal size of the viewport.
+	/// </summary>
+	public double ViewportHeight => ScrollViewer?.Viewport.Height ?? 0;
 
-		/// <summary>
-		/// Gets the horizontal size of the viewport.
-		/// </summary>
-		public double ViewportWidth => ScrollViewer?.Viewport.Width ?? 0;
+	/// <summary>
+	/// Gets the horizontal size of the viewport.
+	/// </summary>
+	public double ViewportWidth => ScrollViewer?.Viewport.Width ?? 0;
 
-		/// <summary>
-		/// Gets the vertical scroll position.
-		/// </summary>
-		public double VerticalOffset => ScrollViewer?.Offset.Y ?? 0;
+	/// <summary>
+	/// Gets the vertical scroll position.
+	/// </summary>
+	public double VerticalOffset => ScrollViewer?.Offset.Y ?? 0;
 
-		/// <summary>
-		/// Gets the horizontal scroll position.
-		/// </summary>
-		public double HorizontalOffset => ScrollViewer?.Offset.X ?? 0;
+	/// <summary>
+	/// Gets the horizontal scroll position.
+	/// </summary>
+	public double HorizontalOffset => ScrollViewer?.Offset.X ?? 0;
 
-		#endregion
+	#endregion
 
-		#region TextBox methods
-		/// <summary>
-		/// Gets/Sets the selected text.
-		/// </summary>
-		public string SelectedText
+	#region TextBox methods
+	/// <summary>
+	/// Gets/Sets the selected text.
+	/// </summary>
+	public string SelectedText
+	{
+		get
 		{
-			get
-			{
-				// We'll get the text from the whole surrounding segment.
-				// This is done to ensure that SelectedText.Length == SelectionLength.
-				if (TextArea.Document != null && !TextArea.Selection.IsEmpty)
-					return TextArea.Document.GetText(TextArea.Selection.SurroundingSegment);
-				return string.Empty;
-			}
-			set
-			{
+			// We'll get the text from the whole surrounding segment.
+			// This is done to ensure that SelectedText.Length == SelectionLength.
+			if (TextArea.Document != null && !TextArea.Selection.IsEmpty)
+				return TextArea.Document.GetText(TextArea.Selection.SurroundingSegment);
+			return string.Empty;
+		}
+		set
+		{
 			ArgumentNullException.ThrowIfNull(value);
 			var textArea = TextArea;
-				if (textArea.Document != null)
-				{
-					var offset = SelectionStart;
-					var length = SelectionLength;
-					textArea.Document.Replace(offset, length, value);
-					// keep inserted text selected
-					textArea.Selection = Selection.Create(textArea, offset, offset + value.Length);
-				}
+			if (textArea.Document != null)
+			{
+				var offset = SelectionStart;
+				var length = SelectionLength;
+				textArea.Document.Replace(offset, length, value);
+				// keep inserted text selected
+				textArea.Selection = Selection.Create(textArea, offset, offset + value.Length);
 			}
 		}
+	}
 
-		/// <summary>
-		/// Gets/sets the caret position.
-		/// </summary>
-		public int CaretOffset
+	/// <summary>
+	/// Gets/sets the caret position.
+	/// </summary>
+	public int CaretOffset
+	{
+		get => TextArea.Caret.Offset; set => TextArea.Caret.Offset = value;
+	}
+
+	/// <summary>
+	/// Gets/sets the start position of the selection.
+	/// </summary>
+	public int SelectionStart
+	{
+		get
 		{
-			get
-			{
+			if (TextArea.Selection.IsEmpty)
 				return TextArea.Caret.Offset;
-			}
-			set
-			{
-				TextArea.Caret.Offset = value;
-			}
+			else
+				return TextArea.Selection.SurroundingSegment.Offset;
 		}
+		set => Select(value, SelectionLength);
+	}
 
-		/// <summary>
-		/// Gets/sets the start position of the selection.
-		/// </summary>
-		public int SelectionStart
+	/// <summary>
+	/// Gets/sets the length of the selection.
+	/// </summary>
+	public int SelectionLength
+	{
+		get
 		{
-			get
-			{
-				if (TextArea.Selection.IsEmpty)
-					return TextArea.Caret.Offset;
-				else
-					return TextArea.Selection.SurroundingSegment.Offset;
-			}
-			set => Select(value, SelectionLength);
+			if (!TextArea.Selection.IsEmpty)
+				return TextArea.Selection.SurroundingSegment.Length;
+			else
+				return 0;
 		}
+		set => Select(SelectionStart, value);
+	}
 
-		/// <summary>
-		/// Gets/sets the length of the selection.
-		/// </summary>
-		public int SelectionLength
-		{
-			get
-			{
-				if (!TextArea.Selection.IsEmpty)
-					return TextArea.Selection.SurroundingSegment.Length;
-				else
-					return 0;
-			}
-			set => Select(SelectionStart, value);
-		}
+	/// <summary>
+	/// Selects the specified text section.
+	/// </summary>
+	public void Select(int start, int length)
+	{
+		var documentLength = Document?.TextLength ?? 0;
+		if (start < 0 || start > documentLength)
+			throw new ArgumentOutOfRangeException(nameof(start), start, "Value must be between 0 and " + documentLength);
+		if (length < 0 || start + length > documentLength)
+			throw new ArgumentOutOfRangeException(nameof(length), length, "Value must be between 0 and " + (documentLength - start));
+		TextArea.Selection = Selection.Create(TextArea, start, start + length);
+		TextArea.Caret.Offset = start + length;
+	}
 
-		/// <summary>
-		/// Selects the specified text section.
-		/// </summary>
-		public void Select(int start, int length)
+	/// <summary>
+	/// Gets the number of lines in the document.
+	/// </summary>
+	public int LineCount
+	{
+		get
 		{
-			var documentLength = Document?.TextLength ?? 0;
-			if (start < 0 || start > documentLength)
-				throw new ArgumentOutOfRangeException(nameof(start), start, "Value must be between 0 and " + documentLength);
-			if (length < 0 || start + length > documentLength)
-				throw new ArgumentOutOfRangeException(nameof(length), length, "Value must be between 0 and " + (documentLength - start));
-			TextArea.Selection = Selection.Create(TextArea, start, start + length);
-			TextArea.Caret.Offset = start + length;
+			var document = Document;
+			if (document != null)
+				return document.LineCount;
+			return 1;
 		}
-
-		/// <summary>
-		/// Gets the number of lines in the document.
-		/// </summary>
-		public int LineCount
-		{
-			get
-			{
-				var document = Document;
-				if (document != null)
-					return document.LineCount;
-				return 1;
-			}
-		}
+	}
 
 	/// <summary>
 	/// Clears the text.
@@ -1003,173 +994,156 @@ namespace AvaloniaEdit;
 	/// This method sets <see cref="IsModified"/> to false.
 	/// </remarks>
 	public void Load(Stream stream)
+	{
+		using (var reader = FileReader.OpenStream(stream, Encoding ?? Encoding.UTF8))
 		{
-			using (var reader = FileReader.OpenStream(stream, Encoding ?? Encoding.UTF8))
-			{
-				Text = reader.ReadToEnd();
-				SetValue(EncodingProperty, (object)reader.CurrentEncoding);
-			}
-			SetValue(IsModifiedProperty, (object)false);
+			Text = reader.ReadToEnd();
+			SetValue(EncodingProperty, (object)reader.CurrentEncoding);
 		}
-
-		/// <summary>
-		/// Loads the text from the stream, auto-detecting the encoding.
-		/// </summary>
-		public void Load(string fileName)
-		{
-		ArgumentNullException.ThrowIfNull(fileName);
-
-		// TODO:load
-		//using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-		//{
-		//	Load(fs);
-		//}
+		SetValue(IsModifiedProperty, (object)false);
 	}
 
-		/// <summary>
-		/// Encoding dependency property.
-		/// </summary>
-		public static readonly StyledProperty<Encoding> EncodingProperty =
-			AvaloniaProperty.Register<TextEditor, Encoding>("Encoding");
+	/// <summary>
+	/// Loads the text from the stream, auto-detecting the encoding.
+	/// </summary>
+	public void Load(string fileName) => ArgumentNullException.ThrowIfNull(fileName);// TODO:load//using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))//{//	Load(fs);//}
 
-		/// <summary>
-		/// Gets/sets the encoding used when the file is saved.
-		/// </summary>
-		/// <remarks>
-		/// The <see cref="Load(Stream)"/> method autodetects the encoding of the file and sets this property accordingly.
-		/// The <see cref="Save(Stream)"/> method uses the encoding specified in this property.
-		/// </remarks>
-		public Encoding Encoding
-		{
-			get => GetValue(EncodingProperty);
-			set => SetValue(EncodingProperty, value);
-		}
+	/// <summary>
+	/// Encoding dependency property.
+	/// </summary>
+	public static readonly StyledProperty<Encoding> EncodingProperty =
+		AvaloniaProperty.Register<TextEditor, Encoding>("Encoding");
 
-		/// <summary>
-		/// Saves the text to the stream.
-		/// </summary>
-		/// <remarks>
-		/// This method sets <see cref="IsModified"/> to false.
-		/// </remarks>
-		public void Save(Stream stream)
-		{
+	/// <summary>
+	/// Gets/sets the encoding used when the file is saved.
+	/// </summary>
+	/// <remarks>
+	/// The <see cref="Load(Stream)"/> method autodetects the encoding of the file and sets this property accordingly.
+	/// The <see cref="Save(Stream)"/> method uses the encoding specified in this property.
+	/// </remarks>
+	public Encoding Encoding
+	{
+		get => GetValue(EncodingProperty);
+		set => SetValue(EncodingProperty, value);
+	}
+
+	/// <summary>
+	/// Saves the text to the stream.
+	/// </summary>
+	/// <remarks>
+	/// This method sets <see cref="IsModified"/> to false.
+	/// </remarks>
+	public void Save(Stream stream)
+	{
 		ArgumentNullException.ThrowIfNull(stream);
 		var encoding = Encoding;
-			var document = Document;
-			var writer = encoding != null ? new StreamWriter(stream, encoding) : new StreamWriter(stream);
-			document?.WriteTextTo(writer);
-			writer.Flush();
-			// do not close the stream
-			SetValue(IsModifiedProperty, (object)false);
-		}
-
-		/// <summary>
-		/// Saves the text to the file.
-		/// </summary>
-		public void Save(string fileName)
-		{
-		ArgumentNullException.ThrowIfNull(fileName);
-		// TODO: save
-		//using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))
-		//{
-		//	Save(fs);
-		//}
+		var document = Document;
+		var writer = encoding != null ? new StreamWriter(stream, encoding) : new StreamWriter(stream);
+		document?.WriteTextTo(writer);
+		writer.Flush();
+		// do not close the stream
+		SetValue(IsModifiedProperty, (object)false);
 	}
-		#endregion
 
-		#region PointerHover events
-		/// <summary>
-		/// The PreviewPointerHover event.
-		/// </summary>
-		public static readonly RoutedEvent<PointerEventArgs> PreviewPointerHoverEvent =
-			TextView.PreviewPointerHoverEvent;
+	/// <summary>
+	/// Saves the text to the file.
+	/// </summary>
+	public void Save(string fileName) => ArgumentNullException.ThrowIfNull(fileName);// TODO: save//using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))//{//	Save(fs);//}
+	#endregion
 
-		/// <summary>
-		/// the pointerHover event.
-		/// </summary>
-		public static readonly RoutedEvent<PointerEventArgs> PointerHoverEvent =
-			TextView.PointerHoverEvent;
+	#region PointerHover events
+	/// <summary>
+	/// The PreviewPointerHover event.
+	/// </summary>
+	public static readonly RoutedEvent<PointerEventArgs> PreviewPointerHoverEvent =
+		TextView.PreviewPointerHoverEvent;
 
-		/// <summary>
-		/// The PreviewPointerHoverStopped event.
-		/// </summary>
-		public static readonly RoutedEvent<PointerEventArgs> PreviewPointerHoverStoppedEvent =
-			TextView.PreviewPointerHoverStoppedEvent;
+	/// <summary>
+	/// the pointerHover event.
+	/// </summary>
+	public static readonly RoutedEvent<PointerEventArgs> PointerHoverEvent =
+		TextView.PointerHoverEvent;
 
-		/// <summary>
-		/// the pointerHoverStopped event.
-		/// </summary>
-		public static readonly RoutedEvent<PointerEventArgs> PointerHoverStoppedEvent =
-			TextView.PointerHoverStoppedEvent;
+	/// <summary>
+	/// The PreviewPointerHoverStopped event.
+	/// </summary>
+	public static readonly RoutedEvent<PointerEventArgs> PreviewPointerHoverStoppedEvent =
+		TextView.PreviewPointerHoverStoppedEvent;
 
-		/// <summary>
-		/// Occurs when the pointer has hovered over a fixed location for some time.
-		/// </summary>
-		public event EventHandler<PointerEventArgs> PreviewPointerHover
-		{
-			add => AddHandler(PreviewPointerHoverEvent, value);
-			remove => RemoveHandler(PreviewPointerHoverEvent, value);
-		}
+	/// <summary>
+	/// the pointerHoverStopped event.
+	/// </summary>
+	public static readonly RoutedEvent<PointerEventArgs> PointerHoverStoppedEvent =
+		TextView.PointerHoverStoppedEvent;
 
-		/// <summary>
-		/// Occurs when the pointer has hovered over a fixed location for some time.
-		/// </summary>
-		public event EventHandler<PointerEventArgs> PointerHover
-		{
-			add => AddHandler(PointerHoverEvent, value);
-			remove => RemoveHandler(PointerHoverEvent, value);
-		}
+	/// <summary>
+	/// Occurs when the pointer has hovered over a fixed location for some time.
+	/// </summary>
+	public event EventHandler<PointerEventArgs> PreviewPointerHover
+	{
+		add => AddHandler(PreviewPointerHoverEvent, value);
+		remove => RemoveHandler(PreviewPointerHoverEvent, value);
+	}
 
-		/// <summary>
-		/// Occurs when the pointer had previously hovered but now started moving again.
-		/// </summary>
-		public event EventHandler<PointerEventArgs> PreviewPointerHoverStopped
-		{
-			add => AddHandler(PreviewPointerHoverStoppedEvent, value);
-			remove => RemoveHandler(PreviewPointerHoverStoppedEvent, value);
-		}
+	/// <summary>
+	/// Occurs when the pointer has hovered over a fixed location for some time.
+	/// </summary>
+	public event EventHandler<PointerEventArgs> PointerHover
+	{
+		add => AddHandler(PointerHoverEvent, value);
+		remove => RemoveHandler(PointerHoverEvent, value);
+	}
 
-		/// <summary>
-		/// Occurs when the pointer had previously hovered but now started moving again.
-		/// </summary>
-		public event EventHandler<PointerEventArgs> PointerHoverStopped
-		{
-			add => AddHandler(PointerHoverStoppedEvent, value);
-			remove => RemoveHandler(PointerHoverStoppedEvent, value);
-		}
+	/// <summary>
+	/// Occurs when the pointer had previously hovered but now started moving again.
+	/// </summary>
+	public event EventHandler<PointerEventArgs> PreviewPointerHoverStopped
+	{
+		add => AddHandler(PreviewPointerHoverStoppedEvent, value);
+		remove => RemoveHandler(PreviewPointerHoverStoppedEvent, value);
+	}
 
-		#endregion
+	/// <summary>
+	/// Occurs when the pointer had previously hovered but now started moving again.
+	/// </summary>
+	public event EventHandler<PointerEventArgs> PointerHoverStopped
+	{
+		add => AddHandler(PointerHoverStoppedEvent, value);
+		remove => RemoveHandler(PointerHoverStoppedEvent, value);
+	}
 
-		#region ScrollBarVisibility
-		/// <summary>
-		/// Dependency property for <see cref="HorizontalScrollBarVisibility"/>
-		/// </summary>
-		public static readonly AttachedProperty<ScrollBarVisibility> HorizontalScrollBarVisibilityProperty = ScrollViewer.HorizontalScrollBarVisibilityProperty.AddOwner<TextEditor>();
+	#endregion
 
-		/// <summary>
-		/// Gets/Sets the horizontal scroll bar visibility.
-		/// </summary>
-		public ScrollBarVisibility HorizontalScrollBarVisibility
-		{
-			get => GetValue(HorizontalScrollBarVisibilityProperty);
-			set => SetValue(HorizontalScrollBarVisibilityProperty, value);
-		}
+	#region ScrollBarVisibility
+	/// <summary>
+	/// Dependency property for <see cref="HorizontalScrollBarVisibility"/>
+	/// </summary>
+	public static readonly AttachedProperty<ScrollBarVisibility> HorizontalScrollBarVisibilityProperty = ScrollViewer.HorizontalScrollBarVisibilityProperty.AddOwner<TextEditor>();
 
-		private ScrollBarVisibility _horizontalScrollBarVisibilityBck = ScrollBarVisibility.Auto;
+	/// <summary>
+	/// Gets/Sets the horizontal scroll bar visibility.
+	/// </summary>
+	public ScrollBarVisibility HorizontalScrollBarVisibility
+	{
+		get => GetValue(HorizontalScrollBarVisibilityProperty);
+		set => SetValue(HorizontalScrollBarVisibilityProperty, value);
+	}
 
-		/// <summary>
-		/// Dependency property for <see cref="VerticalScrollBarVisibility"/>
-		/// </summary>
-		public static readonly AttachedProperty<ScrollBarVisibility> VerticalScrollBarVisibilityProperty = ScrollViewer.VerticalScrollBarVisibilityProperty.AddOwner<TextEditor>();
+	private ScrollBarVisibility _horizontalScrollBarVisibilityBck = ScrollBarVisibility.Auto;
 
-		/// <summary>
-		/// Gets/Sets the vertical scroll bar visibility.
-		/// </summary>
-		public ScrollBarVisibility VerticalScrollBarVisibility
-		{
-			get => GetValue(VerticalScrollBarVisibilityProperty);
-			set => SetValue(VerticalScrollBarVisibilityProperty, value);
-		}
+	/// <summary>
+	/// Dependency property for <see cref="VerticalScrollBarVisibility"/>
+	/// </summary>
+	public static readonly AttachedProperty<ScrollBarVisibility> VerticalScrollBarVisibilityProperty = ScrollViewer.VerticalScrollBarVisibilityProperty.AddOwner<TextEditor>();
+
+	/// <summary>
+	/// Gets/Sets the vertical scroll bar visibility.
+	/// </summary>
+	public ScrollBarVisibility VerticalScrollBarVisibility
+	{
+		get => GetValue(VerticalScrollBarVisibilityProperty);
+		set => SetValue(VerticalScrollBarVisibilityProperty, value);
+	}
 	#endregion
 
 	object IServiceProvider.GetService(Type serviceType) => TextArea.GetService(serviceType);
@@ -1181,13 +1155,13 @@ namespace AvaloniaEdit;
 	/// corner of TextEditor control</param>
 	/// <returns>The text view position, or null if the point is outside the document.</returns>
 	public TextViewPosition? GetPositionFromPoint(Point point)
-		{
-			if (Document == null)
-				return null;
-			var textView = TextArea.TextView;
-			Point tpoint = (Point)this.TranslatePoint(point + new Point(textView.ScrollOffset.X, Math.Floor(textView.ScrollOffset.Y)), textView);
-			return textView.GetPosition(tpoint);
-		}
+	{
+		if (Document is null)
+			return null;
+		var textView = TextArea.TextView;
+		var tpoint = (Point)this.TranslatePoint(point + new Point(textView.ScrollOffset.X, Math.Floor(textView.ScrollOffset.Y)), textView);
+		return textView.GetPosition(tpoint);
+	}
 
 	/// <summary>
 	/// Scrolls to the specified line.
@@ -1200,85 +1174,85 @@ namespace AvaloniaEdit;
 	/// This method requires that the TextEditor was already assigned a size (layout engine must have run prior).
 	/// </summary>
 	public void ScrollTo(int line, int column)
-		{
-			const double MinimumScrollFraction = 0.3;
-			ScrollTo(line, column, VisualYPosition.LineMiddle,
-				null != ScrollViewer ? ScrollViewer.Viewport.Height / 2 : 0.0, MinimumScrollFraction);
-		}
+	{
+		const double MinimumScrollFraction = 0.3;
+		ScrollTo(line, column, VisualYPosition.LineMiddle,
+			null != ScrollViewer ? ScrollViewer.Viewport.Height / 2 : 0.0, MinimumScrollFraction);
+	}
 
-		/// <summary>
-		/// Scrolls to the specified line/column.
-		/// This method requires that the TextEditor was already assigned a size (WPF layout must have run prior).
-		/// </summary>
-		/// <param name="line">Line to scroll to.</param>
-		/// <param name="column">Column to scroll to (important if wrapping is 'on', and for the horizontal scroll position).</param>
-		/// <param name="yPositionMode">The mode how to reference the Y position of the line.</param>
-		/// <param name="referencedVerticalViewPortOffset">Offset from the top of the viewport to where the referenced line/column should be positioned.</param>
-		/// <param name="minimumScrollFraction">The minimum vertical and/or horizontal scroll offset, expressed as fraction of the height or width of the viewport window, respectively.</param>
-		public void ScrollTo(int line, int column, VisualYPosition yPositionMode,
-			double referencedVerticalViewPortOffset, double minimumScrollFraction)
+	/// <summary>
+	/// Scrolls to the specified line/column.
+	/// This method requires that the TextEditor was already assigned a size (WPF layout must have run prior).
+	/// </summary>
+	/// <param name="line">Line to scroll to.</param>
+	/// <param name="column">Column to scroll to (important if wrapping is 'on', and for the horizontal scroll position).</param>
+	/// <param name="yPositionMode">The mode how to reference the Y position of the line.</param>
+	/// <param name="referencedVerticalViewPortOffset">Offset from the top of the viewport to where the referenced line/column should be positioned.</param>
+	/// <param name="minimumScrollFraction">The minimum vertical and/or horizontal scroll offset, expressed as fraction of the height or width of the viewport window, respectively.</param>
+	public void ScrollTo(int line, int column, VisualYPosition yPositionMode,
+		double referencedVerticalViewPortOffset, double minimumScrollFraction)
+	{
+		var textView = TextArea.TextView;
+		var document = textView.Document;
+		if (ScrollViewer != null && document != null)
 		{
-			var textView = TextArea.TextView;
-			var document = textView.Document;
-			if (ScrollViewer != null && document != null)
+			if (line < 1)
+				line = 1;
+			if (line > document.LineCount)
+				line = document.LineCount;
+
+			ILogicalScrollable scrollInfo = textView;
+			if (!scrollInfo.CanHorizontallyScroll)
 			{
-				if (line < 1)
-					line = 1;
-				if (line > document.LineCount)
-					line = document.LineCount;
+				// Word wrap is enabled. Ensure that we have up-to-date info about line height so that we scroll
+				// to the correct position.
+				// This avoids that the user has to repeat the ScrollTo() call several times when there are very long lines.
+				var vl = textView.GetOrConstructVisualLine(document.GetLineByNumber(line));
+				var remainingHeight = referencedVerticalViewPortOffset;
 
-				ILogicalScrollable scrollInfo = textView;
-				if (!scrollInfo.CanHorizontallyScroll)
+				while (remainingHeight > 0)
 				{
-					// Word wrap is enabled. Ensure that we have up-to-date info about line height so that we scroll
-					// to the correct position.
-					// This avoids that the user has to repeat the ScrollTo() call several times when there are very long lines.
-					var vl = textView.GetOrConstructVisualLine(document.GetLineByNumber(line));
-					var remainingHeight = referencedVerticalViewPortOffset;
-
-					while (remainingHeight > 0)
-					{
-						var prevLine = vl.FirstDocumentLine.PreviousLine;
-						if (prevLine == null)
-							break;
-						vl = textView.GetOrConstructVisualLine(prevLine);
-						remainingHeight -= vl.Height;
-					}
+					var prevLine = vl.FirstDocumentLine.PreviousLine;
+					if (prevLine is null)
+						break;
+					vl = textView.GetOrConstructVisualLine(prevLine);
+					remainingHeight -= vl.Height;
 				}
+			}
 
-				var p = TextArea.TextView.GetVisualPosition(
-					new TextViewPosition(line, Math.Max(1, column)),
-					yPositionMode);
+			var p = TextArea.TextView.GetVisualPosition(
+				new TextViewPosition(line, Math.Max(1, column)),
+				yPositionMode);
 
-				var targetX = ScrollViewer.Offset.X;
-				var targetY = ScrollViewer.Offset.Y;
+			var targetX = ScrollViewer.Offset.X;
+			var targetY = ScrollViewer.Offset.Y;
 
-				var verticalPos = p.Y - referencedVerticalViewPortOffset;
-				if (Math.Abs(verticalPos - ScrollViewer.Offset.Y) >
-					minimumScrollFraction * ScrollViewer.Viewport.Height)
+			var verticalPos = p.Y - referencedVerticalViewPortOffset;
+			if (Math.Abs(verticalPos - ScrollViewer.Offset.Y) >
+				minimumScrollFraction * ScrollViewer.Viewport.Height)
+			{
+				targetY = Math.Max(0, verticalPos);
+			}
+
+			if (column > 0)
+			{
+				if (p.X > ScrollViewer.Viewport.Width - Caret.MinimumDistanceToViewBorder * 2)
 				{
-					targetY = Math.Max(0, verticalPos);
-				}
-
-				if (column > 0)
-				{
-					if (p.X > ScrollViewer.Viewport.Width - Caret.MinimumDistanceToViewBorder * 2)
-					{
-						var horizontalPos = Math.Max(0, p.X - ScrollViewer.Viewport.Width / 2);
-						if (Math.Abs(horizontalPos - ScrollViewer.Offset.X) >
-							minimumScrollFraction * ScrollViewer.Viewport.Width)
-						{
-							targetX = 0;
-						}
-					}
-					else
+					var horizontalPos = Math.Max(0, p.X - ScrollViewer.Viewport.Width / 2);
+					if (Math.Abs(horizontalPos - ScrollViewer.Offset.X) >
+						minimumScrollFraction * ScrollViewer.Viewport.Width)
 					{
 						targetX = 0;
 					}
 				}
-
-				if (targetX != ScrollViewer.Offset.X || targetY != ScrollViewer.Offset.Y)
-					ScrollViewer.Offset = new Vector(targetX, targetY);
+				else
+				{
+					targetX = 0;
+				}
 			}
+
+			if (targetX != ScrollViewer.Offset.X || targetY != ScrollViewer.Offset.Y)
+				ScrollViewer.Offset = new Vector(targetX, targetY);
 		}
 	}
+}

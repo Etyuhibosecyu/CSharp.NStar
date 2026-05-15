@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using Avalonia.Media.TextFormatting;
-using Avalonia.Utilities;
 using AvaloniaEdit.Document;
 using LogicalDirection = AvaloniaEdit.Document.LogicalDirection;
 
@@ -61,8 +60,8 @@ public class VisualLineText(VisualLine parentVisualLine, int length) : VisualLin
 
 		var textSlice = text.Text.AsMemory().Slice(text.Offset, text.Count);
 
-			return new TextCharacters(textSlice, TextRunProperties);
-		}
+		return new TextCharacters(textSlice, TextRunProperties);
+	}
 
 	/// <inheritdoc/>
 	public override bool IsWhitespace(int visualColumn)
@@ -77,12 +76,12 @@ public class VisualLineText(VisualLine parentVisualLine, int length) : VisualLin
 		ArgumentNullException.ThrowIfNull(context);
 
 		var relativeOffset = visualColumnLimit - VisualColumn;
-
+		
 		var text = context.GetText(context.VisualLine.FirstDocumentLine.Offset + RelativeTextOffset, relativeOffset);
-
+		
 		return text.Text.AsMemory().Slice(text.Offset, text.Count);
 	}
-
+	
 	/// <inheritdoc/>
 	public override bool CanSplit => true;
 

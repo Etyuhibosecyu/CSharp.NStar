@@ -1,4 +1,4 @@
-﻿using Mpir.NET;
+﻿using NStar.Mpir;
 using Newtonsoft.Json;
 using NStar.Core;
 using System;
@@ -31,7 +31,7 @@ public static class JsonConverters
 			if (value.Imaginary is 0d / 0 or >= 0)
 				writer.WriteRaw("+");
 			writer.WriteRaw(JsonConvert.SerializeObject(value.Imaginary, SerializerSettings));
-			writer.WriteRaw("I");
+			writer.WriteRaw("i");
 		}
 	}
 
@@ -129,10 +129,10 @@ public static class JsonConverters
 
 	public class MpzTConverter : JsonConverter<MpzT>
 	{
-		public override MpzT ReadJson(JsonReader reader, Type objectType, MpzT existingValue,
+		public override MpzT ReadJson(JsonReader reader, Type objectType, MpzT? existingValue,
 			bool hasExistingValue, JsonSerializer serializer) => throw new NotImplementedException();
-		public override void WriteJson(JsonWriter writer, MpzT value, JsonSerializer serializer) =>
-			writer.WriteRaw(value.ToString());
+		public override void WriteJson(JsonWriter writer, MpzT? value, JsonSerializer serializer) =>
+			writer.WriteRaw(value?.ToString());
 	}
 
 	public class StringConverter : JsonConverter<String>

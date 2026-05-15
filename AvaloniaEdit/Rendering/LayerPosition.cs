@@ -72,7 +72,7 @@ public enum LayerInsertionPosition
 	Above
 }
 
-internal sealed class LayerPosition(KnownLayer knownLayer, LayerInsertionPosition position) : IComparable<LayerPosition>
+sealed class LayerPosition(KnownLayer knownLayer, LayerInsertionPosition position) : IComparable<LayerPosition>
 {
 	internal static readonly AttachedProperty<LayerPosition> LayerPositionProperty =
 		AvaloniaProperty.RegisterAttached<LayerPosition, Control, LayerPosition>("LayerPosition");

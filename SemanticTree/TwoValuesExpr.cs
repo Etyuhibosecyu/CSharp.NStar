@@ -14,7 +14,8 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 			RightNStarType = NullType;
 		if (!(i >= 4 && Branch[i - 4].Extra is NStarType PrevNStarType))
 			PrevNStarType = NullType;
-		var result = Branch[i].Name.ToString() switch
+		var op = Branch[i].Name.ToString();
+		var result = op switch
 		{
 			"?" or "?=" or "?>" or "?<" or "?>=" or "?<=" or "?!=" => TranslateTimeTernaryExpr(ref i),
 			":" => TranslateTimeColonExpr(ref i, RightNStarType),
@@ -24,9 +25,10 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 			"%" => TranslateTimeModExpr(ref errors, ref i, LeftNStarType, RightNStarType, PrevNStarType),
 			"+" => TranslateTimePlusExpr(ref errors, ref i, LeftNStarType, RightNStarType, PrevNStarType),
 			"-" => TranslateTimeMinusExpr(ref errors, ref i, LeftNStarType, RightNStarType, PrevNStarType),
+			"<<<" => TranslateTimeCyclicShiftExpr(ref errors, ref i, LeftNStarType, RightNStarType),
 			">>>" => TranslateTimeUnsignedRightShiftExpr(ref errors, ref i, LeftNStarType, RightNStarType),
-			">>" => TranslateTimeRightShiftExpr(ref errors, ref i, LeftNStarType, RightNStarType),
 			"<<" => TranslateTimeLeftShiftExpr(ref errors, ref i, LeftNStarType, RightNStarType),
+			">>" => TranslateTimeRightShiftExpr(ref errors, ref i, LeftNStarType, RightNStarType),
 			"==" => TranslateTimeSingularExpr(i, NStarEntity.Eq(Value1, Value2)),
 			">" => TranslateTimeSingularExpr(i, NStarEntity.Gt(Value1, Value2)),
 			"<" => TranslateTimeSingularExpr(i, NStarEntity.Lt(Value1, Value2)),
@@ -40,7 +42,8 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 		};
 		Branch.Remove(Min(i - 1, Branch.Length - 2), 2);
 		i = Max(i - 3, 0);
-		Branch[i].Extra = GetResultType(LeftNStarType, RightNStarType, Value1.ToString(true), Value2.ToString(true));
+		Branch[i].Extra = op is "<<<" or ">>>" or "<<" or ">>" ? LeftNStarType
+			: GetResultType(LeftNStarType, RightNStarType, Value1.ToString(true), Value2.ToString(true));
 		return result.Length == 0 ? Branch[i].Name : result;
 	}
 
@@ -122,11 +125,11 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 		if (!(TypeIsPrimitive(LeftNStarType.MainType) && LeftNStarType.MainType.Peek().Name.AsSpan() is "null"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex" or "string"
+			or "real" or "decimal" or "long real" or "complex" or "long complex" or "string"
 			&& TypeIsPrimitive(RightNStarType.MainType) && RightNStarType.MainType.Peek().Name.AsSpan() is "null"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex" or "string"))
+			or "real" or "decimal" or "long real" or "complex" or "long complex" or "string"))
 		{
 			GenerateMessage(ref errors, 0x4006, Branch[i].Pos, Branch[i].Name, LeftNStarType, RightNStarType);
 			return Default;
@@ -156,11 +159,11 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 		if (!(TypeIsPrimitive(LeftNStarType.MainType) && LeftNStarType.MainType.Peek().Name.AsSpan() is "null"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex" or "string"
+			or "real" or "decimal" or "long real" or "complex" or "long complex" or "string"
 			&& TypeIsPrimitive(RightNStarType.MainType) && RightNStarType.MainType.Peek().Name.AsSpan() is "byte"
 			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex" or "string"))
+			or "real" or "decimal" or "long real" or "complex" or "long complex" or "string"))
 		{
 			GenerateMessage(ref errors, 0x4006, Branch[i].Pos, Branch[i].Name, LeftNStarType, RightNStarType);
 			return Default;
@@ -171,7 +174,9 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 			GenerateMessage(ref errors, 0x4009, Branch[i].Pos);
 			return Default;
 		}
-		if (!TypeEqualsToPrimitive(LeftNStarType, "real") && !TypeEqualsToPrimitive(RightNStarType, "real") && Value2 == 0)
+		if (!TypeEqualsToPrimitive(LeftNStarType, "real") && !TypeEqualsToPrimitive(RightNStarType, "real")
+			&& !TypeEqualsToPrimitive(LeftNStarType, "decimal") && !TypeEqualsToPrimitive(RightNStarType, "decimal")
+			&& Value2 == 0)
 		{
 			GenerateMessage(ref errors, 0x4004, Branch[i].Pos);
 			Branch[Max(i - 3, 0)] = new("default!", Branch.Pos, Branch.EndPos, Branch.Container);
@@ -195,11 +200,11 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 		if (!(TypeIsPrimitive(LeftNStarType.MainType) && LeftNStarType.MainType.Peek().Name.AsSpan() is "null"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex" or "string"
+			or "real" or "decimal" or "long real" or "complex" or "long complex" or "string"
 			&& TypeIsPrimitive(RightNStarType.MainType) && RightNStarType.MainType.Peek().Name.AsSpan() is "byte"
 			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex" or "string"))
+			or "real" or "decimal" or "long real" or "complex" or "long complex" or "string"))
 		{
 			GenerateMessage(ref errors, 0x4006, Branch[i].Pos, Branch[i].Name, LeftNStarType, RightNStarType);
 			return Default;
@@ -210,7 +215,9 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 			GenerateMessage(ref errors, 0x4009, Branch[i].Pos);
 			return Default;
 		}
-		if (!TypeEqualsToPrimitive(LeftNStarType, "real") && !TypeEqualsToPrimitive(RightNStarType, "real") && Value2 == 0)
+		if (!TypeEqualsToPrimitive(LeftNStarType, "real") && !TypeEqualsToPrimitive(RightNStarType, "real")
+			&& !TypeEqualsToPrimitive(LeftNStarType, "decimal") && !TypeEqualsToPrimitive(RightNStarType, "decimal")
+			&& Value2 == 0)
 		{
 			GenerateMessage(ref errors, 0x4004, Branch[i].Pos);
 			Branch[Max(i - 3, 0)] = new("default!", Branch.Pos, Branch.EndPos, Branch.Container);
@@ -234,11 +241,11 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 		if (!(TypeIsPrimitive(LeftNStarType.MainType) && LeftNStarType.MainType.Peek().Name.AsSpan() is "null" or "bool"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex" or "string"
+			or "real" or "decimal" or "long real" or "complex" or "long complex" or "string"
 			&& TypeIsPrimitive(RightNStarType.MainType) && RightNStarType.MainType.Peek().Name.AsSpan() is "null" or "bool"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex" or "string"))
+			or "real" or "decimal" or "long real" or "complex" or "long complex" or "string"))
 		{
 			GenerateMessage(ref errors, 0x4006, Branch[i].Pos, Branch[i].Name, LeftNStarType, RightNStarType);
 			return Default;
@@ -279,11 +286,11 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 		if (!(TypeIsPrimitive(LeftNStarType.MainType) && LeftNStarType.MainType.Peek().Name.AsSpan() is "null" or "bool"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex" or "string"
+			or "real" or "decimal" or "long real" or "complex" or "long complex" or "string"
 			&& TypeIsPrimitive(RightNStarType.MainType) && RightNStarType.MainType.Peek().Name.AsSpan() is "null" or "bool"
 			or "byte" or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
 			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "long real" or "complex" or "long complex" or "string"))
+			or "real" or "decimal" or "long real" or "complex" or "long complex" or "string"))
 		{
 			GenerateMessage(ref errors, 0x4006, Branch[i].Pos, Branch[i].Name, LeftNStarType, RightNStarType);
 			return Default;
@@ -323,7 +330,30 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 				Branch.Pos, Branch.EndPos, Branch.Container);
 		else
 		{
-			Branch[i].Extra = GetResultType(LeftNStarType, RightNStarType, Value1.ToString(true), Value2.ToString(true));
+			Branch[i].Extra = LeftNStarType;
+			i++;
+			result = Branch[i - 2].Name.Copy().Add(' ').AddRange(Branch[i].Name).Add(' ').AddRange(Branch[i - 1].Name);
+		}
+		return result;
+	}
+
+	private String TranslateTimeCyclicShiftExpr(ref List<String>? errors, ref int i,
+		NStarType LeftNStarType, NStarType RightNStarType)
+	{
+		String result = [];
+		if (!TypesAreCompatible(RightNStarType, IntType, out var warning, Value2.ToString(true, true), out _, out _) || warning)
+		{
+			var otherPos = Branch[i].Pos;
+			GenerateMessage(ref errors, 0x4081, otherPos, Branch[i].Name);
+			Branch[i].Extra = NullType;
+			return "default!";
+		}
+		if (i == 2)
+			Branch[Max(i - 3, 0)] = new(Value1.CyclicShift(Value2.ToInt()).ToString(true, true),
+				Branch.Pos, Branch.EndPos, Branch.Container);
+		else
+		{
+			Branch[i].Extra = LeftNStarType;
 			i++;
 			result = Branch[i - 2].Name.Copy().Add(' ').AddRange(Branch[i].Name).Add(' ').AddRange(Branch[i - 1].Name);
 		}
@@ -346,7 +376,7 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 				Branch.Pos, Branch.EndPos, Branch.Container);
 		else
 		{
-			Branch[i].Extra = GetResultType(LeftNStarType, RightNStarType, Value1.ToString(true), Value2.ToString(true));
+			Branch[i].Extra = LeftNStarType;
 			i++;
 			result = Branch[i - 2].Name.Copy().Add(' ').AddRange(Branch[i].Name).Add(' ').AddRange(Branch[i - 1].Name);
 		}
@@ -369,7 +399,7 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 				Branch.Pos, Branch.EndPos, Branch.Container);
 		else
 		{
-			Branch[i].Extra = GetResultType(LeftNStarType, RightNStarType, Value1.ToString(true), Value2.ToString(true));
+			Branch[i].Extra = LeftNStarType;
 			i++;
 			result = Branch[i - 2].Name.Copy().Add(' ').AddRange(Branch[i].Name).Add(' ').AddRange(Branch[i - 1].Name);
 		}

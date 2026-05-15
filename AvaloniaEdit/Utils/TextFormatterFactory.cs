@@ -28,7 +28,7 @@ namespace AvaloniaEdit.Utils;
 /// <summary>
 /// Creates TextFormatter instances that with the correct TextFormattingMode, if running on .NET 4.0.
 /// </summary>
-internal static class TextFormatterFactory
+static class TextFormatterFactory
 {
 	/// <summary>
 	/// Creates a <see cref="TextFormatter"/> using the formatting mode used by the specified owner object.
@@ -52,7 +52,7 @@ internal static class TextFormatterFactory
 			typeface = element.CreateTypeface();
 		emSize ??= TextElement.GetFontSize(element);
 		foreground ??= TextElement.GetForeground(element);
-
+		
 		return new FormattedText(
 			text,
 			CultureInfo.CurrentCulture,

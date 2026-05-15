@@ -30,50 +30,50 @@ namespace AvaloniaEdit.Utils;
 /// Creates a new ObserveAddRemoveCollection using the specified callbacks.
 /// </remarks>
 internal sealed class ObserveAddRemoveCollection<T>(Action<T> onAdd, Action<T> onRemove) : Collection<T>
-	{
-		private readonly Action<T> _onAdd = onAdd ?? throw new ArgumentNullException(nameof(onAdd));
-		private readonly Action<T> _onRemove = onRemove ?? throw new ArgumentNullException(nameof(onRemove));
+{
+	private readonly Action<T> _onAdd = onAdd ?? throw new ArgumentNullException(nameof(onAdd));
+	private readonly Action<T> _onRemove = onRemove ?? throw new ArgumentNullException(nameof(onRemove));
 
 	/// <inheritdoc/>
 	protected override void ClearItems()
+	{
+		if (_onRemove != null)
 		{
-			if (_onRemove != null)
-			{
-				foreach (var val in this)
-					_onRemove(val);
-			}
-			base.ClearItems();
+			foreach (var val in this)
+				_onRemove(val);
 		}
+		base.ClearItems();
+	}
 
-		/// <inheritdoc/>
-		protected override void InsertItem(int index, T item)
+	/// <inheritdoc/>
+	protected override void InsertItem(int index, T item)
+	{
+		_onAdd?.Invoke(item);
+		base.InsertItem(index, item);
+	}
+
+	/// <inheritdoc/>
+	protected override void RemoveItem(int index)
+	{
+		_onRemove?.Invoke(this[index]);
+		base.RemoveItem(index);
+	}
+
+	/// <inheritdoc/>
+	protected override void SetItem(int index, T item)
+	{
+		_onRemove?.Invoke(this[index]);
+		try
 		{
 			_onAdd?.Invoke(item);
-			base.InsertItem(index, item);
 		}
-
-		/// <inheritdoc/>
-		protected override void RemoveItem(int index)
+		catch
 		{
-			_onRemove?.Invoke(this[index]);
-			base.RemoveItem(index);
+			// When adding the new item fails, just remove the old one
+			// (we cannot keep the old item since we already successfully called onRemove for it)
+			RemoveAt(index);
+			throw;
 		}
-
-		/// <inheritdoc/>
-		protected override void SetItem(int index, T item)
-		{
-			_onRemove?.Invoke(this[index]);
-			try
-			{
-				_onAdd?.Invoke(item);
-			}
-			catch
-			{
-				// When adding the new item fails, just remove the old one
-				// (we cannot keep the old item since we already successfully called onRemove for it)
-				RemoveAt(index);
-				throw;
-			}
-			base.SetItem(index, item);
-		}
+		base.SetItem(index, item);
 	}
+}

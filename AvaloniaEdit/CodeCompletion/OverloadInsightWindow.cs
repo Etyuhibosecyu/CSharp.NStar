@@ -22,53 +22,53 @@ using Avalonia.Input;
 
 namespace AvaloniaEdit.CodeCompletion;
 
+/// <summary>
+/// Insight window that shows an OverloadViewer.
+/// </summary>
+public class OverloadInsightWindow : InsightWindow
+{
+	private readonly OverloadViewer _overloadViewer = new();
+
 	/// <summary>
-	/// Insight window that shows an OverloadViewer.
+	/// Creates a new OverloadInsightWindow.
 	/// </summary>
-	public class OverloadInsightWindow : InsightWindow
+	public OverloadInsightWindow(TextArea textArea) : base(textArea)
 	{
-		private readonly OverloadViewer _overloadViewer = new();
+		_overloadViewer.Margin = new Thickness(2, 0, 0, 0);
+		Child = _overloadViewer;
+	}
 
-		/// <summary>
-		/// Creates a new OverloadInsightWindow.
-		/// </summary>
-		public OverloadInsightWindow(TextArea textArea) : base(textArea)
-		{
-			_overloadViewer.Margin = new Thickness(2, 0, 0, 0);
-			Child = _overloadViewer;
-		}
+	/// <summary>
+	/// Gets/Sets the item provider.
+	/// </summary>
+	public IOverloadProvider Provider
+	{
+		get => _overloadViewer.Provider;
+		set => _overloadViewer.Provider = value;
+	}
 
-		/// <summary>
-		/// Gets/Sets the item provider.
-		/// </summary>
-		public IOverloadProvider Provider
+	/// <inheritdoc/>
+	protected override void OnKeyDown(KeyEventArgs e)
+	{
+		base.OnKeyDown(e);
+		if (!e.Handled && Provider != null && Provider.Count > 1)
 		{
-			get => _overloadViewer.Provider;
-			set => _overloadViewer.Provider = value;
-		}
-
-		/// <inheritdoc/>
-		protected override void OnKeyDown(KeyEventArgs e)
-		{
-			base.OnKeyDown(e);
-			if (!e.Handled && Provider != null && Provider.Count > 1)
+			switch (e.Key)
 			{
-				switch (e.Key)
-				{
-					case Key.Up:
-						e.Handled = true;
-						_overloadViewer.ChangeIndex(-1);
-						break;
-					case Key.Down:
-						e.Handled = true;
-						_overloadViewer.ChangeIndex(+1);
-						break;
-				}
-				if (e.Handled)
-				{
-					// TODO: UpdateLayout();
-					UpdatePosition();
-				}
+				case Key.Up:
+					e.Handled = true;
+					_overloadViewer.ChangeIndex(-1);
+					break;
+				case Key.Down:
+					e.Handled = true;
+					_overloadViewer.ChangeIndex(+1);
+					break;
+			}
+			if (e.Handled)
+			{
+				// TODO: UpdateLayout();
+				UpdatePosition();
 			}
 		}
 	}
+}

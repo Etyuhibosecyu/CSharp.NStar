@@ -124,7 +124,7 @@ public readonly struct BlockStack : IReadOnlyCollection<Block>
 			{
 				if (index == 0 || index == collection.Length + 1)
 					throw new InvalidOperationException("Указатель находится за границей коллекции.");
-				return Current!;
+				return Current;
 			}
 		}
 

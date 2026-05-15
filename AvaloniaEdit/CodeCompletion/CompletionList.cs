@@ -18,7 +18,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using Avalonia;
@@ -92,7 +91,7 @@ public class CompletionList : TemplatedControl
 	{
 		get
 		{
-			if (_listBox == null)
+			if (_listBox is null)
 				ApplyTemplate();
 			return _listBox;
 		}
@@ -118,7 +117,7 @@ public class CompletionList : TemplatedControl
 	/// <summary>
 	/// Gets or sets the array of keys that are supposed to request insertion of the completion.
 	/// </summary>
-	public Key[] CompletionAcceptKeys { get; set; } = [Key.Enter, Key.Tab];
+	public Key[] CompletionAcceptKeys { get; set; } = new[] { Key.Enter, Key.Tab };
 
 	/// <summary>
 	/// Gets the scroll viewer used in this list box.
@@ -148,7 +147,7 @@ public class CompletionList : TemplatedControl
 	/// </summary>
 	public void HandleKey(KeyEventArgs e)
 	{
-		if (_listBox == null)
+		if (_listBox is null)
 			return;
 
 		if (_listBox.Items.Count == 0)
@@ -160,91 +159,91 @@ public class CompletionList : TemplatedControl
 		switch (e.Key)
 		{
 			case Key.Down:
-			e.Handled = true;
-			_listBox.SelectIndex((_listBox.SelectedIndex + 1) % _listBox.Items.Count);
-			break;
-			case Key.Up:
-			e.Handled = true;
-			_listBox.SelectIndex(_listBox.SelectedIndex == 0
-				? _listBox.Items.Count - 1
-				: _listBox.SelectedIndex - 1);
-			break;
-			case Key.PageDown:
-			e.Handled = true;
-			_listBox.SelectIndex(_listBox.SelectedIndex + _listBox.VisibleItemCount);
-			break;
-			case Key.PageUp:
-			e.Handled = true;
-			_listBox.SelectIndex(_listBox.SelectedIndex - _listBox.VisibleItemCount);
-			break;
-			case Key.Home:
-			e.Handled = true;
-			_listBox.SelectIndex(0);
-			break;
-			case Key.End:
-			e.Handled = true;
-			_listBox.SelectIndex(_listBox.ItemCount - 1);
-			break;
-			default:
-			if (CompletionAcceptKeys.Contains(e.Key) && CurrentList.Count > 0)
-			{
 				e.Handled = true;
-				RequestInsertion(e);
-			}
+				_listBox.SelectIndex((_listBox.SelectedIndex + 1) % _listBox.Items.Count);
+				break;
+			case Key.Up:
+				e.Handled = true;
+				_listBox.SelectIndex(_listBox.SelectedIndex == 0
+					? _listBox.Items.Count - 1
+					: _listBox.SelectedIndex - 1);
+				break;
+			case Key.PageDown:
+				e.Handled = true;
+				_listBox.SelectIndex(_listBox.SelectedIndex + _listBox.VisibleItemCount);
+				break;
+			case Key.PageUp:
+				e.Handled = true;
+				_listBox.SelectIndex(_listBox.SelectedIndex - _listBox.VisibleItemCount);
+				break;
+			case Key.Home:
+				e.Handled = true;
+				_listBox.SelectIndex(0);
+				break;
+			case Key.End:
+				e.Handled = true;
+				_listBox.SelectIndex(_listBox.ItemCount - 1);
+				break;
+			default:
+				if (CompletionAcceptKeys.Contains(e.Key) && CurrentList.Count > 0)
+				{
+					e.Handled = true;
+					RequestInsertion(e);
+				}
 
-			break;
+				break;
 		}
 	}
 
 	private void AddPointerHandler(CompletionAcceptAction completionAcceptAction)
 	{
-		if (_listBox == null)
+		if (_listBox is null)
 			return;
 
 		switch (completionAcceptAction)
 		{
 			case CompletionAcceptAction.PointerPressed:
-			_listBox.AddHandler(PointerPressedEvent, OnPointerPressed, RoutingStrategies.Bubble, true);
-			break;
+				_listBox.AddHandler(PointerPressedEvent, OnPointerPressed, RoutingStrategies.Bubble, true);
+				break;
 			case CompletionAcceptAction.PointerReleased:
-			_listBox.AddHandler(PointerReleasedEvent, OnPointerReleased);
-			break;
+				_listBox.AddHandler(PointerReleasedEvent, OnPointerReleased);
+				break;
 			case CompletionAcceptAction.DoubleTapped:
-			AddHandler(DoubleTappedEvent, OnDoubleTapped);
-			_listBox.AddHandler(DoubleTappedEvent, OnDoubleTapped);
-			break;
+				AddHandler(DoubleTappedEvent, OnDoubleTapped);
+				_listBox.AddHandler(DoubleTappedEvent, OnDoubleTapped);
+				break;
 			default:
-			Debug.Fail("Invalid CompletionAcceptAction");
-			break;
+				Debug.Fail("Invalid CompletionAcceptAction");
+				break;
 		}
 	}
 
 	private void RemovePointerHandler(CompletionAcceptAction completionAcceptAction)
 	{
-		if (_listBox == null)
+		if (_listBox is null)
 			return;
 
 		switch (completionAcceptAction)
 		{
 			case CompletionAcceptAction.PointerPressed:
-			_listBox.RemoveHandler(PointerPressedEvent, OnPointerPressed);
-			break;
+				_listBox.RemoveHandler(PointerPressedEvent, OnPointerPressed);
+				break;
 			case CompletionAcceptAction.PointerReleased:
-			_listBox.RemoveHandler(PointerReleasedEvent, OnPointerReleased);
-			break;
+				_listBox.RemoveHandler(PointerReleasedEvent, OnPointerReleased);
+				break;
 			case CompletionAcceptAction.DoubleTapped:
-			_listBox.RemoveHandler(DoubleTappedEvent, OnDoubleTapped);
-			break;
+				_listBox.RemoveHandler(DoubleTappedEvent, OnDoubleTapped);
+				break;
 			default:
-			Debug.Fail("Invalid CompletionAcceptAction");
-			break;
+				Debug.Fail("Invalid CompletionAcceptAction");
+				break;
 		}
 	}
 
 	private void OnPointerPressed(object sender, PointerPressedEventArgs e)
 	{
 		var visual = e.Source as Visual;
-		if (!e.GetCurrentPoint(visual).Properties.IsLeftButtonPressed)
+		if (!e.GetCurrentPoint(visual).Properties.IsLeftButtonPressed) 
 			return;
 
 		RequestInsertion(e);
@@ -257,7 +256,7 @@ public class CompletionList : TemplatedControl
 
 		// Ignore event if pointer is released outside the selected item.
 		var listBoxItem = _listBox.ContainerFromIndex(_listBox.SelectedIndex);
-		if (listBoxItem == null || !this.GetVisualsAt(e.GetPosition(this)).Any(v => v == listBoxItem || listBoxItem.IsVisualAncestorOf(v)))
+		if (listBoxItem is null || !this.GetVisualsAt(e.GetPosition(this)).Any(v => v == listBoxItem || listBoxItem.IsVisualAncestorOf(v)))
 			return;
 
 		RequestInsertion(e);
@@ -277,7 +276,7 @@ public class CompletionList : TemplatedControl
 		get => _listBox?.SelectedItem as ICompletionData;
 		set
 		{
-			if (_listBox == null && value != null)
+			if (_listBox is null && value != null)
 				ApplyTemplate();
 			_listBox?.SelectedItem = value;
 		}
@@ -288,7 +287,7 @@ public class CompletionList : TemplatedControl
 	/// </summary>
 	public void ScrollIntoView(ICompletionData item)
 	{
-		if (_listBox == null)
+		if (_listBox is null)
 			ApplyTemplate();
 		_listBox?.ScrollIntoView(item);
 	}
@@ -316,7 +315,7 @@ public class CompletionList : TemplatedControl
 	{
 		if (text == _currentText)
 			return;
-		if (_listBox == null)
+		if (_listBox is null)
 			ApplyTemplate();
 
 		if (IsFiltering)
@@ -371,7 +370,7 @@ public class CompletionList : TemplatedControl
 		_currentList = listBoxItems;
 		//_listBox.Items = null; Makes no sense? Tooltip disappeared because of this
 		_listBox.ItemsSource = listBoxItems;
-		Dispatcher.UIThread.Post(() => SelectIndexCentered(bestIndex), DispatcherPriority.Loaded);
+		Dispatcher.UIThread.Post(() => { SelectIndexCentered(bestIndex); }, DispatcherPriority.Loaded);
 	}
 
 	/// <summary>
@@ -449,7 +448,7 @@ public class CompletionList : TemplatedControl
 
 	private int GetMatchQuality(string itemText, string query)
 	{
-		if (itemText == null)
+		if (itemText is null)
 			throw new ArgumentNullException(nameof(itemText), "ICompletionData.Text returned null");
 
 		// Qualities:

@@ -211,10 +211,10 @@ public partial class MainView : UserControl
 
 	private void TextBoxErrors_DoubleTapped(object? sender, TappedEventArgs e)
 	{
-		using var before = TextBoxErrors.Text?.ToNString().RemoveEnd(Min(TextBoxErrors.SelectionStart,
+		var before = TextBoxErrors.Text?.ToNString().RemoveEnd(Min(TextBoxErrors.SelectionStart,
 			TextBoxErrors.Text.Length));
-		using var after = TextBoxErrors.Text?.ToNString().Skip(TextBoxErrors.SelectionStart).GetBefore("\r\n");
-		if (before == null || after == null)
+		var after = TextBoxErrors.Text?.ToNString().Skip(TextBoxErrors.SelectionStart).GetBefore("\r\n");
+		if (before is null || after is null)
 			return;
 		before.AddRange(after);
 		var line = before.GetAfterLast("\r\n");
@@ -223,7 +223,7 @@ public partial class MainView : UserControl
 		line.GetBeforeSetAfter(" in line ");
 		if (line.Length == 0)
 			return;
-		using var lineN = line.GetBeforeSetAfter(" at position ");
+		var lineN = line.GetBeforeSetAfter(" at position ");
 		var position = line.GetBefore(": ");
 		if (!(int.TryParse(lineN.ToString(), out var y) && int.TryParse(position.ToString(), out var x)))
 			return;
@@ -386,7 +386,7 @@ public partial class MainView : UserControl
 
 	private async void SaveCode()
 	{
-		if (compiledAssembly == null)
+		if (compiledAssembly is null)
 		{
 			TextBoxOutput.Text = "Чтобы сохранить код, сначала выполните программу!";
 			return;
@@ -426,7 +426,7 @@ public partial class MainView : UserControl
 
 	private async void SaveExe()
 	{
-		if (compiledAssembly == null)
+		if (compiledAssembly is null)
 		{
 			TextBoxOutput.Text = "Чтобы сохранить EXE, сначала выполните программу!";
 			return;
@@ -443,7 +443,7 @@ public partial class MainView : UserControl
 			return;
 		var outputDir = Path.GetDirectoryName(outputPath);
 		var code = CompileProgram(TextBoxInput.Text, SettingsView.TextBoxNuGet.Text
-			?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? []);
+			?.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() ?? []);
 		var tempDir = Environment.GetEnvironmentVariable("temp") ?? throw new IOException();
 		tempDir += @"\Program";
 		if (!Directory.Exists(tempDir))
@@ -522,7 +522,7 @@ public partial class MainView : UserControl
 
 		void AddDependencies(Assembly asm)
 		{
-			if (asm.FullName == null)
+			if (asm.FullName is null)
 				return;
 			if (seen.Contains(asm.FullName))
 				return;

@@ -54,7 +54,7 @@ public static class MemberConverters
 			nameof(File.WriteAllText) => nameof(File.WriteAllTextAsync),
 			_ => function.Copy(),
 		};
-		if (parameters == null)
+		if (parameters is null)
 			return result;
 		result.Add('(');
 		if (function.AsSpan() is nameof(parameters.RemoveAt)

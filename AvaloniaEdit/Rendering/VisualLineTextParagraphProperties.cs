@@ -21,7 +21,7 @@ using Avalonia.Media.TextFormatting;
 
 namespace AvaloniaEdit.Rendering;
 
-internal sealed class VisualLineTextParagraphProperties : TextParagraphProperties
+sealed class VisualLineTextParagraphProperties : TextParagraphProperties
 {
 	internal TextRunProperties defaultTextRunProperties;
 	internal TextWrapping textWrapping;

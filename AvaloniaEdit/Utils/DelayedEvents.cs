@@ -21,33 +21,29 @@ using System.Collections.Generic;
 
 namespace AvaloniaEdit.Utils;
 
-	/// <summary>
-	/// Maintains a list of delayed events to raise.
-	/// </summary>
-	internal sealed class DelayedEvents
+/// <summary>
+/// Maintains a list of delayed events to raise.
+/// </summary>
+internal sealed class DelayedEvents
+{
+	private readonly struct EventCall(EventHandler handler, object sender, EventArgs e)
 	{
-		private struct EventCall(EventHandler handler, object sender, EventArgs e)
-	{
-			private readonly EventHandler _handler = handler;
-			private readonly object _sender = sender;
-			private readonly EventArgs _e = e;
-
-		public void Call() => _handler(_sender, _e);
+		public void Call() => handler(sender, e);
 	}
 
-		private readonly Queue<EventCall> _eventCalls = new();
+	private readonly Queue<EventCall> _eventCalls = new();
 
-		public void DelayedRaise(EventHandler handler, object sender, EventArgs e)
+	public void DelayedRaise(EventHandler handler, object sender, EventArgs e)
+	{
+		if (handler != null)
 		{
-			if (handler != null)
-			{
-				_eventCalls.Enqueue(new EventCall(handler, sender, e));
-			}
-		}
-
-		public void RaiseEvents()
-		{
-			while (_eventCalls.Count > 0)
-				_eventCalls.Dequeue().Call();
+			_eventCalls.Enqueue(new EventCall(handler, sender, e));
 		}
 	}
+
+	public void RaiseEvents()
+	{
+		while (_eventCalls.Count > 0)
+			_eventCalls.Dequeue().Call();
+	}
+}

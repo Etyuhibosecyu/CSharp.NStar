@@ -6,7 +6,7 @@ namespace AvaloniaEdit.Document;
 /// Provides data for the <see cref="ITextEditorComponent.DocumentChanged"/> event.
 /// </summary>
 public class DocumentChangedEventArgs(TextDocument oldDocument, TextDocument newDocument) : EventArgs
-	{
+{
 	/// <summary>
 	/// Gets the old TextDocument.
 	/// </summary>

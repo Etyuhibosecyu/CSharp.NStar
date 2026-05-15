@@ -16,8 +16,8 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System.Diagnostics.CodeAnalysis;
 using AvaloniaEdit.Document;
+using System.Globalization;
 
 namespace AvaloniaEdit.Rendering;
 
@@ -42,7 +42,8 @@ public sealed class CollapsedLineSection
 		Start = start;
 		End = end;
 #if DEBUG
-		unchecked {
+		unchecked
+		{
 			Id = " #" + _nextId++;
 		}
 #endif
@@ -75,10 +76,11 @@ public sealed class CollapsedLineSection
 	/// </summary>
 	public void Uncollapse()
 	{
-		if (Start == null)
+		if (Start is null)
 			return;
 
-		if (!_heightTree.IsDisposed) {
+		if (!_heightTree.IsDisposed)
+		{
 			_heightTree.Uncollapse(this);
 #if DEBUG
 			_heightTree.CheckProperties();
@@ -92,7 +94,5 @@ public sealed class CollapsedLineSection
 	/// <summary>
 	/// Gets a string representation of the collapsed section.
 	/// </summary>
-	[SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider", MessageId = "System.Int32.ToString")]
-	public override string ToString() => "[CollapsedSection" + Id + " Start=" + (Start != null ? Start.LineNumber.ToString() : "null")
-			+ " End=" + (End != null ? End.LineNumber.ToString() : "null") + "]";
+	public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"[CollapsedSection{Id} {nameof(Start)}={(Start != null ? Start.LineNumber.ToString() : "null")} {nameof(End)}={(End != null ? End.LineNumber.ToString() : "null")}]");
 }

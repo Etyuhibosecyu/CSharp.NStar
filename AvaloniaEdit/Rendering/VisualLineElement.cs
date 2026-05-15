@@ -23,7 +23,6 @@ using AvaloniaEdit.Document;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
-using Avalonia.Utilities;
 using LogicalDirection = AvaloniaEdit.Document.LogicalDirection;
 
 namespace AvaloniaEdit.Rendering;
@@ -47,12 +46,12 @@ public abstract class VisualLineElement
 		VisualLength = visualLength;
 		DocumentLength = documentLength;
 	}
-
+	
 	/// <summary>
 	/// Gets the length of this element in visual columns.
 	/// </summary>
 	public int VisualLength { get; private set; }
-
+	
 	/// <summary>
 	/// Gets the length of this element in the text document.
 	/// </summary>
@@ -62,12 +61,12 @@ public abstract class VisualLineElement
 	/// Gets the visual column where this element starts.
 	/// </summary>
 	public int VisualColumn { get; internal set; }
-
+	
 	/// <summary>
 	/// Gets the text offset where this element starts, relative to the start text offset of the visual line.
 	/// </summary>
 	public int RelativeTextOffset { get; internal set; }
-
+	
 	/// <summary>
 	/// Gets the text run properties.
 	/// A unique <see cref="VisualLineElementTextRunProperties"/> instance is used for each
@@ -131,7 +130,7 @@ public abstract class VisualLineElement
 		ArgumentNullException.ThrowIfNull(secondPart);
 		var relativeSplitVisualColumn = splitVisualColumn - VisualColumn;
 		var relativeSplitRelativeTextOffset = splitRelativeTextOffset - RelativeTextOffset;
-
+		
 		if (relativeSplitVisualColumn <= 0 || relativeSplitVisualColumn >= VisualLength)
 			throw new ArgumentOutOfRangeException(nameof(splitVisualColumn), splitVisualColumn, "Value must be between " + (VisualColumn + 1) + " and " + (VisualColumn + VisualLength - 1));
 		if (relativeSplitRelativeTextOffset < 0 || relativeSplitRelativeTextOffset > DocumentLength)
@@ -148,10 +147,8 @@ public abstract class VisualLineElement
 		secondPart.VisualLength = oldVisualLength - relativeSplitVisualColumn;
 		firstPart.DocumentLength = relativeSplitRelativeTextOffset;
 		secondPart.DocumentLength = oldDocumentLength - relativeSplitRelativeTextOffset;
-		if (firstPart.TextRunProperties == null)
-			firstPart.TextRunProperties = TextRunProperties.Clone();
-		if (secondPart.TextRunProperties == null)
-			secondPart.TextRunProperties = TextRunProperties.Clone();
+		firstPart.TextRunProperties ??= TextRunProperties.Clone();
+		secondPart.TextRunProperties ??= TextRunProperties.Clone();
 		firstPart.BackgroundBrush = BackgroundBrush;
 		secondPart.BackgroundBrush = BackgroundBrush;
 	}
@@ -166,7 +163,7 @@ public abstract class VisualLineElement
 			return VisualColumn + VisualLength;
 		return VisualColumn;
 	}
-
+	
 	/// <summary>
 	/// Gets the text offset of a visual column inside this element.
 	/// </summary>
@@ -177,7 +174,7 @@ public abstract class VisualLineElement
 			return RelativeTextOffset + DocumentLength;
 		return RelativeTextOffset;
 	}
-
+	
 	/// <summary>
 	/// Gets the next caret position inside this element.
 	/// </summary>
@@ -229,14 +226,14 @@ public abstract class VisualLineElement
 	protected internal virtual void OnQueryCursor(PointerEventArgs e)
 	{
 	}
-
+	
 	/// <summary>
 	/// Allows the visual line element to handle a pointer event.
 	/// </summary>
 	protected internal virtual void OnPointerPressed(PointerPressedEventArgs e)
 	{
 	}
-
+	
 	/// <summary>
 	/// Allows the visual line element to handle a pointer event.
 	/// </summary>

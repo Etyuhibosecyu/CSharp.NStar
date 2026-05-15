@@ -1,8 +1,9 @@
 ﻿global using NStar.Core;
 global using NStar.Linq;
+global using NStar.Mpir;
+global using System;
 global using static CSharp.NStar.BuiltInMemberCollections;
 global using String = NStar.Core.String;
-using Mpir.NET;
 using System.Diagnostics;
 
 namespace CSharp.NStar;
@@ -10,15 +11,16 @@ namespace CSharp.NStar;
 public enum LexemType
 {
 	Int,
-	UnsignedInt,
-	LongInt,
-	UnsignedLongInt,
-	LongLong,
 	Real,
 	Complex,
 	Identifier,
 	Keyword,
 	Operator,
+	UnsignedInt,
+	LongInt,
+	UnsignedLongInt,
+	LongLong,
+	Decimal,
 	String,
 	Other,
 }
@@ -49,7 +51,7 @@ public class CodeSample(String newString)
 	private bool wreckOccurred;
 	private readonly List<String> errors = [];
 	private readonly List<LexemTree> lexemTree = [DoubleEqualLexemTree('^'), DoubleEqualLexemTree('|'),
-		DoubleEqualLexemTree('&'), TripleEqualLexemTree('>'), DoubleEqualLexemTree('<'), DoubleEqualLexemTree('!'),
+		DoubleEqualLexemTree('&'), TripleEqualLexemTree('>'), TripleEqualLexemTree('<'), DoubleEqualLexemTree('!'),
 		new LexemTree('?', [new LexemTree('!', ['='], allowNone: false), EqualLexemTree('>'), EqualLexemTree('<'),
 			'=', '?', '.', '[']), ',', ':', '@', '#', '$', '~', DoubleEqualLexemTree('+'), DoubleEqualLexemTree('-'),
 		EqualLexemTree('*'), EqualLexemTree('/'), EqualLexemTree('%'), new LexemTree('=', ['=', '>']), TripleLexemTree('.')];
@@ -140,7 +142,13 @@ public class CodeSample(String newString)
 		}
 		else if (CheckDigit())
 		{
-			s = GetNumber(out var numberType);
+			s = GetBinOrHexNumber(out var numberType);
+			if (s.Length != 0)
+			{
+				AddLexem(s, numberType, s.Length);
+				return (true, false, default);
+			}
+			s = GetNumber(out numberType);
 			if (s.Length != 0)
 			{
 				AddLexem(s, numberType, s.Length);
@@ -439,6 +447,17 @@ public class CodeSample(String newString)
 				lexemType = LexemType.Real;
 				numberParts.Add("r");
 			}
+			else if (ValidateChar('m'))
+			{
+				if (lexemType == LexemType.LongLong)
+				{
+					GenerateMessage(0x0001, start);
+					lexemType = LexemType.Keyword;
+					return "null";
+				}
+				lexemType = LexemType.Real;
+				numberParts.Add("m");
+			}
 			else if (ValidateChar('c'))
 			{
 				if (lexemType == LexemType.LongLong)
@@ -450,7 +469,7 @@ public class CodeSample(String newString)
 				lexemType = LexemType.Complex;
 				numberParts.Add("c");
 			}
-			else if (ValidateChar('I'))
+			else if (ValidateChar('i'))
 			{
 				if (lexemType == LexemType.LongLong)
 				{
@@ -459,7 +478,7 @@ public class CodeSample(String newString)
 					return "null";
 				}
 				lexemType = LexemType.Complex;
-				numberParts.Add("I");
+				numberParts.Add("i");
 			}
 		}
 		if (numberParts.Length > 1 && numberParts[^1] != "LL" && lexemType == LexemType.LongLong)
@@ -485,23 +504,23 @@ public class CodeSample(String newString)
 	private String GetNumber2(out LexemType lexemType)
 	{
 		var start = pos;
-		while (IsNotEnd() && CheckDigit())
+		while (CheckDigit() || CheckChar('_'))
 			pos++;
-		String s = new(32, FromStart(start));
+		var s = new String(32, FromStart(start)).FilterInPlace(x => x != '_').ToString();
 		if (s.Length == 0)
 		{
 			lexemType = LexemType.Other;
 			return s;
 		}
-		if (int.TryParse(s.ToString(), out _))
+		if (int.TryParse(s, out _))
 			lexemType = LexemType.Int;
-		else if (uint.TryParse(s.ToString(), out _))
+		else if (uint.TryParse(s, out _))
 			lexemType = LexemType.UnsignedInt;
-		else if (long.TryParse(s.ToString(), out _))
+		else if (long.TryParse(s, out _))
 			lexemType = LexemType.LongInt;
-		else if (ulong.TryParse(s.ToString(), out _))
+		else if (ulong.TryParse(s, out _))
 			lexemType = LexemType.UnsignedLongInt;
-		else if (MpzT.TryParse(s.ToString(), out _))
+		else if (MpzT.TryParse(s, out _))
 			lexemType = LexemType.LongLong;
 		else
 		{
@@ -509,6 +528,90 @@ public class CodeSample(String newString)
 			return "null";
 		}
 		return s;
+	}
+
+	private String GetBinOrHexNumber(out LexemType lexemType)
+	{
+		var start = pos;
+		if (!ValidateChar('0'))
+		{
+			lexemType = LexemType.Other;
+			return [];
+		}
+		if (ValidateChar('B') || ValidateChar('b'))
+		{
+			while (CheckChar('0') || CheckChar('1') || CheckChar('_'))
+				pos++;
+			var s = new String(32, FromStart(start)).FilterInPlace(x => x != '_').ToString()[2..];
+			if (s.Length == 0)
+			{
+				pos = start;
+				lexemType = LexemType.Other;
+				return s;
+			}
+			if (!s.ContainsAnyExcept('0'))
+			{
+				lexemType = LexemType.Int;
+				return "0";
+			}
+			else if (!(new MpzT(s, 2) is var ll && ll != 0))
+			{
+				lexemType = LexemType.Keyword;
+				return "null";
+			}
+			else
+			{
+				var li = (long)ll;
+				if (li != ll)
+				{
+					lexemType = ll <= ulong.MaxValue ? LexemType.UnsignedLongInt : LexemType.LongLong;
+					return ll.ToString();
+				}
+				lexemType = li is >= int.MinValue and <= int.MaxValue ? LexemType.Int
+					: li <= uint.MaxValue ? LexemType.UnsignedInt : LexemType.LongInt;
+				return li.ToString();
+			}
+		}
+		else if (ValidateChar('X') || ValidateChar('x'))
+		{
+			while (CheckRange('0', '9') || CheckRange('A', 'F') || CheckRange('a', 'f') || CheckChar('_'))
+				pos++;
+			var s = new String(32, FromStart(start)).FilterInPlace(x => x != '_').ToString()[2..];
+			if (s.Length == 0)
+			{
+				pos = start;
+				lexemType = LexemType.Other;
+				return s;
+			}
+			if (!s.ContainsAnyExcept('0'))
+			{
+				lexemType = LexemType.Int;
+				return "0";
+			}
+			else if (!(new MpzT(s, 16) is var ll && ll != 0))
+			{
+				lexemType = LexemType.Keyword;
+				return "null";
+			}
+			else
+			{
+				var li = (long)ll;
+				if (li != ll)
+				{
+					lexemType = ll <= ulong.MaxValue ? LexemType.UnsignedLongInt : LexemType.LongLong;
+					return ll.ToString();
+				}
+				lexemType = li is >= int.MinValue and <= int.MaxValue ? LexemType.Int
+					: li <= uint.MaxValue ? LexemType.UnsignedInt : LexemType.LongInt;
+				return li.ToString();
+			}
+		}
+		else
+		{
+			pos = start;
+			lexemType = LexemType.Other;
+			return [];
+		}
 	}
 
 	private String GetWord(bool firstLetter = true)

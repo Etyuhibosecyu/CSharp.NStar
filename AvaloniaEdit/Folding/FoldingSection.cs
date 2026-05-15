@@ -23,123 +23,123 @@ using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Folding;
 
-	/// <summary>
-	/// A section that can be folded.
-	/// </summary>
-	public sealed class FoldingSection : TextSegment
-	{
-		private readonly FoldingManager _manager;
+/// <summary>
+/// A section that can be folded.
+/// </summary>
+public sealed class FoldingSection : TextSegment
+{
+	private readonly FoldingManager _manager;
 	internal CollapsedLineSection[] CollapsedSections;
 
-		/// <summary>
-		/// Gets/sets if the section is folded.
-		/// </summary>
-		public bool IsFolded
-		{
-			get;
+	/// <summary>
+	/// Gets/sets if the section is folded.
+	/// </summary>
+	public bool IsFolded
+	{
+		get;
 		set
-			{
-				if (field != value)
-				{
-					field = value;
-					ValidateCollapsedLineSections(); // create/destroy CollapsedLineSection
-					_manager.Redraw(this);
-				}
-			}
-		}
-
-		internal void ValidateCollapsedLineSections()
 		{
-			if (!IsFolded)
+			if (field != value)
 			{
-				RemoveCollapsedLineSection();
-				return;
-			}
-			// It is possible that StartOffset/EndOffset get set to invalid values via the property setters in TextSegment,
-			// so we coerce those values into the valid range.
-			var startLine = _manager.Document.GetLineByOffset(StartOffset.CoerceValue(0, _manager.Document.TextLength));
-			var endLine = _manager.Document.GetLineByOffset(EndOffset.CoerceValue(0, _manager.Document.TextLength));
-			if (startLine == endLine)
-			{
-				RemoveCollapsedLineSection();
-			}
-			else
-			{
-				CollapsedSections ??= new CollapsedLineSection[_manager.TextViews.Count];
-				// Validate collapsed line sections
-				var startLinePlusOne = startLine.NextLine;
-				for (var i = 0; i < CollapsedSections.Length; i++)
-				{
-					var collapsedSection = CollapsedSections[i];
-					if (collapsedSection == null || collapsedSection.Start != startLinePlusOne || collapsedSection.End != endLine)
-					{
-						// recreate this collapsed section
-						if (collapsedSection != null)
-						{
-							Debug.WriteLine("CollapsedLineSection validation - recreate collapsed section from " + startLinePlusOne + " to " + endLine);
-							collapsedSection.Uncollapse();
-						}
-						CollapsedSections[i] = _manager.TextViews[i].CollapseLines(startLinePlusOne, endLine);
-					}
-				}
-			}
-		}
-
-		/// <inheritdoc/>
-		protected override void OnSegmentChanged()
-		{
-			ValidateCollapsedLineSections();
-			base.OnSegmentChanged();
-			// don't redraw if the FoldingSection wasn't added to the FoldingManager's collection yet
-			if (IsConnectedToCollection)
+				field = value;
+				ValidateCollapsedLineSections(); // create/destroy CollapsedLineSection
 				_manager.Redraw(this);
-		}
-
-		/// <summary>
-		/// Gets/Sets the text used to display the collapsed version of the folding section.
-		/// </summary>
-		public string Title
-		{
-			get;
-		set
-			{
-				if (field != value)
-				{
-					field = value;
-					if (IsFolded)
-						_manager.Redraw(this);
-				}
-			}
-		}
-
-		/// <summary>
-		/// Gets the content of the collapsed lines as text.
-		/// </summary>
-		public string TextContent => _manager.Document.GetText(StartOffset, EndOffset - StartOffset);
-
-		/// <summary>
-		/// Gets/Sets an additional object associated with this folding section.
-		/// </summary>
-		public object Tag { get; set; }
-
-		internal FoldingSection(FoldingManager manager, int startOffset, int endOffset)
-		{
-			Debug.Assert(manager != null);
-			_manager = manager;
-			StartOffset = startOffset;
-			Length = endOffset - startOffset;
-		}
-
-		private void RemoveCollapsedLineSection()
-		{
-			if (CollapsedSections != null)
-			{
-				foreach (var collapsedSection in CollapsedSections)
-				{
-					if (collapsedSection?.Start != null)
-						collapsedSection.Uncollapse();
-				}
-				CollapsedSections = null;
 			}
 		}
 	}
+
+	internal void ValidateCollapsedLineSections()
+	{
+		if (!IsFolded)
+		{
+			RemoveCollapsedLineSection();
+			return;
+		}
+		// It is possible that StartOffset/EndOffset get set to invalid values via the property setters in TextSegment,
+		// so we coerce those values into the valid range.
+		var startLine = _manager.Document.GetLineByOffset(StartOffset.CoerceValue(0, _manager.Document.TextLength));
+		var endLine = _manager.Document.GetLineByOffset(EndOffset.CoerceValue(0, _manager.Document.TextLength));
+		if (startLine == endLine)
+		{
+			RemoveCollapsedLineSection();
+		}
+		else
+		{
+			CollapsedSections ??= new CollapsedLineSection[_manager.TextViews.Count];
+			// Validate collapsed line sections
+			var startLinePlusOne = startLine.NextLine;
+			for (var i = 0; i < CollapsedSections.Length; i++)
+			{
+				var collapsedSection = CollapsedSections[i];
+				if (collapsedSection is null || collapsedSection.Start != startLinePlusOne || collapsedSection.End != endLine)
+				{
+					// recreate this collapsed section
+					if (collapsedSection != null)
+					{
+						Debug.WriteLine("CollapsedLineSection validation - recreate collapsed section from " + startLinePlusOne + " to " + endLine);
+						collapsedSection.Uncollapse();
+					}
+					CollapsedSections[i] = _manager.TextViews[i].CollapseLines(startLinePlusOne, endLine);
+				}
+			}
+		}
+	}
+
+	/// <inheritdoc/>
+	protected override void OnSegmentChanged()
+	{
+		ValidateCollapsedLineSections();
+		base.OnSegmentChanged();
+		// don't redraw if the FoldingSection wasn't added to the FoldingManager's collection yet
+		if (IsConnectedToCollection)
+			_manager.Redraw(this);
+	}
+
+	/// <summary>
+	/// Gets/Sets the text used to display the collapsed version of the folding section.
+	/// </summary>
+	public string Title
+	{
+		get => field;
+		set
+		{
+			if (field != value)
+			{
+				field = value;
+				if (IsFolded)
+					_manager.Redraw(this);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Gets the content of the collapsed lines as text.
+	/// </summary>
+	public string TextContent => _manager.Document.GetText(StartOffset, EndOffset - StartOffset);
+
+	/// <summary>
+	/// Gets/Sets an additional object associated with this folding section.
+	/// </summary>
+	public object Tag { get; set; }
+
+	internal FoldingSection(FoldingManager manager, int startOffset, int endOffset)
+	{
+		Debug.Assert(manager != null);
+		_manager = manager;
+		StartOffset = startOffset;
+		Length = endOffset - startOffset;
+	}
+
+	private void RemoveCollapsedLineSection()
+	{
+		if (CollapsedSections != null)
+		{
+			foreach (var collapsedSection in CollapsedSections)
+			{
+				if (collapsedSection?.Start != null)
+					collapsedSection.Uncollapse();
+			}
+			CollapsedSections = null;
+		}
+	}
+}

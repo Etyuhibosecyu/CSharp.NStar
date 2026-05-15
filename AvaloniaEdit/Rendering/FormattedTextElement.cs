@@ -20,7 +20,6 @@ using System;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Media.TextFormatting;
-using Avalonia.Utilities;
 using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Rendering;
@@ -57,7 +56,7 @@ public class FormattedTextElement : VisualLineElement
 	/// <inheritdoc/>
 	public override TextRun CreateTextRun(int startVisualColumn, ITextRunConstructionContext context)
 	{
-		if (TextLine == null) {
+		if (TextLine is null) {
 			var formatter = TextFormatterFactory.Create(context.TextView);
 			TextLine = PrepareText(formatter, Text, TextRunProperties);
 			Text = null;
@@ -118,7 +117,7 @@ public class FormattedTextRun : DrawableTextRun
 		get
 		{
 			var formattedText = Element.FormattedText;
-
+			
 			if (formattedText != null) {
 				return new Size(formattedText.WidthIncludingTrailingWhitespace, formattedText.Height);
 			}

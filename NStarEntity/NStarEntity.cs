@@ -5,10 +5,9 @@ global using System.Diagnostics;
 global using static CSharp.NStar.BuiltInMemberCollections;
 global using static CSharp.NStar.NStarType;
 global using static CSharp.NStar.TypeConverters;
-global using static NStar.Core.Extents;
 global using static System.Math;
 global using String = NStar.Core.String;
-using Mpir.NET;
+using NStar.Mpir;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -183,7 +182,7 @@ public struct NStarEntity
 			return E;
 		else if (s[0] is not (>= '0' and <= '9' or '+' or '-') && s[^1] is not ('\"' or '\'' or '\\'))
 			throw new FormatException();
-		else if (s[^1] == 'i')
+		else if (s[^1] == 'n')
 			return int.Parse(s[..^1], InvariantCulture);
 		else if (s[^1] == 'u')
 			return uint.Parse(s[..^1], InvariantCulture);
@@ -222,13 +221,28 @@ public struct NStarEntity
 			}
 			return ValidateFixing(n, RealType, true);
 		}
+		else if (s[^1] == 'm')
+		{
+			if (!(s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
+				throw new FormatException();
+			decimal n;
+			try
+			{
+				n = int.Parse(s2, InvariantCulture);
+			}
+			catch
+			{
+				n = decimal.Parse(s2, InvariantCulture);
+			}
+			return ValidateFixing(new(n, DecimalType), DecimalType, true);
+		}
 		else if (s[^1] == 'c')
 		{
 			if (!(s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
 				throw new FormatException();
 			return new(new Complex(double.Parse(s2), 0), ComplexType);
 		}
-		else if (s[^1] == 'I')
+		else if (s[^1] == 'i')
 		{
 			if (!(s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
 				throw new FormatException();
@@ -257,7 +271,7 @@ public struct NStarEntity
 
 	public static bool TryParse(string s, [MaybeNullWhen(false)] out NStarEntity result)
 	{
-		result = default!;
+		result = default;
 		string s2;
 		if (s.Length == 0)
 			return false;
@@ -277,7 +291,7 @@ public struct NStarEntity
 			result = E;
 		else if (s[0] is not (>= '0' and <= '9' or '+' or '-') && s[^1] is not ('\"' or '\'' or '\\'))
 			return false;
-		else if (s[^1] == 'i')
+		else if (s[^1] == 'n')
 		{
 			if (int.TryParse(s[..^1], InvariantCulture, out var i))
 				result = i;
@@ -300,12 +314,27 @@ public struct NStarEntity
 				@double = true;
 				s2 = s2[..^1];
 			}
-			if (!@double && long.TryParse(s2, out var l))
-				result = new(l, LongIntType);
-			else if (MpzT.TryParse(s2, out var ll))
-				result = new(ll, LongLongType);
+			if (s2.EndsWith('u'))
+			{
+				s2 = s2[..^1];
+				if (!@double && ulong.TryParse(s2, out var ul))
+					result = new(ul, UnsignedLongIntType);
+				else if (MpuT.TryParse(s2, out var ull))
+					result = new(ull, UnsignedLongLongType);
+				else
+					return false;
+				return true;
+			}
 			else
-				return false;
+			{
+				if (!@double && long.TryParse(s2, out var l))
+					result = new(l, LongIntType);
+				else if (MpzT.TryParse(s2, out var ll))
+					result = new(ll, LongLongType);
+				else
+					return false;
+				return true;
+			}
 		}
 		else if (s[^1] == 'r')
 		{
@@ -318,6 +347,17 @@ public struct NStarEntity
 				return false;
 			result = ValidateFixing(n, RealType, true);
 		}
+		else if (s[^1] == 'r')
+		{
+			if (!(s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
+				return false;
+			decimal n;
+			if (int.TryParse(s2, InvariantCulture, out var i))
+				n = i;
+			else if (!decimal.TryParse(s2, InvariantCulture, out n))
+				return false;
+			result = ValidateFixing(new(n, DecimalType), DecimalType, true);
+		}
 		else if (s[^1] == 'c')
 		{
 			if (!(s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
@@ -326,7 +366,7 @@ public struct NStarEntity
 				return false;
 			result = new(new Complex(n, 0), ComplexType);
 		}
-		else if (s[^1] == 'I')
+		else if (s[^1] == 'i')
 		{
 			if (!(s2 = s[..^1]).All(x => (uint)(x - '0') <= 9 || ".Ee+-".Contains(x)))
 				return false;
@@ -398,6 +438,52 @@ public struct NStarEntity
 
 	public static NStarEntity Lt(NStarEntity x, NStarEntity y) => (NStarEntity)(x.ToReal() < y.ToReal());
 
+	public readonly NStarEntity CyclicShift(int shiftAmount)
+	{
+		if (TypeIsPrimitive(InnerType.MainType))
+		{
+			var basicType = InnerType.MainType.Peek().Name;
+			if (basicType == "long long")
+				return ValidateFixing(new(ToLongLong() << shiftAmount, LongLongType), LongLongType, Fixed);
+			else if (basicType == "unsigned long long")
+				return ValidateFixing(new(ToUnsignedLongLong() << shiftAmount, UnsignedLongLongType),
+					UnsignedLongLongType, Fixed);
+			else if (basicType == "unsigned long int")
+				return ValidateFixing(new(ToUnsignedLongInt() is var uli
+					? uli << (int)unchecked((uint)shiftAmount % (sizeof(ulong) * 8))
+					| uli >>> (int)unchecked((uint)-shiftAmount % (sizeof(ulong) * 8)) : 0, UnsignedLongIntType),
+					UnsignedLongIntType, Fixed);
+			else if (basicType == "long int")
+				return ValidateFixing(new(ToLongInt() is var li
+					? li << (int)unchecked((uint)shiftAmount % (sizeof(long) * 8))
+					| li >>> (int)unchecked((uint)-shiftAmount % (sizeof(long) * 8)) : 0, LongIntType), LongIntType, Fixed);
+			else if (basicType == "unsigned int")
+				return ValidateFixing(ToUnsignedInt() is var ui
+					? ui << (int)unchecked((uint)shiftAmount % (sizeof(uint) * 8))
+					| ui >>> (int)unchecked((uint)-shiftAmount % (sizeof(uint) * 8)) : 0, UnsignedIntType, Fixed);
+			else if (basicType == "int")
+				return ValidateFixing(ToInt() is var i
+					? i << (int)unchecked((uint)shiftAmount % (sizeof(int) * 8))
+					| i >>> (int)unchecked((uint)-shiftAmount % (sizeof(int) * 8)) : 0, IntType, Fixed);
+			else if (basicType == "unsigned short int")
+				return ValidateFixing((ushort)(ToUnsignedShortInt() is var usi
+					? usi << (int)unchecked((uint)shiftAmount % (sizeof(ushort) * 8))
+					| usi >>> (int)unchecked((uint)-shiftAmount % (sizeof(ushort) * 8)) : 0), UnsignedShortIntType, Fixed);
+			else if (basicType == "short int")
+				return ValidateFixing((short)(ToShortInt() is var si
+					? si << (int)unchecked((uint)shiftAmount % (sizeof(short) * 8))
+					| si >>> (int)unchecked((uint)-shiftAmount % (sizeof(short) * 8)) : 0), ShortIntType, Fixed);
+			else if (basicType == "byte")
+				return ValidateFixing((byte)(ToByte() is var y
+					? y << (int)unchecked((uint)shiftAmount % (sizeof(byte) * 8))
+					| y >>> (int)unchecked((uint)-shiftAmount % (sizeof(byte) * 8)) : 0), ByteType, Fixed);
+			else
+				return new();
+		}
+		else
+			return new();
+	}
+
 	// Set flag to true if you want to try to apply this function.
 	public static NStarEntity ValidateFixing(NStarEntity source, NStarType type, bool doFixing = false)
 	{
@@ -467,9 +553,10 @@ public struct NStarEntity
 			"long int" => !(Object is not long li || li < 1),
 			"DateTime" => !(Object is not DateTime dt || dt.Ticks < 1),
 			"unsigned long int" => !(Object is not ulong uli || uli < 1),
-			"real" => !(Number < 1),
-			"string" => !(String == ""),
-			"list" => !(NextList == null || NextList.Length == 0) && NextList[0].ToBool(),
+			"real" => Number >= 1,
+			"decimal" => !(Object is not decimal m || m is < 1),
+			"string" => String != "",
+			"list" => !(NextList is null || NextList.Length == 0) && NextList[0].ToBool(),
 			_ => false
 		};
 	}
@@ -485,18 +572,20 @@ public struct NStarEntity
 			"null" => 0,
 			"bool" => (byte)(!Bool ? 0 : 1),
 			"byte" => (byte)Number,
-			"short int" => (byte)(Number is < (-255) or > 255 ? 0 : Abs(Number)),
-			"unsigned short int" => (byte)(Number is < (-255) or > 255 ? 0 : Number),
-			"char" => (byte)(Number is < (-255) or > 255 ? 0 : Number),
-			"int" => (byte)(Number is < (-255) or > 255 ? 0 : Abs(Number)),
-			"unsigned int" => (byte)(Number is < (-255) or > 255 ? 0 : Number),
-			"long int" => (byte)(Object is not long li ? 0 : li is < (-255) or > 255 ? 0 : Abs(li)),
+			"short int" => (byte)(Number is < -255 or > 255 ? 0 : Abs(Number)),
+			"unsigned short int" => (byte)(Number is < -255 or > 255 ? 0 : Number),
+			"char" => (byte)(Number is < -255 or > 255 ? 0 : Number),
+			"int" => (byte)(Number is < -255 or > 255 ? 0 : Abs(Number)),
+			"unsigned int" => (byte)(Number is < -255 or > 255 ? 0 : Number),
+			"long int" => (byte)(Object is not long li ? 0 : li is < -255 or > 255 ? 0 : Abs(li)),
 			"DateTime" => (byte)(Object is not DateTime dt ? 0 : dt.Ticks > 255 ? 0 : dt.Ticks),
 			"unsigned long int" => (byte)(Object is not ulong uli ? 0 : uli > 255 ? 0 : uli),
+			"unsigned long long" => (byte)(Object is not MpuT ull ? 0 : ull > 255 ? 0 : ull.Abs()),
 			"long long" => (byte)(Object is not MpzT ll ? 0 : ll < -255 || ll > 255 ? 0 : ll.Abs()),
-			"real" => (byte)(Number is < (-255) or > 255 ? 0 : Floor(Abs(Number))),
+			"real" => (byte)(Number is < -255 or > 255 ? 0 : Truncate(Abs(Number))),
+			"decimal" => (byte)(Object is not decimal m || m is < -255 or > 255 ? 0 : Truncate(Abs(m))),
 			"string" => 0,
-			"list" => (byte)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToByte()),
+			"list" => (byte)(NextList is null || NextList.Length == 0 ? 0 : NextList[0].ToByte()),
 			_ => 0
 		};
 	}
@@ -514,15 +603,17 @@ public struct NStarEntity
 			"short int" => (short)Number,
 			"unsigned short int" => (short)Number,
 			"char" => (short)Number,
-			"int" => (short)(Number is < (-32768) or > 32767 ? 0 : Number),
+			"int" => (short)(Number is < -32768 or > 32767 ? 0 : Number),
 			"unsigned int" => (short)(Number > 32767 ? 0 : Number),
-			"long int" => (short)(Object is not long li ? 0 : li is < (-32768) or > 32767 ? 0 : li),
+			"long int" => (short)(Object is not long li ? 0 : li is < -32768 or > 32767 ? 0 : li),
 			"DateTime" => (short)(Object is not DateTime dt ? 0 : dt.Ticks > 32767 ? 0 : dt.Ticks),
 			"unsigned long int" => (short)(Object is not ulong uli ? 0 : uli > 32767 ? 0 : uli),
+			"unsigned long long" => (short)(Object is not MpuT ull ? 0 : ull > 32767 ? 0 : ull),
 			"long long" => (short)(Object is not MpzT ll ? 0 : ll < -32768 || ll > 32767 ? 0 : ll),
-			"real" => (short)(Number is < (-32768) or > 32767 ? 0 : Floor(Number)),
+			"real" => (short)(Number is < -32768 or > 32767 ? 0 : Truncate(Number)),
+			"decimal" => (short)(Object is not decimal m || m is < -32768 or > 32767 ? 0 : Truncate(m)),
 			"string" => 0,
-			"list" => (short)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToShortInt()),
+			"list" => (short)(NextList is null || NextList.Length == 0 ? 0 : NextList[0].ToShortInt()),
 			_ => 0
 		};
 	}
@@ -540,15 +631,17 @@ public struct NStarEntity
 			"short int" => (ushort)Number,
 			"unsigned short int" => (ushort)Number,
 			"char" => (ushort)Number,
-			"int" => (ushort)(Number is < (-65535) or > 65535 ? 0 : Abs(Number)),
-			"unsigned int" => (ushort)(Number is < (-65535) or > 65535 ? 0 : Number),
-			"long int" => (ushort)(Object is not long li ? 0 : li is < (-65535) or > 65535 ? 0 : Abs(li)),
+			"int" => (ushort)(Number is < -65535 or > 65535 ? 0 : Abs(Number)),
+			"unsigned int" => (ushort)(Number is < -65535 or > 65535 ? 0 : Number),
+			"long int" => (ushort)(Object is not long li ? 0 : li is < -65535 or > 65535 ? 0 : Abs(li)),
 			"DateTime" => (ushort)(Object is not DateTime dt ? 0 : dt.Ticks > 65535 ? 0 : dt.Ticks),
 			"unsigned long int" => (ushort)(Object is not ulong uli ? 0 : uli > 65535 ? 0 : uli),
+			"unsigned long long" => (ushort)(Object is not MpuT ull ? 0 : ull > 65535 ? 0 : ull.Abs()),
 			"long long" => (ushort)(Object is not MpzT ll ? 0 : ll < -65535 || ll > 65535 ? 0 : ll.Abs()),
-			"real" => (ushort)(Number is < (-65535) or > 65535 ? 0 : Floor(Abs(Number))),
+			"real" => (ushort)(Number is < -65535 or > 65535 ? 0 : Truncate(Abs(Number))),
+			"decimal" => (ushort)(Object is not decimal m || m is < -65535 or > 65535 ? 0 : Truncate(Abs(m))),
 			"string" => 0,
-			"list" => (ushort)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedShortInt()),
+			"list" => (ushort)(NextList is null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedShortInt()),
 			_ => 0
 		};
 	}
@@ -566,15 +659,17 @@ public struct NStarEntity
 			"short int" => (char)Number,
 			"unsigned short int" => (char)Number,
 			"char" => (char)Number,
-			"int" => (char)(Number is < (-65535) or > 65535 ? 0 : Abs(Number)),
-			"unsigned int" => (char)(Number is < (-65535) or > 65535 ? 0 : Number),
-			"long int" => (char)(Object is not long li ? 0 : li is < (-65535) or > 65535 ? 0 : Abs(li)),
+			"int" => (char)(Number is < -65535 or > 65535 ? 0 : Abs(Number)),
+			"unsigned int" => (char)(Number is < -65535 or > 65535 ? 0 : Number),
+			"long int" => (char)(Object is not long li ? 0 : li is < -65535 or > 65535 ? 0 : Abs(li)),
 			"DateTime" => (char)(Object is not DateTime dt ? 0 : dt.Ticks > 65535 ? 0 : dt.Ticks),
 			"unsigned long int" => (char)(Object is not ulong uli ? 0 : uli > 65535 ? 0 : uli),
+			"unsigned long long" => (char)(Object is not MpuT ull ? 0 : ull > 65535 ? 0 : ull.Abs()),
 			"long long" => (char)(Object is not MpzT ll ? 0 : ll < -65535 || ll > 65535 ? 0 : ll.Abs()),
-			"real" => (char)(Number is < (-65535) or > 65535 ? 0 : Floor(Abs(Number))),
+			"real" => (char)(Number is < -65535 or > 65535 ? 0 : Truncate(Abs(Number))),
+			"decimal" => (char)(Object is not decimal m || m is < -65535 or > 65535 ? 0 : Truncate(Abs(m))),
 			"string" => (char)0,
-			"list" => (char)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToChar()),
+			"list" => (char)(NextList is null || NextList.Length == 0 ? 0 : NextList[0].ToChar()),
 			_ => '\0'
 		};
 	}
@@ -594,13 +689,15 @@ public struct NStarEntity
 			"char" => (int)Number,
 			"int" => (int)Number,
 			"unsigned int" => (int)Number,
-			"long int" => (int)(Object is not long li ? 0 : li is < (-2147483648) or > 2147483647 ? 0 : li),
+			"long int" => (int)(Object is not long li ? 0 : li is < -2147483648 or > 2147483647 ? 0 : li),
 			"DateTime" => (int)(Object is not DateTime dt ? 0 : dt.Ticks > 2147483647 ? 0 : dt.Ticks),
 			"unsigned long int" => (int)(Object is not ulong uli ? 0 : uli > 2147483647 ? 0 : uli),
+			"unsigned long long" => (int)(Object is not MpuT ull ? 0 : ull > 2147483647 ? 0 : ull),
 			"long long" => (int)(Object is not MpzT ll ? 0 : ll < -2147483648 || ll > 2147483647 ? 0 : ll),
-			"real" => (int)(Number is < (-2147483648) or > 2147483647 ? 0 : Floor(Number)),
+			"real" => (int)(Number is < -2147483648 or > 2147483647 ? 0 : Truncate(Number)),
+			"decimal" => (int)(Object is not decimal m || m is < -2147483648 or > 2147483647 ? 0 : Truncate(m)),
 			"string" => 0,
-			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToInt(),
+			"list" => NextList is null || NextList.Length == 0 ? 0 : NextList[0].ToInt(),
 			_ => 0
 		};
 	}
@@ -620,13 +717,15 @@ public struct NStarEntity
 			"char" => (uint)Number,
 			"int" => (uint)Number,
 			"unsigned int" => (uint)Number,
-			"long int" => (uint)(Object is not long li ? 0 : li is < (-4294967295) or > 4294967295 ? 0 : Abs(li)),
+			"long int" => (uint)(Object is not long li ? 0 : li is < -4294967295 or > 4294967295 ? 0 : Abs(li)),
 			"DateTime" => (uint)(Object is not DateTime dt ? 0 : dt.Ticks > 4294967295 ? 0 : dt.Ticks),
 			"unsigned long int" => (uint)(Object is not ulong uli ? 0 : uli > 4294967295 ? 0 : uli),
+			"unsigned long long" => (uint)(Object is not MpuT ull ? 0 : ull > 4294967295 ? 0 : ull),
 			"long long" => (uint)(Object is not MpzT ll ? 0 : ll < -4294967295 || ll > 4294967295 ? 0 : ll.Abs()),
-			"real" => (uint)(Number is < (-4294967295) or > 4294967295 ? 0 : Floor(Abs(Number))),
+			"real" => (uint)(Number is < -4294967295 or > 4294967295 ? 0 : Truncate(Abs(Number))),
+			"decimal" => (uint)(Object is not decimal m || m is < -4294967295 or > 4294967295 ? 0 : Truncate(Abs(m))),
 			"string" => 0,
-			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedInt(),
+			"list" => NextList is null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedInt(),
 			_ => 0
 		};
 	}
@@ -649,10 +748,12 @@ public struct NStarEntity
 			"long int" => (Object is not long li) ? 0 : li,
 			"DateTime" => (Object is not DateTime dt) ? 0 : dt.Ticks,
 			"unsigned long int" => (long)((Object is not ulong uli) ? 0 : uli),
+			"unsigned long long" => (uint)(Object is not MpuT ull ? 0 : ull > 9223372036854775807 ? 0 : ull),
 			"long long" => (long)(Object is not MpzT ll ? 0 : ll < -9223372036854775808 || ll > 9223372036854775807 ? 0 : ll),
-			"real" => (long)((Number is < (-(double)9223372036854775808) or > 9223372036854775807) ? 0 : Floor(Number)),
+			"real" => (long)((Number is < -(double)9223372036854775808 or > 9223372036854775807) ? 0 : Truncate(Number)),
+			"decimal" => (long)(Object is not decimal m || m is < -(decimal)9223372036854775808 or > 9223372036854775807 ? 0 : Truncate(m)),
 			"string" => 0,
-			"list" => (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToLongInt(),
+			"list" => (NextList is null || NextList.Length == 0) ? 0 : NextList[0].ToLongInt(),
 			_ => 0
 		};
 	}
@@ -678,13 +779,43 @@ public struct NStarEntity
 			"long int" => (ulong)(Object is not long li ? 0 : Abs(li)),
 			"DateTime" => (ulong)(Object is not DateTime dt ? 0 : dt.Ticks),
 			"unsigned long int" => Object is not ulong uli ? 0 : uli,
+			"unsigned long long" => (ulong)(Object is not MpuT ull ? 0 : ull > 18446744073709551615 ? 0 : ull.Abs()),
 			"long long" => (ulong)(Object is not MpzT ll ? 0 : ll < -(MpzT)18446744073709551615 || ll > 18446744073709551615 ? 0 : ll.Abs()),
-			"real" => (ulong)(Number is < (-(double)18446744073709551615) or > 18446744073709551615 ? 0 : Floor(Abs(Number))),
+			"real" => (ulong)(Number is < -(double)18446744073709551615 or > 18446744073709551615 ? 0 : Truncate(Abs(Number))),
+			"decimal" => (ulong)(Object is not decimal m || m is < -(decimal)18446744073709551615 or > 18446744073709551615 ? 0 : Truncate(Abs(m))),
 			"string" => 0,
-			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedLongInt(),
+			"list" => NextList is null || NextList.Length == 0 ? 0 : NextList[0].ToUnsignedLongInt(),
 			_ => 0
 		};
 #pragma warning restore IDE0078 // Используйте сопоставление шаблонов
+	}
+
+	public readonly MpuT ToUnsignedLongLong()
+	{
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return 0;
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
+		return basicType switch
+		{
+			"null" => 0,
+			"bool" => (!Bool) ? 0 : 1,
+			"byte" => (MpuT)Number,
+			"short int" => (MpuT)Number,
+			"unsigned short int" => (MpuT)Number,
+			"char" => (MpuT)Number,
+			"int" => (MpuT)Number,
+			"unsigned int" => (MpuT)Number,
+			"long int" => (MpuT)((Object is not long li) ? 0 : li),
+			"DateTime" => (Object is not DateTime dt) ? 0 : dt.Ticks,
+			"unsigned long int" => (MpuT)((Object is not ulong uli) ? 0 : uli),
+			"unsigned long long" => Object is not MpuT ull ? 0 : ull,
+			"long long" => (MpuT)(Object is not MpzT ll ? 0 : ll),
+			"real" => (MpuT)Truncate(Number),
+			"decimal" => (MpuT)(Object is not decimal m ? 0 : Truncate(m)),
+			"string" => 0,
+			"list" => (NextList is null || NextList.Length == 0) ? 0 : NextList[0].ToUnsignedLongLong(),
+			_ => 0
+		};
 	}
 
 	public readonly MpzT ToLongLong()
@@ -705,10 +836,12 @@ public struct NStarEntity
 			"long int" => (MpzT)((Object is not long li) ? 0 : li),
 			"DateTime" => (Object is not DateTime dt) ? 0 : dt.Ticks,
 			"unsigned long int" => (MpzT)((Object is not ulong uli) ? 0 : uli),
+			"unsigned long long" => (MpzT)((Object is not MpuT ull) ? 0 : ull),
 			"long long" => Object is not MpzT ll ? 0 : ll,
-			"real" => (MpzT)((Number is < (-(double)9223372036854775808) or > 9223372036854775807) ? 0 : Floor(Number)),
+			"real" => (MpzT)Truncate(Number),
+			"decimal" => (MpzT)(Object is not decimal m ? 0 : Truncate(m)),
 			"string" => 0,
-			"list" => (NextList == null || NextList.Length == 0) ? 0 : NextList[0].ToLongLong(),
+			"list" => (NextList is null || NextList.Length == 0) ? 0 : NextList[0].ToLongLong(),
 			_ => 0
 		};
 	}
@@ -731,10 +864,39 @@ public struct NStarEntity
 			"long int" => Object is not long li ? 0 : li,
 			"DateTime" => Object is not DateTime dt ? 0 : dt.Ticks,
 			"unsigned long int" => Object is not ulong uli ? 0 : uli,
+			"unsigned long long" => (double)(Object is not MpuT ull ? 0 : ull),
 			"long long" => (double)(Object is not MpzT ll ? 0 : ll),
 			"real" => Number,
 			"string" => 0,
-			"list" => (double)(NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToReal()),
+			"list" => (double)(NextList is null || NextList.Length == 0 ? 0 : NextList[0].ToReal()),
+			_ => 0
+		};
+	}
+
+	public readonly decimal ToDecimal()
+	{
+		if (!TypeIsPrimitive(InnerType.MainType))
+			return 0;
+		var basicType = InnerType.MainType.Peek().Name.ToString() ?? "null";
+		return basicType switch
+		{
+			"null" => 0,
+			"bool" => !Bool ? 0 : 1,
+			"byte" => (decimal)Number,
+			"short int" => (decimal)Number,
+			"unsigned short int" => (decimal)Number,
+			"char" => (decimal)Number,
+			"int" => (decimal)Number,
+			"unsigned int" => (decimal)Number,
+			"long int" => Object is not long li ? 0 : li,
+			"DateTime" => Object is not DateTime dt ? 0 : dt.Ticks,
+			"unsigned long int" => Object is not ulong uli ? 0 : uli,
+			"unsigned long long" => (decimal)(Object is not MpuT ull ? 0 : ull),
+			"long long" => (decimal)(Object is not MpzT ll ? 0 : ll),
+			"real" => (decimal)Number,
+			"decimal" => Object is not decimal m ? 0 : m,
+			"string" => 0,
+			"list" => NextList is null || NextList.Length == 0 ? 0 : NextList[0].ToDecimal(),
 			_ => 0
 		};
 	}
@@ -757,11 +919,13 @@ public struct NStarEntity
 			"long int" => Object is not long li ? 0 : li,
 			"DateTime" => Object is not DateTime dt ? 0 : dt.Ticks,
 			"unsigned long int" => Object is not ulong uli ? 0 : uli,
+			"unsigned long long" => (Complex)(double)(Object is not MpuT ull ? 0 : ull),
 			"long long" => (Complex)(double)(Object is not MpzT ll ? 0 : ll),
 			"real" => Number,
+			"decimal" => (double)(Object is not decimal m ? 0 : m),
 			"complex" => Object is not Complex c ? 0 : c,
 			"string" => 0,
-			"list" => NextList == null || NextList.Length == 0 ? 0 : NextList[0].ToComplex(),
+			"list" => NextList is null || NextList.Length == 0 ? 0 : NextList[0].ToComplex(),
 			_ => 0
 		};
 	}
@@ -804,17 +968,27 @@ public struct NStarEntity
 			else if (basicType == "unsigned int")
 				return ((uint)Number).ToString(InvariantCulture);
 			else if (basicType == "long int")
-				return Object == null ? "" : Object is long li ? li.ToString() : "0";
+				return Object is null ? "" : Object is long li ? li.ToString() : "0";
 			else if (basicType == "DateTime")
-				return Object == null ? "" : Object is DateTime dt ? dt.ToString() : new DateTime(0).ToString();
+				return Object is null ? "" : Object is DateTime dt ? dt.ToString() : new DateTime(0).ToString();
 			else if (basicType == "unsigned long int")
-				return Object == null ? "" : Object is ulong uli ? uli.ToString() : "0";
+				return Object is null ? "" : Object is ulong uli ? uli.ToString() : "0";
+			else if (basicType == "unsigned long long" && Object is MpuT ull)
+			{
+				if (!addCasting)
+					return ull.ToString();
+				if (ull <= ulong.MaxValue)
+					return "new " + nameof(MpuT) + '(' + ull.ToString() + ')';
+				return "new " + nameof(MpuT) + "(\"" + ull.ToString() + "\")";
+			}
 			else if (basicType == "long long" && Object is MpzT ll)
 			{
-#pragma warning disable IDE0078 // Используйте сопоставление шаблонов
-				if (!addCasting || ll >= long.MinValue && ll < ulong.MaxValue)
-#pragma warning restore IDE0078 // Используйте сопоставление шаблонов
+				if (!addCasting)
 					return ll.ToString();
+#pragma warning disable IDE0078 // Используйте сопоставление шаблонов
+				if (ll >= long.MinValue && ll <= ulong.MaxValue)
+					return "new " + nameof(MpzT) + '(' + ll.ToString() + ')';
+#pragma warning restore IDE0078 // Используйте сопоставление шаблонов
 				return "new " + nameof(MpzT) + "(\"" + ll.ToString() + "\")";
 			}
 			else if (basicType == "real")
@@ -844,10 +1018,10 @@ public struct NStarEntity
 					0d / 0 => addCasting ? "(0d / 0)" : "Uncty",
 					-0d => "0",
 					_ => c.Imaginary.ToString(InvariantCulture)
-				} + (addCasting ? ")" : "I");
+				} + (addCasting ? ")" : "i");
 			}
 			else if (basicType == "typename")
-				return Object == null ? "" : Object is NStarType NStarType ? NStarType.ToString() : NullType.ToString();
+				return Object is null ? "" : Object is NStarType NStarType ? NStarType.ToString() : NullType.ToString();
 			else if (basicType == "string")
 			{
 				if (!takeIntoQuotes)
@@ -1018,6 +1192,8 @@ public struct NStarEntity
 			return new(ToDateTime(), GetPrimitiveType("DateTime"));
 		else if (basicType == "unsigned long int")
 			return new(ToUnsignedLongInt(), UnsignedLongIntType);
+		else if (basicType == "unsigned long long")
+			return new(ToUnsignedLongLong(), UnsignedLongLongType);
 		else if (basicType == "long long")
 			return new(ToLongLong(), LongLongType);
 		else if (basicType == "real")
@@ -1123,6 +1299,13 @@ public struct NStarEntity
 		string t;
 		if (leftType == "long long")
 			return "long long";
+		else if (leftType == "unsigned long long")
+		{
+			if (rightType.AsSpan() is "short int" or "int" or "long int" or "long long")
+				return "long long";
+			else
+				return "unsigned long long";
+		}
 		else if (leftType == "unsigned long int")
 		{
 			if (right.ToUnsignedLongInt() >= 1uL << 56)
@@ -1202,6 +1385,21 @@ public struct NStarEntity
 				return "long int";
 			else
 				return "long long";
+		}
+		else if (leftType == "unsigned long long")
+		{
+			if (right.ToUnsignedLongLong() <= 256)
+				return "byte";
+			else if (right.ToUnsignedLongLong() <= 65536)
+				return "unsigned short int";
+			else if (right.ToUnsignedLongLong() <= 4294967296)
+				return "unsigned int";
+			else if (right.ToUnsignedLongLong() <= MpuT.One << 64)
+				return "unsigned long int";
+			else if (rightType.AsSpan() is "short int" or "int" or "long int")
+				return "long long";
+			else
+				return "unsigned long long";
 		}
 		else if (leftType == "unsigned long int")
 		{
@@ -1344,6 +1542,8 @@ public struct NStarEntity
 				return dt.GetHashCode();
 			else if (s == "unsigned long int" && Object is ulong uli)
 				return uli.GetHashCode();
+			else if (s == "unsigned long long" && Object is ulong ull)
+				return ull.GetHashCode();
 			else if (s == "long long" && Object is MpzT ll)
 				return ll.GetHashCode();
 			else if (s == "complex" && Object is Complex c)
@@ -1351,7 +1551,7 @@ public struct NStarEntity
 			else if (s == "string")
 				return String.GetHashCode();
 			else if (s == "list")
-				return (NextList == null || NextList.Length == 0) ? 0 : NextList.Progression(0, (x, y) => x ^ y.GetHashCode());
+				return (NextList is null || NextList.Length == 0) ? 0 : NextList.Progression(0, (x, y) => x ^ y.GetHashCode());
 		}
 		return 0;
 	}
@@ -1391,10 +1591,12 @@ public struct NStarEntity
 					return ValidateFixing(new(+x.ToComplex(), ComplexType), ComplexType, x.Fixed);
 				else if (basicType == "real")
 					return ValidateFixing(+x.ToReal(), RealType, x.Fixed);
-				else if (basicType == "unsigned long int")
-					return ValidateFixing(new(+x.ToUnsignedLongInt(), UnsignedLongIntType), UnsignedLongIntType, x.Fixed);
 				else if (basicType == "long long")
 					return ValidateFixing(new(+x.ToLongLong(), LongLongType), LongLongType, x.Fixed);
+				else if (basicType == "unsigned long long")
+					return ValidateFixing(new(+x.ToUnsignedLongLong(), UnsignedLongLongType), UnsignedLongLongType, x.Fixed);
+				else if (basicType == "unsigned long int")
+					return ValidateFixing(new(+x.ToUnsignedLongInt(), UnsignedLongIntType), UnsignedLongIntType, x.Fixed);
 				else if (basicType == "long int")
 					return ValidateFixing(new(+x.ToLongInt(), LongIntType), LongIntType, x.Fixed);
 				else if (basicType == "unsigned int")
@@ -1426,11 +1628,13 @@ public struct NStarEntity
 				else if (basicType == "long long")
 					return ValidateFixing(new(-x.ToLongLong(), LongLongType), LongLongType, x.Fixed);
 				else if (basicType == "unsigned long int")
-					return ValidateFixing(new(-x.ToLongInt(), UnsignedLongIntType), UnsignedLongIntType, x.Fixed);
+					return ValidateFixing(new(-x.ToLongLong(), UnsignedLongLongType), UnsignedLongLongType, x.Fixed);
+				else if (basicType == "unsigned long int")
+					return ValidateFixing(new(-x.ToLongLong(), UnsignedLongIntType), UnsignedLongIntType, x.Fixed);
 				else if (basicType == "long int")
 					return ValidateFixing(new(-x.ToLongInt(), LongIntType), LongIntType, x.Fixed);
 				else if (basicType == "unsigned int")
-					return ValidateFixing(-x.ToInt(), UnsignedIntType, x.Fixed);
+					return ValidateFixing(-x.ToLongInt(), UnsignedIntType, x.Fixed);
 				else if (basicType == "int")
 					return ValidateFixing(-x.ToInt(), IntType, x.Fixed);
 				else if (basicType == "unsigned short int")
@@ -1457,6 +1661,8 @@ public struct NStarEntity
 			var basicType = x.InnerType.MainType.Peek().Name;
 				if (basicType == "long long")
 					return ValidateFixing(new(~x.ToLongLong(), LongLongType), LongLongType, x.Fixed);
+				else if (basicType == "unsigned long long")
+					return ValidateFixing(new(~x.ToUnsignedLongLong(), UnsignedLongLongType), UnsignedLongLongType, x.Fixed);
 				else if (basicType == "unsigned long int")
 					return ValidateFixing(new(~x.ToUnsignedLongInt(), UnsignedLongIntType), UnsignedLongIntType, x.Fixed);
 				else if (basicType == "long int")
@@ -1499,6 +1705,9 @@ public struct NStarEntity
 		else if (leftType == (t = "long long") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongLong(),
 				(x, y) => new(x + y, LongLongType), leftType, rightType, t);
+		else if (leftType == (t = "unsigned long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedLongLong(),
+				(x, y) => new(x + y, UnsignedLongLongType), leftType, rightType, t);
 		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
 				(x, y) => new(x + y, UnsignedLongIntType), leftType, rightType, t);
@@ -1542,6 +1751,9 @@ public struct NStarEntity
 		else if (leftType == (t = "long long") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongLong(),
 				(x, y) => new(x - y, LongLongType), leftType, rightType, t);
+		else if (leftType == (t = "unsigned long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedLongLong(),
+				(x, y) => new(x - y, UnsignedLongLongType), leftType, rightType, t);
 		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
 				(x, y) => new(x - y, UnsignedLongIntType), leftType, rightType, t);
@@ -1591,6 +1803,10 @@ public struct NStarEntity
 			ulong.TryParse(right.ToString().ToString(), out var rightUnsignedLongInt))
 			return PerformOperation(leftUnsignedLongInt, rightUnsignedLongInt,
 				(x, y) => new(x - y, UnsignedLongIntType), leftType, rightType, "unsigned long int");
+		else if (MpuT.TryParse(left.ToString().ToString(), out var leftUnsignedLongLong) &&
+			MpuT.TryParse(right.ToString().ToString(), out var rightUnsignedLongLong))
+			return PerformOperation(leftUnsignedLongLong, rightUnsignedLongLong,
+				(x, y) => new(x - y, UnsignedLongLongType), leftType, rightType, "unsigned long long");
 		else if (MpzT.TryParse(left.ToString().ToString(), out var leftLongLong)
 			&& MpzT.TryParse(right.ToString().ToString(), out var rightLongLong))
 			return PerformOperation(leftLongLong, rightLongLong,
@@ -1624,6 +1840,9 @@ public struct NStarEntity
 		else if (leftType == (t = "long long") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongLong(),
 				(x, y) => new(x * y, LongLongType), leftType, rightType, t);
+		else if (leftType == (t = "unsigned long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedLongLong(),
+				(x, y) => new(x * y, UnsignedLongLongType), leftType, rightType, t);
 		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
 				(x, y) => new(x * y, UnsignedLongIntType), leftType, rightType, t);
@@ -1682,6 +1901,9 @@ public struct NStarEntity
 		else if (leftType == (t = "long long") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongLong(),
 				(x, y) => new(x / y, LongLongType), leftType, rightType, quotientType);
+		else if (leftType == (t = "unsigned long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedLongLong(),
+				(x, y) => new(x / y, UnsignedLongLongType), leftType, rightType, quotientType);
 		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
 				(x, y) => new(x / y, UnsignedLongIntType), leftType, rightType, quotientType);
@@ -1756,10 +1978,13 @@ public struct NStarEntity
 			return StringMod(left, right, leftType, rightType);
 		else if (leftType == (t = "real") || rightType == t)
 			return PerformOperation(left, right, x => x.ToReal(),
-				(x, y) => x - Floor(x / y) * y, leftType, rightType, remainderType);
+				(x, y) => x - Truncate(x / y) * y, leftType, rightType, remainderType);
 		else if (leftType == (t = "long long") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongLong(),
 				(x, y) => new(x - x / y * y, LongLongType), leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedLongLong(),
+				(x, y) => new(x - x / y * y, UnsignedLongLongType), leftType, rightType, remainderType);
 		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
 				(x, y) => new(x - x / y * y, UnsignedLongIntType), leftType, rightType, remainderType);
@@ -1818,7 +2043,7 @@ public struct NStarEntity
 				(x, y) => new(x - x / y * y, LongLongType), leftType, rightType, t);
 		else if (double.TryParse(left.ToString().ToString(), out var leftReal)
 			&& double.TryParse(right.ToString().ToString(), out var rightReal))
-			return PerformOperation(leftReal, rightReal, (x, y) => x - Floor(x / y) * y, leftType, rightType, t);
+			return PerformOperation(leftReal, rightReal, (x, y) => x - Truncate(x / y) * y, leftType, rightType, t);
 		else
 			return new();
 	}
@@ -1840,6 +2065,9 @@ public struct NStarEntity
 		else if (leftType == (t = "long long") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongLong(),
 				(x, y) => new(x & y, LongLongType), leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedLongLong(),
+				(x, y) => new(x & y, UnsignedLongLongType), leftType, rightType, remainderType);
 		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
 				(x, y) => new(x & y, UnsignedLongIntType), leftType, rightType, remainderType);
@@ -1885,6 +2113,9 @@ public struct NStarEntity
 		else if (leftType == (t = "long long") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongLong(),
 				(x, y) => new(x | y, LongLongType), leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedLongLong(),
+				(x, y) => new(x | y, UnsignedLongLongType), leftType, rightType, remainderType);
 		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
 				(x, y) => new(x | y, UnsignedLongIntType), leftType, rightType, remainderType);
@@ -1930,6 +2161,9 @@ public struct NStarEntity
 		else if (leftType == (t = "long long") || rightType == t)
 			return PerformOperation(left, right, x => x.ToLongLong(),
 				(x, y) => new(x ^ y, LongLongType), leftType, rightType, remainderType);
+		else if (leftType == (t = "unsigned long long") || rightType == t)
+			return PerformOperation(left, right, x => x.ToUnsignedLongLong(),
+				(x, y) => new(x ^ y, UnsignedLongLongType), leftType, rightType, remainderType);
 		else if (leftType == (t = "unsigned long int") || rightType == t)
 			return PerformOperation(left, right, x => x.ToUnsignedLongInt(),
 				(x, y) => new(x ^ y, UnsignedLongIntType), leftType, rightType, remainderType);
@@ -1965,6 +2199,9 @@ public struct NStarEntity
 			var basicType = left.InnerType.MainType.Peek().Name;
 			if (basicType == "long long")
 				return ValidateFixing(new(left.ToLongLong() >>> right, LongLongType), LongLongType, left.Fixed);
+			else if (basicType == "unsigned long long")
+				return ValidateFixing(new(left.ToUnsignedLongLong() >>> right, UnsignedLongLongType),
+					UnsignedLongLongType, left.Fixed);
 			else if (basicType == "unsigned long int")
 				return ValidateFixing(new(left.ToUnsignedLongInt() >>> right, UnsignedLongIntType),
 					UnsignedLongIntType, left.Fixed);
@@ -1994,6 +2231,9 @@ public struct NStarEntity
 			var basicType = left.InnerType.MainType.Peek().Name;
 			if (basicType == "long long")
 				return ValidateFixing(new(left.ToLongLong() >> right, LongLongType), LongLongType, left.Fixed);
+			else if (basicType == "unsigned long long")
+				return ValidateFixing(new(left.ToUnsignedLongLong() >> right, UnsignedLongLongType),
+					UnsignedLongLongType, left.Fixed);
 			else if (basicType == "unsigned long int")
 				return ValidateFixing(new(left.ToUnsignedLongInt() >> right, UnsignedLongIntType),
 					UnsignedLongIntType, left.Fixed);
@@ -2023,6 +2263,9 @@ public struct NStarEntity
 			var basicType = left.InnerType.MainType.Peek().Name;
 			if (basicType == "long long")
 				return ValidateFixing(new(left.ToLongLong() << right, LongLongType), LongLongType, left.Fixed);
+			else if (basicType == "unsigned long long")
+				return ValidateFixing(new(left.ToUnsignedLongLong() << right, UnsignedLongLongType),
+					UnsignedLongLongType, left.Fixed);
 			else if (basicType == "unsigned long int")
 				return ValidateFixing(new(left.ToUnsignedLongInt() << right, UnsignedLongIntType),
 					UnsignedLongIntType, left.Fixed);

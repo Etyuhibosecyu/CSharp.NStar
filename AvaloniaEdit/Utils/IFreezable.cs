@@ -23,7 +23,7 @@ using System.Linq;
 
 namespace AvaloniaEdit.Utils;
 
-	internal interface IFreezable
+internal interface IFreezable
 {
 	/// <summary>
 	/// Gets if this instance is frozen. Frozen instances are immutable and thus thread-safe.
@@ -34,9 +34,9 @@ namespace AvaloniaEdit.Utils;
 	/// Freezes this instance.
 	/// </summary>
 	void Freeze();
-}	
+}
 
-	internal static class FreezableHelper
+internal static class FreezableHelper
 {
 	public static void ThrowIfFrozen(IFreezable freezable)
 	{
@@ -46,7 +46,8 @@ namespace AvaloniaEdit.Utils;
 
 	public static IList<T> FreezeListAndElements<T>(IList<T> list)
 	{
-		if (list != null) {
+		if (list != null)
+		{
 			foreach (var item in list)
 				Freeze(item);
 		}
@@ -55,13 +56,16 @@ namespace AvaloniaEdit.Utils;
 
 	public static IList<T> FreezeList<T>(IList<T> list)
 	{
-		if (list == null || list.Count == 0)
-			return Empty<T>.Array;
-		if (list.IsReadOnly) {
+		if (list is null || list.Count == 0)
+			return Array.Empty<T>();
+		if (list.IsReadOnly)
+		{
 			// If the list is already read-only, return it directly.
 			// This is important, otherwise we might undo the effects of interning.
 			return list;
-		} else {
+		}
+		else
+		{
 			return new ReadOnlyCollection<T>(list.ToArray());
 		}
 	}
@@ -84,7 +88,8 @@ namespace AvaloniaEdit.Utils;
 	/// </summary>
 	public static T GetFrozenClone<T>(T item) where T : IFreezable, ICloneable
 	{
-		if (!item.IsFrozen) {
+		if (!item.IsFrozen)
+		{
 			item = (T)item.Clone();
 			item.Freeze();
 		}
@@ -92,7 +97,7 @@ namespace AvaloniaEdit.Utils;
 	}
 }
 
-	internal abstract class AbstractFreezable : IFreezable
+internal abstract class AbstractFreezable : IFreezable
 {
 	/// <summary>
 	/// Gets if this instance is frozen. Frozen instances are immutable and thus thread-safe.
@@ -104,7 +109,8 @@ namespace AvaloniaEdit.Utils;
 	/// </summary>
 	public void Freeze()
 	{
-		if (!IsFrozen) {
+		if (!IsFrozen)
+		{
 			FreezeInternal();
 			IsFrozen = true;
 		}

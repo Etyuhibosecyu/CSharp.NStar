@@ -45,9 +45,11 @@
 
 		<!-- Digits -->
 		<Rule foreground="#0000FF">
-			\b0[xX][0-9a-fA-F]+  # hex number
+			\b0[bB][01_]+  # binary number
+			|
+			\b0[xX][0-9a-fA-F_]+  # hex number
 			|	\b
-			(	\d+(\.[0-9]+)?   #number with optional floating point
+			(	\d(\d|_)*(\.[0-9]+)?   #number with optional floating point
 			|	\.[0-9]+		 #or just starting with floating point
 			)
 			([eE][+-]?[0-9]+)? # optional exponent

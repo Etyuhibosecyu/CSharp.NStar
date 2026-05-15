@@ -46,30 +46,30 @@ public sealed class TextDocumentAccessor : IDocumentAccessor
 	private readonly TextDocument _doc;
 	private readonly int _minLine;
 	private readonly int _maxLine;
-
+	
 	/// <summary>
 	/// Creates a new TextDocumentAccessor.
 	/// </summary>
 	public TextDocumentAccessor(TextDocument document)
 	{
-			_doc = document ?? throw new ArgumentNullException(nameof(document));
+		_doc = document ?? throw new ArgumentNullException(nameof(document));
 		_minLine = 1;
 		_maxLine = _doc.LineCount;
 	}
-
+	
 	/// <summary>
 	/// Creates a new TextDocumentAccessor that indents only a part of the document.
 	/// </summary>
 	public TextDocumentAccessor(TextDocument document, int minLine, int maxLine)
 	{
-			_doc = document ?? throw new ArgumentNullException(nameof(document));
+		_doc = document ?? throw new ArgumentNullException(nameof(document));
 		_minLine = minLine;
 		_maxLine = maxLine;
 	}
 
 	private string _text;
 	private DocumentLine _line;
-
+	
 	/// <inheritdoc/>
 	public bool IsReadOnly => LineNumber < _minLine;
 
@@ -77,7 +77,7 @@ public sealed class TextDocumentAccessor : IDocumentAccessor
 	public int LineNumber { get; private set; }
 
 	private bool _lineDirty;
-
+	
 	/// <inheritdoc/>
 	public string Text {
 		get => _text;
@@ -87,7 +87,7 @@ public sealed class TextDocumentAccessor : IDocumentAccessor
 			_lineDirty = true;
 		}
 	}
-
+	
 	/// <inheritdoc/>
 	public bool MoveNext()
 	{

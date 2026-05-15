@@ -30,14 +30,20 @@ namespace AvaloniaEdit.Rendering;
 /// This element generator can be easily enabled and configured using the
 /// <see cref="TextEditorOptions"/>.
 /// </remarks>
-public class LinkElementGenerator : VisualLineElementGenerator, IBuiltinElementGenerator
+public partial class LinkElementGenerator : VisualLineElementGenerator, IBuiltinElementGenerator
 {
+	[GeneratedRegex(@"\b[\w\d\.\-\+]+\@[\w\d\.\-]+\.[a-z]{2,6}\b")]
+	private static partial Regex DefaultMailGeneratedRegex();
+
+	[GeneratedRegex(@"\b(https?://|ftp://|www\.)[\w\d\._/\-~%@()+:?&=#!]*[\w\d/]")]
+	private static partial Regex DefaultLinkGeneratedRegex();
+
 	// a link starts with a protocol (or just with www), followed by 0 or more 'link characters', followed by a link end character
 	// (this allows accepting punctuation inside links but not at the end)
-	internal readonly static Regex DefaultLinkRegex = new(@"\b(https?://|ftp://|www\.)[\w\d\._/\-~%@()+:?&=#!]*[\w\d/]");
+	internal static readonly Regex DefaultLinkRegex = DefaultLinkGeneratedRegex();
 
 	// try to detect email addresses
-	internal readonly static Regex DefaultMailRegex = new(@"\b[\w\d\.\-\+]+\@[\w\d\.\-]+\.[a-z]{2,6}\b");
+	internal static readonly Regex DefaultMailRegex = DefaultMailGeneratedRegex();
 
 	private readonly Regex _linkRegex;
 
@@ -83,11 +89,12 @@ public class LinkElementGenerator : VisualLineElementGenerator, IBuiltinElementG
 	public override VisualLineElement ConstructElement(int offset)
 	{
 		var m = GetMatch(offset, out var matchOffset);
-		if (m.Success && matchOffset == offset) {
+		if (m.Success && matchOffset == offset)
+		{
 			return ConstructElementFromMatch(m);
-		} else {
-			return null;
 		}
+
+		return null;
 	}
 
 	/// <summary>
@@ -98,7 +105,7 @@ public class LinkElementGenerator : VisualLineElementGenerator, IBuiltinElementG
 	protected virtual VisualLineElement ConstructElementFromMatch(Match m)
 	{
 		var uri = GetUriFromMatch(m);
-		if (uri == null)
+		if (uri is null)
 			return null;
 		var linkText = new VisualLineLinkText(CurrentContext.VisualLine, m.Length)
 		{

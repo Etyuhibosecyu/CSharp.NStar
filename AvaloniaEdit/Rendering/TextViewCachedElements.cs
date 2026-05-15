@@ -21,19 +21,20 @@ using Avalonia.Media.TextFormatting;
 
 namespace AvaloniaEdit.Rendering;
 
-	internal sealed class TextViewCachedElements
+internal sealed class TextViewCachedElements
+{
+	private Dictionary<string, TextLine> _nonPrintableCharacterTexts;
+
+	public TextLine GetTextForNonPrintableCharacter(string text, TextRunProperties properties)
 	{
-		private Dictionary<string, TextLine> _nonPrintableCharacterTexts;
+		_nonPrintableCharacterTexts ??= [];
 
-		public TextLine GetTextForNonPrintableCharacter(string text, TextRunProperties properties)
-		{
-			_nonPrintableCharacterTexts ??= [];
-
-		if (!_nonPrintableCharacterTexts.TryGetValue(text, out var textLine))
+		TextLine textLine;
+		if (!_nonPrintableCharacterTexts.TryGetValue(text, out textLine))
 		{
 			textLine = FormattedTextElement.PrepareText(TextFormatter.Current, text, properties);
 			_nonPrintableCharacterTexts[text] = textLine;
 		}
 		return textLine;
-		}
 	}
+}

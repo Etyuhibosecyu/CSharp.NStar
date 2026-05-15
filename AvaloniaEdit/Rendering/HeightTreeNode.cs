@@ -18,6 +18,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using AvaloniaEdit.Document;
 
 namespace AvaloniaEdit.Rendering;
@@ -39,10 +40,10 @@ internal sealed class HeightTreeNode
 
 	internal HeightTreeNode(DocumentLine documentLine, double height)
 	{
-		this.DocumentLine = documentLine;
-		this.TotalCount = 1;
-		this.LineNode = new HeightTreeLineNode(height);
-		this.TotalHeight = height;
+		DocumentLine = documentLine;
+		TotalCount = 1;
+		LineNode = new HeightTreeLineNode(height);
+		TotalHeight = height;
 	}
 
 	internal HeightTreeNode LeftMost {
@@ -116,7 +117,7 @@ internal sealed class HeightTreeNode
 
 	internal void AddDirectlyCollapsed(CollapsedLineSection section)
 	{
-		if (CollapsedSections == null) {
+		if (CollapsedSections is null) {
 			CollapsedSections = [];
 			TotalHeight = 0;
 		}
@@ -139,21 +140,15 @@ internal sealed class HeightTreeNode
 	}
 
 #if DEBUG
-	public override string ToString() => "[HeightTreeNode "
-			+ DocumentLine.LineNumber + " CS=" + GetCollapsedSections(CollapsedSections)
-			+ " Line.CS=" + GetCollapsedSections(LineNode.CollapsedSections)
-			+ " Line.Height=" + LineNode.Height
-			+ " TotalHeight=" + TotalHeight
-			+ "]";
+	public override string ToString() => string.Create(CultureInfo.InvariantCulture,
+			$"[{nameof(HeightTreeNode)} {DocumentLine.LineNumber} CS={GetCollapsedSections(CollapsedSections)} Line.CS={GetCollapsedSections(LineNode.CollapsedSections)} Line.Height={LineNode.Height} {nameof(TotalHeight)}={TotalHeight}]");
 
-	private static string GetCollapsedSections(List<CollapsedLineSection> list)
+	static string GetCollapsedSections(List<CollapsedLineSection> list)
 	{
-		if (list == null)
+		if (list is null)
 			return "{}";
-		return "{" +
-			string.Join(",",
-						list.ConvertAll(cs => cs.Id).ToArray())
-			+ "}";
+
+		return string.Create(CultureInfo.InvariantCulture, $"{{{string.Join(",", list.ConvertAll(cs => cs.Id).ToArray())}}}");
 	}
 #endif
 }

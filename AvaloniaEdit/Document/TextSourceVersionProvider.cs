@@ -20,7 +20,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Document;
 
@@ -73,7 +72,10 @@ public class TextSourceVersionProvider
 			_id = unchecked(prev._id + 1);
 		}
 
-		public bool BelongsToSameDocumentAs(ITextSourceVersion other) => other is Version o && _provider == o._provider;
+		public bool BelongsToSameDocumentAs(ITextSourceVersion other)
+		{
+			return other is Version o && _provider == o._provider;
+		}
 
 		public int CompareAge(ITextSourceVersion other)
 		{
@@ -93,7 +95,7 @@ public class TextSourceVersionProvider
 				return GetForwardChanges(o);
 			if (result > 0)
 				return o.GetForwardChanges(this).Reverse().Select(c => c.Invert());
-			return Empty<TextChangeEventArgs>.Array;
+			return Array.Empty<TextChangeEventArgs>();
 		}
 
 		private IEnumerable<TextChangeEventArgs> GetForwardChanges(Version other)

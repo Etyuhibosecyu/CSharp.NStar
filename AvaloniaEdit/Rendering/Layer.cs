@@ -25,11 +25,11 @@ namespace AvaloniaEdit.Rendering;
 /// <summary>
 /// Base class for known layers.
 /// </summary>
-internal class Layer : Control
+class Layer : Control
 {
 	protected readonly TextView TextView;
 	protected readonly KnownLayer KnownLayer;
-
+	
 	public Layer(TextView textView, KnownLayer knownLayer)
 	{
 		Debug.Assert(textView != null);

@@ -10,7 +10,8 @@ public partial class CopyrightsView : UserControl
 
 	private void Button_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
 	{
-		if (sender is not Button button || button.GetVisualChildren().FirstOrDefault() is not ContentPresenter presenter || presenter.GetVisualChildren().FirstOrDefault() is not TextBlock textBlock || textBlock.Text == null)
+		if (sender is not Button button || button.GetVisualChildren().FirstOrDefault() is not ContentPresenter presenter
+			|| presenter.GetVisualChildren().FirstOrDefault() is not TextBlock textBlock || textBlock.Text is null)
 			return;
 		if (OperatingSystem.IsWindows())
 			Process.Start(new ProcessStartInfo(textBlock.Text) { UseShellExecute = true });

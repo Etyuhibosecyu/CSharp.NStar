@@ -31,7 +31,7 @@ public sealed class RopeTextReader : TextReader
 	private readonly Stack<RopeNode<char>> _stack = new();
 	private RopeNode<char> _currentNode;
 	private int _indexInsideNode;
-
+	
 	/// <summary>
 	/// Creates a new RopeTextReader.
 	/// Internally, this method creates a Clone of the rope; so the text reader will always read through the old
@@ -44,7 +44,7 @@ public sealed class RopeTextReader : TextReader
 		// We force the user to iterate through a clone of the rope to keep the API contract of RopeTextReader simple
 		// (what happens when a rope is modified while iterating through it?)
 		rope.Root.Publish();
-
+		
 		// special case for the empty rope:
 		// leave currentNode initialized to null (RopeTextReader doesn't support empty nodes)
 		if (rope.Length != 0) {
@@ -55,7 +55,7 @@ public sealed class RopeTextReader : TextReader
 
 	private void GoToLeftMostLeaf()
 	{
-		while (_currentNode.Contents == null) {
+		while (_currentNode.Contents is null) {
 			if (_currentNode.Height == 0) {
 				// this is a function node - move to its contained rope
 				_currentNode = _currentNode.GetContentNode();
@@ -67,19 +67,19 @@ public sealed class RopeTextReader : TextReader
 		}
 		Debug.Assert(_currentNode.Height == 0);
 	}
-
+	
 	/// <inheritdoc/>
 	public override int Peek()
 	{
-		if (_currentNode == null)
+		if (_currentNode is null)
 			return -1;
 		return _currentNode.Contents[_indexInsideNode];
 	}
-
+	
 	/// <inheritdoc/>
 	public override int Read()
 	{
-		if (_currentNode == null)
+		if (_currentNode is null)
 			return -1;
 		var result = _currentNode.Contents[_indexInsideNode++];
 		if (_indexInsideNode >= _currentNode.Length)
@@ -97,11 +97,11 @@ public sealed class RopeTextReader : TextReader
 			GoToLeftMostLeaf();
 		}
 	}
-
+	
 	/// <inheritdoc/>
 	public override int Read(char[] buffer, int index, int count)
 	{
-		if (_currentNode == null)
+		if (_currentNode is null)
 			return 0;
 		var amountInCurrentNode = _currentNode.Length - _indexInsideNode;
 		if (count < amountInCurrentNode) {

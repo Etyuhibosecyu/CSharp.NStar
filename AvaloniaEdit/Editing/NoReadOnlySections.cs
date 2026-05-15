@@ -27,7 +27,7 @@ namespace AvaloniaEdit.Editing;
 /// <summary>
 /// <see cref="IReadOnlySectionProvider"/> that has no read-only sections; all text is editable.
 /// </summary>
-internal sealed class NoReadOnlySections : IReadOnlySectionProvider
+sealed class NoReadOnlySections : IReadOnlySectionProvider
 {
 	public static readonly NoReadOnlySections Instance = new();
 
@@ -44,11 +44,11 @@ internal sealed class NoReadOnlySections : IReadOnlySectionProvider
 /// <summary>
 /// <see cref="IReadOnlySectionProvider"/> that completely disables editing.
 /// </summary>
-internal sealed class ReadOnlySectionDocument : IReadOnlySectionProvider
+sealed class ReadOnlySectionDocument : IReadOnlySectionProvider
 {
 	public static readonly ReadOnlySectionDocument Instance = new();
 
 	public bool CanInsert(int offset) => false;
 
-	public IEnumerable<ISegment> GetDeletableSegments(ISegment segment) => [];
+	public IEnumerable<ISegment> GetDeletableSegments(ISegment segment) => Enumerable.Empty<ISegment>();
 }

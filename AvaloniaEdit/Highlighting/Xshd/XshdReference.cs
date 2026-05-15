@@ -23,7 +23,7 @@ namespace AvaloniaEdit.Highlighting.Xshd;
 /// <summary>
 /// A reference to an xshd color, or an inline xshd color.
 /// </summary>
-public struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElement
+public readonly struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElement
 {
 	/// <summary>
 	/// Gets the reference.
@@ -45,7 +45,7 @@ public struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElem
 	/// </summary>
 	public XshdReference(string referencedDefinition, string referencedElement)
 	{
-			ReferencedDefinition = referencedDefinition;
+		ReferencedDefinition = referencedDefinition;
 		ReferencedElement = referencedElement ?? throw new ArgumentNullException(nameof(referencedElement));
 		InlineElement = null;
 	}
@@ -55,7 +55,7 @@ public struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElem
 	/// </summary>
 	public XshdReference(T inlineElement)
 	{
-			ReferencedDefinition = null;
+		ReferencedDefinition = null;
 		ReferencedElement = null;
 		InlineElement = inlineElement ?? throw new ArgumentNullException(nameof(inlineElement));
 	}
@@ -72,8 +72,8 @@ public struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElem
 	/// <inheritdoc/>
 	public override bool Equals(object obj)
 	{
-		if (obj is XshdReference<T>)
-			return Equals((XshdReference<T>)obj); // use Equals method below
+		if (obj is XshdReference<T> reference)
+			return Equals(reference); // use Equals method below
 		return false;
 	}
 
@@ -81,7 +81,7 @@ public struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElem
 	/// Equality operator.
 	/// </summary>
 	public bool Equals(XshdReference<T> other) =>
-		// add comparisions for all members here
+		// add comparisons for all members here
 		ReferencedDefinition == other.ReferencedDefinition
 			&& ReferencedElement == other.ReferencedElement
 			&& InlineElement == other.InlineElement;
@@ -91,22 +91,16 @@ public struct XshdReference<T> : IEquatable<XshdReference<T>> where T : XshdElem
 		// combine the hash codes of all members here (e.g. with XOR operator ^)
 		GetHashCode(ReferencedDefinition) ^ GetHashCode(ReferencedElement) ^ GetHashCode(InlineElement);
 
-	private static int GetHashCode(object o) => o != null ? o.GetHashCode() : 0;
+	static int GetHashCode(object o) => o != null ? o.GetHashCode() : 0;
 
 	/// <summary>
 	/// Equality operator.
 	/// </summary>
-	public static bool operator ==(XshdReference<T> left, XshdReference<T> right)
-	{
-		return left.Equals(right);
-	}
+	public static bool operator ==(XshdReference<T> left, XshdReference<T> right) => left.Equals(right);
 
 	/// <summary>
 	/// Inequality operator.
 	/// </summary>
-	public static bool operator !=(XshdReference<T> left, XshdReference<T> right)
-	{
-		return !left.Equals(right);
-	}
+	public static bool operator !=(XshdReference<T> left, XshdReference<T> right) => !left.Equals(right);
 	#endregion
 }

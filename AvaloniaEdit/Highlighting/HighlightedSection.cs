@@ -16,6 +16,7 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+using System.Globalization;
 using AvaloniaEdit.Document;
 
 namespace AvaloniaEdit.Highlighting;
@@ -29,12 +30,12 @@ public class HighlightedSection : ISegment
 	/// Gets/sets the document offset of the section.
 	/// </summary>
 	public int Offset { get; set; }
-
+	
 	/// <summary>
 	/// Gets/sets the length of the section.
 	/// </summary>
 	public int Length { get; set; }
-
+	
 	int ISegment.EndOffset => Offset + Length;
 
 	/// <summary>
@@ -43,5 +44,5 @@ public class HighlightedSection : ISegment
 	public HighlightingColor Color { get; set; }
 
 	/// <inheritdoc/>
-	public override string ToString() => $"[HighlightedSection ({Offset}-{Offset + Length})={Color}]";
+	public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"[{nameof(HighlightedSection)} ({Offset}-{Offset + Length})={Color}]");
 }

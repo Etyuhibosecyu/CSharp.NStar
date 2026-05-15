@@ -1,4 +1,4 @@
-﻿using Mpir.NET;
+﻿using NStar.Mpir;
 
 namespace CSharp.NStar;
 

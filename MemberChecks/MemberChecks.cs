@@ -83,7 +83,7 @@ public static class MemberChecks
 		[MaybeNullWhen(false)] out UserDefinedProperty? property, [MaybeNullWhen(false)] out BlockStack matchingContainer,
 		out bool inBase, out BlockStack actualContainer)
 	{
-		UserDefinedType userDefinedType = default!;
+		UserDefinedType userDefinedType = default;
 		if (CheckContainer(container, UserDefinedProperties.ContainsKey, out matchingContainer)
 			&& UserDefinedProperties[matchingContainer].TryGetValue(name, out var value))
 		{
@@ -101,18 +101,18 @@ public static class MemberChecks
 		}
 		property = null;
 		inBase = false;
-		actualContainer = default!;
+		actualContainer = default;
 		return false;
 	}
 
 	private static bool ProcessProperty(NStarType container, ref UserDefinedProperty? property)
 	{
 		Debug.Assert(property != null);
-		(BlockStack Container, String Type) matchingType = default!;
+		(BlockStack Container, String Type) matchingType = default;
 		if (!CheckContainer(container.MainType, x => UserDefinedTypes.ContainsKey(matchingType = SplitType(x)), out _))
 			return true;
 		var restrictions = UserDefinedTypes[matchingType].Restrictions;
-		if (restrictions.Length == 0)
+		if (restrictions is null || restrictions.Length == 0)
 			return true;
 		var sourceTypes = restrictions.ToList(x => new NStarType(new(new Block(BlockType.Extra, x.Name, 1)), NoBranches));
 		var destinationTypes = container.ExtraTypes
@@ -150,15 +150,27 @@ public static class MemberChecks
 	public static bool ConstantExists(NStarType container, String name,
 		[MaybeNullWhen(false)] out UserDefinedConstant? constant)
 	{
+		if (name.Length == 0)
+		{
+			constant = null;
+			return false;
+		}
 		if (UserDefinedConstants.TryGetValue(container.MainType, out var containerConstants)
 			&& containerConstants.TryGetValue(name, out var a))
 		{
 			constant = a;
 			return true;
 		}
-		else if (UserDefinedTypes.TryGetValue(SplitType(container.MainType), out var userDefinedType)
-			&& ConstantExists(userDefinedType.BaseType, name, out constant))
-			return true;
+		else if (UserDefinedTypes.TryGetValue(SplitType(container.MainType), out var userDefinedType))
+		{
+			if (userDefinedType.BaseType.Equals(container))
+			{
+				constant = null;
+				return false;
+			}
+			if (ConstantExists(userDefinedType.BaseType, name, out constant))
+				return true;
+		}
 		var containerType = SplitType(container.MainType);
 		if (!TypeExists(containerType, out var netType))
 		{
@@ -167,7 +179,7 @@ public static class MemberChecks
 		}
 		var netProperty = netType.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.FlattenHierarchy)
 			.Find(x => x.IsInitOnly && x.Name == name.ToString());
-		if (netProperty == null)
+		if (netProperty is null)
 		{
 			constant = null;
 			return false;
@@ -181,7 +193,7 @@ public static class MemberChecks
 		[MaybeNullWhen(false)] out UserDefinedConstant? constant, [MaybeNullWhen(false)] out BlockStack matchingContainer,
 		[MaybeNullWhen(false)] out bool inBase)
 	{
-		UserDefinedType userDefinedType = default!;
+		UserDefinedType userDefinedType = default;
 		if (CheckContainer(container, UserDefinedConstants.ContainsKey, out matchingContainer)
 			&& UserDefinedConstants[matchingContainer].TryGetValue(name, out var value))
 		{
@@ -206,12 +218,12 @@ public static class MemberChecks
 	public static bool UserDefinedPolymorphTypeExists(BlockStack container, String name,
 		[MaybeNullWhen(false)] out BlockStack matchingContainer)
 	{
-		UserDefinedType userDefinedType = default!;
+		UserDefinedType userDefinedType = default;
 		if (CheckContainer(container, x => UserDefinedTypes.TryGetValue(SplitType(x), out userDefinedType),
 			out matchingContainer))
 		{
 			var foundIndex = userDefinedType.Restrictions
-				.FindIndex(x => x.RestrictionType.MainType.Equals(RecursiveBlockStack) && x.Name == name);
+				?.FindIndex(x => x.RestrictionType.MainType.Equals(RecursiveBlockStack) && x.Name == name) ?? -1;
 			if (foundIndex >= 0)
 				return true;
 		}
@@ -225,7 +237,7 @@ public static class MemberChecks
 			return false;
 		if (!netType.TryWrap(x => x.GetMethod(name.ToString()), out var method))
 			method = netType.GetMethods().Find(x => x.Name == name.ToString());
-		if (method == null)
+		if (method is null)
 			return false;
 		return true;
 	}
@@ -494,7 +506,13 @@ public static class MemberChecks
 		{
 			if (UserDefinedTypes.TryGetValue(SplitType(mainType), out var userDefinedType))
 			{
-				if (MethodExists(userDefinedType.BaseType, name, callParameterTypes, out functions))
+				if (userDefinedType.BaseType.Equals(default))
+				{
+					functions = null;
+					derived = false;
+					return false;
+				}
+				else if (MethodExists(userDefinedType.BaseType, name, callParameterTypes, out functions))
 				{
 					derived = true;
 					return true;
@@ -516,11 +534,11 @@ public static class MemberChecks
 		UserDefinedMethodOverloads functions)
 	{
 		var mainType = container.MainType;
-		(BlockStack Container, String Type) matchingType = default!;
+		(BlockStack Container, String Type) matchingType = default;
 		if (!CheckContainer(mainType, x => UserDefinedTypes.ContainsKey(matchingType = SplitType(x)), out _))
 			return true;
 		var restrictions = UserDefinedTypes[matchingType].Restrictions;
-		if (restrictions.Length == 0)
+		if (restrictions is null || restrictions.Length == 0)
 			return true;
 		for (var i = 0; i < functions.Length; i++)
 		{
@@ -683,11 +701,11 @@ public static class MemberChecks
 			? baseConstructors : [],
 			.. UserDefinedConstructorsExist(userDefinedType.BaseType, callParameterTypes, out baseConstructors)
 			? baseConstructors : []];
-		(BlockStack Container, String Type) matchingType = default!;
+		(BlockStack Container, String Type) matchingType = default;
 		if (!CheckContainer(mainType, x => UserDefinedTypes.ContainsKey(matchingType = SplitType(x)), out _))
 			return true;
 		var restrictions = UserDefinedTypes[matchingType].Restrictions;
-		if (restrictions.Length == 0)
+		if (restrictions is null || restrictions.Length == 0)
 			return true;
 		for (var i = 0; i < constructors.Length; i++)
 		{

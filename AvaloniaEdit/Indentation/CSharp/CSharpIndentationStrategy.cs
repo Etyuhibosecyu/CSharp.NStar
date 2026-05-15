@@ -21,17 +21,17 @@ using AvaloniaEdit.Document;
 
 namespace AvaloniaEdit.Indentation.CSharp;
 
+/// <summary>
+/// Smart indentation for C#.
+/// </summary>
+public class CSharpIndentationStrategy : DefaultIndentationStrategy
+{
 	/// <summary>
-	/// Smart indentation for C#.
+	/// Creates a new CSharpIndentationStrategy.
 	/// </summary>
-	public class CSharpIndentationStrategy : DefaultIndentationStrategy
+	public CSharpIndentationStrategy()
 	{
-		/// <summary>
-		/// Creates a new CSharpIndentationStrategy.
-		/// </summary>
-		public CSharpIndentationStrategy()
-		{
-		}
+	}
 
 	/// <summary>
 	/// Creates a new CSharpIndentationStrategy and initializes the settings using the text editor options.
@@ -42,15 +42,15 @@ namespace AvaloniaEdit.Indentation.CSharp;
 	/// Gets/Sets the indentation string.
 	/// </summary>
 	public string IndentationString
+	{
+		get;
+		set
 		{
-			get;
-			set
-			{
-				if (string.IsNullOrEmpty(value))
-					throw new ArgumentException("Indentation string must not be null or empty");
-				field = value;
-			}
-		} = "\t";
+			if (string.IsNullOrEmpty(value))
+				throw new ArgumentException("Indentation string must not be null or empty");
+			field = value;
+		}
+	} = "\t";
 
 	/// <summary>
 	/// Performs indentation using the specified document accessor.
@@ -58,32 +58,32 @@ namespace AvaloniaEdit.Indentation.CSharp;
 	/// <param name="document">Object used for accessing the document line-by-line</param>
 	/// <param name="keepEmptyLines">Specifies whether empty lines should be kept</param>
 	public void Indent(IDocumentAccessor document, bool keepEmptyLines)
-		{
+	{
 		ArgumentNullException.ThrowIfNull(document);
 		var settings = new IndentationSettings
-			{
-				IndentString = IndentationString,
-				LeaveEmptyLines = keepEmptyLines
-			};
-
-			var r = new IndentationReformatter();
-			r.Reformat(document, settings);
-		}
-
-		/// <inheritdoc cref="IIndentationStrategy.IndentLine"/>
-		public override void IndentLine(TextDocument document, DocumentLine line)
 		{
-			var lineNr = line.LineNumber;
-			var acc = new TextDocumentAccessor(document, lineNr, lineNr);
-			Indent(acc, false);
+			IndentString = IndentationString,
+			LeaveEmptyLines = keepEmptyLines
+		};
 
-			var t = acc.Text;
-			if (t.Length == 0)
-			{
-				// use AutoIndentation for new lines in comments / verbatim strings.
-				base.IndentLine(document, line);
-			}
+		var r = new IndentationReformatter();
+		r.Reformat(document, settings);
+	}
+
+	/// <inheritdoc cref="IIndentationStrategy.IndentLine"/>
+	public override void IndentLine(TextDocument document, DocumentLine line)
+	{
+		var lineNr = line.LineNumber;
+		var acc = new TextDocumentAccessor(document, lineNr, lineNr);
+		Indent(acc, false);
+
+		var t = acc.Text;
+		if (t.Length == 0)
+		{
+			// use AutoIndentation for new lines in comments / verbatim strings.
+			base.IndentLine(document, line);
 		}
+	}
 
 	/// <inheritdoc cref="IIndentationStrategy.IndentLines"/>
 	public override void IndentLines(TextDocument document, int beginLine, int endLine) => Indent(new TextDocumentAccessor(document, beginLine, endLine), true);

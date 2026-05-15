@@ -34,7 +34,7 @@ public static class CharRope
 		ArgumentNullException.ThrowIfNull(text);
 		return new Rope<char>(InitFromString(text));
 	}
-
+	
 	/// <summary>
 	/// Retrieves the text for a portion of the rope.
 	/// Runs in O(lg N + M), where M=<paramref name="length"/>.
@@ -52,7 +52,7 @@ public static class CharRope
 		#endif
 		if (length == 0)
 			return string.Empty;
-
+		
 #if NET6_0_OR_GREATER
 		return string.Create(length, (rope, startIndex, length), (dest, x) =>
 			x.rope.CopyTo(x.startIndex, dest, 0, x.length));
@@ -63,6 +63,45 @@ public static class CharRope
 #endif
 	}
 
+	/// <summary>
+	/// Retrieves the text for a portion of the rope as ReadOnlyMemory.
+	/// Runs in O(lg N + M), where M=<paramref name="length"/>.
+	/// </summary>
+	/// <exception cref="ArgumentOutOfRangeException">offset or length is outside the valid range.</exception>
+	/// <remarks>
+	/// This method counts as a read access and may be called concurrently to other read accesses.
+	/// When the requested range falls entirely within a single leaf node, this method returns
+	/// a slice of the internal buffer without allocation. Otherwise, a new buffer is allocated.
+	/// </remarks>
+	public static ReadOnlyMemory<char> GetMemory(this Rope<char> rope, int startIndex, int length)
+	{
+		ArgumentNullException.ThrowIfNull(rope);
+
+		if (length < 0)
+			throw new ArgumentOutOfRangeException(nameof(length), length, "Value must be >= 0");
+
+		if (length == 0)
+			return ReadOnlyMemory<char>.Empty;
+
+		rope.VerifyRange(startIndex, length);
+
+		// Try to get a zero-allocation slice if the range fits within a single leaf node
+		var entry = rope.FindNodeUsingCache(startIndex).PeekOrDefault();
+		var offsetWithinNode = startIndex - entry.NodeStartIndex;
+
+		// Check if the entire requested range fits within this leaf node
+		if (offsetWithinNode + length <= entry.Node.Length)
+		{
+			// Return a slice of the existing buffer - no allocation needed
+			return new ReadOnlyMemory<char>(entry.Node.Contents, offsetWithinNode, length);
+		}
+
+		// Range spans multiple nodes - must allocate and copy
+		var buffer = new char[length];
+		rope.CopyTo(startIndex, buffer, 0, length);
+		return new ReadOnlyMemory<char>(buffer);
+	}
+	
 	/// <summary>
 	/// Retrieves the text for a portion of the rope and writes it to the specified text writer.
 	/// Runs in O(lg N + M), where M=<paramref name="length"/>.
@@ -99,25 +138,25 @@ public static class CharRope
 		/*if (index < 0 || index > rope.Length) {
 			throw new ArgumentOutOfRangeException("index", index, "0 <= index <= " + rope.Length.ToString(CultureInfo.InvariantCulture));
 		}
-		if (text == null)
+		if (text is null)
 			throw new ArgumentNullException("text");
 		if (text.Length == 0)
 			return;
 		rope.root = rope.root.Insert(index, text);
 		rope.OnChanged();*/
 	}
-
+	
 	internal static RopeNode<char> InitFromString(string text)
 	{
 		if (text.Length == 0) {
 			return RopeNode<char>.EmptyRopeNode;
 		}
-		RopeNode<char> node = RopeNode<char>.CreateNodes(text.Length);
+		var node = RopeNode<char>.CreateNodes(text.Length);
 		FillNode(node, text, 0);
 		return node;
 	}
-
-	private static void FillNode(RopeNode<char> node, string text, int start)
+	
+	static void FillNode(RopeNode<char> node, string text, int start)
 	{
 		if (node.Contents != null) {
 			text.CopyTo(start, node.Contents, 0, node.Length);
@@ -126,11 +165,11 @@ public static class CharRope
 			FillNode(node.Right, text, start + node.Left.Length);
 		}
 	}
-
+	
 	internal static void WriteTo(this RopeNode<char> node, int index, TextWriter output, int count)
 	{
 		if (node.Height == 0) {
-			if (node.Contents == null) {
+			if (node.Contents is null) {
 				// function node
 				node.GetContentNode().WriteTo(index, output, count);
 			} else {
@@ -150,7 +189,7 @@ public static class CharRope
 			}
 		}
 	}
-
+	
 	/// <summary>
 	/// Gets the index of the first occurrence of any element in the specified array.
 	/// </summary>
@@ -164,7 +203,7 @@ public static class CharRope
 		ArgumentNullException.ThrowIfNull(rope);
 		ArgumentNullException.ThrowIfNull(anyOf);
 		rope.VerifyRange(startIndex, length);
-
+		
 		while (length > 0) {
 			var entry = rope.FindNodeUsingCache(startIndex).PeekOrDefault();
 			var contents = entry.Node.Contents;
@@ -182,7 +221,7 @@ public static class CharRope
 		}
 		return -1;
 	}
-
+	
 	/// <summary>
 	/// Gets the index of the first occurrence of the search text.
 	/// </summary>
@@ -197,7 +236,7 @@ public static class CharRope
 		else
 			return pos + startIndex;
 	}
-
+	
 	/// <summary>
 	/// Gets the index of the last occurrence of the search text.
 	/// </summary>

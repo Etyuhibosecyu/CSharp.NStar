@@ -18,21 +18,17 @@
 
 using System;
 using Avalonia.Media.TextFormatting;
-using Avalonia.Utilities;
 
 namespace AvaloniaEdit.Rendering;
 
 internal sealed class SimpleTextSource(string text, TextRunProperties properties) : ITextSource
 {
-	private readonly string _text = text;
-	private readonly TextRunProperties _properties = properties;
-
 	public TextRun GetTextRun(int textSourceCharacterIndex)
 	{
-		if (textSourceCharacterIndex < _text.Length)
+		if (textSourceCharacterIndex < text.Length)
 			return new TextCharacters(
-				_text.AsMemory()[textSourceCharacterIndex.._text.Length], _properties);
-
+				text.AsMemory()[textSourceCharacterIndex..text.Length], properties);
+		
 		return new TextEndOfParagraph(1);
 	}
 }

@@ -17,6 +17,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 using System.Collections.Generic;
+using System.Globalization;
 using AvaloniaEdit.Utils;
 
 namespace AvaloniaEdit.Highlighting;
@@ -51,5 +52,5 @@ public class HighlightingRuleSet
 	public IList<HighlightingRule> Rules { get; }
 
 	/// <inheritdoc/>
-	public override string ToString() => "[" + GetType().Name + " " + Name + "]";
+	public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"[{nameof(HighlightingRuleSet)} {Name}]");
 }

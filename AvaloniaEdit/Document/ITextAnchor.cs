@@ -25,7 +25,7 @@ namespace AvaloniaEdit.Document;
 /// It automatically updates the offset when text is inserted/removed in front of the anchor.
 /// </summary>
 /// <remarks>
-/// <para>Use the <see cref="Offset"/> property to get the offset from a text anchor.
+/// <para>Use the <see cref="ITextAnchor.Offset"/> property to get the offset from a text anchor.
 /// Use the <see cref="IDocument.CreateAnchor"/> method to create an anchor from an offset.
 /// </para>
 /// <para>
@@ -34,7 +34,7 @@ namespace AvaloniaEdit.Document;
 /// </para>
 /// <para>Moreover, the document is able to efficiently update a large number of anchors without having to look
 /// at each anchor object individually. Updating the offsets of all anchors usually only takes time logarithmic
-/// to the number of anchors. Retrieving the <see cref="Offset"/> property also runs in O(lg N).</para>
+/// to the number of anchors. Retrieving the <see cref="ITextAnchor.Offset"/> property also runs in O(lg N).</para>
 /// </remarks>
 /// <example>
 /// Usage:
@@ -50,13 +50,13 @@ public interface ITextAnchor
 	/// </summary>
 	/// <exception cref="InvalidOperationException">Thrown when trying to get the Offset from a deleted anchor.</exception>
 	TextLocation Location { get; }
-
+	
 	/// <summary>
 	/// Gets the offset of the text anchor.
 	/// </summary>
 	/// <exception cref="InvalidOperationException">Thrown when trying to get the Offset from a deleted anchor.</exception>
 	int Offset { get; }
-
+	
 	/// <summary>
 	/// Controls how the anchor moves.
 	/// </summary>
@@ -65,7 +65,7 @@ public interface ITextAnchor
 	/// The property <see cref="MovementType"/> will be used to determine which of these two options the anchor will choose.
 	/// The default value is <see cref="AnchorMovementType.Default"/>.</remarks>
 	AnchorMovementType MovementType { get; set; }
-
+	
 	/// <summary>
 	/// <para>
 	/// Specifies whether the anchor survives deletion of the text containing it.
@@ -76,7 +76,7 @@ public interface ITextAnchor
 	/// </summary>
 	/// <remarks><inheritdoc cref="IsDeleted" /></remarks>
 	bool SurviveDeletion { get; set; }
-
+	
 	/// <summary>
 	/// Gets whether the anchor was deleted.
 	/// </summary>
@@ -89,7 +89,7 @@ public interface ITextAnchor
 	/// but in other cases you want to still be able to use the anchor. For those cases, set <c><see cref="SurviveDeletion"/> = true</c>.</para>
 	/// </remarks>
 	bool IsDeleted { get; }
-
+	
 	/// <summary>
 	/// Occurs after the anchor was deleted.
 	/// </summary>
@@ -100,13 +100,13 @@ public interface ITextAnchor
 	/// </para>
 	/// </remarks>
 	event EventHandler Deleted;
-
+	
 	/// <summary>
 	/// Gets the line number of the anchor.
 	/// </summary>
 	/// <exception cref="InvalidOperationException">Thrown when trying to get the Offset from a deleted anchor.</exception>
 	int Line { get; }
-
+	
 	/// <summary>
 	/// Gets the column number of this anchor.
 	/// </summary>
