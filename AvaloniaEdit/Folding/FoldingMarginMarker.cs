@@ -16,13 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using Avalonia;
-using AvaloniaEdit.Rendering;
-using AvaloniaEdit.Utils;
-using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Media;
-
 namespace AvaloniaEdit.Folding;
 
 internal sealed class FoldingMarginMarker : Control

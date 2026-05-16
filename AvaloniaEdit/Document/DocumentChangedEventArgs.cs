@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace AvaloniaEdit.Document;
+﻿namespace AvaloniaEdit.Document;
 
 /// <summary>
 /// Provides data for the <see cref="ITextEditorComponent.DocumentChanged"/> event.

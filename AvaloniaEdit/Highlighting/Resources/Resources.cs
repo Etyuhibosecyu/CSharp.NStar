@@ -16,9 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System.IO;
-using System.Reflection;
-
 // ReSharper disable once CheckNamespace
 namespace AvaloniaEdit.Highlighting;
 
@@ -28,9 +25,7 @@ internal static class Resources
 
 	public static Stream OpenStream(string name)
 	{
-		var s = typeof(Resources).GetTypeInfo().Assembly.GetManifestResourceStream(Prefix + name);
-		if (s is null)
-			throw new FileNotFoundException("The resource file '" + name + "' was not found.");
+		var s = typeof(Resources).GetTypeInfo().Assembly.GetManifestResourceStream(Prefix + name) ?? throw new FileNotFoundException("The resource file '" + name + "' was not found.");
 		return s;
 	}
 

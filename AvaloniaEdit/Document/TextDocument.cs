@@ -16,17 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.IO;
-using AvaloniaEdit.Utils;
-using System.Threading;
-
 namespace AvaloniaEdit.Document;
 
 /// <summary>
@@ -41,7 +30,7 @@ public sealed class TextDocument : IDocument, INotifyPropertyChanged
 {
 	#region Thread ownership
 
-	private readonly object _lockObject = new();
+	private readonly Lock _lockObject = new();
 	#endregion
 
 	#region Fields + Constructor
@@ -515,21 +504,21 @@ public sealed class TextDocument : IDocument, INotifyPropertyChanged
 		{
 			_fireTextChanged = false;
 			TextChanged?.Invoke(this, EventArgs.Empty);
-			OnPropertyChanged("Text");
+			OnPropertyChanged(nameof(Text));
 
 			var textLength = _rope.Length;
 			if (textLength != _oldTextLength)
 			{
 				_oldTextLength = textLength;
 				TextLengthChanged?.Invoke(this, EventArgs.Empty);
-				OnPropertyChanged("TextLength");
+				OnPropertyChanged(nameof(TextLength));
 			}
 			var lineCount = _lineTree.LineCount;
 			if (lineCount != _oldLineCount)
 			{
 				_oldLineCount = lineCount;
 				LineCountChanged?.Invoke(this, EventArgs.Empty);
-				OnPropertyChanged("LineCount");
+				OnPropertyChanged(nameof(LineCount));
 			}
 		}
 	}
@@ -995,7 +984,7 @@ public sealed class TextDocument : IDocument, INotifyPropertyChanged
 				_undoStack.ClearAll(); // first clear old undo stack, so that it can't be used to perform unexpected changes on this document
 									  // ClearAll() will also throw an exception when it's not safe to replace the undo stack (e.g. update is currently in progress)
 				_undoStack = value;
-				OnPropertyChanged("UndoStack");
+				OnPropertyChanged(nameof(UndoStack));
 			}
 		}
 	}
@@ -1050,7 +1039,7 @@ public sealed class TextDocument : IDocument, INotifyPropertyChanged
 #if DEBUG
 		_lineTree.GetTreeAsString();
 #else
-		return "Not available in release build.";
+		"Not available in release build.";
 #endif
 
 	/// <summary>
@@ -1060,7 +1049,7 @@ public sealed class TextDocument : IDocument, INotifyPropertyChanged
 #if DEBUG
 		_anchorTree.GetTreeAsString();
 #else
-		return "Not available in release build.";
+		"Not available in release build.";
 #endif
 
 	#endregion
@@ -1102,7 +1091,7 @@ public sealed class TextDocument : IDocument, INotifyPropertyChanged
 	/// <inheritdoc/>
 	public string FileName
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)

@@ -6090,6 +6090,20 @@ return z;
 var z = zero >>> 10;
 return z;
 ", "0", "Ошибок нет")]
+	[DataRow(@"var x = 200r >>> 3;
+return x;
+", "0", @"Error 4083 in line 1 at position 13: the first operand of the operators ""<<<"" and "">>>"" must be of the type byte, short char, short int, unsigned short int, char, int, unsigned int, long char, long int, unsigned long int, long long or unsigned long long
+")]
+	[DataRow(@"real zero = 0;
+var z = zero >>> 10;
+return z;
+", "null", @"Error 4083 in line 2 at position 13: the first operand of the operators ""<<<"" and "">>>"" must be of the type byte, short char, short int, unsigned short int, char, int, unsigned int, long char, long int, unsigned long int, long long or unsigned long long
+")]
+	[DataRow(@"real zero = 1 << 28;
+var z = zero >>> 10;
+return z;
+", "null", @"Error 4083 in line 2 at position 13: the first operand of the operators ""<<<"" and "">>>"" must be of the type byte, short char, short int, unsigned short int, char, int, unsigned int, long char, long int, unsigned long int, long long or unsigned long long
+")]
 	[DataRow(@"unsigned int x = 100 >>> 2.5;
 return x;
 ", "0", @"Error 4081 in line 1 at position 21: the second operand of the operator "">>>"" must be of the type, convertible to int
@@ -6109,6 +6123,37 @@ return y;
 if (x >>> 3 > 10)
 	return x;
 ", "200", "Ошибок нет")]
+	[DataRow(@"var x = 200r << 3;
+return x;
+", "1600", "Ошибок нет")]
+	[DataRow(@"var x = 200r <<< 3;
+return x;
+", "0", @"Error 4083 in line 1 at position 13: the first operand of the operators ""<<<"" and "">>>"" must be of the type byte, short char, short int, unsigned short int, char, int, unsigned int, long char, long int, unsigned long int, long long or unsigned long long
+")]
+	[DataRow(@"var x = 200r >> 3;
+return x;
+", "25", "Ошибок нет")]
+	[DataRow(@"real zero = 0;
+var z = zero << 10;
+return z;
+", "0", "Ошибок нет")]
+	[DataRow(@"real r = 1 << 8;
+var z = r << 10;
+return z;
+", "262144", "Ошибок нет")]
+	[DataRow(@"real r = 1 << 8;
+var z = r <<< 10;
+return z;
+", "null", @"Error 4083 in line 2 at position 10: the first operand of the operators ""<<<"" and "">>>"" must be of the type byte, short char, short int, unsigned short int, char, int, unsigned int, long char, long int, unsigned long int, long long or unsigned long long
+")]
+	[DataRow(@"real zero = 0;
+var z = zero >> 10;
+return z;
+", "0", "Ошибок нет")]
+	[DataRow(@"real r = 1 << 28;
+var z = r >> 10;
+return z;
+", "262144", "Ошибок нет")]
 	[DataRow(@"using System;
 var a = 0b_1100_1010_0000_0000_0000_0000_0110_1001 <<< 4;
 return """" + Convert.ToUnsafeString(a, 2);
@@ -6171,6 +6216,54 @@ long long a = 0b_1100_1010_0000_0000_0000_0000_0110_1001_1100_1010_0000_0000_000
 var b = a <<< 4;
 return """" + b.ToUnsafeString(2);
 ", @"""11001010000000000000000001101001110010100000000000000000011010010000""", "Ошибок нет")]
+	[DataRow(@"return (false ^^ false, false ^^ true, true ^^ false, true ^^ true,
+	false ^^ false ^^ false, false ^^ true ^^ false, true ^^ false ^^ false, true ^^ true ^^ false,
+	false ^^ false ^^ true, false ^^ true ^^ true, true ^^ false ^^ true, true ^^ true ^^ true);
+", "(false, true, true, false, false, true, true, false, true, false, false, false)", "Ошибок нет")]
+	[DataRow(@"return (false ^^ 5, 5 ^^ false, 5 ^^ 5,
+	false ^^ 5 ^^ false, 5 ^^ false ^^ false, 5 ^^ 5 ^^ false,
+	false ^^ false ^^ 5, false ^^ 5 ^^ 5, 5 ^^ false ^^ 5, 5 ^^ 5 ^^ 5);
+", "null", @"Error 4084 in line 1 at position 17: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 1 at position 20: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 1 at position 32: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 2 at position 10: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 2 at position 22: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 2 at position 43: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 3 at position 19: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 3 at position 31: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 3 at position 39: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 3 at position 56: the operator ""^^"" works only with the operands of the type, convertible to bool
+")]
+	[DataRow(@"return 8++;
+", "null", @"Error 4002 in line 1 at position 8: cannot apply this operator to this constant
+")]
+	[DataRow(@"return 3--;
+", "null", @"Error 4002 in line 1 at position 8: cannot apply this operator to this constant
+")]
+	[DataRow(@"return false!!;
+", "null", @"Error 4002 in line 1 at position 12: cannot apply this operator to this constant
+")]
+	[DataRow(@"var f = false;
+var t = true;
+return (f ^^ f, f ^^ t, t ^^ f, t ^^ t, f ^^ f ^^ f, f ^^ t ^^ f, t ^^ f ^^ f, t ^^ t ^^ f,
+	f ^^ f ^^ t, f ^^ t ^^ t, t ^^ f ^^ t, t ^^ t ^^ t);
+", "(false, true, true, false, false, true, true, false, true, false, false, false)", "Ошибок нет")]
+	[DataRow(@"var f = false;
+var t = 5;
+return (f ^^ t, t ^^ f, t ^^ t, f ^^ t ^^ f, t ^^ f ^^ f, t ^^ t ^^ f,
+	f ^^ f ^^ t, f ^^ t ^^ t, t ^^ f ^^ t, t ^^ t ^^ t);
+", "null",
+		@"Error 4084 in line 3 at position 13: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 3 at position 16: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 3 at position 24: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 3 at position 37: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 3 at position 45: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 3 at position 58: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 4 at position 11: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 4 at position 19: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 4 at position 27: the operator ""^^"" works only with the operands of the type, convertible to bool
+Error 4084 in line 4 at position 40: the operator ""^^"" works only with the operands of the type, convertible to bool
+")]
 	[DataRow(@"object obj1 = new System.Collections.Buffer[int](10);
 object obj2 = ""AAA"";
 object obj3 = 123;

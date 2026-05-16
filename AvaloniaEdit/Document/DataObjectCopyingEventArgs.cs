@@ -1,8 +1,4 @@
-﻿using Avalonia.Input;
-using Avalonia.Interactivity;
-using AvaloniaEdit.Utils;
-
-namespace AvaloniaEdit.Document;
+﻿namespace AvaloniaEdit.Document;
 
 public class DataObjectCopyingEventArgs(IDataTransfer dataObject, bool isDragDrop) : RoutedEventArgs(DataObjectEx.DataObjectCopyingEvent)
 {

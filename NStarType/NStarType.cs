@@ -155,6 +155,9 @@ public readonly record struct NStarType(BlockStack MainType, BranchCollection Ex
 			return MainType.ToString() + (ExtraTypes.Length == 0 ? "" : "[" + ExtraTypes.ToString() + "]");
 	}
 
+	public static bool TypeEqualsToPrimitive(NStarType type, string primitive, bool noExtra = true) =>
+		TypeEqualsToPrimitive(type, String.ReturnOrConstruct(primitive), noExtra);
+
 	public static bool TypeEqualsToPrimitive(NStarType type, String primitive, bool noExtra = true) =>
 		TypeIsPrimitive(type.MainType) && type.MainType.Peek().Name == primitive && (!noExtra || type.ExtraTypes.Length == 0);
 

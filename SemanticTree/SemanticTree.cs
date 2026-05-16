@@ -47,7 +47,7 @@ public sealed partial class SemanticTree
 	private readonly Dictionary<String, ListHashSet<String>> functionReferences = [];
 
 	private static readonly string AlphanumericCharacters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.";
-	private static readonly ImmutableArray<string> ExprTypes = [nameof(Expr), nameof(List), "Pattern",
+	private static readonly ImmutableArray<string> ExprTypes = [nameof(Expr), nameof(List), nameof(XorList), "Pattern",
 		nameof(Lambda), nameof(SwitchExpr), nameof(Indexes), nameof(Ternary), nameof(PMExpr), nameof(MulDivExpr),
 		"StringConcatenation", nameof(Assignment), "DeclarationAssignment", "UnaryAssignment",
 		nameof(Declaration), nameof(Hypername), nameof(Index), nameof(Range)];
@@ -154,6 +154,7 @@ public sealed partial class SemanticTree
 		nameof(Declaration) => Declaration,
 		nameof(Hypername) => Hypername,
 		nameof(List) => List,
+		nameof(XorList) => XorList,
 		nameof(Lambda) => Lambda,
 		nameof(SwitchExpr) => SwitchExpr,
 		"typeof" => Typeof,
@@ -240,12 +241,12 @@ public sealed partial class SemanticTree
 			if (i != 0 && BranchOpeners.Contains(branch[i - 1].Name.ToString()))
 				nestedConditions--;
 			if (branch.Length == 1 && branch.Parent != null && branch.Parent.Name == nameof(Lambda)
-				&& parsedSubbranch.StartsWith("return ") && !parsedSubbranch[..^1].Contains(';'))
+				&& parsedSubbranch.StartsWith("return ") && !parsedSubbranch[..^1].Contains(item: ';'))
 				parsedSubbranch.Remove(0, "return ".Length).RemoveEnd(^1);
 			if (x.Length == 0 || parsedSubbranch.Length != 0)
 			{
 				if (branch.Name == "Main" && x.Name == "Main" && x.Length != 1 && parsedSubbranch.Length != 0
-					&& parsedSubbranch[..^1].Contains(';'))
+					&& parsedSubbranch[..^1].Contains(item: ';'))
 					result.Add('{');
 				if (parsedSubbranch.AsSpan() is "_" or "default" or "default!" or "_ = default" or "_ = default!")
 					parsedSubbranch = [];
@@ -3791,6 +3792,12 @@ public sealed partial class SemanticTree
 			}
 			branch[i].Extra = source.InnerType;
 			return ((String)"(").AddRange(branch[i].Name).Add(' ').AddRange(source.ToString(true, true)).Add(')');
+			case "++" or "--" or "!!" or "postfix ++" or "postfix --" or "postfix !!":
+			{
+				GenerateMessage(ref errors, 0x4002, otherPos);
+				branch[i].Name = "null";
+				return "default!";
+			}
 		}
 		branch[i].Name = "null";
 		return "default!";
@@ -3961,7 +3968,7 @@ public sealed partial class SemanticTree
 		{
 			var result = subbranchValues[^2].Copy();
 			if (isStringPrev)
-				result.AddRange((String)".Copy()");
+				result.AddRange(".Copy()");
 			return result.AddRange(".AddRange(").AddRange(subbranchValues[^1]).Add(')');
 		}
 		else if (isStringLeft || isStringRight)
@@ -4262,8 +4269,16 @@ public sealed partial class SemanticTree
 		if (branch[i - 1].Extra is not NStarType DestNStarType)
 			DestNStarType = NullType;
 		var powWarning = false;
-		if (branch[i].Name == "pow=" && TypesAreCompatible(SrcNStarType, RealType, out powWarning, subbranchValues[^2],
-			out var adaptedSource, out _) && adaptedSource != null)
+		if (branch[i].Name == "pow="
+			&& (TypesAreCompatible(DestNStarType, LongLongType, out powWarning, subbranchValues[^2], out _, out _)
+			&& !powWarning) && TypesAreCompatible(SrcNStarType, IntType, out powWarning, subbranchValues[^2],
+			out var adaptedSource, out _) && !powWarning && adaptedSource != null)
+			subbranchValues[^2] = ((String)"(").AddRange(subbranchValues[^1]).AddRange(").").AddRange(nameof(MpzT.One.Power))
+				.Add('(').AddRange(adaptedSource).Add(')');
+		else if (branch[i].Name == "pow=" && TypesAreCompatible(DestNStarType, RealType, out powWarning, subbranchValues[^2],
+			out adaptedSource, out _) && adaptedSource != null
+			&& TypesAreCompatible(SrcNStarType, RealType, out powWarning, subbranchValues[^2],
+			out adaptedSource, out _) && adaptedSource != null)
 		{
 			SrcNStarType = RealType;
 			subbranchValues[^2] = ((String)"Pow(").AddRange(subbranchValues[^1])
@@ -4585,6 +4600,14 @@ public sealed partial class SemanticTree
 			branch[i].Extra = NullType;
 			return "default!";
 		}
+		else if (branch[i].Name.AsSpan() is "<<<" or ">>>"
+			&& (!TypesAreCompatible(LeftNStarType, LongLongType, out warning, subbranchValues[^1], out _, out _) || warning))
+		{
+			var otherPos = branch[i].Pos;
+			GenerateMessage(ref errors, 0x4083, otherPos, branch[i].Name);
+			branch[i].Extra = NullType;
+			return "default!";
+		}
 		else if (branch[i].Name.AsSpan() is "or" or "xor"
 			&& (ContainsDeclarations(branch[i - 2]) || ContainsDeclarations(branch[i - 1])))
 		{
@@ -4623,26 +4646,38 @@ public sealed partial class SemanticTree
 			subbranchValues[^1].Insert(0, '(').Add(')');
 		if (i < 2)
 			return branch[i].Name;
-		if (branch[i].Name != "<<<")
-			return subbranchValues[^2].Copy().Add(' ').AddRange(branch[i].Name).Add(' ').AddRange(subbranchValues[^1]);
-		if (!(LeftNStarType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Primitive
-			&& block.Name.ToString() is "byte" or "short char" or "short int" or "unsigned short int"
-			or "char" or "int" or "unsigned int" or "long char" or "long int" or "unsigned long int"))
-			return subbranchValues[^2].Copy().AddRange(" << ").AddRange(subbranchValues[^1]);
-		String result = "(";
-		result.AddRange(nameof(CreateVar)).Add('(');
-		result.AddRange(subbranchValues[^2]).AddRange(", out var ");
-		var leftVarName = RandomVarName();
-		result.AddRange(leftVarName).AddRange(") << (int)unchecked((uint)");
-		var rightVarName = RandomVarName();
-		result.AddRange(nameof(CreateVar)).Add('(');
-		result.AddRange(subbranchValues[^1]).AddRange(", out var ");
-		result.AddRange(rightVarName).AddRange(") % (sizeof(");
-		result.AddRange(Type(ref LeftNStarType, branch, ref errors)).AddRange(") * 8)) | ");
-		result.AddRange(leftVarName).AddRange(" >>> (int)unchecked((uint)-");
-		result.AddRange(rightVarName).AddRange(" % (sizeof(");
-		result.AddRange(Type(ref LeftNStarType, branch, ref errors)).AddRange(") * 8)))");
-		return result;
+		if (branch[i].Name.AsSpan() is "<<" or ">>" && LeftNStarType.Equals(RealType))
+		{
+			var result = subbranchValues[^2].Copy().AddRange(" * Pow(2, ");
+			if (branch[i].Name.AsSpan() is "<<<" or "<<")
+				result.AddRange(subbranchValues[^1]);
+			else
+				result.AddRange("-(").AddRange(subbranchValues[^1]).Add(')');
+			result.Add(')');
+			return result;
+		}
+		else if (branch[i].Name == "<<<")
+		{
+			if (!(LeftNStarType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Primitive
+				&& block.Name.AsSpan() is "byte" or "short char" or "short int" or "unsigned short int"
+				or "char" or "int" or "unsigned int" or "long char" or "long int" or "unsigned long int"))
+				return subbranchValues[^2].Copy().AddRange(" << ").AddRange(subbranchValues[^1]);
+			String result = "(";
+			result.AddRange(nameof(CreateVar)).Add('(');
+			result.AddRange(subbranchValues[^2]).AddRange(", out var ");
+			var leftVarName = RandomVarName();
+			result.AddRange(leftVarName).AddRange(") << (int)unchecked((uint)");
+			var rightVarName = RandomVarName();
+			result.AddRange(nameof(CreateVar)).Add('(');
+			result.AddRange(subbranchValues[^1]).AddRange(", out var ");
+			result.AddRange(rightVarName).AddRange(") % (sizeof(");
+			result.AddRange(Type(ref LeftNStarType, branch, ref errors)).AddRange(") * 8)) | ");
+			result.AddRange(leftVarName).AddRange(" >>> (int)unchecked((uint)-");
+			result.AddRange(rightVarName).AddRange(" % (sizeof(");
+			result.AddRange(Type(ref LeftNStarType, branch, ref errors)).AddRange(") * 8)))");
+			return result;
+		}
+		return subbranchValues[^2].Copy().Add(' ').AddRange(branch[i].Name).Add(' ').AddRange(subbranchValues[^1]);
 	}
 
 	private String List(TreeBranch branch, out List<String>? errors)
@@ -4745,6 +4780,47 @@ public sealed partial class SemanticTree
 			else
 				throw new InvalidOperationException();
 		})));
+		return result.Add(')');
+	}
+
+	private String XorList(TreeBranch branch, out List<String>? errors)
+	{
+		var result = ((String)nameof(NStarUtilityFunctions)).Add('.').AddRange(nameof(NStarUtilityFunctions.XorList)).Add('(');
+		errors = null;
+		for (var i = 0; i < branch.Length; i++)
+		{
+			if (i > 0)
+				result.AddRange(", ");
+			if (TryReadValue(branch[i].Name, out var value))
+			{
+				if (!TypesAreCompatible(value.InnerType, BoolType, out var warning, value.ToString(true, true),
+					out var destExpr, out _) || warning || destExpr is null)
+				{
+					var otherPos = branch[i].Pos;
+					GenerateMessage(ref errors, 0x4084, otherPos);
+					branch.Extra = NullType;
+					return "default!";
+				}
+				branch[i].Extra = value.InnerType;
+				result.AddRange(destExpr);
+			}
+			else
+			{
+				var parsed = ParseAction(branch[i].Name)(branch[i], out var innerErrors);
+				if (branch[i].Extra is not NStarType NStarType
+					|| !TypesAreCompatible(NStarType, BoolType, out var warning, parsed, out var destExpr, out _)
+					|| warning || destExpr is null)
+				{
+					var otherPos = branch[i].Pos;
+					GenerateMessage(ref errors, 0x4084, otherPos);
+					branch.Extra = NullType;
+					return "default!";
+				}
+				result.AddRange(destExpr);
+				AddRange(ref errors, innerErrors);
+			}
+		}
+		branch.Extra = BoolType;
 		return result.Add(')');
 	}
 
@@ -6655,7 +6731,7 @@ using static NStar.Mpir.").AddRange(nameof(MpzT)).AddRange(@";
 using static System.Math;
 using static System.Numerics.Complex;
 using G = System.Collections.Generic;
-using String = NStar.Core.String;
+using String = ").AddRange(nameof(NStar)).Add('.').AddRange(nameof(global::NStar.Core)).AddRange(@".String;
 
 ").AddRange(translatedClasses).AddRange(@"
 public static class Program

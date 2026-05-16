@@ -8,7 +8,7 @@ public static class Messages
 	public static void GenerateMessage(List<String> errors, ushort code, int line, int column, params dynamic[] parameters)
 	{
 		var codeString = Convert.ToString(code, 16).ToUpper().PadLeft(4, '0');
-		errors.Add(codeString[0] switch
+		errors.Add(new(codeString[0] switch
 		{
 			>= '0' and <= '7' => "Error ",
 			'8' => "Warning ",
@@ -75,7 +75,7 @@ public static class Messages
 			0x201E => "the keyword \"" + parameters[0] + "\" is under development",
 			0x201F => "the division by the integer zero is forbidden",
 			0x2020 => "incorrect word or order of words in construction declaration",
-			0x2021 => "too many nested collections of types",
+			0x2021 => throw new InvalidOperationException(),
 			0x2022 => "the keyword \"var\" is not a type and cannot be used inside the type",
 			0x2023 => "cannot create an instance of the abstract type \"" + parameters[0] + "\"",
 			0x2024 => "cannot create an instance of the static type \"" + parameters[0] + "\"",
@@ -227,6 +227,10 @@ public static class Messages
 			0x4080 => "the operator \"" + parameters[0] + "\" cannot be used in this context",
 			0x4081 => "the second operand of the operator \"" + parameters[0] + "\" must be of the type, convertible to int",
 			0x4082 => "the index operator and the range operator work only with the positive numbers",
+			0x4083 => "the first operand of the operators \"<<<\" and \">>>\" must be of the type byte, short char,"
+				+ " short int, unsigned short int, char, int, unsigned int, long char, long int, unsigned long int,"
+				+ " long long or unsigned long long",
+			0x4084 => "the operator \"^^\" works only with the operands of the type, convertible to bool",
 			0x4090 => "the recursive type cannot be value of itself",
 			0x4091 => "cannot get type of the type",
 			0x4092 => "the recursive type variable, property or constant cannot have the name \"typename\"",
@@ -310,6 +314,6 @@ public static class Messages
 			0xF010 => "the NuGet package " + parameters[0] + " does not exist (see under the \"Settings\" button)",
 			0xF011 => "the NuGet package " + parameters[0] + " has the wrong signature (see under the \"Settings\" button)",
 			_ => throw new InvalidOperationException(),
-		});
+		}));
 	}
 }

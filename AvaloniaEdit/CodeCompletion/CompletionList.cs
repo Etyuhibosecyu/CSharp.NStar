@@ -16,20 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Input;
-using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml.Templates;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
-using AvaloniaEdit.Utils;
-
 namespace AvaloniaEdit.CodeCompletion;
 
 /// <summary>

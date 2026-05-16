@@ -16,12 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using AvaloniaEdit.Utils;
-
 namespace AvaloniaEdit.Document;
 
 /// <summary>
@@ -68,7 +62,7 @@ public sealed class UndoStack : INotifyPropertyChanged
 		if (newIsOriginalFile != IsOriginalFile)
 		{
 			IsOriginalFile = newIsOriginalFile;
-			NotifyPropertyChanged("IsOriginalFile");
+			NotifyPropertyChanged(nameof(IsOriginalFile));
 		}
 	}
 
@@ -136,7 +130,7 @@ public sealed class UndoStack : INotifyPropertyChanged
 			if (field != value)
 			{
 				field = value;
-				NotifyPropertyChanged("SizeLimit");
+				NotifyPropertyChanged(nameof(SizeLimit));
 				if (_undoGroupDepth == 0)
 					EnforceSizeLimit();
 			}
@@ -307,9 +301,9 @@ public sealed class UndoStack : INotifyPropertyChanged
 			}
 			RecalcIsOriginalFile();
 			if (_undostack.Count == 0)
-				NotifyPropertyChanged("CanUndo");
+				NotifyPropertyChanged(nameof(CanUndo));
 			if (_redostack.Count == 1)
-				NotifyPropertyChanged("CanRedo");
+				NotifyPropertyChanged(nameof(CanRedo));
 		}
 	}
 
@@ -346,9 +340,9 @@ public sealed class UndoStack : INotifyPropertyChanged
 			}
 			RecalcIsOriginalFile();
 			if (_redostack.Count == 0)
-				NotifyPropertyChanged("CanRedo");
+				NotifyPropertyChanged(nameof(CanRedo));
 			if (_undostack.Count == 1)
-				NotifyPropertyChanged("CanUndo");
+				NotifyPropertyChanged(nameof(CanUndo));
 		}
 	}
 
@@ -398,7 +392,7 @@ public sealed class UndoStack : INotifyPropertyChanged
 				FileModified(1);
 			if (needsUndoGroup) EndUndoGroup();
 			if (wasEmpty)
-				NotifyPropertyChanged("CanUndo");
+				NotifyPropertyChanged(nameof(CanUndo));
 			ClearRedoStack();
 		}
 	}
@@ -411,7 +405,7 @@ public sealed class UndoStack : INotifyPropertyChanged
 		if (_redostack.Count != 0)
 		{
 			_redostack.Clear();
-			NotifyPropertyChanged("CanRedo");
+			NotifyPropertyChanged(nameof(CanRedo));
 			// if the "original file" marker is on the redo stack: remove it
 			if (_elementsOnUndoUntilOriginalFile < 0)
 				_elementsOnUndoUntilOriginalFile = int.MinValue;
@@ -431,7 +425,7 @@ public sealed class UndoStack : INotifyPropertyChanged
 			LastGroupDescriptor = null;
 			_allowContinue = false;
 			_undostack.Clear();
-			NotifyPropertyChanged("CanUndo");
+			NotifyPropertyChanged(nameof(CanUndo));
 		}
 		ClearRedoStack();
 	}

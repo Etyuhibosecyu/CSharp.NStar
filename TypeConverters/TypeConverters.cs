@@ -25,6 +25,7 @@ namespace CSharp.NStar;
 public static class TypeConverters
 {
 	private static readonly Random random = new();
+	private static readonly String DateTime = nameof(DateTime);
 	private static readonly List<String> CollectionTypesList = [nameof(Buffer), nameof(Dictionary<,>),
 		nameof(FastDelHashSet<>), nameof(FuncDictionary<,>), "HashTable",
 		nameof(ICollection), nameof(G.IEnumerable<>), nameof(IList), nameof(IReadOnlyCollection<>), nameof(IReadOnlyList<>),
@@ -131,7 +132,7 @@ public static class TypeConverters
 			}
 			else if (LeafType.MainType.TryPeek(out var block)
 				&& block.BlockType is BlockType.Class or BlockType.Struct or BlockType.Interface
-				&& CollectionTypesList.Contains(LeafType.MainType.ToString().ToNString().GetAfterLast("."))
+				&& CollectionTypesList.Contains(item: LeafType.MainType.ToString().ToNString().GetAfterLast("."))
 					&& LeafType.ExtraTypes[^1].Name == "type" && LeafType.ExtraTypes[^1].Extra is NStarType Subtype)
 			{
 				Depth++;
@@ -148,7 +149,7 @@ public static class TypeConverters
 	{
 		try
 		{
-			if (leftType.Equals(rightType) && !leftType.Equals(GetPrimitiveType("DateTime")))
+			if (leftType.Equals(rightType) && !leftType.Equals(GetPrimitiveType(DateTime)))
 				return leftType;
 			if (TypeIsPrimitive(leftType.MainType) && TypeIsPrimitive(rightType.MainType))
 			{
@@ -297,7 +298,7 @@ public static class TypeConverters
 	private static NStarType GetListResultType(NStarType leftType, NStarType rightType,
 		String leftTypeString, String rightTypeString, String leftValue, String rightValue)
 	{
-		if (CollectionTypesList.Contains(leftTypeString) || CollectionTypesList.Contains(rightTypeString))
+		if (CollectionTypesList.Contains(item: leftTypeString) || CollectionTypesList.Contains(item: rightTypeString))
 			return GetListType(GetResultType(GetSubtype(leftType), GetSubtype(rightType), leftValue, rightValue));
 		else if (leftTypeString == "list")
 			return GetListType(GetResultType(GetSubtype(leftType), (rightTypeString == "list")
@@ -379,7 +380,7 @@ public static class TypeConverters
 		var destinationTypeString = destinationType.MainType.ToString();
 		if (TypeEqualsToPrimitive(destinationType, "list", false) || destinationType.MainType.Length != 0
 			&& destinationType.MainType.Peek().BlockType is BlockType.Class or BlockType.Struct or BlockType.Interface
-			&& CollectionTypesList.Contains(destinationTypeString.ToNString().GetAfterLast(".")))
+			&& CollectionTypesList.Contains(item: destinationTypeString.ToNString().GetAfterLast(".")))
 		{
 			if (TypeEqualsToPrimitive(sourceType, "tuple", false))
 			{
@@ -681,11 +682,11 @@ public static class TypeConverters
 	{
 		List<(NStarType Type, bool Warning)> compatibleTypes = new(16);
 		compatibleTypes.AddRange(ImplicitConversionsFromAnything.Convert(x => (x, source.Warning))
-			.Filter(x => !blackList.Contains(x)));
+			.Filter(x => !blackList.Contains(item: x)));
 		if (BuiltInMemberCollections.ImplicitConversions.TryGetValue(source.Type.MainType, out var containerConversions)
 			&& containerConversions.TryGetValue(source.Type.ExtraTypes, out var typeConversions))
 			compatibleTypes.AddRange(typeConversions.Convert(x => (x.DestType, x.Warning || source.Warning))
-				.Filter(x => !blackList.Contains(x)));
+				.Filter(x => !blackList.Contains(item: x)));
 		return compatibleTypes;
 	}
 

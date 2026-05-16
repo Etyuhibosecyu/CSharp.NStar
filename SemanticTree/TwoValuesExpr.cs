@@ -325,6 +325,14 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 			Branch[i].Extra = NullType;
 			return "default!";
 		}
+		else if (!TypesAreCompatible(LeftNStarType, LongLongType, out warning, Value1.ToString(true, true), out _, out _)
+			|| warning)
+		{
+			var otherPos = Branch[i].Pos;
+			GenerateMessage(ref errors, 0x4083, otherPos, Branch[i].Name);
+			Branch[i].Extra = NullType;
+			return "default!";
+		}
 		if (i == 2)
 			Branch[Max(i - 3, 0)] = new((Value1 >>> Value2.ToInt()).ToString(true, true),
 				Branch.Pos, Branch.EndPos, Branch.Container);
@@ -345,6 +353,14 @@ internal record class TwoValuesExpr(NStarEntity Value1, NStarEntity Value2, Tree
 		{
 			var otherPos = Branch[i].Pos;
 			GenerateMessage(ref errors, 0x4081, otherPos, Branch[i].Name);
+			Branch[i].Extra = NullType;
+			return "default!";
+		}
+		else if (!TypesAreCompatible(LeftNStarType, LongLongType, out warning, Value1.ToString(true, true), out _, out _)
+			|| warning)
+		{
+			var otherPos = Branch[i].Pos;
+			GenerateMessage(ref errors, 0x4083, otherPos, Branch[i].Name);
 			Branch[i].Extra = NullType;
 			return "default!";
 		}

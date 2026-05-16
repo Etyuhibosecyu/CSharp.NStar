@@ -16,12 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using AvaloniaEdit.Document;
-using AvaloniaEdit.Utils;
-
 namespace AvaloniaEdit.Editing;
 
 sealed class EmptySelection(TextArea textArea) : Selection(textArea)
@@ -38,9 +32,7 @@ sealed class EmptySelection(TextArea textArea) : Selection(textArea)
 
 	public override Selection StartSelectionOrSetEndpoint(TextViewPosition startPosition, TextViewPosition endPosition)
 	{
-		var document = TextArea.Document;
-		if (document is null)
-			throw ThrowUtil.NoDocumentAssigned();
+		var document = TextArea.Document ?? throw ThrowUtil.NoDocumentAssigned();
 		return Create(TextArea, startPosition, endPosition);
 	}
 

@@ -16,9 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using Avalonia.Input;
-using AvaloniaEdit.Editing;
-
 namespace AvaloniaEdit.Snippets;
 
 internal sealed class SnippetInputHandler(InsertionContext context) : TextAreaStackedInputHandler(context.TextArea)

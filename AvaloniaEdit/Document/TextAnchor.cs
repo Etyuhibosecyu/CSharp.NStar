@@ -16,10 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using AvaloniaEdit.Utils;
-using System;
-using System.Globalization;
-
 namespace AvaloniaEdit.Document;
 
 /// <summary>
@@ -90,11 +86,8 @@ public sealed class TextAnchor : ITextAnchor
 	public int Offset {
 		get {
 			Document.DebugVerifyAccess();
-			
-			var n = Node;
-			if (n is null)
-				throw new InvalidOperationException();
-			
+
+			var n = Node ?? throw new InvalidOperationException();
 			var offset = n.Length;
 			if (n.Left != null)
 				offset += n.Left.TotalLength;

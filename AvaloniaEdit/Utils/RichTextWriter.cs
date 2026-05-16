@@ -16,13 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.IO;
-
-using Avalonia.Media;
-
-using AvaloniaEdit.Highlighting;
-
 namespace AvaloniaEdit.Utils;
 
 // TODO: This class (and derived classes) is currently unused; decide whether to keep it.

@@ -36,6 +36,18 @@ public sealed class TreeBranch
 	public int FullCount => Elements.Length + Elements.Sum(x => x.FullCount);
 	public int FirstPos => Length == 0 ? Pos : Elements[0].Pos;
 
+	public TreeBranch(string name, int pos, BlockStack container)
+		: this(String.ReturnOrConstruct(name), pos, container) { }
+
+	public TreeBranch(string name, int pos, int endPos, BlockStack container)
+		: this(String.ReturnOrConstruct(name), pos, endPos, container) { }
+
+	public TreeBranch(string name, TreeBranch element, BlockStack? container = null)
+		: this(String.ReturnOrConstruct(name), element, container) { }
+
+	public TreeBranch(string name, List<TreeBranch> elements, BlockStack? container = null)
+		: this(String.ReturnOrConstruct(name), elements, container) { }
+
 	public TreeBranch(String name, int pos, BlockStack container)
 	{
 		Name = name;

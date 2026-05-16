@@ -16,16 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using Avalonia;
-using Avalonia.Input;
-using AvaloniaEdit.Document;
-using AvaloniaEdit.Utils;
-
 namespace AvaloniaEdit.Editing;
 
 /// <summary>
@@ -146,12 +136,7 @@ public sealed class RectangleSelection : Selection
 		EndPosition = GetEnd();
 	}
 
-	private void InitDocument()
-	{
-		_document = TextArea.Document;
-		if (_document is null)
-			throw ThrowUtil.NoDocumentAssigned();
-	}
+	private void InitDocument() => _document = TextArea.Document ?? throw ThrowUtil.NoDocumentAssigned();
 
 	private static double GetXPos(TextArea textArea, TextViewPosition pos)
 	{
@@ -236,15 +221,12 @@ public sealed class RectangleSelection : Selection
 	public override TextViewPosition EndPosition { get; }
 
 	/// <inheritdoc/>
-	public override bool Equals(object obj)
-	{
+	public override bool Equals(object obj) =>
 		// ReSharper disable CompareOfFloatsByEqualityOperator
-		return obj is RectangleSelection r && r.TextArea == TextArea
+		obj is RectangleSelection r && r.TextArea == TextArea
 			&& r._topLeftOffset == _topLeftOffset && r._bottomRightOffset == _bottomRightOffset
 			&& r._startLine == _startLine && r._endLine == _endLine
-			&& r._startXPos == _startXPos && r._endXPos == _endXPos;
-		// ReSharper restore CompareOfFloatsByEqualityOperator
-	}
+			&& r._startXPos == _startXPos && r._endXPos == _endXPos;// ReSharper restore CompareOfFloatsByEqualityOperator
 
 	/// <inheritdoc/>
 	public override int GetHashCode() => _topLeftOffset ^ _bottomRightOffset;

@@ -16,16 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-
 namespace AvaloniaEdit.Utils;
 
 /// <summary>
@@ -620,7 +610,7 @@ public sealed class Rope<T> : IList<T>, ICloneable
 #if DEBUG
 		Root.GetTreeAsString();
 #else
-		return "Not available in release build.";
+		"Not available in release build.";
 #endif
 
 	#endregion

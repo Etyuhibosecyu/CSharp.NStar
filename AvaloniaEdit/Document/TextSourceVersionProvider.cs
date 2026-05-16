@@ -16,11 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-
 namespace AvaloniaEdit.Document;
 
 /// <summary>
@@ -72,10 +67,7 @@ public class TextSourceVersionProvider
 			_id = unchecked(prev._id + 1);
 		}
 
-		public bool BelongsToSameDocumentAs(ITextSourceVersion other)
-		{
-			return other is Version o && _provider == o._provider;
-		}
+		public bool BelongsToSameDocumentAs(ITextSourceVersion other) => other is Version o && _provider == o._provider;
 
 		public int CompareAge(ITextSourceVersion other)
 		{

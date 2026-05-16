@@ -16,9 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Text.RegularExpressions;
-
 namespace AvaloniaEdit.Rendering;
 
 // This class is public because it can be used as a base class for custom links.

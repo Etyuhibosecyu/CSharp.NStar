@@ -874,11 +874,19 @@ public class LexemStream
 		return false;
 	}
 
+	public bool IsLexemKeyword(int pos, string @string) =>
+		lexems[pos].Type == LexemType.Keyword && lexems[pos].String == @string;
+
 	public bool IsLexemKeyword(int pos, String @string) =>
 		lexems[pos].Type == LexemType.Keyword && lexems[pos].String == @string;
 
+	public bool IsLexemOperator(int pos, string @string) =>
+		lexems[pos].Type == LexemType.Operator && lexems[pos].String == @string;
+
 	public bool IsLexemOperator(int pos, String @string) =>
 		lexems[pos].Type == LexemType.Operator && lexems[pos].String == @string;
+
+	public bool IsLexemOther(int pos, string @string) => lexems[pos].Type == LexemType.Other && lexems[pos].String == @string;
 
 	public bool IsLexemOther(int pos, String @string) => lexems[pos].Type == LexemType.Other && lexems[pos].String == @string;
 
@@ -893,9 +901,15 @@ public class LexemStream
 
 	public bool IsLexemOtherNoEnd(String @string) => pos < lexems.Length && IsLexemOther(pos, @string);
 
+	public bool IsCurrentLexemKeyword(string @string) => IsLexemKeyword(pos, @string);
+
 	public bool IsCurrentLexemKeyword(String @string) => IsLexemKeyword(pos, @string);
 
+	public bool IsCurrentLexemOperator(string @string) => IsLexemOperator(pos, @string);
+
 	public bool IsCurrentLexemOperator(String @string) => IsLexemOperator(pos, @string);
+
+	public bool IsCurrentLexemOther(string @string) => IsLexemOther(pos, @string);
 
 	public bool IsCurrentLexemOther(String @string) => IsLexemOther(pos, @string);
 

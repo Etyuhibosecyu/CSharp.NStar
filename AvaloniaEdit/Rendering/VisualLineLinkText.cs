@@ -16,14 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using Avalonia.Input;
-using Avalonia.Interactivity;
-using Avalonia.Controls;
-using System.Diagnostics;
-using Avalonia.Media;
-using Avalonia.Media.TextFormatting;
-
 namespace AvaloniaEdit.Rendering;
 
 /// <summary>

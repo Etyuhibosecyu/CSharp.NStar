@@ -16,12 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Reflection;
-using AvaloniaEdit.CodeCompletion;
-
 namespace AvaloniaEdit;
 
 /// <summary>
@@ -80,7 +74,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public virtual bool AcceptsTab
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -102,7 +96,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(false)]
 	public virtual bool ShowSpaces
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -120,7 +114,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue("\u00B7")]
 	public virtual string ShowSpacesGlyph
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -138,7 +132,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(false)]
 	public virtual bool ShowTabs
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -156,7 +150,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue("\u2192")]
 	public virtual string ShowTabsGlyph
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -174,7 +168,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(false)]
 	public virtual bool ShowEndOfLine
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -192,7 +186,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue("¶")]
 	public virtual string EndOfLineCRLFGlyph
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -210,7 +204,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue("\\r")]
 	public virtual string EndOfLineCRGlyph
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -228,7 +222,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue("\\n")]
 	public virtual string EndOfLineLFGlyph
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -246,7 +240,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public virtual bool ShowBoxForControlCharacters
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -268,7 +262,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public virtual bool EnableHyperlinks
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -286,7 +280,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public virtual bool EnableEmailHyperlinks
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -305,7 +299,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public virtual bool RequireControlModifierForHyperlinkClick
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -356,7 +350,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(false)]
 	public virtual bool ConvertTabsToSpaces
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -398,7 +392,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public virtual bool CutCopyWholeLine
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -416,7 +410,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public virtual bool AllowScrollBelowDocument
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -455,7 +449,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public virtual bool InheritWordWrapIndentation
 	{
-		get => field;
+		get;
 		set
 		{
 			if (value != field)
@@ -472,7 +466,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public bool EnableRectangularSelection
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -489,7 +483,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public bool EnableTextDragDrop
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -509,7 +503,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(false)]
 	public virtual bool EnableVirtualSpace
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -527,7 +521,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public virtual bool EnableImeSupport
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -544,7 +538,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(false)]
 	public virtual bool ShowColumnRulers
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -560,7 +554,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	/// </summary>
 	public virtual IEnumerable<int> ColumnRulerPositions
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -577,7 +571,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(false)]
 	public virtual bool HighlightCurrentLine
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -594,7 +588,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public bool HideCursorWhileTyping
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -611,7 +605,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(false)]
 	public bool AllowToggleOverstrikeMode
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -628,7 +622,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(true)]
 	public bool ExtendSelectionOnMouseUp
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -645,7 +639,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(CompletionAcceptAction.PointerPressed)]
 	public CompletionAcceptAction CompletionAcceptAction
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)
@@ -666,7 +660,7 @@ public class TextEditorOptions : INotifyPropertyChanged
 	[DefaultValue(DefaultLineHeightFactor)]
 	public double LineHeightFactor
 	{
-		get => field;
+		get;
 		set
 		{
 			if (value <= 0 || double.IsNaN(value) || double.IsInfinity(value))

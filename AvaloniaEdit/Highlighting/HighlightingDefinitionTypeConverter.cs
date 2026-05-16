@@ -16,10 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.ComponentModel;
-using System.Globalization;
-
 namespace AvaloniaEdit.Highlighting;
 
 /// <summary>
@@ -32,10 +28,7 @@ public sealed class HighlightingDefinitionTypeConverter : TypeConverter
 	public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType) => sourceType == typeof(string);
 
 	/// <inheritdoc/>
-	public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
-	{
-		return value is string definitionName ? HighlightingManager.Instance.GetDefinition(definitionName) : null;
-	}
+	public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value) => value is string definitionName ? HighlightingManager.Instance.GetDefinition(definitionName) : null;
 
 	/// <inheritdoc/>
 	public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType) => destinationType == typeof(string);

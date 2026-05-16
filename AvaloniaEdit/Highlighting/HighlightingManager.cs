@@ -16,14 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
-using System.Xml;
-using AvaloniaEdit.Highlighting.Xshd;
-using AvaloniaEdit.Utils;
-
 namespace AvaloniaEdit.Highlighting;
 
 /// <summary>
@@ -36,7 +28,7 @@ public class HighlightingManager : IHighlightingDefinitionReferenceResolver
 {
 	private sealed class DelayLoadedHighlightingDefinition : IHighlightingDefinition
 	{
-		private readonly object _lockObj = new();
+		private readonly Lock _lockObj = new();
 		private Func<IHighlightingDefinition> _lazyLoadingFunction;
 		private IHighlightingDefinition _definition;
 		private Exception _storedException;
@@ -102,7 +94,7 @@ public class HighlightingManager : IHighlightingDefinitionReferenceResolver
 		public IDictionary<string, string> Properties => GetDefinition().Properties;
 	}
 
-	private readonly object _lockObj = new();
+	private readonly Lock _lockObj = new();
 	private readonly Dictionary<string, IHighlightingDefinition> _highlightingsByName = [];
 	private readonly Dictionary<string, IHighlightingDefinition> _highlightingsByExtension = new(StringComparer.OrdinalIgnoreCase);
 	private readonly List<IHighlightingDefinition> _allHighlightings = [];

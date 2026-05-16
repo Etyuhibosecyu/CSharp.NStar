@@ -385,7 +385,7 @@ public static class MemberChecks
 		if (PublicFunctions.TryGetValue(name, out var functionOverload))
 		{
 			BlockStack mainType;
-			if (functionOverload.ExtraTypes.Contains(functionOverload.ReturnType))
+			if (functionOverload.ExtraTypes.Contains(item: functionOverload.ReturnType))
 				mainType = FindParameter(functionOverload.ReturnType).MainType;
 			else
 				mainType = GetBlockStack(functionOverload.ReturnType);
@@ -394,7 +394,7 @@ public static class MemberChecks
 			ExtendedMethodParameters parameters = [.. functionOverload.Parameters.Convert((x, index) =>
 			{
 				NStarType NStarType;
-				if (functionOverload.ExtraTypes.Contains(x.Type))
+				if (functionOverload.ExtraTypes.Contains(item: x.Type))
 					NStarType = FindParameter(x.Type);
 				else
 					NStarType = new(GetBlockStack(x.Type), new(x.ExtraTypes.Convert(GetTypeAsBranch)));
@@ -462,7 +462,8 @@ public static class MemberChecks
 		return true;
 		NStarType FindParameter(String typeName)
 		{
-			var foundIndex = functionOverload.Parameters.FindIndex(x => typeName == x.Type || x.ExtraTypes.Contains(typeName));
+			var foundIndex = functionOverload.Parameters
+				.FindIndex(x => typeName == x.Type || x.ExtraTypes.Contains(item: typeName));
 			return foundIndex != callParameterTypes.Length - 1
 				|| (functionOverload.Parameters[foundIndex].Attributes & ParameterAttributes.Params)
 				!= ParameterAttributes.Params ? callParameterTypes[foundIndex]
@@ -472,7 +473,7 @@ public static class MemberChecks
 
 		TreeBranch GetTypeAsBranch(String typeName) => new("type", 0, [])
 		{
-			Extra = functionOverload.ExtraTypes.Contains(typeName)
+			Extra = functionOverload.ExtraTypes.Contains(item: typeName)
 			? FindParameter(typeName) : new NStarType(GetBlockStack(typeName), [])
 		};
 	}

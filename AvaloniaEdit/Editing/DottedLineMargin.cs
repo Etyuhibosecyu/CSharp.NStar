@@ -16,12 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using Avalonia;
-using Avalonia.Collections;
-using Avalonia.Controls;
-using Avalonia.Controls.Shapes;
-using Avalonia.Media;
-
 namespace AvaloniaEdit.Editing;
 
 /// <summary>
@@ -55,8 +49,5 @@ public static class DottedLineMargin
 	/// <summary>
 	/// Gets whether the specified UIElement is the result of a DottedLineMargin.Create call.
 	/// </summary>
-	public static bool IsDottedLineMargin(Control element)
-	{
-		return element is Line l && l.Tag == Tag;
-	}
+	public static bool IsDottedLineMargin(Control element) => element is Line l && l.Tag == Tag;
 }

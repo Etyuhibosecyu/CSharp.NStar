@@ -16,14 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Avalonia.Input;
-using AvaloniaEdit.Document;
-using AvaloniaEdit.Utils;
-
 namespace AvaloniaEdit.Editing;
 
 /// <summary>
@@ -167,9 +159,7 @@ public abstract class Selection(TextArea textArea)
 				return false;
 			var start = surroundingSegment.Offset;
 			var end = start + surroundingSegment.Length;
-			var document = TextArea.Document;
-			if (document is null)
-				throw ThrowUtil.NoDocumentAssigned();
+			var document = TextArea.Document ?? throw ThrowUtil.NoDocumentAssigned();
 			return document.GetLineByOffset(start) != document.GetLineByOffset(end);
 		}
 	}
@@ -179,9 +169,7 @@ public abstract class Selection(TextArea textArea)
 	/// </summary>
 	public virtual string GetText()
 	{
-		var document = TextArea.Document;
-		if (document is null)
-			throw ThrowUtil.NoDocumentAssigned();
+		var document = TextArea.Document ?? throw ThrowUtil.NoDocumentAssigned();
 		StringBuilder b = null;
 		string text = null;
 		foreach (var s in Segments)

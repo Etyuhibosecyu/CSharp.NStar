@@ -16,11 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System.Diagnostics;
-using AvaloniaEdit.Document;
-using AvaloniaEdit.Rendering;
-using AvaloniaEdit.Utils;
-
 namespace AvaloniaEdit.Folding;
 
 /// <summary>
@@ -100,7 +95,7 @@ public sealed class FoldingSection : TextSegment
 	/// </summary>
 	public string Title
 	{
-		get => field;
+		get;
 		set
 		{
 			if (field != value)

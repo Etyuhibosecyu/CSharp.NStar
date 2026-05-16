@@ -16,14 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using AvaloniaEdit.Utils;
-
 namespace AvaloniaEdit.Highlighting.Xshd;
 
 internal sealed class XmlHighlightingDefinition : IHighlightingDefinition
@@ -282,9 +274,7 @@ internal sealed class XmlHighlightingDefinition : IHighlightingDefinition
 			if (colorReference.ReferencedElement != null)
 			{
 				var definition = GetDefinition(position, colorReference.ReferencedDefinition);
-				var color = definition.GetNamedColor(colorReference.ReferencedElement);
-				if (color is null)
-					throw Error(position, $"Could not find color named '{colorReference.ReferencedElement}'.");
+				var color = definition.GetNamedColor(colorReference.ReferencedElement) ?? throw Error(position, $"Could not find color named '{colorReference.ReferencedElement}'.");
 				return color;
 			}
 			return null;
@@ -296,9 +286,7 @@ internal sealed class XmlHighlightingDefinition : IHighlightingDefinition
 				return _def;
 			if (_resolver is null)
 				throw Error(position, "Resolving references to other syntax definitions is not possible because the IHighlightingDefinitionReferenceResolver is null.");
-			var d = _resolver.GetDefinition(definitionName);
-			if (d is null)
-				throw Error(position, $"Could not find definition with name '{definitionName}'.");
+			var d = _resolver.GetDefinition(definitionName) ?? throw Error(position, $"Could not find definition with name '{definitionName}'.");
 			return d;
 		}
 
@@ -311,9 +299,7 @@ internal sealed class XmlHighlightingDefinition : IHighlightingDefinition
 			if (ruleSetReference.ReferencedElement != null)
 			{
 				var definition = GetDefinition(position, ruleSetReference.ReferencedDefinition);
-				var ruleSet = definition.GetNamedRuleSet(ruleSetReference.ReferencedElement);
-				if (ruleSet is null)
-					throw Error(position, $"Could not find rule set named '{ruleSetReference.ReferencedElement}'.");
+				var ruleSet = definition.GetNamedRuleSet(ruleSetReference.ReferencedElement) ?? throw Error(position, $"Could not find rule set named '{ruleSetReference.ReferencedElement}'.");
 				return ruleSet;
 			}
 			return null;

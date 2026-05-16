@@ -16,11 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Diagnostics;
-using System.Globalization;
-using System.Text;
-
 namespace AvaloniaEdit.Utils;
 
 /// <summary>
@@ -657,9 +652,7 @@ internal sealed class FunctionNode<T> : RopeNode<T>
 					throw new InvalidOperationException("Trying to load this node recursively; or: a previous call to a rope initializer failed.");
 				var initializerCopy = _initializer;
 				_initializer = null;
-				var resultRope = initializerCopy();
-				if (resultRope is null)
-					throw new InvalidOperationException("Rope initializer returned null.");
+				var resultRope = initializerCopy() ?? throw new InvalidOperationException("Rope initializer returned null.");
 				var resultNode = resultRope.Root;
 				resultNode.Publish(); // result is shared between returned rope and the rope containing this function node
 				if (resultNode.Length != Length)

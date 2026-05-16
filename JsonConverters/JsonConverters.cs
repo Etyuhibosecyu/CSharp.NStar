@@ -147,9 +147,9 @@ public static class JsonConverters
 				writer.WriteNull();
 				return;
 			}
-			if (value.GetAfter('\"').Contains('\"') && value.TryTakeIntoRawQuotes(out var rawString))
+			if (value.GetAfter('\"').Contains(item: '\"') && value.TryTakeIntoRawQuotes(out var rawString))
 				writer.WriteRaw(rawString.ToString());
-			else if (!value.GetAfter('\\').Contains('\\'))
+			else if (!value.GetAfter('\\').Contains(item: '\\'))
 				writer.WriteRaw(value.TakeIntoQuotes().ToString());
 			else
 				writer.WriteRaw(value.TakeIntoVerbatimQuotes().ToString());

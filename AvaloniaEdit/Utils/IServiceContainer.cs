@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace AvaloniaEdit.Utils;
+﻿namespace AvaloniaEdit.Utils;
 
 public interface IServiceContainer : IServiceProvider
 {

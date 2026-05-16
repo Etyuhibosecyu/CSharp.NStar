@@ -16,15 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using AvaloniaEdit.Document;
-using Avalonia.Input;
-using Avalonia.Media;
-using Avalonia.Media.TextFormatting;
-using LogicalDirection = AvaloniaEdit.Document.LogicalDirection;
-
 namespace AvaloniaEdit.Rendering;
 
 /// <summary>

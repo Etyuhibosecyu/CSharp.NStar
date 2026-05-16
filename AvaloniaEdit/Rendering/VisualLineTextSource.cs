@@ -16,11 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Diagnostics;
-using Avalonia.Media.TextFormatting;
-using AvaloniaEdit.Document;
-using AvaloniaEdit.Utils;
 using ITextSource = Avalonia.Media.TextFormatting.ITextSource;
 
 namespace AvaloniaEdit.Rendering;
@@ -42,9 +37,7 @@ internal sealed class VisualLineTextSource(VisualLine visualLine) : ITextSource,
 				if (textSourceCharacterIndex >= element.VisualColumn
 					&& textSourceCharacterIndex < element.VisualColumn + element.VisualLength) {
 					var relativeOffset = textSourceCharacterIndex - element.VisualColumn;
-					var run = element.CreateTextRun(textSourceCharacterIndex, this);
-					if (run is null)
-						throw new ArgumentNullException(element.GetType().Name + ".CreateTextRun");
+					var run = element.CreateTextRun(textSourceCharacterIndex, this) ?? throw new ArgumentNullException(element.GetType().Name + ".CreateTextRun");
 					if (run.Length == 0)
 						throw new ArgumentException("The returned TextRun must not have length 0.", element.GetType().Name + ".Length");
 					if (relativeOffset + run.Length > element.VisualLength)

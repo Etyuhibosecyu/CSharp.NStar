@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-
-namespace AvaloniaEdit.Utils;
+﻿namespace AvaloniaEdit.Utils;
 
 /// <summary>
 /// This class is used to prevent stack overflows by representing a 'busy' flag

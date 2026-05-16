@@ -1,8 +1,3 @@
-using System.Runtime.InteropServices;
-using Avalonia;
-using Avalonia.Input;
-using Avalonia.Input.Platform;
-
 namespace AvaloniaEdit.Editing;
 
 public static class HotkeyConfiguration

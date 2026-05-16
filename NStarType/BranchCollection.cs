@@ -19,7 +19,7 @@ public class BranchCollection : Dictionary<String, TreeBranch>
 			Add(elem);
 	}
 
-	public virtual void Add(TreeBranch item) => Add("Item" + (Length + 1).ToString(), item);
+	public virtual void Add(TreeBranch item) => Add(String.ReturnOrConstruct("Item" + (Length + 1).ToString()), item);
 
 	public virtual void AddRange(BranchCollection collection)
 	{

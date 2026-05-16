@@ -448,6 +448,8 @@ public struct NStarEntity
 			else if (basicType == "unsigned long long")
 				return ValidateFixing(new(ToUnsignedLongLong() << shiftAmount, UnsignedLongLongType),
 					UnsignedLongLongType, Fixed);
+			else if (basicType == "real")
+				return ValidateFixing(ToReal() * Pow(2, shiftAmount), RealType, Fixed);
 			else if (basicType == "unsigned long int")
 				return ValidateFixing(new(ToUnsignedLongInt() is var uli
 					? uli << (int)unchecked((uint)shiftAmount % (sizeof(ulong) * 8))
@@ -664,8 +666,8 @@ public struct NStarEntity
 			"long int" => (char)(Object is not long li ? 0 : li is < -65535 or > 65535 ? 0 : Abs(li)),
 			"DateTime" => (char)(Object is not DateTime dt ? 0 : dt.Ticks > 65535 ? 0 : dt.Ticks),
 			"unsigned long int" => (char)(Object is not ulong uli ? 0 : uli > 65535 ? 0 : uli),
-			"unsigned long long" => (char)(Object is not MpuT ull ? 0 : ull > 65535 ? 0 : ull.Abs()),
-			"long long" => (char)(Object is not MpzT ll ? 0 : ll < -65535 || ll > 65535 ? 0 : ll.Abs()),
+			"unsigned long long" => (char)(ushort)(Object is not MpuT ull ? 0 : ull > 65535 ? 0 : ull.Abs()),
+			"long long" => (char)(ushort)(Object is not MpzT ll ? 0 : ll < -65535 || ll > 65535 ? 0 : ll.Abs()),
 			"real" => (char)(Number is < -65535 or > 65535 ? 0 : Truncate(Abs(Number))),
 			"decimal" => (char)(Object is not decimal m || m is < -65535 or > 65535 ? 0 : Truncate(Abs(m))),
 			"string" => (char)0,
@@ -935,18 +937,19 @@ public struct NStarEntity
 		if (TypeIsPrimitive(InnerType.MainType))
 		{
 			var basicType = InnerType.MainType.Peek().Name ?? "null";
-			if (basicType == "null")
-				return addCasting ? "default!" : "null";
-			else if (basicType == "bool")
-				return (!Bool) ? "false" : "true";
-			else if (basicType == "byte")
-				return ((byte)Number).ToString(InvariantCulture);
-			else if (basicType == "short int")
-				return ((short)Number).ToString(InvariantCulture);
-			else if (basicType == "unsigned short int")
-				return ((ushort)Number).ToString(InvariantCulture);
-			else if (basicType == "char")
+			switch (basicType.ToString())
 			{
+				case "null":
+				return addCasting ? "default!" : "null";
+				case "bool":
+				return (!Bool) ? "false" : "true";
+				case "byte":
+				return ((byte)Number).ToString(InvariantCulture);
+				case "short int":
+				return ((short)Number).ToString(InvariantCulture);
+				case "unsigned short int":
+				return ((ushort)Number).ToString(InvariantCulture);
+				case "char":
 				return takeIntoQuotes ? "'" + (char)Number switch
 				{
 					'\0' => @"\0",
@@ -962,27 +965,23 @@ public struct NStarEntity
 					'\\' => @"\!",
 					_ => (char)Number,
 				} + "'" : "" + (char)Number;
-			}
-			else if (basicType == "int")
+				case "int":
 				return ((int)Number).ToString(InvariantCulture);
-			else if (basicType == "unsigned int")
+				case "unsigned int":
 				return ((uint)Number).ToString(InvariantCulture);
-			else if (basicType == "long int")
+				case "long int":
 				return Object is null ? "" : Object is long li ? li.ToString() : "0";
-			else if (basicType == "DateTime")
+				case "DateTime":
 				return Object is null ? "" : Object is DateTime dt ? dt.ToString() : new DateTime(0).ToString();
-			else if (basicType == "unsigned long int")
+				case "unsigned long int":
 				return Object is null ? "" : Object is ulong uli ? uli.ToString() : "0";
-			else if (basicType == "unsigned long long" && Object is MpuT ull)
-			{
+				case "unsigned long long" when Object is MpuT ull:
 				if (!addCasting)
 					return ull.ToString();
 				if (ull <= ulong.MaxValue)
 					return "new " + nameof(MpuT) + '(' + ull.ToString() + ')';
 				return "new " + nameof(MpuT) + "(\"" + ull.ToString() + "\")";
-			}
-			else if (basicType == "long long" && Object is MpzT ll)
-			{
+				case "long long" when Object is MpzT ll:
 				if (!addCasting)
 					return ll.ToString();
 #pragma warning disable IDE0078 // Используйте сопоставление шаблонов
@@ -990,9 +989,7 @@ public struct NStarEntity
 					return "new " + nameof(MpzT) + '(' + ll.ToString() + ')';
 #pragma warning restore IDE0078 // Используйте сопоставление шаблонов
 				return "new " + nameof(MpzT) + "(\"" + ll.ToString() + "\")";
-			}
-			else if (basicType == "real")
-			{
+				case "real":
 				return Number switch
 				{
 					1d / 0 => addCasting ? "(1d / 0)" : "Infty",
@@ -1001,9 +998,7 @@ public struct NStarEntity
 					-0d => "0",
 					_ => Number.ToString(InvariantCulture)
 				};
-			}
-			else if (basicType == "complex" && Object is Complex c)
-			{
+				case "complex" when Object is Complex c:
 				return (addCasting ? "new Complex(" : "") + c.Real switch
 				{
 					1d / 0 => addCasting ? "(1d / 0)" : "Infty",
@@ -1019,25 +1014,21 @@ public struct NStarEntity
 					-0d => "0",
 					_ => c.Imaginary.ToString(InvariantCulture)
 				} + (addCasting ? ")" : "i");
-			}
-			else if (basicType == "typename")
+				case "typename":
 				return Object is null ? "" : Object is NStarType NStarType ? NStarType.ToString() : NullType.ToString();
-			else if (basicType == "string")
-			{
+				case "string":
 				if (!takeIntoQuotes)
 					return String;
 				else if (addCasting)
 					return ((String)"((").AddRange(nameof(String)).Add(')').AddRange(String.TakeIntoQuotes(true)).Add(')');
 				else
 					return String.TakeIntoQuotes();
-			}
-			else if (basicType != "list")
-			{
+				case "list":
 				if (basicType == "tuple")
 					return ListToString();
 				return takeIntoQuotes ? "Unknown Object" : "";
 			}
-				return Object switch
+			return Object switch
 			{
 				(IList<bool> BoolIsNullList, IList<bool> BoolList) => ListToString(BoolIsNullList, BoolList),
 				(IList<bool> ByteIsNullList, IList<byte> ByteList) => ListToString(ByteIsNullList, ByteList),
@@ -2202,6 +2193,8 @@ public struct NStarEntity
 			else if (basicType == "unsigned long long")
 				return ValidateFixing(new(left.ToUnsignedLongLong() >>> right, UnsignedLongLongType),
 					UnsignedLongLongType, left.Fixed);
+			else if (basicType == "real")
+				return ValidateFixing(left.ToReal() * Pow(2, -right), RealType, left.Fixed);
 			else if (basicType == "unsigned long int")
 				return ValidateFixing(new(left.ToUnsignedLongInt() >>> right, UnsignedLongIntType),
 					UnsignedLongIntType, left.Fixed);
@@ -2234,6 +2227,8 @@ public struct NStarEntity
 			else if (basicType == "unsigned long long")
 				return ValidateFixing(new(left.ToUnsignedLongLong() >> right, UnsignedLongLongType),
 					UnsignedLongLongType, left.Fixed);
+			else if (basicType == "real")
+				return ValidateFixing(left.ToReal() * Pow(2, -right), RealType, left.Fixed);
 			else if (basicType == "unsigned long int")
 				return ValidateFixing(new(left.ToUnsignedLongInt() >> right, UnsignedLongIntType),
 					UnsignedLongIntType, left.Fixed);
@@ -2266,6 +2261,8 @@ public struct NStarEntity
 			else if (basicType == "unsigned long long")
 				return ValidateFixing(new(left.ToUnsignedLongLong() << right, UnsignedLongLongType),
 					UnsignedLongLongType, left.Fixed);
+			else if (basicType == "real")
+				return ValidateFixing(left.ToReal() * Pow(2, right), RealType, left.Fixed);
 			else if (basicType == "unsigned long int")
 				return ValidateFixing(new(left.ToUnsignedLongInt() << right, UnsignedLongIntType),
 					UnsignedLongIntType, left.Fixed);

@@ -16,11 +16,7 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using AvaloniaEdit.Document;
+using ITextSource = AvaloniaEdit.Document.ITextSource;
 
 namespace AvaloniaEdit.Search;
 
@@ -45,13 +41,10 @@ internal class RegexSearchStrategy(Regex searchPattern, bool matchWholeWords) : 
 
 	public ISearchResult FindNext(ITextSource document, int offset, int length) => FindAll(document, offset, length).FirstOrDefault();
 
-	public bool Equals(ISearchStrategy other)
-	{
-		return other is RegexSearchStrategy strategy &&
+	public bool Equals(ISearchStrategy other) => other is RegexSearchStrategy strategy &&
 			strategy._searchPattern.ToString() == _searchPattern.ToString() &&
 			strategy._searchPattern.Options == _searchPattern.Options &&
 			strategy._searchPattern.RightToLeft == _searchPattern.RightToLeft;
-	}
 }
 
 internal class SearchResult : TextSegment, ISearchResult

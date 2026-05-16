@@ -16,28 +16,6 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-using Avalonia;
-using Avalonia.Controls;
-using Avalonia.Controls.Presenters;
-using Avalonia.Controls.Primitives;
-using Avalonia.Input;
-using Avalonia.Input.TextInput;
-using Avalonia.Interactivity;
-using Avalonia.Media;
-using Avalonia.Threading;
-using AvaloniaEdit.Document;
-using AvaloniaEdit.Indentation;
-using AvaloniaEdit.Rendering;
-using AvaloniaEdit.Utils;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Linq;
-
 namespace AvaloniaEdit.Editing;
 
 /// <summary>
@@ -888,9 +866,7 @@ public class TextArea : TemplatedControl, ITextEditorComponent, IRoutedCommandBi
 
 	internal ISegment[] GetDeletableSegments(ISegment segment)
 	{
-		var deletableSegments = ReadOnlySectionProvider.GetDeletableSegments(segment);
-		if (deletableSegments is null)
-			throw new InvalidOperationException("ReadOnlySectionProvider.GetDeletableSegments returned null");
+		var deletableSegments = ReadOnlySectionProvider.GetDeletableSegments(segment) ?? throw new InvalidOperationException("ReadOnlySectionProvider.GetDeletableSegments returned null");
 		var array = deletableSegments.ToArray();
 		var lastIndex = segment.Offset;
 		foreach (var t in array)

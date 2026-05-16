@@ -12,7 +12,8 @@ namespace CSharp.NStar;
 [DebuggerDisplay("{ToString()}")]
 public sealed class Block(BlockType blockType, String name, int unnamedIndex)
 {
-	public static readonly List<BlockType> ExplicitNameBlockTypes = new(BlockType.Constructor, BlockType.Destructor, BlockType.Operator, BlockType.Other);
+	public static readonly List<BlockType> ExplicitNameBlockTypes
+		= new(BlockType.Constructor, BlockType.Destructor, BlockType.Operator, BlockType.Other);
 	public BlockType BlockType { get; private set; } = blockType;
 	public String Name { get; private set; } = name;
 	public int UnnamedIndex { get; set; } = unnamedIndex;
@@ -21,7 +22,9 @@ public sealed class Block(BlockType blockType, String name, int unnamedIndex)
 
 	public override int GetHashCode() => BlockType.GetHashCode() ^ Name.GetHashCode();
 
-	public override string ToString() => (BlockType == BlockType.Unnamed) ? "Unnamed(" + Name + ")" : (ExplicitNameBlockTypes.Contains(BlockType) ? BlockType.ToString() + ": " : "") + Name;
+	public override string ToString() =>
+		(BlockType == BlockType.Unnamed) ? "Unnamed(" + Name + ")"
+		: (ExplicitNameBlockTypes.Contains(item: BlockType) ? BlockType.ToString() + ": " : "") + Name;
 }
 
 [DebuggerDisplay("{ToString()}")]

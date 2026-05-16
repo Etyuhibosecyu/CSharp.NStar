@@ -127,4 +127,21 @@ public static class NStarUtilityFunctions
 	public static double RealRemainder(double x, double y) => x - Floor(x / y) * y;
 
 	public static int RGB(int r, int g, int b) => Color.FromArgb(r, g, b).ToArgb();
+
+	public static bool XorList(bool x, bool y) => x ^ y;
+
+	public static bool XorList(bool x, bool y, bool z) => !(x && y && z) && x ^ y ^ z;
+
+	public static bool XorList(params List<bool> items)
+	{
+		var trueCount = 0;
+		for (var i = 0; i < items.Length; i++)
+		{
+			if (items[i])
+				trueCount++;
+			if (trueCount >= 2)
+				break;
+		}
+		return trueCount == 1;
+	}
 }

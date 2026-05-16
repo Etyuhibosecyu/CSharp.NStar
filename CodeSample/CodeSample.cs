@@ -364,7 +364,7 @@ public class CodeSample(String newString)
 
 	private bool ValidateChar(char tc) => ValidateCondition(IsNotEnd() && input[pos] == tc);
 
-	private bool ValidateCharList(String tcl) => ValidateCondition(IsNotEnd() && tcl.Contains(input[pos]));
+	private bool ValidateCharList(String tcl) => ValidateCondition(IsNotEnd() && tcl.Contains(item: input[pos]));
 
 	private String FromStart(int start) => input[start..pos];
 
