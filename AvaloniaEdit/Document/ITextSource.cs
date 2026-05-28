@@ -268,7 +268,7 @@ public class StringTextSource : ITextSource
 	public void WriteTextTo(TextWriter writer) => writer.Write(Text);
 
 	/// <inheritdoc/>
-	public void WriteTextTo(TextWriter writer, int offset, int length) => writer.Write(Text.Substring(offset, length));
+	public void WriteTextTo(TextWriter writer, int offset, int length) => writer.Write(Text.AsSpan(offset, length));
 
 	/// <inheritdoc/>
 	public char GetCharAt(int offset) => Text[offset];

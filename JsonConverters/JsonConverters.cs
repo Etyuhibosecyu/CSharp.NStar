@@ -1,6 +1,6 @@
-﻿using NStar.Mpir;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using NStar.Core;
+using NStar.Mpir;
 using System;
 using System.Collections;
 using System.Numerics;
@@ -17,7 +17,7 @@ public static class JsonConverters
 	public static JsonSerializerSettings SerializerSettings { get; } = new()
 	{
 		Converters = [new StringConverter(), new IEnumerableConverter(), new TypeConverter(), new TupleConverter(),
-			new UniversalConverter(), new ComplexConverter(), new MpzTConverter(),
+			new UniversalConverter(), new ComplexConverter(), new MpuTConverter(), new MpzTConverter(),
 			new DoubleConverter(), new ValueTypeConverter(), new IClassConverter()]
 	};
 
@@ -125,6 +125,14 @@ public static class JsonConverters
 				writer.WriteRaw(", " + JsonConvert.SerializeObject(en.Current, SerializerSettings));
 			writer.WriteRaw(")");
 		}
+	}
+
+	public class MpuTConverter : JsonConverter<MpuT>
+	{
+		public override MpuT ReadJson(JsonReader reader, Type objectType, MpuT? existingValue,
+			bool hasExistingValue, JsonSerializer serializer) => throw new NotImplementedException();
+		public override void WriteJson(JsonWriter writer, MpuT? value, JsonSerializer serializer) =>
+			writer.WriteRaw(value?.ToString());
 	}
 
 	public class MpzTConverter : JsonConverter<MpzT>

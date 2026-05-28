@@ -190,10 +190,7 @@ public class DocumentHighlighter : ILineTracker, IHighlighter
 
 	private void CheckIsHighlighting()
 	{
-		if (_isDisposed)
-		{
-			throw new ObjectDisposedException("DocumentHighlighter");
-		}
+		ObjectDisposedException.ThrowIf(_isDisposed, this);
 		if (_isHighlighting)
 		{
 			throw new InvalidOperationException("Invalid call - a highlighting operation is currently running.");

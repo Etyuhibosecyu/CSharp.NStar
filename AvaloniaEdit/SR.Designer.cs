@@ -21,7 +21,6 @@ namespace AvaloniaEdit;
 [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
 public class SR
 {
-
 	private static global::System.Resources.ResourceManager resourceMan;
 
 	private static global::System.Globalization.CultureInfo resourceCulture;

@@ -14,7 +14,6 @@ namespace CSharp.NStar;
 
 public static class MemberConverters
 {
-
 	public static String FunctionMapping(String function, List<NStarType> parameterTypes, List<String>? parameters)
 	{
 		var result = function.ToString() switch

@@ -178,7 +178,6 @@ public static class ExtensionMethods
 	#region Snap to device pixels
 	public static Point SnapToDevicePixels(this Point p, Visual targetVisual)
 	{
-
 		var root = TopLevel.GetTopLevel(targetVisual);
 
 		// Get the root control and its scaling

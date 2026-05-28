@@ -89,7 +89,6 @@ public class CompletionWindow : CompletionWindowBase
 
 		var item = CompletionList.SelectedItem;
 		var description = item?.Description;
-		
 
 		if (description != null && TopLevel.GetTopLevel(CompletionList) is Control placementTarget && CompletionList.CurrentList != null)
 		{

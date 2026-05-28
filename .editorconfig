@@ -104,7 +104,7 @@ csharp_style_prefer_switch_expression = true:suggestion
 csharp_style_conditional_delegate_call = true:suggestion
 
 # Предпочтения модификатора
-csharp_prefer_static_local_function = true
+csharp_prefer_static_local_function = true:suggestion
 csharp_preferred_modifier_order = public,private,protected,internal,file,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async
 csharp_style_prefer_readonly_struct = true
 csharp_style_prefer_readonly_struct_member = true
@@ -235,6 +235,9 @@ dotnet_diagnostic.CA1859.severity = silent
 csharp_style_prefer_primary_constructors = true:suggestion
 csharp_style_prefer_unbound_generic_type_in_nameof = true:suggestion
 csharp_prefer_system_threading_lock = true:suggestion
+csharp_style_prefer_implicitly_typed_lambda_expression = true:suggestion
+csharp_style_prefer_simple_property_accessors = true:suggestion
+csharp_prefer_static_anonymous_function = true:suggestion
 
 [*.{cs,vb}]
 dotnet_style_coalesce_expression = true:suggestion
@@ -266,3 +269,10 @@ dotnet_style_operator_placement_when_wrapping = beginning_of_line
 tab_width = 4
 indent_size = 4
 end_of_line = crlf
+insert_final_newline = true
+dotnet_style_readonly_field = true:suggestion
+dotnet_style_parentheses_in_arithmetic_binary_operators = never_if_unnecessary:suggestion
+dotnet_style_parentheses_in_other_binary_operators = never_if_unnecessary:suggestion
+dotnet_style_parentheses_in_relational_binary_operators = never_if_unnecessary:suggestion
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary:suggestion
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:silent

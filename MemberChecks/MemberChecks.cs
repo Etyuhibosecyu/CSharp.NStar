@@ -45,7 +45,7 @@ public static class MemberChecks
 		if (netProperty != null)
 		{
 			property = new(TypeMappingBack(netProperty.PropertyType, netType.GetGenericArguments(), container.ExtraTypes),
-				@static ? PropertyAttributes.Static : PropertyAttributes.None, "null");
+				@static ? PropertyAttributes.Static : PropertyAttributes.None, NullString);
 			return true;
 		}
 		if (!netType.TryWrap(x => x.GetField(name.ToString(),
@@ -55,7 +55,7 @@ public static class MemberChecks
 		if (netField != null)
 		{
 			property = new(TypeMappingBack(netField.FieldType, netType.GetGenericArguments(), container.ExtraTypes),
-				@static ? PropertyAttributes.Static : PropertyAttributes.None, "null");
+				@static ? PropertyAttributes.Static : PropertyAttributes.None, NullString);
 			return true;
 		}
 		if (@static)
@@ -71,7 +71,7 @@ public static class MemberChecks
 			if (handlerType != null)
 			{
 				property = new(TypeMappingBack(handlerType, netType.GetGenericArguments(), container.ExtraTypes),
-					PropertyAttributes.None, "null");
+					PropertyAttributes.None, NullString);
 				return true;
 			}
 		}
@@ -185,7 +185,7 @@ public static class MemberChecks
 			return false;
 		}
 		constant = new(TypeMappingBack(netProperty.FieldType, netType.GetGenericArguments(), container.ExtraTypes),
-			ConstantAttributes.None, new(netProperty.GetValue(null)?.ToString() ?? "null", 0, []));
+			ConstantAttributes.None, new(netProperty.GetValue(null)?.ToString() ?? NullString, 0, []));
 		return true;
 	}
 
@@ -306,7 +306,7 @@ public static class MemberChecks
 				| (parameters[index].ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
 				| (parameters[index].IsOut ? ParameterAttributes.Out : 0)
 				| (Attribute.IsDefined(parameters[index], typeof(ParamArrayAttribute)) ? ParameterAttributes.Params : 0),
-				parameters[index].DefaultValue?.ToString() ?? "null")))));
+				parameters[index].DefaultValue?.ToString() ?? NullString)))));
 		}
 		return true;
 	}
@@ -680,7 +680,7 @@ public static class MemberChecks
 				| (parameters[index].ParameterType.IsByRef ? ParameterAttributes.Ref : 0)
 				| (parameters[index].IsOut ? ParameterAttributes.Out : 0)
 				| (Attribute.IsDefined(parameters[index], typeof(ParamArrayAttribute)) ? ParameterAttributes.Params : 0),
-				parameters[index].DefaultValue?.ToString() ?? "null"))), []));
+				parameters[index].DefaultValue?.ToString() ?? NullString))), []));
 		}
 		return true;
 	}

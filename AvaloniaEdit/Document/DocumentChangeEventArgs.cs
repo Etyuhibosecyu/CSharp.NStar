@@ -24,7 +24,6 @@ namespace AvaloniaEdit.Document;
 /// </summary>
 public class DocumentChangeEventArgs : TextChangeEventArgs
 {
-
 	/// <summary>
 	/// Gets the OffsetChangeMap associated with this document change.
 	/// </summary>

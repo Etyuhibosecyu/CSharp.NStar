@@ -93,8 +93,8 @@ public class LexemStream
 			File.WriteAllLines((Environment.GetEnvironmentVariable("TEMP") ?? throw new InvalidOperationException())
 				+ @"\CSharp.NStar.log", [errorMessage, "The internal exception was:", ex.GetType().Name,
 					"The internal exception message was:", ex.Message,
-					"The underlying internal exception was:", ex.InnerException?.GetType().Name ?? "null",
-					"The underlying internal exception message was:", ex.InnerException?.Message ?? "null"]);
+					"The underlying internal exception was:", ex.InnerException?.GetType().Name ?? NullString,
+					"The underlying internal exception message was:", ex.InnerException?.Message ?? NullString]);
 			wreckOccurred = true;
 			return;
 		}
@@ -112,6 +112,8 @@ public class LexemStream
 			Namespace();
 		else if (IsLexemKeyword(pos, [nameof(Class), nameof(BlockType.Struct), "Megaclass"]))
 			Class();
+		else if (IsCurrentLexemKeyword(nameof(Enum)))
+			Enum();
 		else if (IsCurrentLexemKeyword(nameof(Function)))
 			Function();
 		else if (IsCurrentLexemKeyword(nameof(Constructor)))
@@ -175,7 +177,7 @@ public class LexemStream
 			return;
 		if (lexems[pos].Type == LexemType.Identifier)
 		{
-			name = String.Join(".", [.. names, lexems[pos].String]);
+			name = String.Join(".", names.Append(lexems[pos].String));
 			pos++;
 		}
 		else
@@ -221,7 +223,7 @@ public class LexemStream
 	{
 		pos++;
 		String name;
-		BlockStack container = new(nestedBlocksChain.ToList());
+		BlockStack container = new(nestedBlocksChain);
 		var blockStart = pos - 1;
 		var names = new List<String>();
 		while (pos < lexems.Length - 1 && lexems[pos].Type == LexemType.Identifier
@@ -257,7 +259,7 @@ public class LexemStream
 		prevPos = pos;
 		var attributes = TypeAttributes.None;
 		String name;
-		BlockStack container = new(nestedBlocksChain.ToList());
+		BlockStack container = new(nestedBlocksChain);
 		var classKeywordPos = pos;
 		GetClassStart(out var roundBracketAtStart);
 		var blockStart = prevPos;
@@ -319,8 +321,13 @@ public class LexemStream
 			var savedContainer = container;
 			SubscribeToChanges(name, savedContainer);
 			if (!UnnamedTypeStartIndexes.TryGetValue(container, out var containerStartIndexes))
-				UnnamedTypeStartIndexes.Add(container, containerStartIndexes = []);
-			containerStartIndexes.Add("#" + unnamedIndex);
+			{
+				containerStartIndexes = [];
+				UnnamedTypeStartIndexes.Add(container, containerStartIndexes);
+			}
+			String startIndex = "#" + unnamedIndex;
+			containerStartIndexes.Add(startIndex);
+			SubscribeToChanges(startIndex, savedContainer);
 			blocksToJump.Add((container, bStruct ? nameof(BlockType.Struct) : nameof(Class), name, blockStart, prevPos));
 			return;
 		}
@@ -369,8 +376,7 @@ public class LexemStream
 		prevPos = pos;
 		var attributes = TypeAttributes.Struct;
 		String name;
-		BlockStack container = new(nestedBlocksChain.ToList());
-		var classKeywordPos = pos;
+		BlockStack container = new(nestedBlocksChain);
 		GetClassStart(out var roundBracketAtStart);
 		var blockStart = prevPos;
 		attributes = (TypeAttributes)GetAccessMethod((int)attributes);
@@ -400,8 +406,13 @@ public class LexemStream
 			var savedContainer = container;
 			SubscribeToChanges(name, savedContainer);
 			if (!UnnamedTypeStartIndexes.TryGetValue(container, out var containerStartIndexes))
-				UnnamedTypeStartIndexes.Add(container, containerStartIndexes = []);
-			containerStartIndexes.Add("#" + unnamedIndex);
+			{
+				containerStartIndexes = [];
+				UnnamedTypeStartIndexes.Add(container, containerStartIndexes);
+			}
+			String startIndex = "#" + unnamedIndex;
+			containerStartIndexes.Add(startIndex);
+			SubscribeToChanges(startIndex, savedContainer);
 			blocksToJump.Add((container, nameof(Record), name, blockStart, prevPos));
 			return;
 		}
@@ -461,8 +472,14 @@ public class LexemStream
 		});
 	}
 
+	private void Enum()
+	{
+	}
+
 	protected static void SubscribeToChanges(String name, BlockStack container) => name.ListChanged += s =>
 	{
+		if (s.Length == 0)
+			return;
 		UserDefinedTypes[(container, s)] = UserDefinedTypes
 			.Find(x => x.Key.Container.Equals(container) && x.Key.Type == s).Value;
 		var nestedTypes = UserDefinedTypes.FindAll(x => x.Key.Container.Any(y => y.Name == s));
@@ -474,9 +491,13 @@ public class LexemStream
 		var functions = UserDefinedFunctions.FindAll(x => x.Key.Any(y => y.Name == s));
 		foreach (var x in functions)
 			UserDefinedFunctions[x.Key] = x.Value;
+		var functionIndexes = UserDefinedFunctionIndexes.FindAll(x => x.Key.Any(y => y.Name == s));
+		foreach (var x in functionIndexes)
+			UserDefinedFunctionIndexes[x.Key] = x.Value;
 		var constructors = UserDefinedConstructors.FindAll(x => x.Key.Any(y => y.Name == s));
 		foreach (var x in constructors)
 			UserDefinedConstructors[x.Key] = x.Value;
+		SubscribeToChanges(s, container);
 	};
 
 	private void Function()
@@ -484,7 +505,7 @@ public class LexemStream
 		prevPos = pos;
 		var attributes = FunctionAttributes.None;
 		String name;
-		BlockStack container = new(nestedBlocksChain.ToList());
+		BlockStack container = new(nestedBlocksChain);
 		GetBlockStart();
 		attributes = (FunctionAttributes)GetAccessMethod((int)attributes);
 		if (IsPos2LexemKeyword("const"))
@@ -520,7 +541,7 @@ public class LexemStream
 			attributes |= (FunctionAttributes)AddAttribute("multiconst", FunctionAttributes.Multiconst);
 		}
 		var blockStart = prevPos;
-		if (IsPos2LexemKeyword("null"))
+		if (IsPos2LexemKeyword(NullString))
 		{
 			prevPos++;
 			registeredTypes.Add((container, "", prevPos - 1, prevPos));
@@ -569,7 +590,10 @@ public class LexemStream
 			UserDefinedFunctions.TryAdd(container, []);
 			var containerFunctions = UserDefinedFunctions[container];
 			if (!containerFunctions.TryGetValue(name, out var nameFunctions))
-				containerFunctions.Add(name, nameFunctions = []);
+			{
+				nameFunctions = [];
+				containerFunctions.Add(name, nameFunctions);
+			}
 			if (containerFunctions.Sum(x => x.Value.Length) == CodeStyleRules.MaxFunctionsInClass
 				&& CreateVar(blocksToJump.FindLastIndex(x => container.TryPeek(out var block)
 				&& RedStarLinq.Equals(x.Container, container.SkipLast(1)) && x.Name == block.Name), out var foundIndex) >= 0
@@ -609,7 +633,7 @@ public class LexemStream
 		}
 		prevPos = pos;
 		var attributes = ConstructorAttributes.None;
-		BlockStack container = new(nestedBlocksChain.ToList());
+		BlockStack container = new(nestedBlocksChain);
 		GetBlockStart();
 		var blockStart = prevPos;
 		attributes = (ConstructorAttributes)GetAccessMethod((int)attributes);
@@ -915,7 +939,6 @@ public class LexemStream
 
 	public bool IsCurrentLexemTerminator()
 	{
-
 		if (IsLexemOther(pos, ";"))
 		{
 			pos++;

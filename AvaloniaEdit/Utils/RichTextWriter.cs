@@ -45,7 +45,7 @@ abstract class RichTextWriter : TextWriter
 		foreach (var section in richText.GetHighlightedSections(offset, length))
 		{
 			BeginSpan(section.Color);
-			Write(richText.Text.Substring(section.Offset, section.Length));
+			Write(richText.Text.AsSpan(section.Offset, section.Length));
 			EndSpan();
 		}
 	}

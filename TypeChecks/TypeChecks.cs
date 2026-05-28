@@ -42,7 +42,7 @@ public static class TypeChecks
 			&& containerConstants.TryGetValue(typeName, out var constant))
 		{
 			if (TypeIsPrimitive(constant.NStarType.MainType) && constant.NStarType.MainType.TryPeek(out var block)
-				&& block.Name == "typename" && constant.NStarType.ExtraTypes.Length == 0)
+				&& block.Name == RecursiveTypeName && constant.NStarType.ExtraTypes.Length == 0)
 				return true;
 			if (constant.NStarType.MainType.Equals(DictionaryBlockStack) && constant.NStarType.ExtraTypes.Length == 2
 				&& constant.NStarType.ExtraTypes[1].Name == "type"
@@ -55,10 +55,10 @@ public static class TypeChecks
 		}
 		if (Variables.TryGetValue(container, out var containerVariables)
 			&& containerVariables.TryGetValue(typeName, out var variableName))
-			return TypeIsPrimitive(variableName.MainType) && variableName.MainType.Peek().Name == "typename";
+			return TypeIsPrimitive(variableName.MainType) && variableName.MainType.Peek().Name == RecursiveTypeName;
 		if (UserDefinedProperties.TryGetValue(container, out var containerProperties)
 			&& containerProperties.TryGetValue(typeName, out var a))
-			return TypeIsPrimitive(a.NStarType.MainType) && a.NStarType.MainType.Peek().Name == "typename"
+			return TypeIsPrimitive(a.NStarType.MainType) && a.NStarType.MainType.Peek().Name == RecursiveTypeName
 				&& a.NStarType.ExtraTypes.Length == 0;
 		return false;
 	}

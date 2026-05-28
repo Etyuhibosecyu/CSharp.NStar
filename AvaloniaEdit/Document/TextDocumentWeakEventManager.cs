@@ -71,7 +71,6 @@ public static class TextDocumentWeakEventManager
 		protected override void StartListening(TextDocument source) => source.LineCountChanged += DeliverEvent;
 
 		protected override void StopListening(TextDocument source) => source.LineCountChanged -= DeliverEvent;
-
 	}
 
 	/// <summary>

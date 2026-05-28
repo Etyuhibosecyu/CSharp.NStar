@@ -17,8 +17,8 @@ using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using NStar.Mpir;
 using NStar.BufferLib;
+using NStar.Mpir;
 using NStar.ParallelHS;
 using NStar.RemoveDoubles;
 using NStar.SortedSets;
@@ -61,15 +61,15 @@ public static class BuiltInMemberCollections
 {
 	private static readonly List<String> NoExtraTypes = [];
 	private static readonly List<String> ExtraTypesT = ["T"];
-	private static readonly BlockStack ExtendedTypeBool = new([new(BlockType.Primitive, "bool", 1)]);
+	private static readonly BlockStack ExtendedTypeBool = new([new(BlockType.Primitive, BoolTypeName, 1)]);
 	private static readonly BlockStack ExtendedTypeIFloatNumber = new([new(BlockType.Interface, "IFloatNumber", 1)]);
 	private static readonly BlockStack ExtendedTypeIIncreasable = new([new(BlockType.Interface, "IIncreasable", 1)]);
 	private static readonly BlockStack ExtendedTypeIIntegerNumber = new([new(BlockType.Interface, "IIntegerNumber", 1)]);
 	private static readonly BlockStack ExtendedTypeINumber = new([new(BlockType.Interface, "INumber", 1)]);
 	private static readonly BlockStack ExtendedTypeISignedIntegerNumber = new([new(BlockType.Interface, "ISignedIntegerNumber", 1)]);
-	private static readonly BlockStack ExtendedTypeInt = new([new(BlockType.Primitive, "int", 1)]);
+	private static readonly BlockStack ExtendedTypeInt = new([new(BlockType.Primitive, IntTypeName, 1)]);
 	private static readonly BlockStack ExtendedTypeList = new([new(BlockType.Primitive, "list", 1)]);
-	private static readonly BlockStack ExtendedTypeString = new([new(BlockType.Primitive, "string", 1)]);
+	private static readonly BlockStack ExtendedTypeString = new([new(BlockType.Primitive, StringTypeName, 1)]);
 	private static readonly BranchCollection BranchCollectionT = [new("type", 0, []) { Extra = NStarTypeT }];
 	private static readonly NStarType NStarTypeT = new(new([new(BlockType.Extra, "T", 1)]), NoBranches);
 	private static readonly NStarType CharListType = GetListType(CharType);
@@ -87,21 +87,21 @@ public static class BuiltInMemberCollections
 	public static SortedSet<String> Keywords { get; } = new(
 		"_", "abstract", "break", "Class", "const", "Constructor", "continue",
 		"Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent", "extern",
-		"false", "for", "Function", "if", "Interface", "internal", "lock", "loop", 
-		"Megaclass", "multiconst", "Namespace", "new", "null", "Operator", "out",
+		"false", "for", "Function", "if", "Interface", "internal", "lock", "loop",
+		"Megaclass", "multiconst", "Namespace", "new", NullString, "Operator", "out",
 		"params", "private", "protected", "public", "readonly", "ref", "repeat", "return",
 		"sealed", "static", "Struct", "switch", "this", "throw", "true", "using", "while"
 	);
 
 	public static SortedSet<String> EscapedKeywords { get; } = new(
-		"abstract", "as", "base", "bool", "break", "byte",
-		"case", "catch", "char", "checked", "class", "const", "continue",
-		"decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit", "extern",
+		"abstract", "as", "base", BoolTypeName, "break", ByteTypeName,
+		"case", "catch", CharTypeName, "checked", "class", "const", "continue",
+		DecimalTypeName, DefaultConst, "delegate", "do", "double", "else", "enum", "event", "explicit", "extern",
 		"false", "finally", "fixed", "float", "for", "foreach", "goto",
-		"if", "implicit", "in", "int", "interface", "internal", "is",
-		"lock", "long", "namespace", "new", "null", "object", "operator", "out", "override",
+		"if", "implicit", "in", IntTypeName, "interface", "internal", "is",
+		"lock", "long", "namespace", "new", NullString, ObjectTypeName, "operator", "out", "override",
 		"params", "private", "protected", "public", "readonly", "ref", "return",
-		"sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string", "struct", "switch",
+		"sbyte", "sealed", "short", "sizeof", "stackalloc", "static", StringTypeName, "struct", "switch",
 		"this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using",
 		"virtual", "void", "volatile", "while"
 	);
@@ -115,7 +115,7 @@ public static class BuiltInMemberCollections
 	/// </summary>
 	public static TypeSortedList<TypeVariables> Variables { get; } = [];
 
-	public static SortedSet<String> Namespaces { get; } = new("System", "System.Collections", "System.GUI", "System.IO", "System.Threading");
+	public static SortedSet<String> Namespaces { get; } = new(SystemName, "System.Collections", "System.GUI", "System.IO", "System.Threading");
 
 	public static G.HashSet<String> ImportedNamespaces { get; } = [];
 
@@ -123,16 +123,16 @@ public static class BuiltInMemberCollections
 
 	public static SortedSet<String> ExplicitlyConnectedNamespaces { get; } = [];
 
-	public static SortedDictionary<String, Type> PrimitiveTypes { get; } = new() 
+	public static SortedDictionary<String, Type> PrimitiveTypes { get; } = new()
 	{
-		{ "null", typeof(void) }, { "object", typeof(object) }, { "bool", typeof(bool) }, { "byte", typeof(byte) },
-		{ "short char", typeof(byte) }, { "short int", typeof(short) }, { "unsigned short int", typeof(ushort) },
-		{ "char", typeof(char) }, { "int", typeof(int) }, { "unsigned int", typeof(uint) },
-		{ "long char", typeof(uint) }, { "long int", typeof(long) },
-		{ "DateTime", typeof(DateTime) }, { "TimeSpan", typeof(TimeSpan) }, { "unsigned long int", typeof(long) },
-		{ "real", typeof(double) }, { "long long", typeof(MpzT) }, { "unsigned long long", typeof(MpuT) },
-		{ "decimal", typeof(decimal) }, { "complex", typeof(Complex) },
-		{ "typename", typeof(Type) }, { "string", typeof(String) }, { "index", typeof(Index) }, { "range", typeof(Range) },
+		{ NullString, typeof(void) }, { ObjectTypeName, typeof(object) }, { BoolTypeName, typeof(bool) }, { ByteTypeName, typeof(byte) },
+		{ "short char", typeof(byte) }, { ShortIntTypeName, typeof(short) }, { UnsignedShortIntTypeName, typeof(ushort) },
+		{ CharTypeName, typeof(char) }, { IntTypeName, typeof(int) }, { UnsignedIntTypeName, typeof(uint) },
+		{ "long char", typeof(uint) }, { LongIntTypeName, typeof(long) },
+		{ nameof(DateTime), typeof(DateTime) }, { "TimeSpan", typeof(TimeSpan) }, { UnsignedLongIntTypeName, typeof(long) },
+		{ RealTypeName, typeof(double) }, { LongLongTypeName, typeof(MpzT) }, { UnsignedLongLongTypeName, typeof(MpuT) },
+		{ DecimalTypeName, typeof(decimal) }, { ComplexTypeName, typeof(Complex) },
+		{ RecursiveTypeName, typeof(Type) }, { StringTypeName, typeof(String) }, { "index", typeof(Index) }, { "range", typeof(Range) },
 		{ "nint", typeof(nint) }, { "list", typeof(List<>) }, { "dynamic", typeof(void) }, { "var", typeof(void) },
 	};
 
@@ -145,32 +145,32 @@ public static class BuiltInMemberCollections
 		{ ("", nameof(IEquatable<>)), typeof(IEquatable<>) },
 		{ ("Environment", nameof(Environment.SpecialFolder)), typeof(Environment.SpecialFolder) },
 		{ ("Environment", nameof(Environment.SpecialFolderOption)), typeof(Environment.SpecialFolderOption) },
-		{ ("System", nameof(ArgumentException)), typeof(ArgumentException) },
-		{ ("System", nameof(Convert)), typeof(Convert) },
-		{ ("System", nameof(DateTimeKind)), typeof(DateTimeKind) },
-		{ ("System", nameof(DayOfWeek)), typeof(DayOfWeek) },
-		{ ("System", nameof(Environment)), typeof(Environment) },
-		{ ("System", nameof(EventArgs)), typeof(EventArgs) },
-		{ ("System", nameof(EventHandler)), typeof(EventHandler<>) },
-		{ ("System", nameof(Exception)), typeof(Exception) },
-		{ ("System", "IFloatNumber"), typeof(IFloatingPointConstants<>) },
-		{ ("System", "IIntegerNumber"), typeof(IBinaryInteger<>) },
-		{ ("System", nameof(IndexOutOfRangeException)), typeof(IndexOutOfRangeException) },
-		{ ("System", "INumber"), typeof(INumberBase<>) },
-		{ ("System", nameof(InvalidOperationException)), typeof(InvalidOperationException) },
-		{ ("System", nameof(ISignedNumber<>)), typeof(ISignedNumber<>) },
-		{ ("System", nameof(IUnsignedNumber<>)), typeof(IUnsignedNumber<>) },
-		{ ("System", nameof(NullReferenceException)), typeof(NullReferenceException) },
-		{ ("System", nameof(OverflowException)), typeof(OverflowException) },
-		{ ("System", nameof(Predicate<>)), typeof(Predicate<>) },
-		{ ("System", nameof(ReadOnlySpan<>)), typeof(ReadOnlySpan<>) },
-		{ ("System", nameof(RedStarLinq)), typeof(RedStarLinq) },
-		{ ("System", nameof(RedStarLinqDictionaries)), typeof(RedStarLinqDictionaries) },
-		{ ("System", nameof(RedStarLinqExtras)), typeof(RedStarLinqExtras) },
-		{ ("System", nameof(RedStarLinqParallel)), typeof(RedStarLinqParallel) },
-		{ ("System", nameof(RedStarLinqMath)), typeof(RedStarLinqMath) },
-		{ ("System", nameof(RedStarLinqRemoveDoubles)), typeof(RedStarLinqRemoveDoubles) },
-		{ ("System", nameof(Span<>)), typeof(Span<>) },
+		{ (SystemName, nameof(ArgumentException)), typeof(ArgumentException) },
+		{ (SystemName, nameof(Convert)), typeof(Convert) },
+		{ (SystemName, nameof(DateTimeKind)), typeof(DateTimeKind) },
+		{ (SystemName, nameof(DayOfWeek)), typeof(DayOfWeek) },
+		{ (SystemName, nameof(Environment)), typeof(Environment) },
+		{ (SystemName, nameof(EventArgs)), typeof(EventArgs) },
+		{ (SystemName, nameof(EventHandler)), typeof(EventHandler<>) },
+		{ (SystemName, nameof(Exception)), typeof(Exception) },
+		{ (SystemName, "IFloatNumber"), typeof(IFloatingPointConstants<>) },
+		{ (SystemName, "IIntegerNumber"), typeof(IBinaryInteger<>) },
+		{ (SystemName, nameof(IndexOutOfRangeException)), typeof(IndexOutOfRangeException) },
+		{ (SystemName, nameof(INumber<>)), typeof(INumberBase<>) },
+		{ (SystemName, nameof(InvalidOperationException)), typeof(InvalidOperationException) },
+		{ (SystemName, nameof(ISignedNumber<>)), typeof(ISignedNumber<>) },
+		{ (SystemName, nameof(IUnsignedNumber<>)), typeof(IUnsignedNumber<>) },
+		{ (SystemName, nameof(NullReferenceException)), typeof(NullReferenceException) },
+		{ (SystemName, nameof(OverflowException)), typeof(OverflowException) },
+		{ (SystemName, nameof(Predicate<>)), typeof(Predicate<>) },
+		{ (SystemName, nameof(ReadOnlySpan<>)), typeof(ReadOnlySpan<>) },
+		{ (SystemName, nameof(RedStarLinq)), typeof(RedStarLinq) },
+		{ (SystemName, nameof(RedStarLinqDictionaries)), typeof(RedStarLinqDictionaries) },
+		{ (SystemName, nameof(RedStarLinqExtras)), typeof(RedStarLinqExtras) },
+		{ (SystemName, nameof(RedStarLinqParallel)), typeof(RedStarLinqParallel) },
+		{ (SystemName, nameof(RedStarLinqMath)), typeof(RedStarLinqMath) },
+		{ (SystemName, nameof(RedStarLinqRemoveDoubles)), typeof(RedStarLinqRemoveDoubles) },
+		{ (SystemName, nameof(Span<>)), typeof(Span<>) },
 		{ ("System.Collections", nameof(BaseDictionary<,,>)), typeof(BaseDictionary<,,>) },
 		{ ("System.Collections", nameof(BaseHashSet<,>)), typeof(BaseHashSet<,>) },
 		{ ("System.Collections", nameof(BaseIndexable<,>)), typeof(BaseIndexable<,>) },
@@ -312,11 +312,11 @@ public static class BuiltInMemberCollections
 	public static ExtendedTypesCollection ExtendedTypes { get; } = new(new BlockStackAndStringComparer())
 	{
 		{
-			(new([new(BlockType.Namespace, "System", 1)]), nameof(Action)),
+			(new([new(BlockType.Namespace, SystemName, 1)]), nameof(Action)),
 			([new(true, RecursiveType, "Types")], TypeAttributes.Delegate)
 		},
 		{
-			(new([new(BlockType.Namespace, "System", 1)]), nameof(Func<>)),
+			(new([new(BlockType.Namespace, SystemName, 1)]), nameof(Func<>)),
 			new([new(false, RecursiveType, "TReturn"), new(true, RecursiveType, "Types")], TypeAttributes.Delegate)
 		}
 	};
@@ -366,20 +366,20 @@ public static class BuiltInMemberCollections
 			([], "IFloatNumber"), (ExtraTypesT, typeof(IFloatingPoint<>))
 		},
 		{
-			([], "ISignedIntegerNumber"), (ExtraTypesT, typeof(ISignedNumber<>)) 
+			([], "ISignedIntegerNumber"), (ExtraTypesT, typeof(ISignedNumber<>))
 		},
 		{
 			([], "IUnsignedIntegerNumber"), (ExtraTypesT, typeof(IUnsignedNumber<>))
 		},
 		{
-			("System.Collections", nameof(ICollection)), (ExtraTypesT, typeof(ICollection<>)) 
-		}, 
+			("System.Collections", nameof(ICollection)), (ExtraTypesT, typeof(ICollection<>))
+		},
 		{
 			("System.Collections", "ICollectionRaw"), (NoExtraTypes, typeof(System.Collections.ICollection))
 		},
 		{
 			("System.Collections", "IComparer"), (ExtraTypesT, typeof(G.IComparer<>))
-		}, 
+		},
 		{
 			("System.Collections", nameof(IDictionary)), (["TKey", "TValue"], typeof(G.IDictionary<,>))
 		},
@@ -387,24 +387,24 @@ public static class BuiltInMemberCollections
 			("System.Collections", "IDictionaryRaw"), (NoExtraTypes, typeof(System.Collections.IDictionary))
 		},
 		{
-			("System.Collections", nameof(G.IEnumerable<>)), (ExtraTypesT, typeof(G.IEnumerable<>)) 
-		}, 
-		{ 
-			("System.Collections", "IEnumerableRaw"), (NoExtraTypes, typeof(System.Collections.IEnumerable)) 
-		}, 
-		{ 
+			("System.Collections", nameof(G.IEnumerable<>)), (ExtraTypesT, typeof(G.IEnumerable<>))
+		},
+		{
+			("System.Collections", "IEnumerableRaw"), (NoExtraTypes, typeof(System.Collections.IEnumerable))
+		},
+		{
 			("System.Collections", "IEqualityComparer"), (ExtraTypesT, typeof(G.IEqualityComparer<>))
 		},
 		{
-			("System.Collections", nameof(IList)), (ExtraTypesT, typeof(IList<>)) 
+			("System.Collections", nameof(IList)), (ExtraTypesT, typeof(IList<>))
 		},
-		{ 
+		{
 			("System.Collections", "IListRaw"), (NoExtraTypes, typeof(G.IList<>))
 		},
 		{
-			("System.Collections", nameof(IReadOnlyList<>)), (ExtraTypesT, typeof(IReadOnlyList<>)) 
+			("System.Collections", nameof(IReadOnlyList<>)), (ExtraTypesT, typeof(IReadOnlyList<>))
 		},
-		{ 
+		{
 			("System.Collections", "IReadOnlyListRaw"), (NoExtraTypes, typeof(G.IReadOnlyList<>))
 		},
 	};
@@ -444,16 +444,16 @@ public static class BuiltInMemberCollections
 				[new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
 		},
 		{
-			"Ceil", new(ExtraTypesT, "int", NoExtraTypes, FunctionAttributes.Multiconst,
+			"Ceil", new(ExtraTypesT, IntTypeName, NoExtraTypes, FunctionAttributes.Multiconst,
 				[new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
 		},
 		{
-			"Chain", new(NoExtraTypes, "list", ["int"], FunctionAttributes.Multiconst,
-				[new("int", "start", NoExtraTypes, ParameterAttributes.None, []), new("int", "end", NoExtraTypes, ParameterAttributes.None, [])])
+			"Chain", new(NoExtraTypes, "list", [IntTypeName], FunctionAttributes.Multiconst,
+				[new(IntTypeName, "start", NoExtraTypes, ParameterAttributes.None, []), new(IntTypeName, "end", NoExtraTypes, ParameterAttributes.None, [])])
 		},
 		{
-			"Choose", new(NoExtraTypes, "object", NoExtraTypes, FunctionAttributes.None,
-				[new("object", "variants", NoExtraTypes, ParameterAttributes.Params, [])])
+			"Choose", new(NoExtraTypes, ObjectTypeName, NoExtraTypes, FunctionAttributes.None,
+				[new(ObjectTypeName, "variants", NoExtraTypes, ParameterAttributes.Params, [])])
 		},
 		{
 			"Clamp", new(ExtraTypesT, "INumber", NoExtraTypes, FunctionAttributes.Multiconst,
@@ -466,15 +466,15 @@ public static class BuiltInMemberCollections
 				[new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
 		},
 		{
-			"Fibonacci", new(NoExtraTypes, "real", NoExtraTypes, FunctionAttributes.Multiconst,
-				[new("int", "n", NoExtraTypes, ParameterAttributes.None, [])])
+			"Fibonacci", new(NoExtraTypes, RealTypeName, NoExtraTypes, FunctionAttributes.Multiconst,
+				[new(IntTypeName, "n", NoExtraTypes, ParameterAttributes.None, [])])
 		},
 		{
 			"Fill", new(ExtraTypesT, "list", ExtraTypesT, FunctionAttributes.Multiconst,
-				[new("T", "element", NoExtraTypes, ParameterAttributes.None, []), new("int", "count", NoExtraTypes, ParameterAttributes.None, [])])
+				[new("T", "element", NoExtraTypes, ParameterAttributes.None, []), new(IntTypeName, "count", NoExtraTypes, ParameterAttributes.None, [])])
 		},
 		{
-			"Floor", new(ExtraTypesT, "int", NoExtraTypes, FunctionAttributes.Multiconst,
+			"Floor", new(ExtraTypesT, IntTypeName, NoExtraTypes, FunctionAttributes.Multiconst,
 				[new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
 		},
 		{
@@ -482,20 +482,20 @@ public static class BuiltInMemberCollections
 				[new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
 		},
 		{
-			"IntRandom", new(NoExtraTypes, "int", NoExtraTypes, FunctionAttributes.None,
-				[new("int", "max", NoExtraTypes, ParameterAttributes.None, [])])
+			"IntRandom", new(NoExtraTypes, IntTypeName, NoExtraTypes, FunctionAttributes.None,
+				[new(IntTypeName, "max", NoExtraTypes, ParameterAttributes.None, [])])
 		},
 		{
-			"IntToReal", new(ExtraTypesT, "real", NoExtraTypes, FunctionAttributes.Multiconst,
+			"IntToReal", new(ExtraTypesT, RealTypeName, NoExtraTypes, FunctionAttributes.Multiconst,
 				[new("System.IIntegerNumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
 		},
 		{
-			"IsPrime", new(NoExtraTypes, "bool", NoExtraTypes, FunctionAttributes.None,
-				[new("int", "n", NoExtraTypes, ParameterAttributes.None, [])])
+			"IsPrime", new(NoExtraTypes, BoolTypeName, NoExtraTypes, FunctionAttributes.None,
+				[new(IntTypeName, "n", NoExtraTypes, ParameterAttributes.None, [])])
 		},
 		{
 			"Log", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
-				[new("real", "x", NoExtraTypes, ParameterAttributes.None, []),
+				[new(RealTypeName, "x", NoExtraTypes, ParameterAttributes.None, []),
 				new("System.INumber", "y", ExtraTypesT, ParameterAttributes.None, [])])
 		},
 		{
@@ -511,30 +511,30 @@ public static class BuiltInMemberCollections
 				[new("IComparable", "source", ExtraTypesT, ParameterAttributes.Params, [])])
 		},
 		{
-			"Q", new(NoExtraTypes, "string", NoExtraTypes, FunctionAttributes.None, [])
+			"Q", new(NoExtraTypes, StringTypeName, NoExtraTypes, FunctionAttributes.None, [])
 		},
 		{
-			"Random", new(NoExtraTypes, "real", NoExtraTypes, FunctionAttributes.None,
-				[new("real", "max", NoExtraTypes, ParameterAttributes.None, [])])
+			"Random", new(NoExtraTypes, RealTypeName, NoExtraTypes, FunctionAttributes.None,
+				[new(RealTypeName, "max", NoExtraTypes, ParameterAttributes.None, [])])
 		},
 		{
 			"RealRemainder", new(ExtraTypesT, "T", NoExtraTypes, FunctionAttributes.Multiconst,
 				[new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, []),
-				new("real", "y", ExtraTypesT, ParameterAttributes.None, [])])
+				new(RealTypeName, "y", ExtraTypesT, ParameterAttributes.None, [])])
 		},
 		{
-			"RGB", new(NoExtraTypes, "int", NoExtraTypes, FunctionAttributes.Multiconst,
-				[new("byte", "red", NoExtraTypes, ParameterAttributes.None, []),
-				new("byte", "green", NoExtraTypes, ParameterAttributes.None, []),
-				new("byte", "blue", NoExtraTypes, ParameterAttributes.None, [])])
+			"RGB", new(NoExtraTypes, IntTypeName, NoExtraTypes, FunctionAttributes.Multiconst,
+				[new(ByteTypeName, "red", NoExtraTypes, ParameterAttributes.None, []),
+				new(ByteTypeName, "green", NoExtraTypes, ParameterAttributes.None, []),
+				new(ByteTypeName, "blue", NoExtraTypes, ParameterAttributes.None, [])])
 		},
 		{
-			"Round", new(ExtraTypesT, "int", NoExtraTypes, FunctionAttributes.Multiconst,
+			"Round", new(ExtraTypesT, IntTypeName, NoExtraTypes, FunctionAttributes.Multiconst,
 				[new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, []),
-				new("int", "digits_after_dot", NoExtraTypes, ParameterAttributes.Optional, "0")])
+				new(IntTypeName, "digits_after_dot", NoExtraTypes, ParameterAttributes.Optional, "0")])
 		},
 		{
-			"Sign", new(ExtraTypesT, "short int", NoExtraTypes, FunctionAttributes.Multiconst,
+			"Sign", new(ExtraTypesT, ShortIntTypeName, NoExtraTypes, FunctionAttributes.Multiconst,
 				[new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
 		},
 		{
@@ -542,7 +542,7 @@ public static class BuiltInMemberCollections
 				[new("System.INumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
 		},
 		{
-			"Truncate", new(ExtraTypesT, "int", NoExtraTypes, FunctionAttributes.Multiconst,
+			"Truncate", new(ExtraTypesT, IntTypeName, NoExtraTypes, FunctionAttributes.Multiconst,
 				[new("System.IFloatNumber", "x", ExtraTypesT, ParameterAttributes.None, [])])
 		}
 	};
@@ -619,7 +619,7 @@ public static class BuiltInMemberCollections
 		{
 			"!!", new(new BlockStackComparer())
 			{
-				{ GetPrimitiveBlockStack("bool"), new() { (true, BoolType, BoolType) } }
+				{ GetPrimitiveBlockStack(BoolTypeName), new() { (true, BoolType, BoolType) } }
 			}
 		},
 		{
@@ -672,7 +672,7 @@ public static class BuiltInMemberCollections
 		{
 			"==", new(new BlockStackComparer())
 			{
-				{ GetPrimitiveBlockStack("object"), new() { (BoolType, ObjectType, ObjectType) } }
+				{ GetPrimitiveBlockStack(ObjectTypeName), new() { (BoolType, ObjectType, ObjectType) } }
 			}
 		},
 		{
@@ -704,7 +704,7 @@ public static class BuiltInMemberCollections
 		{
 			"!=", new(new BlockStackComparer())
 			{
-				{ GetPrimitiveBlockStack("object"), new() { (BoolType, ObjectType, ObjectType) } }
+				{ GetPrimitiveBlockStack(ObjectTypeName), new() { (BoolType, ObjectType, ObjectType) } }
 			}
 		},
 		{
@@ -758,21 +758,21 @@ public static class BuiltInMemberCollections
 	/// Sorted by Container, also contains Name and Value.
 	/// </summary>
 	public static TypeSortedList<List<(String Name, int Value)>> EnumConstants { get; } = new()
-	{ 
+	{
 		{
-			new([new(BlockType.Namespace, "System", 1), new(BlockType.Enum, "DateTimeKind", 1)]), new() 
+			new([new(BlockType.Namespace, SystemName, 1), new(BlockType.Enum, "DateTimeKind", 1)]), new()
 			{
 				("Local", (int)DateTimeKind.Local), ("Unspecified", (int)DateTimeKind.Unspecified),
 				("UTC", (int)DateTimeKind.Utc)
 			}
 		},
 		{
-			new([new(BlockType.Namespace, "System", 1), new(BlockType.Enum, "DayOfWeek", 1)]), new()
+			new([new(BlockType.Namespace, SystemName, 1), new(BlockType.Enum, "DayOfWeek", 1)]), new()
 			{
-				("Friday", (int)DayOfWeek.Friday), ("Monday", (int)DayOfWeek.Monday), ("Saturday", (int)DayOfWeek.Saturday), 
+				("Friday", (int)DayOfWeek.Friday), ("Monday", (int)DayOfWeek.Monday), ("Saturday", (int)DayOfWeek.Saturday),
 				("Sunday", (int)DayOfWeek.Sunday), ("Thursday", (int)DayOfWeek.Thursday),
 				("Tuesday", (int)DayOfWeek.Tuesday), ("Wednesday", (int)DayOfWeek.Wednesday)
-			} 
+			}
 		}
 	};
 
@@ -793,18 +793,18 @@ public static class BuiltInMemberCollections
 			}
 		},
 		{
-			GetPrimitiveBlockStack("byte"), new()
+			GetPrimitiveBlockStack(ByteTypeName), new()
 			{
 				{ NoBranches, new() { (UnsignedIntType, false), (IntType, false), (ShortIntType, false), (GetPrimitiveType("short char"), true), (BoolType, true) } }
 			}
 		},
 		{
-			GetPrimitiveBlockStack("char"), new() {
+			GetPrimitiveBlockStack(CharTypeName), new() {
 				{ NoBranches, new() { (UnsignedShortIntType, false), (StringType, false) } }
 			}
 		},
 		{
-			GetPrimitiveBlockStack("complex"), new()
+			GetPrimitiveBlockStack(ComplexTypeName), new()
 			{
 				{ NoBranches, new() { } }
 			}
@@ -818,7 +818,7 @@ public static class BuiltInMemberCollections
 		{
 			ExtendedTypeList, new()
 			{
-				{ [new("type", 0, []) { Extra = GetPrimitiveType("char") }], new() { (StringType, false) } }
+				{ [new("type", 0, []) { Extra = GetPrimitiveType(CharTypeName) }], new() { (StringType, false) } }
 			}
 		},
 		{
@@ -828,25 +828,25 @@ public static class BuiltInMemberCollections
 			}
 		},
 		{
-			GetPrimitiveBlockStack("long int"), new()
+			GetPrimitiveBlockStack(LongIntTypeName), new()
 			{
 				{ NoBranches, new() { (LongLongType, false), (UnsignedLongIntType, true), (BoolType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (RealType, true) } }
 			}
 		},
 		{
-			GetPrimitiveBlockStack("long long"), new()
+			GetPrimitiveBlockStack(LongLongTypeName), new()
 			{
 				{ NoBranches, new() { (BoolType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (UnsignedLongIntType, true), (UnsignedLongLongType, true), (RealType, true) } }
 			}
 		},
 		{
-			GetPrimitiveBlockStack("unsigned long long"), new()
+			GetPrimitiveBlockStack(UnsignedLongLongTypeName), new()
 			{
 				{ NoBranches, new() { (LongLongType, false), (BoolType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (UnsignedLongIntType, true), (RealType, true) } }
 			}
 		},
 		{
-			GetPrimitiveBlockStack("real"), new()
+			GetPrimitiveBlockStack(RealTypeName), new()
 			{
 				{ NoBranches, new() { (ComplexType, false), (BoolType, true), (UnsignedLongIntType, true), (LongIntType, true), (UnsignedIntType, true), (IntType, true) } }
 			}
@@ -858,7 +858,7 @@ public static class BuiltInMemberCollections
 			}
 		},
 		{
-			GetPrimitiveBlockStack("short int"), new()
+			GetPrimitiveBlockStack(ShortIntTypeName), new()
 			{
 				{ NoBranches, new() { (LongIntType, false), (RealType, false), (IntType, false), (UnsignedShortIntType, false), (BoolType, true), (ByteType, true), (UnsignedIntType, true), (UnsignedLongIntType, true) } }
 			}
@@ -870,19 +870,19 @@ public static class BuiltInMemberCollections
 			}
 		},
 		{
-			GetPrimitiveBlockStack("unsigned int"), new()
+			GetPrimitiveBlockStack(UnsignedIntTypeName), new()
 			{
 				{ NoBranches, new() { (RealType, false), (UnsignedLongIntType, false), (LongIntType, false), (BoolType, true), (ByteType, true), (UnsignedShortIntType, true), (ShortIntType, true), (IntType, true) } }
 			}
 		},
 		{
-			GetPrimitiveBlockStack("unsigned long int"), new()
+			GetPrimitiveBlockStack(UnsignedLongIntTypeName), new()
 			{
 				{ NoBranches, new() { (UnsignedLongLongType, false), (BoolType, true), (UnsignedShortIntType, true), (ShortIntType, true), (UnsignedIntType, true), (IntType, true), (LongIntType, true), (RealType, true) } }
 			}
 		},
 		{
-			GetPrimitiveBlockStack("unsigned short int"), new()
+			GetPrimitiveBlockStack(UnsignedShortIntTypeName), new()
 			{
 				{ NoBranches, new() { (UnsignedLongIntType, false), (LongIntType, false), (RealType, false), (UnsignedIntType, false), (IntType, false), (BoolType, true), (ByteType, true), (ShortIntType, true) } }
 			}
@@ -892,16 +892,16 @@ public static class BuiltInMemberCollections
 	/// <summary>
 	/// Sorted by tuple, contains DestType and DestNStarType.ExtraTypes.
 	/// </summary>
-	public static List<NStarType> ImplicitConversionsFromAnything { get; } = [(GetPrimitiveBlockStack("object"), NoBranches), (GetPrimitiveBlockStack("null"), NoBranches), GetListType(GetPrimitiveType("[this]"))];
+	public static List<NStarType> ImplicitConversionsFromAnything { get; } = [(GetPrimitiveBlockStack(ObjectTypeName), NoBranches), (GetPrimitiveBlockStack(NullString), NoBranches), GetListType(GetPrimitiveType("[this]"))];
 
 	public static G.SortedSet<String> NotImplementedNamespaces { get; } = ["System.Diagnostics", "System.Globalization", "System.Runtime", "System.Text"];
 
 	/// <summary>
 	/// Sorted by Namespace, also contains UseInstead.
 	/// </summary>
-	public static SortedDictionary<String, String> OutdatedNamespaces { get; } = new() 
+	public static SortedDictionary<String, String> OutdatedNamespaces { get; } = new()
 	{
-		{ "System.Collections.Generic", "System.Collections" }, { "System.Linq", "RedStarLinq" }, 
+		{ "System.Collections.Generic", "System.Collections" }, { "System.Linq", "RedStarLinq" },
 		{ "System.Windows", "System.GUI" }, { "System.Windows.Forms", "System.GUI" }
 	};
 
@@ -939,8 +939,8 @@ public static class BuiltInMemberCollections
 	];
 
 	public static G.SortedSet<(String Namespace, String Type)> NotImplementedTypes { get; } = [
-		([], "long complex"), ([], "long real"),
-		("System", "Delegate"), ("System", "Enum"), ("System", "Environment"), ("System", "OperatingSystem")
+		([], LongComplexTypeName), ([], LongRealTypeName),
+		(SystemName, "Delegate"), (SystemName, "Enum"), (SystemName, "Environment"), (SystemName, "OperatingSystem")
 	];
 
 	/// <summary>
@@ -950,66 +950,66 @@ public static class BuiltInMemberCollections
 	{
 		{ ([], "*Exception"), "\"if error ...\"" },
 		{ ([], "double"), "real or long real" }, { ([], "float"), "real or long real" },
-		{ ([], "uint"), "unsigned int" }, { ([], "ulong"), "unsigned long int" }, { ([], "ushort"), "unsigned short int" },
-		{ ("System", "Action"), "System.Func[null, ...]" }, { ("System", "Array"), "list" }, { ("System", "Boolean"), "bool" },
-		{ ("System", "Byte"), "byte (from the small letter)" },
-		{ ("System", "Char"), "char (from the small letter), short char or long char" },
-		{ ("System", "Console"), "labels and textboxes" },
-		{ ("System", "ConsoleCancelEventArgs"), "TextBox.KeyDown, TextBox.KeyPress and TextBox.KeyUp" },
-		{ ("System", "ConsoleCancelEventHandler"), "TextBox keyboard events" },
-		{ ("System", "ConsoleColor"), "RichTextBox text color" }, { ("System", "ConsoleKey"), "other item enums" },
-		{ ("System", "ConsoleKeyInfo"), "other item info classes" },
-		{ ("System", "ConsoleModifiers"), "other item modifiers enums" },
-		{ ("System", "ConsoleSpecialKey"), "other item enums" },
-		{ ("System", "Double"), "real or long real" },
-		{ ("System", "Int16"), "short int" }, { ("System", "Int32"), "int" }, { ("System", "Int64"), "long int" },
-		{ ("System", "Object"), "object (from the small letter)" },
-		{ ("System", "Random"), "Random(), IntRandom() etc." },
-		{ ("System", "SByte"), "byte or short int" }, { ("System", "Single"), "real or long real" },
-		{ ("System", "String"), "string (from the small letter)" },
-		{ ("System", "Type"), "typename" },
-		{ ("System", "UInt16"), "unsigned short int" }, { ("System", "UInt32"), "unsigned int" },
-		{ ("System", "UInt64"), "unsigned long int" }, { ("System", "Void"), "null" },
+		{ ([], "uint"), UnsignedIntTypeName }, { ([], "ulong"), UnsignedLongIntTypeName }, { ([], "ushort"), UnsignedShortIntTypeName },
+		{ (SystemName, "Action"), "System.Func[null, ...]" }, { (SystemName, "Array"), "list" }, { (SystemName, "Boolean"), BoolTypeName },
+		{ (SystemName, "Byte"), "byte (from the small letter)" },
+		{ (SystemName, "Char"), "char (from the small letter), short char or long char" },
+		{ (SystemName, "Console"), "labels and textboxes" },
+		{ (SystemName, "ConsoleCancelEventArgs"), "TextBox.KeyDown, TextBox.KeyPress and TextBox.KeyUp" },
+		{ (SystemName, "ConsoleCancelEventHandler"), "TextBox keyboard events" },
+		{ (SystemName, "ConsoleColor"), "RichTextBox text color" }, { (SystemName, "ConsoleKey"), "other item enums" },
+		{ (SystemName, "ConsoleKeyInfo"), "other item info classes" },
+		{ (SystemName, "ConsoleModifiers"), "other item modifiers enums" },
+		{ (SystemName, "ConsoleSpecialKey"), "other item enums" },
+		{ (SystemName, "Double"), "real or long real" },
+		{ (SystemName, "Int16"), ShortIntTypeName }, { (SystemName, "Int32"), IntTypeName }, { (SystemName, "Int64"), LongIntTypeName },
+		{ (SystemName, "Object"), "object (from the small letter)" },
+		{ (SystemName, "Random"), "Random(), IntRandom() etc." },
+		{ (SystemName, "SByte"), "byte or short int" }, { (SystemName, "Single"), "real or long real" },
+		{ (SystemName, "String"), "string (from the small letter)" },
+		{ (SystemName, "Type"), RecursiveTypeName },
+		{ (SystemName, "UInt16"), UnsignedShortIntTypeName }, { (SystemName, "UInt32"), UnsignedIntTypeName },
+		{ (SystemName, "UInt64"), UnsignedLongIntTypeName }, { (SystemName, "Void"), NullString },
 		{ ("System.Collections", "BitArray"), "BitList" },
 		{ ("System.Collections", "HashSet"), "ListHashSet" }, { ("System.Collections", "Hashtable"), "Dictionary" },
 		{ ("System.Collections", "KeyValuePair"), "tuples" }, { ("System.Collections", "SortedSet"), "SortedSet" }
 	};
 
 	public static G.SortedSet<(String Namespace, String Type)> ReservedTypes { get; } = [
-		([], "*Attribute"), ([], "*Comparer"), ([], "*Enumerator"), ([], "*UriParser"), ([], "decimal"),
-		("System", "ActivationContext"), ("System", "ActivationContext.ContextForm"), ("System", "Activator"),
-		("System", "AppContext"), ("System", "AppDomain"), ("System", "AppDomainInitializer"),
-		("System", "AppDomainManager"), ("System", "AppDomainManagerInitializationOptions"), ("System", "AppDomainSetup"),
-		("System", "ApplicationId"), ("System", "ApplicationIdentity"), ("System", "ArgIterator"), ("System", "ArraySegment"),
-		("System", "AssemblyLoadEventArgs"), ("System", "AsyncCallback"), ("System", "AttributeTargets"),
-		("System", "Base64FormattingOptions"), ("System", "BitConverter"), ("System", "Buffer"),
-		("System", "Comparison"), ("System", "ContextBoundObject"), ("System", "ContextStaticAttribute"),
-		("System", "Convert"), ("System", "Converter"), ("System", "CrossAppDomainDelegate"),
-		("System", "DateTimeOffset"), ("System", "DBNull"), ("System", "Decimal"),
-		("System", "EnvironmentVariableTarget"), ("System", "FormattableString"),
-		("System", "GC"), ("System", "GCCollectionMode"), ("System", "GCNotificationStatus"),
-		("System", "GenericUriParserOptions"), ("System", "Guid"),
-		("System", "IAppDomainSetup"), ("System", "IAsyncResult"), ("System", "ICloneable"), ("System", "ICustomFormattable"),
-		("System", "IDisposable"), ("System", "IFormatProvider"), ("System", "IFormattable"),
-		("System", "IObservable"), ("System", "IObserver"), ("System", "IProgress"), ("System", "IServiceProvider"),
-		("System", "Lazy"), ("System", "LoaderOptimization"), ("System", "LocalDataStoreSlot"),
-		("System", "MarshalByRefObject"), ("System", "Math"), ("System", "MidpointRounding"), ("System", "ModuleHandle"),
-		("System", "MulticastDelegate"), ("System", "Nullable"),
-		("System", "PlatformID"), ("System", "Progress"),
-		("System", "ResolveEventArgs"), ("System", "ResolveEventHandler"),
-		("System", "RuntimeArgumentHandle"), ("System", "RuntimeFieldHandle"),
-		("System", "RuntimeMethodHandle"), ("System", "RuntimeTypeHandle"),
-		("System", "StringComparer"), ("System", "StringComparison"), ("System", "StringSplitOptions"),
-		("System", "TimeZone"), ("System", "TimeZoneInfo"),
-		("System", "TimeZoneInfo.AdjustmentRule"), ("System", "TimeZoneInfo.TransitionTime"),
-		("System", "Tuple"), ("System", "TupleExtensions"), ("System", "TypeCode"), ("System", "TypedReference"),
-		("System", "UIntPtr"), ("System", "Uri"), ("System", "UriBuilder"), ("System", "UriComponents"),
-		("System", "UriFormat"), ("System", "UriHostNameType"), ("System", "UriIdnScope"),
-		("System", "UriKind"), ("System", "UriPartial"),
-		("System", "UriTemplate"), ("System", "UriTemplateEquivalenceComparer"),
-		("System", "UriTemplateMatch"), ("System", "UriTemplateTable"), ("System", "UriTypeConverter"),
-		("System", "ValueTuple"), ("System", "ValueType"), ("System", "Version"),
-		("System", "WeakReference"), ("System", "_AppDomain"),
+		([], "*Attribute"), ([], "*Comparer"), ([], "*Enumerator"), ([], "*UriParser"), ([], DecimalTypeName),
+		(SystemName, "ActivationContext"), (SystemName, "ActivationContext.ContextForm"), (SystemName, "Activator"),
+		(SystemName, "AppContext"), (SystemName, "AppDomain"), (SystemName, "AppDomainInitializer"),
+		(SystemName, "AppDomainManager"), (SystemName, "AppDomainManagerInitializationOptions"), (SystemName, "AppDomainSetup"),
+		(SystemName, "ApplicationId"), (SystemName, "ApplicationIdentity"), (SystemName, "ArgIterator"), (SystemName, "ArraySegment"),
+		(SystemName, "AssemblyLoadEventArgs"), (SystemName, "AsyncCallback"), (SystemName, "AttributeTargets"),
+		(SystemName, "Base64FormattingOptions"), (SystemName, "BitConverter"), (SystemName, "Buffer"),
+		(SystemName, "Comparison"), (SystemName, "ContextBoundObject"), (SystemName, "ContextStaticAttribute"),
+		(SystemName, "Convert"), (SystemName, "Converter"), (SystemName, "CrossAppDomainDelegate"),
+		(SystemName, "DateTimeOffset"), (SystemName, "DBNull"), (SystemName, "Decimal"),
+		(SystemName, "EnvironmentVariableTarget"), (SystemName, "FormattableString"),
+		(SystemName, "GC"), (SystemName, "GCCollectionMode"), (SystemName, "GCNotificationStatus"),
+		(SystemName, "GenericUriParserOptions"), (SystemName, "Guid"),
+		(SystemName, "IAppDomainSetup"), (SystemName, "IAsyncResult"), (SystemName, "ICloneable"), (SystemName, "ICustomFormattable"),
+		(SystemName, "IDisposable"), (SystemName, "IFormatProvider"), (SystemName, "IFormattable"),
+		(SystemName, "IObservable"), (SystemName, "IObserver"), (SystemName, "IProgress"), (SystemName, "IServiceProvider"),
+		(SystemName, "Lazy"), (SystemName, "LoaderOptimization"), (SystemName, "LocalDataStoreSlot"),
+		(SystemName, "MarshalByRefObject"), (SystemName, "Math"), (SystemName, "MidpointRounding"), (SystemName, "ModuleHandle"),
+		(SystemName, "MulticastDelegate"), (SystemName, "Nullable"),
+		(SystemName, "PlatformID"), (SystemName, "Progress"),
+		(SystemName, "ResolveEventArgs"), (SystemName, "ResolveEventHandler"),
+		(SystemName, "RuntimeArgumentHandle"), (SystemName, "RuntimeFieldHandle"),
+		(SystemName, "RuntimeMethodHandle"), (SystemName, "RuntimeTypeHandle"),
+		(SystemName, "StringComparer"), (SystemName, "StringComparison"), (SystemName, "StringSplitOptions"),
+		(SystemName, "TimeZone"), (SystemName, "TimeZoneInfo"),
+		(SystemName, "TimeZoneInfo.AdjustmentRule"), (SystemName, "TimeZoneInfo.TransitionTime"),
+		(SystemName, "Tuple"), (SystemName, "TupleExtensions"), (SystemName, "TypeCode"), (SystemName, "TypedReference"),
+		(SystemName, "UIntPtr"), (SystemName, "Uri"), (SystemName, "UriBuilder"), (SystemName, "UriComponents"),
+		(SystemName, "UriFormat"), (SystemName, "UriHostNameType"), (SystemName, "UriIdnScope"),
+		(SystemName, "UriKind"), (SystemName, "UriPartial"),
+		(SystemName, "UriTemplate"), (SystemName, "UriTemplateEquivalenceComparer"),
+		(SystemName, "UriTemplateMatch"), (SystemName, "UriTemplateTable"), (SystemName, "UriTypeConverter"),
+		(SystemName, "ValueTuple"), (SystemName, "ValueType"), (SystemName, "Version"),
+		(SystemName, "WeakReference"), (SystemName, "_AppDomain"),
 		("System.Collections", "ArrayList"), ("System.Collections", "CaseInsensitiveHashCodeProvider"),
 		("System.Collections", "CollectionBase"),
 		("System.Collections", "Dictionary.KeyCollection"), ("System.Collections", "Dictionary.ValueCollection"),
@@ -1034,7 +1034,7 @@ public static class BuiltInMemberCollections
 	/// <summary>
 	/// Sorted by Container, also contains Members.
 	/// </summary>
-	public static TypeSortedList<G.SortedSet<String>> NotImplementedMembers { get; } = new() { { new([new(BlockType.Interface, "DateTime", 1)]), new() { "AddRange", "Subtract" } } };
+	public static TypeSortedList<G.SortedSet<String>> NotImplementedMembers { get; } = new() { { new([new(BlockType.Interface, nameof(DateTime), 1)]), new() { "AddRange", "Subtract" } } };
 
 	/// <summary>
 	/// Sorted by Container, then by Member, also contains UseInstead.
@@ -1044,32 +1044,32 @@ public static class BuiltInMemberCollections
 		{
 			ExtendedTypeBool, new()
 			{
-				{ "FalseString", "literal \"false\"" }, { "Parse", "implicit conversion" }, 
+				{ "FalseString", "literal \"false\"" }, { "Parse", "implicit conversion" },
 				{ "TrueString", "literal \"true\"" }, { "TryParse", "implicit conversion" }
 			}
 		},
-		{ 
-			GetPrimitiveBlockStack("DateTime"), new()
-			{ 
+		{
+			GetPrimitiveBlockStack(nameof(DateTime)), new()
+			{
 				{ "IsDaylightSavingTime", "IsSummertime" },
 				{ "Parse", "implicit conversion" }, { "TryParse", "implicit conversion" }
-			} 
-		}, 
-		{ 
+			}
+		},
+		{
 			ExtendedTypeINumber, new()
-			{ 
+			{
 				{ "Parse", "implicit conversion" }, { "TryParse", "implicit conversion" }
-			} 
+			}
 		},
-		{ 
+		{
 			ExtendedTypeList, new()
-			{ 
+			{
 				{ "Length", "Length" }
-			} 
+			}
 		},
-		{ 
-			GetPrimitiveBlockStack("object"), new()
-			{ 
+		{
+			GetPrimitiveBlockStack(ObjectTypeName), new()
+			{
 				{ "Equals", "==" }
 			}
 		}
@@ -1081,7 +1081,7 @@ public static class BuiltInMemberCollections
 	public static TypeSortedList<G.SortedSet<String>> ReservedMembers { get; } = new()
 	{
 		{
-			GetPrimitiveBlockStack("DateTime"), new() 
+			GetPrimitiveBlockStack(nameof(DateTime)), new()
 			{
 				"FromBinary", "FromFileTime", "FromFileTimeUtc", "FromOADate", "GetDateTimeFormats", "ParseExact",
 				"ToFileTime", "ToFileTimeUtc", "ToLongDateString", "ToLongTimeString", "ToOADate",
@@ -1097,33 +1097,33 @@ public static class BuiltInMemberCollections
 				"ConvertFromUtf32", "ConvertToUtf32", "GetNumericValue", "GetUnicodeCategory",
 				"IsControl", "IsHighSurrogate", "IsLowSurrogate", "IsNumber", "IsPunctuation",
 				"IsSurrogate", "IsSurrogatePair", "IsSymbol",
-				"ToLowerInvariant", "ToUpperInvariant" 
+				"ToLowerInvariant", "ToUpperInvariant"
 			}
 		},
 		{
 			ExtendedTypeList, new()
 			{
-				"AsReadOnly", "ConvertAll", "GetEnumerator" 
+				"AsReadOnly", "ConvertAll", "GetEnumerator"
 			}
 		},
 		{
-			GetPrimitiveBlockStack("object"), new()
+			GetPrimitiveBlockStack(ObjectTypeName), new()
 			{
 				"GetType", "GetTypeCode", "ReferenceEquals"
 			}
 		},
 		{
-			new([new(BlockType.Namespace, "System", 1), new(BlockType.Class, "Predicate", 1)]), new() 
-			{ 
+			new([new(BlockType.Namespace, SystemName, 1), new(BlockType.Class, "Predicate", 1)]), new()
+			{
 				"BeginInvoke", "EndInvoke", "Invoke"
 			}
-		}, 
-		{ 
-			ExtendedTypeString, new() 
+		},
+		{
+			ExtendedTypeString, new()
 			{
 				"Clone", "Copy", "CopyTo", "Empty", "Format", "GetEnumerator", "Intern",
-				"IsInterned", "IsNormalized", "IsNullOrEmpty", "IsNullOrWhiteSpace", 
-				"Normalize", "ToLowerInvariant", "ToUpperInvariant" 
+				"IsInterned", "IsNormalized", "IsNullOrEmpty", "IsNullOrWhiteSpace",
+				"Normalize", "ToLowerInvariant", "ToUpperInvariant"
 			}
 		}
 	};
@@ -1155,7 +1155,7 @@ public static class BuiltInMemberCollections
 		{
 			new([new(BlockType.Interface, "IChar", 1)]),
 			new()
-			{ 
+			{
 				{ "IsDigit", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "string[index] as a parameter") } },
 				{ "IsLetter", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } },
 				{ "IsLetterOrDigit", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } },
@@ -1163,9 +1163,9 @@ public static class BuiltInMemberCollections
 				{ "IsSeparator", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } },
 				{ "IsUpper", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } },
 				{ "IsWhiteSpace", new() { ([ExtendedParameterStringS, ExtendedParameterIndex], "info[index] as a parameter") } }
-			} 
-		}, 
-		{ 
+			}
+		},
+		{
 			ExtendedTypeString, OutdatedStringMethodOverloads
 		}
 	};
@@ -1195,11 +1195,19 @@ public static class BuiltInMemberCollections
 			return GetPrimitiveBlockStack(basic);
 		else if (ExtraTypes.TryGetValue((namespace_, typeName), out var netType)
 			|| ImportedTypes.TryGetValue((namespace_, typeName), out netType))
-			return new([.. split.Convert(x => new Block(BlockType.Namespace, x, 1)),
-				new(typeof(Delegate).IsAssignableFrom(netType) ? BlockType.Delegate
-				: netType.IsInterface ? BlockType.Interface
-				: netType.IsClass ? BlockType.Class : netType.IsValueType
-				? BlockType.Struct : throw new InvalidOperationException(), typeName, 1)]);
+		{
+			var namespaces = split.Convert(x => new Block(BlockType.Namespace, x, 1));
+			if (typeof(Delegate).IsAssignableFrom(netType))
+				return new([.. namespaces, new(BlockType.Delegate, typeName, 1)]);
+			else if (netType.IsInterface)
+				return new([.. namespaces, new(BlockType.Interface, typeName, 1)]);
+			else if (netType.IsClass)
+				return new([.. namespaces, new(BlockType.Class, typeName, 1)]);
+			else if (netType.IsValueType)
+				return new([.. namespaces, new(BlockType.Struct, typeName, 1)]);
+			else
+				throw new InvalidOperationException();
+		}
 		else if (Interfaces.TryGetValue((namespace_, typeName), out var value) && value.DotNetType.IsInterface)
 			return new([.. split.Convert(x => new Block(BlockType.Namespace, x, 1)),
 				new(BlockType.Interface, typeName, 1)]);
@@ -1231,7 +1239,7 @@ public static class BuiltInMemberCollections
 		await VerifyPackageSignature(downloadResult.PackageStream);
 		var nupkgStream = downloadResult.PackageStream;
 		Directory.CreateDirectory(extractDir);
-		ZipFile.ExtractToDirectory(nupkgStream, extractDir, true);
+		await ZipFile.ExtractToDirectoryAsync(nupkgStream, extractDir, true);
 		var dllFiles = Directory.GetFiles(extractDir, "*.dll", SearchOption.AllDirectories)
 			.Filter(f => f.Contains("/lib/") || f.Contains(@"\lib\")).ToList();
 		if (!dllFiles.Any())
@@ -1279,7 +1287,7 @@ public static class BuiltInMemberCollections
 		{
 			SignedCms signedCms = new();
 			var signatureBytes = GC.AllocateUninitializedArray<byte>(checked((int)signature.Length));
-			signature.ReadExactly(signatureBytes);
+			await signature.ReadExactlyAsync(signatureBytes);
 			signedCms.Decode(signatureBytes);
 			signedCms.CheckSignature(true);
 			var certificates = signedCms.SignerInfos[0].Certificate;

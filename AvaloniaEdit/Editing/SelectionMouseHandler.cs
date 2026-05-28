@@ -239,7 +239,6 @@ internal sealed class SelectionMouseHandler(TextArea textArea) : ITextAreaInputH
 					{
 						if (rectangular && RectangleSelection.PerformRectangularPaste(TextArea, TextArea.Caret.Position, text, true))
 						{
-
 						}
 						else
 						{
@@ -532,7 +531,6 @@ internal sealed class SelectionMouseHandler(TextArea textArea) : ITextAreaInputH
 				e.Handled = true;
 			}
 		}
-
 	}
 	#endregion
 

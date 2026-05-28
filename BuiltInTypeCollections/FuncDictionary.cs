@@ -7,7 +7,7 @@ public sealed class FuncDictionary<TKey, TValue> : BaseDictionary<TKey, TValue, 
 	where TKey : notnull
 {
 	private readonly Dictionary<TKey, Func<TKey, TValue>> low;
-	private readonly List<(Func<TKey, bool> Key, Func<TKey, TValue> Value)> high;
+	private readonly List<(Func<TKey?, bool> Key, Func<TKey?, TValue> Value)> high;
 
 	public FuncDictionary()
 	{
@@ -15,15 +15,16 @@ public sealed class FuncDictionary<TKey, TValue> : BaseDictionary<TKey, TValue, 
 		high = [];
 	}
 
-	public FuncDictionary(Dictionary<TKey, Func<TKey, TValue>> low, List<(Func<TKey, bool> Key, Func<TKey, TValue> Value)> high)
+	public FuncDictionary(Dictionary<TKey, Func<TKey, TValue>> low,
+		List<(Func<TKey?, bool> Key, Func<TKey?, TValue> Value)> high)
 	{
 		this.low = low;
 		this.high = high;
 	}
 
-	public FuncDictionary(Func<TKey, TValue> function) : this([], [(key => true, function)]) { }
+	public FuncDictionary(Func<TKey?, TValue> function) : this([], [(key => true, function)]) { }
 
-	public FuncDictionary(params (Func<TKey, bool> Key, Func<TKey, TValue> Value)[] collection) : this([], collection) { }
+	public FuncDictionary(params (Func<TKey?, bool> Key, Func<TKey?, TValue> Value)[] collection) : this([], collection) { }
 
 	public FuncDictionary(TValue value) : this([], [(key => true, key => value)]) { }
 
@@ -37,7 +38,7 @@ public sealed class FuncDictionary<TKey, TValue> : BaseDictionary<TKey, TValue, 
 	{
 		get
 		{
-			if (low.TryGetValue(key, out var value))
+			if (key is not null && low.TryGetValue(key, out var value))
 				return value(key);
 			foreach (var (KeyFunc, ValueFunc) in high)
 				if (KeyFunc(key))
@@ -68,7 +69,7 @@ public sealed class FuncDictionary<TKey, TValue> : BaseDictionary<TKey, TValue, 
 
 	public void Add(TKey key, Func<TKey, TValue> valueFunc) => low.Add(key, valueFunc);
 
-	public void Add(Func<TKey, bool> keyFunc, Func<TKey, TValue> valueFunc) => high.Add((keyFunc, valueFunc));
+	public void Add(Func<TKey?, bool> keyFunc, Func<TKey?, TValue> valueFunc) => high.Add((keyFunc, valueFunc));
 
 	public override void Clear()
 	{

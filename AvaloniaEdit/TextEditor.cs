@@ -46,17 +46,12 @@ public class TextEditor : TemplatedControl, ITextEditorComponent
 	/// <summary>
 	/// Creates a new TextEditor instance.
 	/// </summary>
-	public TextEditor() : this(new TextArea())
-	{
-	}
+	public TextEditor() : this(new TextArea()) { }
 
 	/// <summary>
 	/// Creates a new TextEditor instance.
 	/// </summary>
-	protected TextEditor(TextArea textArea) : this(textArea, new TextDocument())
-	{
-		
-	}
+	protected TextEditor(TextArea textArea) : this(textArea, new TextDocument()) { }
 
 	protected TextEditor(TextArea textArea, TextDocument document)
 	{

@@ -210,7 +210,7 @@ internal sealed class XmlHighlightingDefinition : IHighlightingDefinition
 				// (?> = atomic group
 				// atomic groups increase matching performance, but we
 				// must ensure that the keywords are sorted correctly.
-				// "\b(?>in|int)\b" does not match "int" because the atomic group captures "in".
+				// "\b(?>in|int)\b" does not match IntTypeName because the atomic group captures "in".
 				// To solve this, we are sorting the keywords by descending length.
 				var i = 0;
 				foreach (var keyword in keywords.Words.OrderByDescending(w => w.Length))

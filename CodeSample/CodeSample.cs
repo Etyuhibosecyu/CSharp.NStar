@@ -3,6 +3,7 @@ global using NStar.Linq;
 global using NStar.Mpir;
 global using System;
 global using static CSharp.NStar.BuiltInMemberCollections;
+global using static CSharp.NStar.NStarType;
 global using String = NStar.Core.String;
 using System.Diagnostics;
 
@@ -20,6 +21,7 @@ public enum LexemType
 	LongInt,
 	UnsignedLongInt,
 	LongLong,
+	UnsignedLongLong,
 	Decimal,
 	String,
 	Other,
@@ -115,7 +117,9 @@ public class CodeSample(String newString)
 			success = true;
 			return (false, false, default);
 		}
-		if (ValidateChar('\r') | ValidateChar('\n'))
+		var rchar = ValidateChar('\r');
+		var nchar = ValidateChar('\n');
+		if (rchar || nchar)
 		{
 			SkipLineBreaks();
 			success = true;
@@ -135,9 +139,9 @@ public class CodeSample(String newString)
 				return (true, false, default);
 			}
 		}
-		else if ((s = GetRawString(out var s3)).Length != 0)
+		else if (GetRawString(out var s3) is var s2 && s2.Length != 0)
 		{
-			AddLexem(s, LexemType.String, s3.Length);
+			AddLexem(s2, LexemType.String, s3.Length);
 			return (true, false, default);
 		}
 		else if (CheckDigit())
@@ -283,7 +287,9 @@ public class CodeSample(String newString)
 		lineN++;
 		lineStart = pos;
 		SkipSpaces();
-		if (!ValidateChar('\r') & !ValidateChar('\n'))
+		var rchar = ValidateChar('\r');
+		var nchar = ValidateChar('\n');
+		if (!(rchar || nchar))
 			return;
 		if (start != 0 && "()[]{,.<>+-*/!%^&|".Contains(input[start - 1]))
 		{
@@ -372,13 +378,16 @@ public class CodeSample(String newString)
 
 	private bool CheckDigit() => IsNotEnd() && CheckRange('0', '9');
 
-	private bool CheckLetter() => IsNotEnd() && (CheckRange('A', 'Z') || CheckRange('a', 'z') || CheckRange('А', 'Я') || CheckRange('а', 'я'));
+	private bool CheckLetter() => IsNotEnd() && (CheckRange('A', 'Z') || CheckRange('a', 'z')
+		|| CheckRange('А', 'Я') || CheckRange('а', 'я'));
 
 	private bool CheckLD() => CheckLetter() || CheckDigit();
 
 	private void IncreasePosSmoothly()
 	{
-		if (ValidateChar('\r') | ValidateChar('\n'))
+		var rchar = ValidateChar('\r');
+		var nchar = ValidateChar('\n');
+		if (rchar || nchar)
 		{
 			lineN++;
 			lineStart = pos;
@@ -404,7 +413,7 @@ public class CodeSample(String newString)
 			{
 				GenerateMessage(0x0001, start);
 				lexemType = LexemType.Keyword;
-				return "null";
+				return NullString;
 			}
 			lexemType = LexemType.Real;
 			numberParts.Add(input[(pos - 1)..pos]);
@@ -442,7 +451,7 @@ public class CodeSample(String newString)
 				{
 					GenerateMessage(0x0001, start);
 					lexemType = LexemType.Keyword;
-					return "null";
+					return NullString;
 				}
 				lexemType = LexemType.Real;
 				numberParts.Add("r");
@@ -453,7 +462,7 @@ public class CodeSample(String newString)
 				{
 					GenerateMessage(0x0001, start);
 					lexemType = LexemType.Keyword;
-					return "null";
+					return NullString;
 				}
 				lexemType = LexemType.Real;
 				numberParts.Add("m");
@@ -464,7 +473,7 @@ public class CodeSample(String newString)
 				{
 					GenerateMessage(0x0001, start);
 					lexemType = LexemType.Keyword;
-					return "null";
+					return NullString;
 				}
 				lexemType = LexemType.Complex;
 				numberParts.Add("c");
@@ -475,7 +484,7 @@ public class CodeSample(String newString)
 				{
 					GenerateMessage(0x0001, start);
 					lexemType = LexemType.Keyword;
-					return "null";
+					return NullString;
 				}
 				lexemType = LexemType.Complex;
 				numberParts.Add("i");
@@ -485,16 +494,16 @@ public class CodeSample(String newString)
 		{
 			GenerateMessage(0x0001, start);
 			lexemType = LexemType.Keyword;
-			return "null";
+			return NullString;
 		}
-		return String.Join([], [.. numberParts]);
+		return String.Join([], numberParts);
 		String? CheckOverflow(String s, ref LexemType lexemType)
 		{
-			if (s == "null")
+			if (s == NullString)
 			{
 				GenerateMessage(0x0001, start);
 				lexemType = LexemType.Keyword;
-				return "null";
+				return NullString;
 			}
 			else
 				return null;
@@ -520,12 +529,14 @@ public class CodeSample(String newString)
 			lexemType = LexemType.LongInt;
 		else if (ulong.TryParse(s, out _))
 			lexemType = LexemType.UnsignedLongInt;
+		else if (MpuT.TryParse(s, out _))
+			lexemType = LexemType.UnsignedLongLong;
 		else if (MpzT.TryParse(s, out _))
 			lexemType = LexemType.LongLong;
 		else
 		{
 			lexemType = LexemType.Keyword;
-			return "null";
+			return NullString;
 		}
 		return s;
 	}
@@ -557,7 +568,7 @@ public class CodeSample(String newString)
 			else if (!(new MpzT(s, 2) is var ll && ll != 0))
 			{
 				lexemType = LexemType.Keyword;
-				return "null";
+				return NullString;
 			}
 			else
 			{
@@ -567,8 +578,12 @@ public class CodeSample(String newString)
 					lexemType = ll <= ulong.MaxValue ? LexemType.UnsignedLongInt : LexemType.LongLong;
 					return ll.ToString();
 				}
-				lexemType = li is >= int.MinValue and <= int.MaxValue ? LexemType.Int
-					: li <= uint.MaxValue ? LexemType.UnsignedInt : LexemType.LongInt;
+				if (li is >= int.MinValue and <= int.MaxValue)
+					lexemType = LexemType.Int;
+				else if (li <= uint.MaxValue)
+					lexemType = LexemType.UnsignedInt;
+				else
+					lexemType = LexemType.LongInt;
 				return li.ToString();
 			}
 		}
@@ -591,7 +606,7 @@ public class CodeSample(String newString)
 			else if (!(new MpzT(s, 16) is var ll && ll != 0))
 			{
 				lexemType = LexemType.Keyword;
-				return "null";
+				return NullString;
 			}
 			else
 			{
@@ -601,8 +616,12 @@ public class CodeSample(String newString)
 					lexemType = ll <= ulong.MaxValue ? LexemType.UnsignedLongInt : LexemType.LongLong;
 					return ll.ToString();
 				}
-				lexemType = li is >= int.MinValue and <= int.MaxValue ? LexemType.Int
-					: li <= uint.MaxValue ? LexemType.UnsignedInt : LexemType.LongInt;
+				if (li is >= int.MinValue and <= int.MaxValue)
+					lexemType = LexemType.Int;
+				else if (li <= uint.MaxValue)
+					lexemType = LexemType.UnsignedInt;
+				else
+					lexemType = LexemType.LongInt;
 				return li.ToString();
 			}
 		}
@@ -680,26 +699,23 @@ public class CodeSample(String newString)
 			s2 = input[start..pos];
 			return new(result);
 		}
-		bool ValidateCharOrEscapeSequence()
+		bool ValidateEscapeSequence()
 		{
-			if (ValidateChar('\\'))
-			{
-				if (ValidateCharList("0abfnqrtv'\"!"))
-				{
-					result.AddRange(EscapeSequence());
-					hex = 0;
-				}
-				else if (!(HexSequence('x', 2) || HexSequence('u', 4)))
-					GenerateEscapeSequenceError(1);
-				else
-					hex = 0;
-				AddEscapeSequenceChars(ref buffer, hex);
-				if (buffer.Length != 0)
-					result.AddRange(buffer);
-				return true;
-			}
-			else
+			if (!ValidateChar('\\'))
 				return false;
+			if (ValidateCharList("0abfnqrtv'\"!"))
+			{
+				result.AddRange(EscapeSequence());
+				hex = 0;
+			}
+			else if (!(HexSequence('x', 2) || HexSequence('u', 4)))
+				GenerateEscapeSequenceError(1);
+			else
+				hex = 0;
+			AddEscapeSequenceChars(ref buffer, hex);
+			if (buffer.Length != 0)
+				result.AddRange(buffer);
+			return true;
 		}
 		void AddEscapeSequenceChars(ref String tempResult, int hex)
 		{
@@ -728,7 +744,7 @@ public class CodeSample(String newString)
 		{
 			while (IsNotEnd() && input[pos] is not ('\r' or '\n') && !IsCharAfterBackslash('\"', false))
 			{
-				if (!ValidateCharOrEscapeSequence())
+				if (!ValidateEscapeSequence())
 					AddChar(result);
 			}
 			if (IsNotEnd() && input[pos] is '\r' or '\n')
@@ -739,16 +755,20 @@ public class CodeSample(String newString)
 		}
 		else if (ValidateAndAdd('\''))
 		{
-			if (ValidateCharOrEscapeSequence()) { }
-			else if (!IsNotEnd())
-				GenerateQuoteWreck(out _, 0x9000);
-			else if (!CheckChar('\''))
-				AddChar(result);
-			if (ValidateAndAdd('\'')) { }
-			else if (!IsNotEnd())
-				GenerateQuoteWreck(out _, 0x9000);
-			else
-				GenerateQuoteWreck(out _, 0x9001);
+			if (!ValidateEscapeSequence())
+			{
+				if (!IsNotEnd())
+					GenerateQuoteWreck(out _, 0x9000);
+				else if (!CheckChar('\''))
+					AddChar(result);
+			}
+			if (!ValidateAndAdd('\''))
+			{
+				if (!IsNotEnd())
+					GenerateQuoteWreck(out _, 0x9000);
+				else
+					GenerateQuoteWreck(out _, 0x9001);
+			}
 			return Default(out s2);
 		}
 		else if (!ValidateAndAdd('@'))
@@ -773,7 +793,6 @@ public class CodeSample(String newString)
 				result.Add(input[pos]);
 				IncreasePosSmoothly();
 			}
-			continue;
 		}
 		return Default(out s2);
 		String Default(out String s2)
@@ -929,7 +948,6 @@ public class CodeSample(String newString)
 				result.Add(input[pos]);
 				IncreasePosSmoothly();
 			}
-			continue;
 		}
 		return result;
 	}

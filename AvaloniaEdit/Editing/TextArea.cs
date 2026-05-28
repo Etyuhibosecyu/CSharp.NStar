@@ -390,7 +390,6 @@ public class TextArea : TemplatedControl, ITextEditorComponent, IRoutedCommandBi
 	/// <summary>
 	/// Gets/Sets the selection in this text area.
 	/// </summary>
-
 	public Selection Selection
 	{
 		get => _selection;
@@ -1088,7 +1087,6 @@ public class TextArea : TemplatedControl, ITextEditorComponent, IRoutedCommandBi
 
 		public TextAreaTextInputMethodClient()
 		{
-
 		}
 
 		public override Rect CursorRectangle
@@ -1186,7 +1184,6 @@ public class TextArea : TemplatedControl, ITextEditorComponent, IRoutedCommandBi
 
 		public override void SetPreeditText(string text)
 		{
-
 		}
 	}
 }

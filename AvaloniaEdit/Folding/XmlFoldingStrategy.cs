@@ -133,7 +133,6 @@ public class XmlFoldingStrategy
 			var firstNewLine = comment.IndexOf('\n');
 			if (firstNewLine >= 0)
 			{
-
 				// Take off 4 chars to get the actual comment start (takes
 				// into account the <!-- chars.
 

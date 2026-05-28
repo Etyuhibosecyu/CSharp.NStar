@@ -16,6 +16,7 @@ using System.Collections.Immutable;
 using System.Globalization;
 using System.Reflection;
 using System.Xml;
+using static CSharp.NStar.NStarType;
 using static CSharp.NStar.SemanticTree;
 
 namespace CSharp.NStar.Views;
@@ -32,9 +33,9 @@ public partial class MainView : UserControl
 	private static readonly string AlphanumericCharactersWithoutDot
 		= "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	private static readonly G.SortedSet<String> AutoCompletionList = [.. new List<String>("abstract", "break", "case", "Class",
-		"const", "Constructor", "continue", "default", "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent",
+		"const", "Constructor", "continue", DefaultConst, "Delegate", "delete", "Destructor", "else", "Enum", "Event", "Extent",
 		"extern", "false", "for", "foreach", "Function", "if", "Interface", "internal", "lock", "loop", "Megaclass",
-		"multiconst", "Namespace", "new", "null", "Operator", "out", "override", "params", "private", "protected",
+		"multiconst", "Namespace", "new", NullString, "Operator", "out", "override", "params", "private", "protected",
 		"public", "readonly", "ref", "repeat", "return", "sealed", "static", "Struct", "switch", "this", "throw", "true",
 		"using", "while", "and", "or", "xor", "is", "typeof", "sin", "cos", "tan", "asin", "acos", "atan", "ln",
 		"Infty", "Uncty", "Pi", "E", "CloseOnReturnWith", "pow", "tetra", "penta", "hexa").AddRange(PrimitiveTypes.Keys)

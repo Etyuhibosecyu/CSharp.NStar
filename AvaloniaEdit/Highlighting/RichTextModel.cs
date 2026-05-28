@@ -28,8 +28,7 @@ public sealed class RichTextModel
 
 	private int GetIndexForOffset(int offset)
 	{
-		if (offset < 0)
-			throw new ArgumentOutOfRangeException(nameof(offset));
+		ArgumentOutOfRangeException.ThrowIfNegative(offset);
 		var index = _stateChangeOffsets.BinarySearch(offset);
 		if (index < 0)
 		{
@@ -44,8 +43,7 @@ public sealed class RichTextModel
 
 	private int GetIndexForOffsetUseExistingSegment(int offset)
 	{
-		if (offset < 0)
-			throw new ArgumentOutOfRangeException(nameof(offset));
+		ArgumentOutOfRangeException.ThrowIfNegative(offset);
 		var index = _stateChangeOffsets.BinarySearch(offset);
 		if (index < 0)
 		{

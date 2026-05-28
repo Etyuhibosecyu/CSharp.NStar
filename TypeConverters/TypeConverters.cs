@@ -11,8 +11,8 @@ global using static NStar.Core.Extents;
 global using static System.Math;
 global using G = System.Collections.Generic;
 global using String = NStar.Core.String;
-using NStar.Mpir;
 using NStar.EasyEvalLib;
+using NStar.Mpir;
 using NStar.ParallelHS;
 using NStar.SortedSets;
 using NStar.TreeSets;
@@ -173,126 +173,126 @@ public static class TypeConverters
 
 	private static String GetPrimitiveResultType(String leftTypeName, String rightTypeName, String leftValue, String rightValue)
 	{
-		if (leftTypeName == "bool" && rightTypeName.AsSpan() is "byte"
-			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
-			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "decimal" or "unsigned long real" or "long real" or "long decimal"
-			or "complex" or "deccomplex" or "long complex" or "long deccomplex")
+		if (leftTypeName == BoolTypeName && rightTypeName.AsSpan() is ByteTypeName
+			or "short char" or ShortIntTypeName or UnsignedShortIntTypeName or CharTypeName or IntTypeName or UnsignedIntTypeName
+			or "long char" or LongIntTypeName or UnsignedLongIntTypeName or LongLongTypeName or UnsignedLongLongTypeName
+			or RealTypeName or DecimalTypeName or "unsigned long real" or LongRealTypeName or LongDecimalTypeName
+			or ComplexTypeName or DeccomplexTypeName or LongComplexTypeName or LongDeccomplexTypeName)
 			leftValue.Insert(0, '(').AddRange(" ? 1 : 0)");
-		else if (rightTypeName == "bool" && leftTypeName.AsSpan() is "byte"
-			or "short char" or "short int" or "unsigned short int" or "char" or "int" or "unsigned int"
-			or "long char" or "long int" or "unsigned long int" or "long long" or "unsigned long long"
-			or "real" or "decimal" or "unsigned long real" or "long real" or "long decimal"
-			or "complex" or "deccomplex" or "long complex" or "long deccomplex")
+		else if (rightTypeName == BoolTypeName && leftTypeName.AsSpan() is ByteTypeName
+			or "short char" or ShortIntTypeName or UnsignedShortIntTypeName or CharTypeName or IntTypeName or UnsignedIntTypeName
+			or "long char" or LongIntTypeName or UnsignedLongIntTypeName or LongLongTypeName or UnsignedLongLongTypeName
+			or RealTypeName or DecimalTypeName or "unsigned long real" or LongRealTypeName or LongDecimalTypeName
+			or ComplexTypeName or DeccomplexTypeName or LongComplexTypeName or LongDeccomplexTypeName)
 			rightValue.Insert(0, '(').AddRange(" ? 1 : 0)");
 		if (leftTypeName == "dynamic" || rightTypeName == "dynamic")
 			return "dynamic";
-		else if (leftTypeName == "string" || rightTypeName == "string")
-			return "string";
-		else if (leftTypeName == "long deccomplex" || rightTypeName == "long deccomplex")
-			return "long complex";
-		else if (leftTypeName == "long complex" || rightTypeName == "long complex")
+		else if (leftTypeName == StringTypeName || rightTypeName == StringTypeName)
+			return StringTypeName;
+		else if (leftTypeName == LongDeccomplexTypeName || rightTypeName == LongDeccomplexTypeName)
+			return LongComplexTypeName;
+		else if (leftTypeName == LongComplexTypeName || rightTypeName == LongComplexTypeName)
 		{
-			if (leftTypeName == "long decimal" || rightTypeName == "long decimal")
-				return "long deccomplex";
+			if (leftTypeName == LongDecimalTypeName || rightTypeName == LongDecimalTypeName)
+				return LongDeccomplexTypeName;
 			else
-				return "long complex";
+				return LongComplexTypeName;
 		}
-		else if (leftTypeName == "long decimal" || rightTypeName == "long decimal")
-			return "long decimal";
-		else if (leftTypeName == "long real" || rightTypeName == "long real")
-			return "long real";
+		else if (leftTypeName == LongDecimalTypeName || rightTypeName == LongDecimalTypeName)
+			return LongDecimalTypeName;
+		else if (leftTypeName == LongRealTypeName || rightTypeName == LongRealTypeName)
+			return LongRealTypeName;
 		else if (leftTypeName == "unsigned long real" || rightTypeName == "unsigned long real")
 			return "unsigned long real";
-		else if (leftTypeName == "long long" || rightTypeName == "long long")
+		else if (leftTypeName == LongLongTypeName || rightTypeName == LongLongTypeName)
 		{
-			if (leftTypeName == "complex" || rightTypeName == "complex")
-				return "long complex";
-			else if (leftTypeName.AsSpan() is "real" or "decimal" || rightTypeName.AsSpan() is "real" or "decimal")
-				return "long real";
+			if (leftTypeName == ComplexTypeName || rightTypeName == ComplexTypeName)
+				return LongComplexTypeName;
+			else if (leftTypeName.AsSpan() is RealTypeName or DecimalTypeName || rightTypeName.AsSpan() is RealTypeName or DecimalTypeName)
+				return LongRealTypeName;
 			else
-				return "long long";
+				return LongLongTypeName;
 		}
-		else if (leftTypeName == "unsigned long long" || rightTypeName == "unsigned long long")
+		else if (leftTypeName == UnsignedLongLongTypeName || rightTypeName == UnsignedLongLongTypeName)
 		{
-			if (leftTypeName == "complex" || rightTypeName == "complex")
-				return "long complex";
-			else if (leftTypeName.AsSpan() is "real" or "decimal" || rightTypeName.AsSpan() is "real" or "decimal")
-				return "long real";
-			else if (leftTypeName.AsSpan() is "short int" or "int" or "long int" or "DateTime" or "TimeSpan"
-				|| rightTypeName.AsSpan() is "short int" or "int" or "long int" or "DateTime" or "TimeSpan")
-				return "long long";
+			if (leftTypeName == ComplexTypeName || rightTypeName == ComplexTypeName)
+				return LongComplexTypeName;
+			else if (leftTypeName.AsSpan() is RealTypeName or DecimalTypeName || rightTypeName.AsSpan() is RealTypeName or DecimalTypeName)
+				return LongRealTypeName;
+			else if (leftTypeName.AsSpan() is ShortIntTypeName or IntTypeName or LongIntTypeName or nameof(DateTime) or "TimeSpan"
+				|| rightTypeName.AsSpan() is ShortIntTypeName or IntTypeName or LongIntTypeName or nameof(DateTime) or "TimeSpan")
+				return LongLongTypeName;
 			else
-				return "unsigned long long";
+				return UnsignedLongLongTypeName;
 		}
-		else if (leftTypeName == "complex" || rightTypeName == "complex")
-			return "complex";
-		else if (leftTypeName == "real" || rightTypeName == "real")
+		else if (leftTypeName == ComplexTypeName || rightTypeName == ComplexTypeName)
+			return ComplexTypeName;
+		else if (leftTypeName == RealTypeName || rightTypeName == RealTypeName)
 		{
-			if (leftTypeName == "decimal" || rightTypeName == "decimal")
-				return "long real";
+			if (leftTypeName == DecimalTypeName || rightTypeName == DecimalTypeName)
+				return LongRealTypeName;
 			else
-				return "real";
+				return RealTypeName;
 		}
-		else if (leftTypeName == "decimal" || rightTypeName == "decimal")
-			return "decimal";
-		else if (leftTypeName == "unsigned long int" || rightTypeName == "unsigned long int")
+		else if (leftTypeName == DecimalTypeName || rightTypeName == DecimalTypeName)
+			return DecimalTypeName;
+		else if (leftTypeName == UnsignedLongIntTypeName || rightTypeName == UnsignedLongIntTypeName)
 		{
-			if (leftTypeName.AsSpan() is "short int" or "int" or "long int" or "DateTime" or "TimeSpan"
-				|| rightTypeName.AsSpan() is "short int" or "int" or "long int" or "DateTime" or "TimeSpan")
-				return "long long";
+			if (leftTypeName.AsSpan() is ShortIntTypeName or IntTypeName or LongIntTypeName or nameof(DateTime) or "TimeSpan"
+				|| rightTypeName.AsSpan() is ShortIntTypeName or IntTypeName or LongIntTypeName or nameof(DateTime) or "TimeSpan")
+				return LongLongTypeName;
 			else
-				return "unsigned long int";
+				return UnsignedLongIntTypeName;
 		}
 		else if (leftTypeName == "TimeSpan" || rightTypeName == "TimeSpan"
-			|| leftTypeName == "DateTime" && rightTypeName == "DateTime")
+			|| leftTypeName == nameof(DateTime) && rightTypeName == nameof(DateTime))
 			return "TimeSpan";
-		else if (leftTypeName == "DateTime" || rightTypeName == "DateTime")
-			return "DateTime";
-		else if (leftTypeName == "long int" || rightTypeName == "long int")
-			return "long int";
+		else if (leftTypeName == nameof(DateTime) || rightTypeName == nameof(DateTime))
+			return nameof(DateTime);
+		else if (leftTypeName == LongIntTypeName || rightTypeName == LongIntTypeName)
+			return LongIntTypeName;
 		else if (leftTypeName == "long char" || rightTypeName == "long char")
 		{
-			if (leftTypeName == "short int" || rightTypeName == "short int" || leftTypeName == "int" || rightTypeName == "int")
-				return "long int";
+			if (leftTypeName == ShortIntTypeName || rightTypeName == ShortIntTypeName || leftTypeName == IntTypeName || rightTypeName == IntTypeName)
+				return LongIntTypeName;
 			else
 				return "long char";
 		}
-		else if (leftTypeName == "unsigned int" || rightTypeName == "unsigned int")
+		else if (leftTypeName == UnsignedIntTypeName || rightTypeName == UnsignedIntTypeName)
 		{
-			if (leftTypeName == "short int" || rightTypeName == "short int" || leftTypeName == "int" || rightTypeName == "int")
-				return "long int";
+			if (leftTypeName == ShortIntTypeName || rightTypeName == ShortIntTypeName || leftTypeName == IntTypeName || rightTypeName == IntTypeName)
+				return LongIntTypeName;
 			else
-				return "unsigned int";
+				return UnsignedIntTypeName;
 		}
-		else if (leftTypeName == "int" || rightTypeName == "int")
-			return "int";
-		else if (leftTypeName == "char" || rightTypeName == "char")
+		else if (leftTypeName == IntTypeName || rightTypeName == IntTypeName)
+			return IntTypeName;
+		else if (leftTypeName == CharTypeName || rightTypeName == CharTypeName)
 		{
-			if (leftTypeName == "short int" || rightTypeName == "short int")
-				return "int";
+			if (leftTypeName == ShortIntTypeName || rightTypeName == ShortIntTypeName)
+				return IntTypeName;
 			else
-				return "char";
+				return CharTypeName;
 		}
-		else if (leftTypeName == "unsigned short int" || rightTypeName == "unsigned short int")
+		else if (leftTypeName == UnsignedShortIntTypeName || rightTypeName == UnsignedShortIntTypeName)
 		{
-			if (leftTypeName == "short int" || rightTypeName == "short int")
-				return "int";
+			if (leftTypeName == ShortIntTypeName || rightTypeName == ShortIntTypeName)
+				return IntTypeName;
 			else
-				return "unsigned short int";
+				return UnsignedShortIntTypeName;
 		}
-		else if (leftTypeName == "short int" || rightTypeName == "short int")
-			return "short int";
+		else if (leftTypeName == ShortIntTypeName || rightTypeName == ShortIntTypeName)
+			return ShortIntTypeName;
 		else if (leftTypeName == "short char" || rightTypeName == "short char")
 			return "short char";
-		else if (leftTypeName == "byte" || rightTypeName == "byte")
-			return "byte";
-		else if (leftTypeName == "bool" || rightTypeName == "bool")
-			return "bool";
+		else if (leftTypeName == ByteTypeName || rightTypeName == ByteTypeName)
+			return ByteTypeName;
+		else if (leftTypeName == BoolTypeName || rightTypeName == BoolTypeName)
+			return BoolTypeName;
 		else if (leftTypeName == "BaseClass" || rightTypeName == "BaseClass")
 			return "BaseClass";
 		else
-			return "null";
+			return NullString;
 	}
 
 	private static NStarType GetListResultType(NStarType leftType, NStarType rightType,
@@ -342,16 +342,16 @@ public static class TypeConverters
 			destExpr = srcExpr?.Insert(0, "((String)").Add(')');
 			return true;
 		}
-		if (TypeEqualsToPrimitive(sourceType, "null", false))
+		if (TypeEqualsToPrimitive(sourceType, NullString, false))
 		{
-			destExpr = "default!";
+			destExpr = DefaultNull;
 			return true;
 		}
 		if (ImplicitConversionsFromAnything.Contains(destinationType, new FullTypeEComparer()))
 		{
 			if (srcExpr is null)
 				destExpr = null;
-			else if (TypeEqualsToPrimitive(destinationType, "string"))
+			else if (TypeEqualsToPrimitive(destinationType, StringTypeName))
 				destExpr = ((String)"(").AddRange(srcExpr).AddRange(").ToString()");
 			else if (TypeEqualsToPrimitive(destinationType, "list", false))
 				destExpr = ((String)"ListWithSingle(").AddRange(srcExpr).Add(')');
@@ -363,12 +363,12 @@ public static class TypeConverters
 		{
 			if (!TypeEqualsToPrimitive(sourceType, "tuple", false))
 			{
-				destExpr = "default!";
+				destExpr = DefaultNull;
 				return false;
 			}
 			if (sourceType.ExtraTypes.Length != destinationType.ExtraTypes.Length)
 			{
-				destExpr = "default!";
+				destExpr = DefaultNull;
 				return false;
 			}
 			destExpr = srcExpr;
@@ -392,7 +392,7 @@ public static class TypeConverters
 				}
 				if (sourceType.ExtraTypes.Length > 16)
 				{
-					destExpr = "default!";
+					destExpr = DefaultNull;
 					extraMessage = "list can be constructed from tuple of up to 16 elements,"
 						+ " if you need more, use the other ways like Chain() or Fill()";
 					return false;
@@ -400,7 +400,7 @@ public static class TypeConverters
 				else if (!sourceType.ExtraTypes.All(x => x.Value.Name == "type" && x.Value.Extra is NStarType ValueType
 					&& TypesAreCompatible(ValueType, subtype, out var innerWarning, null, out _, out _) && !innerWarning))
 				{
-					destExpr = "default!";
+					destExpr = DefaultNull;
 					return false;
 				}
 				else
@@ -411,7 +411,7 @@ public static class TypeConverters
 			}
 			var (SourceDepth, SourceLeafType) = GetTypeDepthAndLeafType(sourceType);
 			var (DestinationDepth, DestinationLeafType) = GetTypeDepthAndLeafType(destinationType);
-			if (SourceDepth >= DestinationDepth && TypeEqualsToPrimitive(DestinationLeafType, "string"))
+			if (SourceDepth >= DestinationDepth && TypeEqualsToPrimitive(DestinationLeafType, StringTypeName))
 			{
 				destExpr = srcExpr is null ? null : DestinationDepth == 0
 					? ((String)"(").AddRange(srcExpr).AddRange(").ToString()") : srcExpr;
@@ -428,8 +428,8 @@ public static class TypeConverters
 					return true;
 				}
 				else if (!SourceLeafType.Equals(DestinationLeafType) && TypeIsPrimitive(SourceLeafType.MainType)
-					&& TypeIsPrimitive(DestinationLeafType.MainType) && SourceLeafType.MainType.Peek().Name != "string"
-					&& DestinationLeafType.MainType.Peek().Name != "string")
+					&& TypeIsPrimitive(DestinationLeafType.MainType) && SourceLeafType.MainType.Peek().Name != StringTypeName
+					&& DestinationLeafType.MainType.Peek().Name != StringTypeName)
 				{
 					srcExpr.Replace(AdaptTerminalType(srcExpr, SourceLeafType, DestinationLeafType));
 					srcExpr.Insert(0, toInsert);
@@ -484,7 +484,7 @@ public static class TypeConverters
 			}
 			else
 			{
-				destExpr = "default!";
+				destExpr = DefaultNull;
 				return false;
 			}
 		}
@@ -527,7 +527,7 @@ public static class TypeConverters
 		{
 			var (SourceDepth, SourceLeafType) = GetTypeDepthAndLeafType(sourceType);
 			var (DestinationDepth, DestinationLeafType) = GetTypeDepthAndLeafType(destinationType);
-			if (SourceDepth >= DestinationDepth && TypeEqualsToPrimitive(DestinationLeafType, "string"))
+			if (SourceDepth >= DestinationDepth && TypeEqualsToPrimitive(DestinationLeafType, StringTypeName))
 			{
 				destExpr = srcExpr is null ? null : DestinationDepth == 0
 					? ((String)"(").AddRange(srcExpr).AddRange(").ToString()") : srcExpr;
@@ -541,7 +541,7 @@ public static class TypeConverters
 			}
 			else
 			{
-				destExpr = "default!";
+				destExpr = DefaultNull;
 				return false;
 			}
 		}
@@ -563,12 +563,12 @@ public static class TypeConverters
 			return true;
 		if (!BuiltInMemberCollections.ImplicitConversions.TryGetValue(sourceType.MainType, out var containerConversions))
 		{
-			destExpr = "default!";
+			destExpr = DefaultNull;
 			return false;
 		}
 		if (!containerConversions.TryGetValue(sourceType.ExtraTypes, out var typeConversions))
 		{
-			destExpr = "default!";
+			destExpr = DefaultNull;
 			return false;
 		}
 		var foundIndex = typeConversions.FindIndex(x => x.DestType.Equals(destinationType));
@@ -577,7 +577,10 @@ public static class TypeConverters
 			warning = typeConversions[foundIndex].Warning;
 			if (srcExpr is null)
 				destExpr = null;
-			else if (!warning && !sourceType.Equals(BoolType))
+			else if (!(warning || sourceType.Equals(BoolType)
+				|| destinationType.MainType.Length == 1 && destinationType.ExtraTypes.Length == 0
+				&& destinationType.MainType.TryPeek(out var block) && block.BlockType == BlockType.Primitive
+				&& block.Name.AsSpan() is LongLongTypeName or UnsignedLongLongTypeName))
 				destExpr = srcExpr;
 			else
 				destExpr = AdaptTerminalType(srcExpr, sourceType, destinationType);
@@ -621,53 +624,53 @@ public static class TypeConverters
 		Debug.Assert(TypeIsPrimitive(destType.MainType));
 		var srcTypeBlockName = srcType.MainType.Peek().Name.ToString();
 		var destTypeBlockName = destType.MainType.Peek().Name.ToString();
-		Debug.Assert(destTypeBlockName != "string");
+		Debug.Assert(destTypeBlockName != StringTypeName);
 		var destTypeConverter = destTypeBlockName switch
 		{
-			"null" => "void",
-			"short char" => "byte",
-			"short int" => "short",
-			"unsigned short int" => "ushort",
-			"unsigned int" => "uint",
+			NullString => "void",
+			"short char" => ByteTypeName,
+			ShortIntTypeName => "short",
+			UnsignedShortIntTypeName => "ushort",
+			UnsignedIntTypeName => "uint",
 			"long char" => "(char, char)",
-			"long int" => "long",
-			"unsigned long int" => "ulong",
-			"long long" => nameof(MpzT),
-			"unsigned long long" => nameof(MpuT),
-			"unsigned long real" => nameof(UnsignedLongReal),
-			"real" => "double",
-			"complex" => "Complex",
-			"string" => nameof(String),
-			"typename" => "Type",
-			"universal" => "object",
+			LongIntTypeName => "long",
+			UnsignedLongIntTypeName => "ulong",
+			LongLongTypeName => nameof(MpzT),
+			UnsignedLongLongTypeName => nameof(MpuT),
+			"unsigned long real" => "UnsignedLongReal",
+			RealTypeName => "double",
+			ComplexTypeName => "Complex",
+			StringTypeName => nameof(String),
+			RecursiveTypeName => "Type",
+			"universal" => ObjectTypeName,
 			_ => destTypeBlockName,
 		};
-		if (srcTypeBlockName == "string")
+		if (srcTypeBlockName == StringTypeName)
 		{
-			Debug.Assert(destTypeBlockName != "string");
-			if (destTypeBlockName is "bool" or "byte" or "char" or "short" or "ushort"
-				or "int" or "uint" or "long" or "ulong" or "double")
+			Debug.Assert(destTypeBlockName != StringTypeName);
+			if (destTypeBlockName is BoolTypeName or ByteTypeName or CharTypeName or "short" or "ushort"
+				or IntTypeName or "uint" or "long" or "ulong" or nameof(MpuT) or nameof(MpzT) or "double")
 			{
 				var result = ((String)"(").AddRange(destTypeConverter).Add('.').AddRange(nameof(int.TryParse)).Add('(');
 				var varName = RedStarLinq.Fill(32, _ =>
 					(char)(random.Next(2) == 1 ? random.Next('A', 'Z' + 1) : random.Next('a', 'z' + 1)));
 				result.AddRange(source).AddRange(", out var ").AddRange(varName).AddRange(") ? ").AddRange(varName);
-				return result.AddRange(" : ").AddRange(destTypeBlockName == "bool" ? "false)" : "0)");
+				return result.AddRange(" : ").AddRange(destTypeBlockName == BoolTypeName ? "false)" : "0)");
 			}
 			else
 				return ((String)"(").AddRange(destTypeConverter).AddRange(")(").AddRange(source).Add(')');
 		}
-		else if (destTypeBlockName == "bool")
+		else if (destTypeBlockName == BoolTypeName)
 		{
-			Debug.Assert(srcTypeBlockName != "bool");
+			Debug.Assert(srcTypeBlockName != BoolTypeName);
 			return ((String)"(").AddRange(source).AddRange(") >= 1");
 		}
-		else if (srcTypeBlockName == "bool")
+		else if (srcTypeBlockName == BoolTypeName)
 		{
-			Debug.Assert(destTypeBlockName != "bool");
+			Debug.Assert(destTypeBlockName != BoolTypeName);
 			return ((String)"(").AddRange(source).AddRange(") ? 1 : 0");
 		}
-		else if (srcTypeBlockName is "real" or "decimal")
+		else if (srcTypeBlockName is RealTypeName or DecimalTypeName)
 		{
 			Debug.Assert(destTypeBlockName != srcTypeBlockName);
 			return ((String)"(").AddRange(destTypeConverter).Add(')')

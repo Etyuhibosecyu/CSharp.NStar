@@ -194,7 +194,6 @@ public class HighlightingManager : IHighlightingDefinitionReferenceResolver
 		{
 			try
 			{
-
 				RegisterHighlighting(name, extensions, LoadHighlighting(resourceName));
 			}
 			catch (HighlightingDefinitionInvalidException ex)

@@ -26,7 +26,6 @@ namespace AvaloniaEdit.Highlighting;
 /// </remarks>
 public class HighlightedLine(IDocument document, IDocumentLine documentLine)
 {
-
 	/// <summary>
 	/// Gets the document associated with this HighlightedLine.
 	/// </summary>

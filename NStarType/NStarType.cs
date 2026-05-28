@@ -5,60 +5,72 @@ namespace CSharp.NStar;
 public readonly record struct NStarType(BlockStack MainType, BranchCollection ExtraTypes)
 {
 	public static readonly BranchCollection NoBranches = [];
-	public static readonly NStarType NullType = GetPrimitiveType("null");
-	public static readonly NStarType ObjectType = GetPrimitiveType("object");
-	public static readonly NStarType BoolType = GetPrimitiveType("bool");
-	public static readonly NStarType ByteType = GetPrimitiveType("byte");
-	public static readonly NStarType ShortIntType = GetPrimitiveType("short int");
-	public static readonly NStarType UnsignedShortIntType = GetPrimitiveType("unsigned short int");
-	public static readonly NStarType CharType = GetPrimitiveType("char");
-	public static readonly NStarType IntType = GetPrimitiveType("int");
-	public static readonly NStarType UnsignedIntType = GetPrimitiveType("unsigned int");
-	public static readonly NStarType LongIntType = GetPrimitiveType("long int");
-	public static readonly NStarType UnsignedLongIntType = GetPrimitiveType("unsigned long int");
-	public static readonly NStarType RealType = GetPrimitiveType("real");
-	public static readonly NStarType DecimalType = GetPrimitiveType("decimal");
-	public static readonly NStarType LongLongType = GetPrimitiveType("long long");
-	public static readonly NStarType UnsignedLongLongType = GetPrimitiveType("unsigned long long");
-	public static readonly NStarType ComplexType = GetPrimitiveType("complex");
-	public static readonly NStarType RecursiveType = GetPrimitiveType("typename");
-	public static readonly NStarType StringType = GetPrimitiveType("string");
+	public const string DefaultConst = "default", DefaultNull = "default!";
+	public const string SystemName = "System", CollectionsName = "Collections", UnsafeName = "Unsafe";
+	public const string NullString = "null", ObjectTypeName = "object", BoolTypeName = "bool", ByteTypeName = "byte";
+	public const string ShortIntTypeName = "short int", UnsignedShortIntTypeName = "unsigned short int";
+	public const string CharTypeName = "char", IntTypeName = "int", UnsignedIntTypeName = "unsigned int";
+	public const string LongIntTypeName = "long int", UnsignedLongIntTypeName = "unsigned long int";
+	public const string LongLongTypeName = "long long", UnsignedLongLongTypeName = "unsigned long long";
+	public const string RealTypeName = "real", DecimalTypeName = "decimal";
+	public const string LongRealTypeName = "long real", LongDecimalTypeName = "long decimal";
+	public const string ComplexTypeName = "complex", DeccomplexTypeName = "deccomplex";
+	public const string LongComplexTypeName = "long complex", LongDeccomplexTypeName = "long deccomplex";
+	public const string RecursiveTypeName = "typename", StringTypeName = "string";
+	public static readonly NStarType NullType = GetPrimitiveType(NullString);
+	public static readonly NStarType ObjectType = GetPrimitiveType(ObjectTypeName);
+	public static readonly NStarType BoolType = GetPrimitiveType(BoolTypeName);
+	public static readonly NStarType ByteType = GetPrimitiveType(ByteTypeName);
+	public static readonly NStarType ShortIntType = GetPrimitiveType(ShortIntTypeName);
+	public static readonly NStarType UnsignedShortIntType = GetPrimitiveType(UnsignedShortIntTypeName);
+	public static readonly NStarType CharType = GetPrimitiveType(CharTypeName);
+	public static readonly NStarType IntType = GetPrimitiveType(IntTypeName);
+	public static readonly NStarType UnsignedIntType = GetPrimitiveType(UnsignedIntTypeName);
+	public static readonly NStarType LongIntType = GetPrimitiveType(LongIntTypeName);
+	public static readonly NStarType UnsignedLongIntType = GetPrimitiveType(UnsignedLongIntTypeName);
+	public static readonly NStarType RealType = GetPrimitiveType(RealTypeName);
+	public static readonly NStarType DecimalType = GetPrimitiveType(DecimalTypeName);
+	public static readonly NStarType LongLongType = GetPrimitiveType(LongLongTypeName);
+	public static readonly NStarType UnsignedLongLongType = GetPrimitiveType(UnsignedLongLongTypeName);
+	public static readonly NStarType ComplexType = GetPrimitiveType(ComplexTypeName);
+	public static readonly NStarType RecursiveType = GetPrimitiveType(RecursiveTypeName);
+	public static readonly NStarType StringType = GetPrimitiveType(StringTypeName);
 	public static readonly NStarType IndexType = GetPrimitiveType("index");
 	public static readonly NStarType RangeType = GetPrimitiveType("range");
-	public static readonly NStarType ExceptionType = new(new(new(BlockType.Namespace, "System", 1),
+	public static readonly NStarType ExceptionType = new(new(new(BlockType.Namespace, SystemName, 1),
 		new(BlockType.Class, nameof(Exception), 1)), NoBranches);
-	public static readonly NStarType ChainType = new(new(new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Collections", 1), new(BlockType.Struct, nameof(Chain), 1)), NoBranches);
-	public static readonly NStarType UnsafeStringType = new(new(new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "UnsafeString", 1)), NoBranches);
+	public static readonly NStarType ChainType = new(new(new(BlockType.Namespace, SystemName, 1),
+		new(BlockType.Namespace, CollectionsName, 1), new(BlockType.Struct, nameof(Chain), 1)), NoBranches);
+	public static readonly NStarType UnsafeStringType = new(new(new(BlockType.Namespace, SystemName, 1),
+		new(BlockType.Namespace, UnsafeName, 1), new(BlockType.Class, "UnsafeString", 1)), NoBranches);
 	public static readonly NStarType BitListType = GetListType(BoolType);
 	public static readonly NStarType WrongVarType = new(new(new Block(BlockType.Other, "wrong var", 1)), NoBranches);
 	public static readonly BlockStack EmptyBlockStack = new();
 	public static readonly BlockStack ListBlockStack = new(new Block(BlockType.Primitive, "list", 1));
 	public static readonly BlockStack TupleBlockStack = new(new Block(BlockType.Primitive, "tuple", 1));
-	public static readonly BlockStack EventHandlerBlockStack = new(new(BlockType.Namespace, "System", 1),
+	public static readonly BlockStack EventHandlerBlockStack = new(new(BlockType.Namespace, SystemName, 1),
 		new(BlockType.Delegate, "EventHandler", 1));
-	public static readonly BlockStack FuncBlockStack = new(new(BlockType.Namespace, "System", 1),
+	public static readonly BlockStack FuncBlockStack = new(new(BlockType.Namespace, SystemName, 1),
 		new(BlockType.Delegate, nameof(Func<>), 1));
-	public static readonly BlockStack RecursiveBlockStack = GetPrimitiveBlockStack("typename");
-	public static readonly BlockStack IEnumerableBlockStack = new(new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Collections", 1), new(BlockType.Interface, nameof(G.IEnumerable<>), 1));
-	public static readonly BlockStack BaseIndexableBlockStack = new(new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(BaseIndexable<>), 1));
-	public static readonly BlockStack DictionaryBlockStack = new(new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(Dictionary<,>), 1));
-	public static readonly BlockStack FuncDictionaryBlockStack = new(new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, nameof(FuncDictionary<,>), 1));
-	public static readonly BlockStack ListHashSetBlockStack = new(new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Collections", 1), new(BlockType.Class, nameof(ListHashSet<>), 1));
-	public static readonly BlockStack TaskBlockStack = new(new(BlockType.Namespace, "System", 1),
+	public static readonly BlockStack RecursiveBlockStack = GetPrimitiveBlockStack(RecursiveTypeName);
+	public static readonly BlockStack IEnumerableBlockStack = new(new(BlockType.Namespace, SystemName, 1),
+		new(BlockType.Namespace, CollectionsName, 1), new(BlockType.Interface, nameof(G.IEnumerable<>), 1));
+	public static readonly BlockStack BaseIndexableBlockStack = new(new(BlockType.Namespace, SystemName, 1),
+		new(BlockType.Namespace, CollectionsName, 1), new(BlockType.Class, nameof(BaseIndexable<>), 1));
+	public static readonly BlockStack DictionaryBlockStack = new(new(BlockType.Namespace, SystemName, 1),
+		new(BlockType.Namespace, CollectionsName, 1), new(BlockType.Class, nameof(Dictionary<,>), 1));
+	public static readonly BlockStack FuncDictionaryBlockStack = new(new(BlockType.Namespace, SystemName, 1),
+		new(BlockType.Namespace, UnsafeName, 1), new(BlockType.Class, nameof(FuncDictionary<,>), 1));
+	public static readonly BlockStack ListHashSetBlockStack = new(new(BlockType.Namespace, SystemName, 1),
+		new(BlockType.Namespace, CollectionsName, 1), new(BlockType.Class, nameof(ListHashSet<>), 1));
+	public static readonly BlockStack TaskBlockStack = new(new(BlockType.Namespace, SystemName, 1),
 		new(BlockType.Namespace, "Threading", 1), new(BlockType.Class, "Task", 1));
-	public static readonly BlockStack ValueTaskBlockStack = new(new(BlockType.Namespace, "System", 1),
+	public static readonly BlockStack ValueTaskBlockStack = new(new(BlockType.Namespace, SystemName, 1),
 		new(BlockType.Namespace, "Threading", 1), new(BlockType.Struct, "ValueTask", 1));
-	public static readonly BlockStack EmptyTaskBlockStack = new(new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Class, "EmptyTask", 1));
-	public static readonly BlockStack ValueEmptyTaskBlockStack = new(new(BlockType.Namespace, "System", 1),
-		new(BlockType.Namespace, "Unsafe", 1), new(BlockType.Struct, "ValueEmptyTask", 1));
+	public static readonly BlockStack EmptyTaskBlockStack = new(new(BlockType.Namespace, SystemName, 1),
+		new(BlockType.Namespace, UnsafeName, 1), new(BlockType.Class, "EmptyTask", 1));
+	public static readonly BlockStack ValueEmptyTaskBlockStack = new(new(BlockType.Namespace, SystemName, 1),
+		new(BlockType.Namespace, UnsafeName, 1), new(BlockType.Struct, "ValueEmptyTask", 1));
 	public static readonly ImmutableArray<BlockStack> TaskBlockStacks = [
 		TaskBlockStack, ValueTaskBlockStack, EmptyTaskBlockStack, ValueEmptyTaskBlockStack
 	];

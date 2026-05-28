@@ -32,7 +32,6 @@ public class RoutedCommand(string name, KeyGesture keyGesture = null) : ICommand
 			// ReSharper disable once UnusedVariable
 			var binding = bindable.CommandBindings.Where(c => c != null)
 				.FirstOrDefault(c => c.Command == args.Command && c.DoExecuted(control, args));
-
 		}
 	}
 

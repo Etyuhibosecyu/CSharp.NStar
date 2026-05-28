@@ -200,7 +200,7 @@ public class HighlightingColor : IFreezable, ICloneable, IEquatable<Highlighting
 		if (FontSize != null)
 		{
 			b.Append("font-size: ");
-			b.Append(FontSize.Value.ToString());
+			b.Append(FontSize.Value);
 			b.Append("; ");
 		}
 		if (FontWeight != null)

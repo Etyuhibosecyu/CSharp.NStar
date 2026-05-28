@@ -339,8 +339,7 @@ public sealed class VisualLine
 	/// </summary>
 	public TextLine GetTextLine(int visualColumn, bool isAtEndOfLine)
 	{
-		if (visualColumn < 0)
-			throw new ArgumentOutOfRangeException(nameof(visualColumn));
+		ArgumentOutOfRangeException.ThrowIfNegative(visualColumn);
 		if (visualColumn >= VisualLengthWithEndOfLineMarker)
 			return TextLines[^1];
 		foreach (var line in TextLines)
